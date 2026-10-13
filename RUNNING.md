@@ -13,6 +13,13 @@ Open the Home Screen icon before setting up workouts. Safari and an installed
 web app may use separate storage. Use Milo's backup and restore controls to
 move workouts between devices. They do not sync automatically.
 
+## Install Milo on Mac
+
+In Safari, choose **File > Add to Dock**. Open the new icon before recording
+workouts. Your installed copy keeps workouts on this Mac after you close it,
+and works offline after its first load. Save a backup from the arrow at the top
+before moving to another device, then restore that file there.
+
 ## Run a local copy on Mac
 
 Install Python 3 if `python3 --version` is unavailable, then run:
