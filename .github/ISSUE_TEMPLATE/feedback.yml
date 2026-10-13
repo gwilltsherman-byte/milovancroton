@@ -1,0 +1,42 @@
+name: First workout feedback
+description: Tell us how Milo worked during your workout.
+body:
+  - type: dropdown
+    id: trainer
+    attributes:
+      label: Which trainer did you try?
+      multiple: true
+      options:
+        - Muscle
+        - Strength
+        - Ladder
+        - Together
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: What were you trying to do?
+      placeholder: e.g. Set up a pull-up goal and log my first session.
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: What was confusing or difficult?
+    validations:
+      required: true
+  - type: dropdown
+    id: return
+    attributes:
+      label: Would you use Milo for another workout?
+      options:
+        - "Yes"
+        - "Maybe"
+        - "No"
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: What would make the biggest difference?

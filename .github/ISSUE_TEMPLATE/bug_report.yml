@@ -1,0 +1,42 @@
+name: Report a bug
+description: Something did not work as expected.
+title: "Bug: "
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone, Safari
+    validations:
+      required: true
+  - type: dropdown
+    id: trainer
+    attributes:
+      label: Where did it happen?
+      options:
+        - Muscle
+        - Strength
+        - Ladder
+        - Together
+        - Backup or installation
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you tap or enter before the problem?
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or other details
+      description: Optional. Please leave out personal health details and workout backups.
