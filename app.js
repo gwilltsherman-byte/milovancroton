@@ -3,6 +3,65 @@
    Shared by every section, keyed by exercise id.
    set: how to get into position, steps: the rep, avoid: the usual mistakes, note: an optional safety line. */
 window.HOWTO = {
+  'incline-pike-pushup':{set:'Hands on a sturdy raised surface, feet on the floor, hips high in an inverted V.',
+    steps:['Lower the head forward between the hands through a range you can control.','Press back without letting the hips sag.','Start with a high surface or short range, then lower the surface or deepen the range gradually.'],avoid:['Using an unstable support.','Dropping the head into the surface.']},
+  'feet-assisted-straight-bar-dip':{set:'Hands over a low fixed bar, chest above it, feet supported on the floor or a stable box.',
+    steps:['Lean the chest over the bar and lower through a comfortable range.','Press to straight arms with only the leg help needed.','Reduce assistance gradually, keeping the bar height, depth and foot position reproducible.'],avoid:['Using a loose bar.','A strong leg kick recorded as strict pressing.']},
+  /* Assisted bridges: record the support so progress means less assistance or more controlled range. */
+  'assisted-archer-pullup':{set:'Wide grip on a secure bar. Use a band under the knees or light foot support on a stable box.',
+    steps:['Pull toward one hand while keeping the other elbow nearly straight.','Lower to straight arms without swinging.','Repeat on both sides with the same support. Reduce assistance in small steps.'],avoid:['Changing the band or foot help without recording it.','Twisting or kipping to finish.']},
+  'assisted-archer-row':{set:'High bar or rings, feet on the floor and body straight at an easy incline. Take a wide grip.',
+    steps:['Row toward one hand, letting the other arm help only as needed.','Keep hips and shoulders square and lower fully.','Lower the support or reduce assisting-arm pressure gradually.'],avoid:['Rotating the chest instead of rowing.','Changing foot position between logged sets.']},
+  'incline-one-arm-row':{set:'One hand on a securely fixed high bar or ring. Feet wide, body at an incline you can control.',
+    steps:['Keep the hips square and pull the working hand toward the side of the chest.','Lower to a straight arm with the body rigid.','Gradually lower the support or move the feet to increase the load. Repeat both sides.'],avoid:['Twisting onto the working side.','Starting too horizontal to complete the range.']},
+  'assisted-tuck-fl-row':{set:'Band securely anchored above and supporting the hips. Take a bar or ring grip and tuck the knees.',
+    steps:['Set the back level and hold the hips steady.','Row toward the lower chest or stomach.','Lower the arms without letting the hips sag. Reduce the band help gradually.'],avoid:['Unsecured band anchors.','Opening the tuck or dropping the hips during the rep.']},
+  'incline-one-arm-pushup':{set:'Working hand on a sturdy raised surface, feet wider than the shoulders, free hand by your side.',
+    steps:['Brace the trunk and lower the chest to the support beside the working hand.','Press back to a straight arm while keeping both hip bones facing the support.','Repeat both sides. Lower the support gradually when the range stays controlled.'],avoid:['Using an unstable chair or table.','Rotating the hips to shorten the press.']},
+  'assisted-one-arm-pushup':{set:'Working hand on the floor beneath the shoulder, other hand on a stable raised support out to the side. Feet wide.',
+    steps:['Lower the chest toward the working hand with hips square.','Press up while the other hand supplies only enough help to finish.','Keep the support height and assisting hand position consistent; gradually use less help.'],avoid:['Treating a rep with heavy helping-arm pressure as an unassisted rep.','Letting the hips twist or sag.']},
+  'assisted-shrimp-squat':{set:'Stand on one leg beside a fixed post. Free foot held behind you or hovering, padded target behind the working heel.',
+    steps:['Use the post lightly and lower the free knee toward the padded target.','Keep the working heel down and stand back up under control.','Reduce hand help or lower the target a little at a time. Repeat both sides.'],avoid:['Dropping onto the knee.','Changing both assistance and target height at once.']},
+  'sliding-hamstring-curl':{set:'Lie on your back with heels on sliders or towels on a smooth floor. Knees bent, arms by your sides.',
+    steps:['Lift the hips and slide the heels away through a range you can control.','Bend the knees to bring the heels back while keeping the hips lifted.','Extend farther gradually before trying fewer supporting legs.'],avoid:['Losing hip height during the return.','Using a slippery surface without checking the sliders first.']},
+  'assisted-nordic-curl':{set:'Kneel on padding with the heels securely anchored. A securely fixed band behind you supports the chest, with enough tension to help both lowering and return.',
+    steps:['Keep a straight line from knees to shoulders.','Lean forward from the knees through the controlled range.','Use the hamstrings and band to return without pushing from the hands. Reduce assistance gradually.'],avoid:['A loose heel anchor or band attachment.','Folding at the hips or only practising the lowering.']},
+  'partial-nordic-curl':{set:'Kneel on padding with heels securely anchored and a padded raised target in front. Start with a target high enough to return from.',
+    steps:['With hips straight, lean forward from the knees toward the target.','Touch lightly and pull back upright without a hand push.','Lower the target gradually while preserving control in both directions.'],avoid:['Dropping onto the target.','Confusing a controlled negative with a controlled return.']},
+  'assisted-tuck-fl':{set:'Secure bar or rings with a securely anchored band supporting the hips. Tuck the knees toward the chest.',
+    steps:['Keep the elbows straight and press the hands toward the hips.','Hold the back level with hips beside the shoulders.','Use enough assistance for the shape, then reduce support gradually.'],avoid:['Bending the arms to hold longer.','Changing band placement between attempts.']},
+  'assisted-straddle-fl':{set:'As an assisted front lever, with the band supporting the hips and the legs straight and wide.',
+    steps:['Keep the body level and elbows straight.','Use the same straddle width for comparable attempts.','Reduce assistance a little at a time without losing the body line.'],avoid:['Letting the hips drop.','Counting a wider straddle as progress at the same assistance.']},
+  'assisted-full-fl':{set:'Secure bar or rings and a securely anchored band supporting the hips. Legs straight and together.',
+    steps:['Press down through straight arms and hold one level line from shoulders to feet.','End the attempt when the line changes.','Reduce band help gradually as the shape becomes repeatable.'],avoid:['Arching or piking to shorten the lever.','Bent-arm holds logged as straight-arm work.']},
+  'assisted-tuck-planche':{set:'Hands on the floor or parallettes. Secure band supporting the hips, or light toe support on a fixed surface.',
+    steps:['Push the shoulder blades apart, keep elbows straight and lean the shoulders forward.','Tuck the knees and hold the hips level with the shoulders.','Reduce help gradually while retaining that shape.'],avoid:['Unsecured overhead band anchors.','Bending the elbows or letting the hips hang below the shoulders.']},
+  'assisted-straddle-planche':{set:'Hands on the floor or parallettes, secure overhead band supporting the hips, legs straight and wide.',
+    steps:['Lean the shoulders forward with elbows straight and shoulder blades spread.','Hold the body level with a consistent straddle width.','Reduce assistance gradually, ending attempts when alignment changes.'],avoid:['Changing straddle width without recording it.','Pushing through wrist or elbow pain.']},
+  'assisted-full-planche':{set:'Hands on the floor or parallettes and a secure overhead band supporting the hips. Legs together.',
+    steps:['Keep elbows straight, shoulder blades spread and shoulders forward.','Hold one level line from shoulders to toes.','Use enough help for the whole shape, then reduce it in small steps.'],avoid:['Piking at the hips.','Dropping into the band when the hold ends.']},
+  'assisted-tuck-bl':{set:'Secure rings or bar with a securely anchored band supporting the hips. Move into the back-lever position only within a comfortable shoulder range.',
+    steps:['Tuck the knees, straighten the elbows and hold the back level facing down.','Use the band to control entry and exit.','Reduce support gradually while keeping the same tuck.'],avoid:['Forcing shoulder extension.','Rolling quickly through the entry.']},
+  'assisted-straddle-bl':{set:'As an assisted back lever, band supporting the hips and legs straight and wide.',
+    steps:['Hold the face-down body line level with elbows straight.','Keep straddle width and band placement consistent.','Reduce help gradually and exit slowly.'],avoid:['Letting the hips hang.','A sudden unsupported drop.']},
+  'assisted-full-bl':{set:'Secure rings or bar with a band supporting the hips, legs together and straight.',
+    steps:['Hold one level face-down line with elbows straight.','End the hold before losing shoulder or elbow control.','Reduce assistance in small steps.'],avoid:['Forcing range at the shoulder.','Arching to lift the feet.']},
+  'assisted-straddle-press':{set:'Floor straddle with hands between or just in front of the feet. Secure overhead band supporting the hips; leave space to bail.',
+    steps:['Lean forward and lift the hips above the hands without jumping.','Float the feet and close the legs toward a controlled handstand.','Lower with control and reduce band support gradually.'],avoid:['An unsecured anchor.','A jump disguised as a press.']},
+  'assisted-tuck-planche-pushup':{set:'Tuck planche position with a securely anchored band supporting the hips.',
+    steps:['Keep the tuck and hips level while bending the elbows through your controlled range.','Press back to straight elbows without a swing.','Record assistance and depth; increase only one demand at a time.'],avoid:['Dropping the hips as the arms bend.','Changing the assistance without logging it.']},
+  'assisted-straddle-planche-pushup':{set:'Straddle planche with a secure band supporting the hips.',
+    steps:['Lower with elbows close to the ribs while keeping the body level.','Press back without folding at the hips.','Keep straddle width, depth and support consistent before reducing help.'],avoid:['Piking during the press.','Increasing leverage and depth together.']},
+  'assisted-full-planche-pushup':{set:'Full planche shape with a securely anchored band supporting the hips, legs together.',
+    steps:['Lower through a controlled range with the body straight.','Press back to straight elbows.','Use sufficient assistance for both directions and reduce it gradually.'],avoid:['Losing the straight body line.','Counting an uncontrolled lower as a full rep.']},
+  'feet-assisted-false-grip-hang':{set:'Low rings, wrist resting over each ring in false grip, feet firmly supported.',
+    steps:['Keep the wrists over the rings while taking part of your weight through the arms.','Maintain the grip rather than allowing it to slide into the fingers.','Reduce foot pressure gradually using a reproducible foot position.'],avoid:['Dropping immediately into a full unsupported hang.','Letting the grip slide while the timer continues.']},
+  'feet-assisted-ring-dip':{set:'Low rings beside the hips, feet on the floor or a stable box.',
+    steps:['Keep rings close and lower through a comfortable controlled depth.','Press to straight arms with only the leg help you need.','Gradually reduce leg assistance while maintaining the same depth.'],avoid:['Rings flaring apart.','A large leg push logged as a strict dip.']},
+  'low-ring-transition':{set:'Low rings in false grip with feet on the floor in front of you.',
+    steps:['Pull rings toward the lower chest.','Lean the chest over the rings and turn into the bottom of a dip.','Press to support with leg help as needed. Keep foot setup consistent and reduce help.'],avoid:['Losing false grip.','Pulling the rings wide during the turn.']},
+  'assisted-ring-muscleup':{set:'Secure rings with a securely positioned assistance band or light foot support; establish false grip.',
+    steps:['Pull rings to the lower chest.','Turn over with rings close to the body.','Press to straight arms without a kip. Practise the whole movement and reduce help gradually.'],avoid:['Unsecured assistance.','Using a swing to replace strength through the transition.']},
   /* ---- chest and pressing ---- */
   'barbell-bench':{ set:'Lie with your eyes under the bar, feet flat, shoulder blades pulled back and down. Grip just outside shoulder width.',
     steps:['Unrack with straight arms and bring the bar over your shoulders.','Lower under control to the lower chest, elbows about 45 to 70 degrees from your sides.','Touch lightly, then press up and slightly back toward the rack.'],
@@ -391,7 +450,7 @@ window.HOWTO = {
   'pike-pushup':{ set:'Start in a push-up position, hands shoulder width, fingers forward. Walk the feet toward the hands and lift the hips into an upside-down V, legs as straight as you can keep them.',
     steps:['Bend the elbows to lower the top of the head toward a spot on the floor a hand’s length in front of the hands, so head and hands make a triangle.','Elbows point back at about 45 degrees from the body, not straight out.','Touch the head down lightly, or stop just short, then press back to straight arms, pushing the hips up and back.'],
     avoid:['Letting the hips drop so it becomes a sloppy push-up.','Lowering the head between the hands instead of in front of them.'] },
-  'elevated-pike-pushup':{ set:'Feet on a box or bench, hands on the floor shoulder width apart. Walk the hands in toward the box until the hips are roughly stacked over the shoulders and the torso is close to vertical.',
+  'elevated-pike-pushup':{ set:'Start with the feet on a low stable step, hands on the floor shoulder width apart, hips high. Raise the feet and bring the hips more over the hands gradually as your pressing control improves.',
     steps:['Lower the head to a spot a hand’s length in front of the hands, making a triangle.','Elbows point back at about 45 degrees.','Press back up until the arms are straight and the shoulders push up toward the ears.'],
     avoid:['Hips drifting back behind the hands.','Crashing the head down.'],
     note:'Higher feet and hands closer to the box make it harder.' },
@@ -567,7 +626,7 @@ window.HOWTO = {
   'single-leg-calf-raise':{ set:'Ball of one foot on the edge of a step, heel hanging off, the other foot hooked behind the working ankle. Fingertips on a wall.',
     steps:['Lower the heel fully below the step and pause.','Rise as high as you can, weight through the big toe.','Pause at the top, lower over two seconds.'],
     avoid:['Pushing on the wall to help.','Rolling onto the outside of the foot.'] },
-  'deficit-calf-raise':{ set:'As the single-leg calf raise on a higher step or block, so the heel can drop further.',
+  'deficit-calf-raise':{ set:'As the single-leg calf raise, on a step with enough clearance for the heel to move through your controlled ankle range. A taller step adds no range once the heel clears.',
     steps:['Lower slowly into the deepest stretch you can control.','Rise all the way up.','Lower over three seconds.'],
     avoid:['Bouncing out of the stretch.','Bending the knee to help.'] },
   'weighted-calf-raise':{ set:'Ball of one foot on a step, a dumbbell in the same-side hand, the other hand on a wall.',
@@ -4899,9 +4958,10 @@ const LADDERS={
     {id:'band-pullup', n:'Band-assisted pull-up', k:'reps', sets:3, v:8, cue:'Knee in the band, start from straight arms, chin clears the bar. The lightest band that still lets you finish the set.'},
     {id:'pullup', n:'Pull-up', k:'reps', sets:3, v:8, cue:'Hands a little wider than the shoulders. Shoulder blades down first, elbows to the hips, chin over the bar, then all the way to straight arms.'},
     {id:'archer-pullup', n:'Archer pull-up', k:'reps', sets:3, v:5, cue:'Hands twice shoulder width. Chin goes over one hand while the other arm stays straight along the bar. The target counts each side.'},
-    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Belt, vest or a dumbbell between the feet, added 1.25 to 2.5 kg at a time, once ten bodyweight reps are easy. Same strict rep.'},
+    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Keep the same strict range as your pull-up. Start with a small added load you can control and record it; increase in small increments as sets become repeatable.'},
     {id:'assisted-oap', n:'Assisted one-arm pull-up', k:'reps', sets:3, v:3, cue:'Working hand directly over the shoulder; the other hand on a towel, held as low as you can manage. Help only as much as you need.'},
     {id:'oap', n:'One-arm pull-up', k:'reps', sets:3, v:1, cue:'Hand directly over the shoulder, palm toward you. Straight arm to chin over the bar, the body turning slightly toward the working arm. Each side counts.'},
+    {id:'assisted-archer-pullup', n:'Assisted archer pull-up', k:'reps', sets:3, v:5, cue:'Use a band or light foot support while pulling toward one hand. Keep the other elbow nearly straight, and reduce assistance gradually. Per side.'},
   ]},
   row:{n:'Horizontal pull', p:'Pull', ic:'row', m:'Upper back, lats, biceps', steps:[
     {id:'incline-row', n:'Incline row', k:'reps', sets:3, v:12, cue:'Bar at chest height, body straight from heels to head. Lower chest to the bar, elbows back at 45 degrees until they pass the ribs.'},
@@ -4910,6 +4970,9 @@ const LADDERS={
     {id:'tuck-fl-row', n:'Tuck front lever row', k:'reps', sets:3, v:6, cue:'Set a tuck front lever, back parallel to the floor, then row the bar toward your stomach without the hips dropping.'},
     {id:'archer-row', n:'Archer row', k:'reps', sets:3, v:6, cue:'Hands twice shoulder width. Row the chest to one hand while the other arm stays straight out to the side. The target counts each side.'},
     {id:'one-arm-row', n:'One-arm row', k:'reps', sets:3, v:5, cue:'Hand in line with the shoulder, feet wide. Both hip bones keep facing up as you row the hand to the side of the chest.'},
+    {id:'assisted-archer-row', n:'Assisted archer row', k:'reps', sets:3, v:6, cue:'Start with a high bar or rings and an upright body. Row toward one hand while the other arm helps as needed. Lower the support or reduce that help gradually. Per side.'},
+    {id:'incline-one-arm-row', n:'Incline one-arm row', k:'reps', sets:3, v:5, cue:'One hand on a high bar or ring, feet wide and hips square. Start upright enough to control the whole rep, then lower the support gradually. Per side.'},
+    {id:'assisted-tuck-fl-row', n:'Assisted tuck front lever row', k:'reps', sets:3, v:5, cue:'Band supporting the hips, knees tucked and back level. Row without the hips dropping; reduce assistance before adding leverage.'},
   ]},
   dip:{n:'Dip', p:'Push', ic:'dip', m:'Chest, triceps, front delts', steps:[
     {id:'support-hold', n:'Support hold', k:'hold', sets:3, v:30, cue:'Bars beside the hips, hands under the shoulders, elbows locked, a clear gap between shoulders and ears. The base every dip is built on.'},
@@ -4927,14 +4990,17 @@ const LADDERS={
     {id:'archer-pushup', n:'Archer push-up', k:'reps', sets:3, v:6, cue:'Hands twice shoulder width. Chest to a fist’s height beside one hand while the other arm straightens. The target counts each side.'},
     {id:'pseudo-planche-pushup', n:'Pseudo-planche push-up', k:'reps', sets:3, v:8, cue:'Hands beside the lower ribs, fingers turned out, shoulders well in front of the hands the whole set. The doorway to planche work.'},
     {id:'one-arm-pushup', n:'One-arm push-up', k:'reps', sets:3, v:5, cue:'Feet wider than the shoulders, working hand under the shoulder, both hip bones facing the floor. Chest to a fist’s height.'},
+    {id:'incline-one-arm-pushup', n:'Incline one-arm push-up', k:'reps', sets:3, v:5, cue:'One hand on a sturdy raised surface, feet wide. Lower the chest to the hand with hips square. Start high and lower the surface in small steps. Per side.'},
+    {id:'assisted-one-arm-pushup', n:'Assisted one-arm push-up', k:'reps', sets:3, v:5, cue:'Working hand beneath the shoulder, other hand on a raised support out to the side. Use only enough help to finish controlled full-range reps. Per side.'},
   ]},
   pushv:{n:'Vertical push', p:'Push', ic:'up', m:'Shoulders, triceps', steps:[
     {id:'pike-pushup', n:'Pike push-up', k:'reps', sets:3, v:10, cue:'Hips high in an inverted V. Lower the head to a spot a hand’s length in front of the hands, so head and hands make a triangle.'},
-    {id:'elevated-pike-pushup', n:'Elevated pike push-up', k:'reps', sets:3, v:8, cue:'Feet on a box, hips stacked over the shoulders. Head to a spot a hand’s length in front of the hands.'},
+    {id:'elevated-pike-pushup', n:'Elevated pike push-up', k:'reps', sets:3, v:8, cue:'Start with the feet on a low stable step, hips high. Head toward a spot in front of the hands. Raise the feet gradually as you can keep more weight over the hands.'},
     {id:'wall-handstand-hold', n:'Wall handstand hold', k:'hold', sets:3, v:45, cue:'Hands a hand’s length from the wall, elbows locked, shoulders pushed up to the ears, ribs in, glutes squeezed. Breathe normally.'},
     {id:'partial-wall-hspu', n:'Partial wall handstand push-up', k:'reps', sets:3, v:5, cue:'Back to the wall, hands 15 to 20 cm from it. Lower to a stack of mats under the head and press back; take a layer off as it gets easy.'},
     {id:'wall-hspu', n:'Wall handstand push-up', k:'reps', sets:3, v:5, cue:'Hands 15 to 20 cm from the wall, elbows pointing forward. Head touches a mat lightly in front of the hands, full lockout at the top.'},
     {id:'freestanding-hspu', n:'Freestanding handstand push-up', k:'reps', sets:3, v:3, cue:'Only once a 30 second freestanding hold is solid. As the head goes forward, the legs tip back to keep you over the hands.'},
+    {id:'incline-pike-pushup', n:'Hands-elevated pike push-up', k:'reps', sets:3, v:8, cue:'Hands on a stable raised surface, hips high. Lower the head forward between the hands through a controlled range. Start high or with a short range and lower the surface gradually.'},
   ]},
   legs:{n:'Squat pattern', p:'Legs', ic:'legs', m:'Quads, glutes', steps:[
     {id:'assisted-squat', n:'Assisted squat', k:'reps', sets:3, v:15, cue:'Hold a post at waist height, feet shoulder width, toes out a little. Sit between the heels, hip crease below the knee, heels down.'},
@@ -4943,6 +5009,10 @@ const LADDERS={
     {id:'bulgarian-split-squat', n:'Bulgarian split squat', k:'reps', sets:3, v:10, cue:'Rear foot laces-down on a knee-height bench, front foot far enough out that the shin is near vertical at the bottom. Per side.'},
     {id:'shrimp-squat', n:'Shrimp squat', k:'reps', sets:3, v:6, cue:'Hold the rear foot behind you with the same-side hand; lower until the back knee touches a mat directly under you. Per side.'},
     {id:'pistol-squat', n:'Pistol squat', k:'reps', sets:3, v:5, cue:'Free leg straight out in front, heel down, knee over the second toe, thigh to calf at the bottom, up without rocking. Per side.'},
+    {id:'box-pistol', n:'Box pistol', k:'reps', sets:3, v:5, cue:'Lower on one leg to a stable box, free leg in front. Touch lightly and stand without rocking. Start high and lower the box gradually. Per side.'},
+    {id:'assisted-pistol', n:'Assisted pistol', k:'reps', sets:3, v:5, cue:'Hold a fixed support and squat on one leg through your controlled range, heel down. Record the grip and assistance, then reduce the help. Per side.'},
+    {id:'counterbalance-pistol', n:'Counterbalance pistol', k:'reps', sets:3, v:5, cue:'Hold a small weight in front to help balance while you squat on one leg, heel down. Record the weight and reach; reduce the counterbalance as control improves. Per side.'},
+    {id:'assisted-shrimp-squat', n:'Assisted shrimp squat', k:'reps', sets:3, v:5, cue:'On one leg with the free foot behind, hold a post and lower the free knee onto a padded raised target. Reduce support and target height gradually. Per side.'},
   ]},
   hinge:{n:'Hinge and posterior', p:'Legs', ic:'legs', m:'Hamstrings, glutes, lower back', steps:[
     {id:'glute-bridge', n:'Glute bridge', k:'reps', sets:3, v:20, cue:'Heels close enough to brush with your fingertips. Drive through them to a straight line from knees to shoulders, ribs down.'},
@@ -4950,6 +5020,9 @@ const LADDERS={
     {id:'back-extension-hold', n:'Back extension hold', k:'hold', sets:3, v:30, cue:'Face down, glutes squeezed, chest, arms and legs a few centimetres up. Eyes on the floor, chin slightly tucked.'},
     {id:'nordic-negative', n:'Nordic negative', k:'reps', sets:3, v:5, cue:'Heels anchored, a straight line from knees to shoulders. Take 3 to 5 seconds to lower, then catch on the hands.'},
     {id:'nordic-curl', n:'Nordic curl', k:'reps', sets:3, v:5, cue:'A straight line from knees to head the whole way down and back up, pulled by the hamstrings alone.'},
+    {id:'sliding-hamstring-curl', n:'Sliding hamstring curl', k:'reps', sets:3, v:8, cue:'Heels on sliders or towels, lift the hips and slide the heels out and back. Start with a short range; keep the hips lifted as you extend farther.'},
+    {id:'assisted-nordic-curl', n:'Assisted full-range Nordic curl', k:'reps', sets:3, v:5, cue:'Heels securely anchored and a band supporting the chest. Lower and return with hips straight. Use enough assistance for both directions, then reduce it gradually.'},
+    {id:'partial-nordic-curl', n:'Partial Nordic curl', k:'reps', sets:3, v:5, cue:'Heels anchored, hips straight. Lower to a reproducible padded target and return without pushing with the hands. Lower the target only when both directions remain controlled.'},
   ]},
   core:{n:'Anterior core', p:'Core', ic:'core', m:'Abs, hip flexors', steps:[
     {id:'dead-bug', n:'Dead bug', k:'reps', sets:3, v:12, cue:'Hips and knees at 90 degrees, lower back flat. Opposite arm and leg lower to hover just above the floor. Per side.'},
@@ -4959,25 +5032,31 @@ const LADDERS={
     {id:'lsit', n:'L-sit', k:'hold', sets:3, v:20, cue:'Elbows locked, shoulders down, both legs straight and level with the hips, toes pointed.'},
     {id:'vsit', n:'V-sit', k:'hold', sets:3, v:10, cue:'Hips slide back behind the hands while straight legs rise above hip height. Needs serious compression and hamstring length.'},
   ]},
-  handstand:{n:'Handstand', p:'Skill', ic:'hand', skill:true, m:'Balance, shoulders', steps:[
+  handstand:{n:'Handstand', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Balance, shoulders', steps:[
     {id:'wall-plank', n:'Wall plank', k:'hold', sets:3, v:45, cue:'Feet on the wall at hip height or higher, elbows locked, shoulders pushing the floor away. Gets you used to being upside down.'},
     {id:'chest-to-wall-handstand', n:'Chest-to-wall handstand', k:'hold', sets:3, v:45, cue:'Hands a hand’s length from the wall, shoulders pushed up to the ears, only the toes touching. This teaches the true straight line.'},
     {id:'heel-pulls', n:'Chest-to-wall toe pulls', k:'reps', sets:3, v:8, cue:'Chest-to-wall, hands a hand’s length from it. Shift weight into the heels of the hands until the toes float off the wall, then catch it with the fingertips.'},
-    {id:'freestanding-handstand', n:'Freestanding handstand', k:'hold', sets:3, v:15, cue:'Wrists, shoulders, hips and ankles stacked. Fingertips stop a fall toward your back, the heels of the hands a fall back to your feet.'},
+    {id:'freestanding-handstand', n:'Freestanding handstand', k:'hold', sets:3, v:15, cue:'Wrists, shoulders, hips and ankles stacked. Practise brief controlled attempts while fresh; build repeatable duration toward your goal without exhausting the shoulders.'},
   ]},
-  frontlever:{n:'Front lever', p:'Skill', ic:'bar', skill:true, m:'Lats, core', steps:[
+  frontlever:{n:'Front lever', p:'Skill', ic:'bar', skill:true, practice:'strength', m:'Lats, core', steps:[
     {id:'tuck-fl', n:'Tuck front lever', k:'hold', sets:3, v:15, cue:'Arms locked, pressing the bar toward the hips. Knees tight to the chest, back parallel to the floor, hips level with the shoulders.'},
     {id:'adv-tuck-fl', n:'Advanced tuck front lever', k:'hold', sets:3, v:15, cue:'Back flat and parallel to the floor, thighs at about 90 degrees to the torso, knees bent, arms locked.'},
     {id:'straddle-fl', n:'Straddle front lever', k:'hold', sets:3, v:10, cue:'Legs straight and as wide as the hips allow, glutes squeezed, body level from shoulders to feet. Wider is easier.'},
     {id:'half-lay-fl', n:'Half-lay front lever', k:'hold', sets:3, v:8, cue:'Hips straight with the knees bent to 90 degrees, or one leg out and one tucked. Everything level, arms locked.'},
     {id:'full-fl', n:'Full front lever', k:'hold', sets:3, v:8, cue:'One level line from shoulders to toes, slightly hollow, arms locked and pressing toward the hips. Years of work for most people.'},
+    {id:'assisted-tuck-fl', n:'Assisted tuck front lever', k:'hold', sets:3, v:10, cue:'Band supporting the hips, knees tucked, arms straight and back level. Record the band and anchor so assistance can be reduced gradually.'},
+    {id:'assisted-straddle-fl', n:'Assisted straddle front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body level. Keep the same straddle width and reduce assistance in small steps.'},
+    {id:'assisted-full-fl', n:'Assisted full front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together and body level. Use enough help for a controlled hold, then reduce it without losing the shape.'},
   ]},
-  planche:{n:'Planche', p:'Skill', ic:'push', skill:true, m:'Shoulders, chest, core', steps:[
-    {id:'planche-lean', n:'Planche lean', k:'hold', sets:3, v:20, cue:'Elbows locked, shoulder blades pushed apart, shoulders a few centimetres past the hands, working toward 15 to 20 cm over weeks.'},
+  planche:{n:'Planche', p:'Skill', ic:'push', skill:true, practice:'strength', m:'Shoulders, chest, core', steps:[
+    {id:'planche-lean', n:'Planche lean', k:'hold', sets:3, v:20, cue:'Elbows straight, shoulder blades pushed apart. Measure how far the shoulders pass the wrists with the same hand and foot setup; add a little lean while keeping the body rigid.'},
     {id:'tuck-planche', n:'Tuck planche', k:'hold', sets:3, v:15, cue:'Shoulders well in front of the hands, upper back rounded, knees tight to the chest, hips at shoulder height or above.'},
     {id:'adv-tuck-planche', n:'Advanced tuck planche', k:'hold', sets:3, v:12, cue:'Back flat and level, thighs at about 90 degrees to the torso, leaning further forward than in the tuck. A big jump.'},
-    {id:'straddle-planche', n:'Straddle planche', k:'hold', sets:3, v:8, cue:'Legs straight and wide, hips at shoulder height, body level, arms locked. Extremely demanding on the biceps tendon.'},
+    {id:'straddle-planche', n:'Straddle planche', k:'hold', sets:3, v:8, cue:'Legs straight and wide, hips at shoulder height, body level, elbows straight. This is demanding strength work; build exposure gradually and recover between hard sessions.'},
     {id:'full-planche', n:'Full planche', k:'hold', sets:3, v:5, cue:'Legs together, body straight and level, shoulders well in front of the hands. One of the hardest holds in the sport.'},
+    {id:'assisted-tuck-planche', n:'Assisted tuck planche', k:'hold', sets:3, v:10, cue:'Band supporting the hips or toes lightly on a fixed support. Knees tucked, elbows straight and shoulders forward. Reduce the help while keeping the hips level.'},
+    {id:'assisted-straddle-planche', n:'Assisted straddle planche', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, elbows straight. Record the support and straddle width; reduce assistance gradually.'},
+    {id:'assisted-full-planche', n:'Assisted full planche', k:'hold', sets:3, v:5, cue:'Band supporting the hips, legs together, body level. Use enough assistance to keep straight elbows and a consistent shoulder lean.'},
   ]},
   muscleup:{n:'Muscle-up', p:'Skill', ic:'bar', skill:true, m:'Lats, chest, triceps', steps:[
     {id:'chest-to-bar', n:'Chest-to-bar pull-up', k:'reps', sets:3, v:5, cue:'Grip a little wider than the shoulders and pull until the chest, at or below the nipple line, touches the bar.'},
@@ -4985,6 +5064,8 @@ const LADDERS={
     {id:'straight-bar-dip', n:'Straight-bar dip', k:'reps', sets:3, v:8, cue:'Chest leaning over the bar, elbows pointing back; lower until the bar touches the lower chest. The top half of the muscle-up.'},
     {id:'jumping-muscleup', n:'Jumping muscle-up', k:'reps', sets:3, v:5, cue:'Bar at chin height. Jump and pull together to bring the bar to the lower chest, then roll the wrists over and press out.'},
     {id:'strict-muscleup', n:'Strict muscle-up', k:'reps', sets:3, v:3, cue:'No kip. Pull the bar to the lower chest, throw the chest over it as the wrists roll on top, press out to locked arms.'},
+    {id:'band-muscleup', n:'Band-assisted muscle-up', k:'reps', sets:3, v:3, cue:'Use a recorded band and anchor setup for the whole movement: high pull, controlled turnover, dip to lockout. Reduce assistance without adding a kip.'},
+    {id:'low-bar-transition', n:'Low-bar transition drill', k:'reps', sets:3, v:5, cue:'Low bar, feet on the floor. Pull the lower chest toward it, lean over and press out. Record foot support and reduce leg assistance gradually.'},
   ]},
   /* Added later. New ladders only ever go on the end: rungs are stored by position. */
   pullvar:{n:'Pull-up variations', p:'Pull', ic:'pull', m:'Lats, upper back, biceps, core', steps:[
@@ -4994,7 +5075,7 @@ const LADDERS={
     {id:'typewriter-pullup', n:'Typewriter pull-up', k:'reps', sets:3, v:4, cue:'Hands twice shoulder width. Chin at the bar, slide to one hand and across to the other without dropping. One pass is one rep.'},
     {id:'clapping-pullup', n:'Clapping pull-up', k:'reps', sets:3, v:3, cue:'Pull the bar to the lower chest fast enough to let go, clap in front of the chest, and catch with bent arms.'},
   ]},
-  plyopush:{n:'Explosive push-up', p:'Push', ic:'push', m:'Chest, triceps, power', steps:[
+  plyopush:{n:'Explosive push-up', p:'Push', ic:'push', practice:'power', m:'Chest, triceps, power', steps:[
     {id:'explosive-incline-pushup', n:'Explosive incline push-up', k:'reps', sets:3, v:8, cue:'Hands on a bench just wider than the shoulders, chest to the edge, push hard enough for the hands to leave it, land with soft elbows.'},
     {id:'clap-pushup', n:'Clap push-up', k:'reps', sets:3, v:6, cue:'Push up fast enough to clap once under the chest, and land with the hands back under the shoulders, elbows slightly bent.'},
     {id:'double-clap-pushup', n:'Double clap push-up', k:'reps', sets:3, v:3, cue:'Two quick claps close to the chest, landing with the hands under the shoulders and soft elbows. Needs real height.'},
@@ -5020,7 +5101,7 @@ const LADDERS={
     {id:'assisted-one-arm-hang', n:'Assisted one-arm hang', k:'hold', sets:3, v:20, cue:'Bar hand directly over the shoulder; the other hand on a towel with as few fingers as possible, as low as you can.'},
     {id:'one-arm-hang', n:'One-arm dead hang', k:'hold', sets:3, v:20, cue:'Hand directly over the shoulder, arm straight, shoulder drawn down from the ear, hips turned slightly to stop the spin. Each side counts.'},
   ]},
-  jump:{n:'Jumps', p:'Legs', ic:'legs', m:'Quads, glutes, calves, power', steps:[
+  jump:{n:'Jumps', p:'Legs', ic:'legs', practice:'power', m:'Quads, glutes, calves, power', steps:[
     {id:'squat-jump', n:'Squat jump', k:'reps', sets:3, v:8, cue:'Feet hip to shoulder width. Squat to thighs parallel, jump with an arm swing, land on the balls of the feet with knees over the toes.'},
     {id:'tuck-jump', n:'Tuck jump', k:'reps', sets:3, v:6, cue:'Jump straight up and pull the thighs at least level with the hips, then land soft with the knees over the toes.'},
     {id:'broad-jump', n:'Broad jump', k:'reps', sets:3, v:5, cue:'Toes behind a line, arms swing back then forward. Land in a half squat, knees over the toes, and hold for two seconds.'},
@@ -5044,7 +5125,7 @@ const LADDERS={
   calf:{n:'Calves', p:'Legs', ic:'legs', m:'Calves', steps:[
     {id:'bw-calf-raise', n:'Calf raise', k:'reps', sets:3, v:20, cue:'Balls of both feet on the step edge, heels hanging off. Full stretch at the bottom, rise through the big toes, pause at the top.'},
     {id:'single-leg-calf-raise', n:'Single-leg calf raise', k:'reps', sets:3, v:15, cue:'Ball of one foot on the step, other foot hooked behind the ankle, fingertips on the wall. Full stretch to full height.'},
-    {id:'deficit-calf-raise', n:'Single-leg deficit calf raise', k:'reps', sets:3, v:12, cue:'A higher step so the heel drops further. Three seconds down, knee straight.'},
+    {id:'deficit-calf-raise', n:'Single-leg deficit calf raise', k:'reps', sets:3, v:12, cue:'Use a step with enough heel clearance for your controlled ankle range. A taller step adds no range once the heel clears. Lower steadily, knee straight.'},
     {id:'weighted-calf-raise', n:'Weighted single-leg calf raise', k:'reps', sets:3, v:10, cue:'A dumbbell in the same-side hand, the other hand on the wall. Full stretch to full height, knee straight.'},
   ]},
   legraise:{n:'Leg raise', p:'Core', ic:'core', m:'Abs, hip flexors, grip', steps:[
@@ -5080,13 +5161,17 @@ const LADDERS={
     {id:'wall-walk-bridge', n:'Wall-walking bridge', k:'reps', sets:3, v:3, cue:'Stand an arm’s length from a wall, back to it. Walk the hands down it, fingers pointing down, only as low as you can return from.'},
     {id:'stand-to-stand-bridge', n:'Stand-to-stand bridge', k:'reps', sets:3, v:3, cue:'Hips forward, arch back to land on the hands shoulder width apart, then push the hips back over the feet to stand.'},
   ]},
-  backlever:{n:'Back lever', p:'Skill', ic:'bar', skill:true, m:'Lats, chest, biceps, core', steps:[
+  backlever:{n:'Back lever', p:'Skill', ic:'bar', skill:true, practice:'strength', m:'Lats, chest, biceps, core', steps:[
     {id:'german-hang', n:'German hang', k:'hold', sets:3, v:20, cue:'From a hang, tuck and pass the legs through the arms, letting the feet lower behind you, arms straight. Ease in over weeks.'},
     {id:'skin-the-cat', n:'Skin the cat', k:'reps', sets:3, v:5, cue:'From a hang, tuck and roll back through the arms into a German hang, then back the same way, slowly.'},
     {id:'tuck-bl', n:'Tuck back lever', k:'hold', sets:3, v:15, cue:'Face down, back level with the floor, knees tucked to the chest, arms straight with the hands beside the hips.'},
     {id:'adv-tuck-bl', n:'Advanced tuck back lever', k:'hold', sets:3, v:12, cue:'Back flat and level, thighs at about 90 degrees to the torso, knees bent, arms straight.'},
     {id:'straddle-bl', n:'Straddle back lever', k:'hold', sets:3, v:8, cue:'Legs straight and as wide as the hips allow, body level from shoulders to feet, glutes squeezed.'},
     {id:'full-bl', n:'Full back lever', k:'hold', sets:3, v:8, cue:'Legs together, one level line from head to toes, face down, bar or rings beside the hips, arms locked.'},
+    {id:'german-hang-feet', n:'Supported German hang', k:'hold', sets:2, v:20, cue:'Feet stay on the floor with hands behind you on low rings or a bar. Ease into a comfortable shoulder range and use the feet to control the load.'},
+    {id:'assisted-tuck-bl', n:'Assisted tuck back lever', k:'hold', sets:3, v:10, cue:'A band supports the hips in a tucked back lever. Keep elbows straight and back level; use enough help to hold the position comfortably.'},
+    {id:'assisted-straddle-bl', n:'Assisted straddle back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body face down and level. Record and gradually reduce assistance.'},
+    {id:'assisted-full-bl', n:'Assisted full back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together, body level and elbows straight. Reduce support only while the whole shape stays controlled.'},
   ]},
   flag:{n:'Human flag', p:'Skill', ic:'flag', skill:true, m:'Obliques, lats, shoulders', steps:[
     {id:'side-plank', n:'Side plank', k:'hold', sets:3, v:45, cue:'Elbow directly under the shoulder, straight line from ankles to head, hips high. The base for the flag. Each side.'},
@@ -5095,7 +5180,7 @@ const LADDERS={
     {id:'straddle-flag', n:'Straddle flag', k:'hold', sets:3, v:6, cue:'Legs straight and wide, hips in line with the shoulders, body close to level, chest facing straight ahead.'},
     {id:'human-flag', n:'Human flag', k:'hold', sets:3, v:5, cue:'Legs together, body level and straight out from the pole, bottom arm locked. Each side counts separately.'},
   ]},
-  armbalance:{n:'Arm balances', p:'Skill', ic:'hand', skill:true, m:'Wrists, shoulders, core', steps:[
+  armbalance:{n:'Arm balances', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Wrists, shoulders, core', steps:[
     {id:'frog-stand', n:'Frog stand', k:'hold', sets:3, v:30, cue:'Hands shoulder width a foot’s length in front of the feet, knees on the backs of the upper arms. Lean until the feet float.'},
     {id:'crow-pose', n:'Crow pose', k:'hold', sets:3, v:30, cue:'Knees high on the backs of the upper arms toward the armpits, upper back rounded, eyes a little ahead of the hands.'},
     {id:'crane-pose', n:'Crane pose', k:'hold', sets:3, v:20, cue:'Crow with the arms pressed to straight, knees still high on the arms. Much more pushing strength.'},
@@ -5105,23 +5190,27 @@ const LADDERS={
   press:{n:'Press to handstand', p:'Skill', ic:'hand', skill:true, m:'Shoulders, hip flexors, compression', steps:[
     {id:'pike-compression', n:'Pike compression lift', k:'reps', sets:3, v:10, cue:'Legs straight and together, palms flat beside the knees. Lift both heels without leaning back.'},
     {id:'press-negative', n:'Straddle press negative', k:'reps', sets:3, v:3, cue:'From a handstand, open to a wide straddle and lower the feet slowly, hips high over the hands, shoulders leaning past the fingers.'},
-    {id:'elevated-straddle-press', n:'Elevated straddle press', k:'reps', sets:3, v:3, cue:'Feet on a knee-height box, hands 30 cm in front of it. Shoulders past the fingertips, hips up over the hands, legs up.'},
+    {id:'elevated-straddle-press', n:'Elevated straddle press', k:'reps', sets:3, v:3, cue:'Feet on a stable raised surface, hands in front. Lean and lift without jumping. Record the surface height and lower it gradually as the press becomes controlled.'},
     {id:'straddle-press', n:'Straddle press to handstand', k:'reps', sets:3, v:3, cue:'Feet twice shoulder width, hands between them in line with the toes. Shoulders past the fingertips, hips over the hands, no jump.'},
     {id:'pike-press', n:'Pike press to handstand', k:'reps', sets:3, v:3, cue:'Hands 20 to 30 cm in front of the feet, legs together and straight the whole way up. The hardest press.'},
+    {id:'assisted-straddle-press', n:'Assisted floor straddle press', k:'reps', sets:3, v:3, cue:'A securely anchored overhead band supports the hips as you press from a floor straddle without jumping. Record its setup; reduce assistance gradually.'},
   ]},
-  onearmhs:{n:'One-arm handstand', p:'Skill', ic:'hand', skill:true, m:'Shoulders, wrists, balance', steps:[
+  onearmhs:{n:'One-arm handstand', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Shoulders, wrists, balance', steps:[
     {id:'hs-shoulder-tap', n:'Wall handstand shoulder tap', k:'reps', sets:3, v:10, cue:'Chest to the wall, hands a hand’s length from it. Shift over one hand, arm vertical, and tap that shoulder with the other hand.'},
     {id:'straddle-handstand', n:'Straddle handstand', k:'hold', sets:3, v:30, cue:'Freestanding, legs open evenly wide, hips over the shoulders. A lower centre of mass and the shape a one-arm uses.'},
     {id:'weight-shift-hs', n:'Handstand weight shift', k:'hold', sets:3, v:10, cue:'In a straddle, shift the hips a few centimetres sideways over one hand until the other is on its fingertips.'},
     {id:'fingertip-oahs', n:'Fingertip-assisted one-arm handstand', k:'hold', sets:3, v:10, cue:'Index and middle fingertips of the free hand down a hand’s width out to the side, pressing only to correct.'},
     {id:'oahs', n:'One-arm handstand', k:'hold', sets:3, v:5, cue:'Straddle, planted hand under its shoulder, fingers spread, free arm out to the side. Each side counts separately.'},
   ]},
-  planchepush:{n:'Planche push-up', p:'Skill', ic:'push', skill:true, m:'Shoulders, chest, triceps', steps:[
+  planchepush:{n:'Planche push-up', p:'Skill', ic:'push', skill:true, practice:'strength', m:'Shoulders, chest, triceps', steps:[
     {id:'pseudo-planche-pushup', n:'Pseudo planche push-up', k:'reps', sets:3, v:8, cue:'Hands beside the lower ribs, fingers turned out, shoulders well in front of the hands the whole set.'},
     {id:'tuck-planche-pushup', n:'Tuck planche push-up', k:'reps', sets:3, v:5, cue:'From a tuck planche, elbows close to the ribs down to 90 degrees and back up, the feet never touching.'},
     {id:'adv-tuck-planche-pushup', n:'Advanced tuck planche push-up', k:'reps', sets:3, v:4, cue:'From an advanced tuck planche, back flat and hips level, elbows down to 90 degrees and back.'},
     {id:'straddle-planche-pushup', n:'Straddle planche push-up', k:'reps', sets:3, v:3, cue:'From a straddle planche, body level, elbows close to the ribs down to 90 degrees and back up.'},
     {id:'full-planche-pushup', n:'Full planche push-up', k:'reps', sets:3, v:2, cue:'From a full planche, the body stays straight and level as the elbows bend to 90 degrees and press back. Elite.'},
+    {id:'assisted-tuck-planche-pushup', n:'Assisted tuck planche push-up', k:'reps', sets:3, v:5, cue:'Band supporting the hips in a tuck. Bend and straighten the arms through a controlled range with hips level; reduce support gradually.'},
+    {id:'assisted-straddle-planche-pushup', n:'Assisted straddle planche push-up', k:'reps', sets:3, v:3, cue:'Band supporting the hips, legs straight and wide. Keep the body level during the press and record assistance and depth.'},
+    {id:'assisted-full-planche-pushup', n:'Assisted full planche push-up', k:'reps', sets:3, v:2, cue:'Band supporting the hips, legs together. Use sufficient help for controlled lowering and pressing with a straight body.'},
   ]},
   rings:{n:'Rings', p:'Skill', ic:'dip', skill:true, m:'Chest, shoulders, arms, stability', steps:[
     {id:'ring-support', n:'Ring support hold', k:'hold', sets:3, v:30, cue:'Elbows locked, rings pressed against the sides of the hips, shoulders pushed down from the ears.'},
@@ -5131,6 +5220,10 @@ const LADDERS={
     {id:'false-grip-hang', n:'False-grip hang', k:'hold', sets:3, v:20, cue:'The ring sits across the heel of the hand with the wrist bent over it, fingers closed round. Build the time slowly.'},
     {id:'false-grip-pullup', n:'False-grip pull-up', k:'reps', sets:3, v:5, cue:'Wrist over the ring all the way up; the rings come to the lower chest, then all the way down.'},
     {id:'ring-muscleup', n:'Ring muscle-up', k:'reps', sets:3, v:3, cue:'False grip, rings pulled to the lower chest, chest forward over them as they turn over, rings close to the body, press out.'},
+    {id:'feet-assisted-false-grip-hang', n:'Feet-assisted false-grip hang', k:'hold', sets:3, v:20, cue:'Low rings with the wrist over the ring, feet supported. Gradually put more weight through the hands while keeping the same grip.'},
+    {id:'feet-assisted-ring-dip', n:'Feet-assisted ring dip', k:'reps', sets:3, v:6, cue:'Low rings, feet on the floor or a box. Keep rings close and use the legs only as much as needed to lower and press through a comfortable range.'},
+    {id:'low-ring-transition', n:'Low-ring transition', k:'reps', sets:3, v:5, cue:'Low rings in false grip, feet on the floor. Pull rings to the lower chest, turn over them and press out with measured leg help.'},
+    {id:'assisted-ring-muscleup', n:'Assisted ring muscle-up', k:'reps', sets:3, v:3, cue:'A securely set band or lightly supported feet assist the whole pull, transition and dip. Keep rings close; reduce help without adding a kip.'},
   ]},
   /* What goals need besides strength: range of motion, balance, joints ready for the load, control and technique.
      prep: not hard sets, so they count toward no muscle. q what it builds, when it goes in a session (warm-up first,
@@ -5199,7 +5292,7 @@ const LADDERS={
     {id:'box-pistol', n:'Box pistol', k:'reps', sets:3, v:5, cue:'Back to a box or bench at knee height. Lower on one leg until you sit lightly on it, free leg out in front, then stand without rocking. Per side.'},
     {id:'counterbalance-pistol', n:'Counterbalance pistol', k:'reps', sets:3, v:5, cue:'Full depth on one leg holding 2 to 5 kg at arm’s length in front of your chest. The weight moves your balance forward over the foot. Per side.'},
   ]},
-  hsdrill:{n:'Handstand drills', p:'Skill', ic:'hand', skill:true, q:'technique', m:'Balance, bailing and kicking up', steps:[
+  hsdrill:{n:'Handstand drills', p:'Skill', ic:'hand', skill:true, practice:'balance', q:'technique', m:'Balance, bailing and kicking up', steps:[
     {id:'cartwheel-bail', n:'Cartwheel bail', k:'reps', sets:2, v:5, cue:'Kick up, then lift one hand, turn the hips toward it and let the feet land to that side. Learn it before you need it. Both directions.'},
     {id:'btw-heel-pulls', n:'Back-to-wall heel pulls', k:'reps', sets:3, v:6, cue:'Back-to-wall handstand, hands a hand’s length from the wall. Press the fingertips down until the heels float off the wall, and balance for two seconds.'},
     {id:'kick-up', n:'Kick-up to balance', k:'reps', sets:3, v:5, cue:'Free kick-ups in open space. A rep counts when you arrive stacked and hold two seconds, then step down with control.'},
@@ -5209,11 +5302,265 @@ const LADDERS={
     {id:'muscleup-negative', n:'Muscle-up negative', k:'reps', sets:3, v:3, cue:'From the top with straight arms, lower over five seconds: into the dip, through the transition with the chest over the bar, down to a hang.'},
     {id:'band-muscleup', n:'Band-assisted muscle-up', k:'reps', sets:3, v:3, cue:'A band over the bar under your knees. Full muscle-up, no kip, with the lightest band that lets you finish the set.'},
   ]},
+  weightedpull:{n:'Weighted pull-up', p:'Pull', ic:'pull', like:'pull', m:'Lats, biceps, upper back', steps:[
+    {id:'pullup', n:'Pull-up base', k:'reps', sets:3, v:5, cue:'Start from straight arms and pull the chin over the bar with no swing. Keep this range as you introduce a small external load.'},
+    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Record added load and keep strict full-range reps. Start with a manageable small weight and increase it gradually when sets are repeatable.'},
+  ]},
+  leverrow:{n:'Front lever row strength', p:'Pull', ic:'row', like:'row', m:'Lats, upper back, biceps', steps:[
+    {id:'incline-row', n:'Incline row', k:'reps', sets:3, v:12, cue:'High bar or rings, body straight. Lower the support gradually as full-range rows become controlled.'},
+    {id:'inverted-row', n:'Horizontal row', k:'reps', sets:3, v:10, cue:'Body rigid, bar or rings to the lower chest, lower to straight arms.'},
+    {id:'feet-elevated-row', n:'Feet-elevated row', k:'reps', sets:3, v:10, cue:'Heels on a stable box, body straight. Keep hips level through each row.'},
+    {id:'assisted-tuck-fl-row', n:'Assisted tuck front lever row', k:'reps', sets:3, v:5, cue:'Band supporting the hips, back level and knees tucked. Row without dropping the hips and reduce assistance gradually.'},
+    {id:'tuck-fl-row', n:'Tuck front lever row', k:'reps', sets:3, v:6, cue:'Back level in a tuck front lever. Row toward the stomach with hips steady, then lower the arms fully.'},
+  ]},
+  ringdip:{n:'Ring dip strength', p:'Push', ic:'dip', like:'dip', m:'Chest, triceps, shoulder control', steps:[
+    {id:'ring-support', n:'Ring support hold', k:'hold', sets:3, v:30, cue:'Elbows straight, rings by the hips, shoulders away from the ears.'},
+    {id:'feet-assisted-ring-dip', n:'Feet-assisted ring dip', k:'reps', sets:3, v:6, cue:'Low rings, supported feet. Keep rings close and reduce leg help through a consistent controlled range.'},
+    {id:'ring-dip', n:'Ring dip', k:'reps', sets:3, v:8, cue:'Rings close to the ribs, controlled depth and full lockout. Build this component alongside false-grip and transition practice.'},
+  ]},
+  bardip:{n:'Straight-bar dip strength', p:'Push', ic:'dip', like:'dip', m:'Chest, triceps, front delts', steps:[
+    {id:'feet-assisted-straight-bar-dip', n:'Feet-assisted straight-bar dip', k:'reps', sets:3, v:6, cue:'Low fixed bar, feet supported. Lean the chest over the bar and lower through a comfortable range; use leg help only as needed.'},
+    {id:'straight-bar-dip', n:'Straight-bar dip', k:'reps', sets:3, v:8, cue:'Keep the chest over the bar, elbows back. Lower to a controlled depth and press to straight arms without a kick.'},
+  ]},
 };
+/* Exercise IDs define routes; stored rung indices above remain stable for old saves.
+   A route is a practical training choice, not proof that every step is necessary or harder for everyone. */
+const LADDER_PATHS={
+  pull:[
+    {key:'bilateral', name:'Pull-up and added load', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','weighted-pullup']},
+    {key:'unilateral', name:'Toward one arm', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','assisted-archer-pullup','archer-pullup','assisted-oap','oap']},
+  ],
+  row:[
+    {key:'row', name:'Rows toward one arm', steps:['incline-row','inverted-row','feet-elevated-row','assisted-archer-row','archer-row','incline-one-arm-row','one-arm-row']},
+    {key:'lever-row', name:'Front lever rows', steps:['incline-row','inverted-row','feet-elevated-row','assisted-tuck-fl-row','tuck-fl-row']},
+  ],
+  dip:[{key:'dip', name:'Dips and added load', steps:['support-hold','negative-dip','band-dip','dip','weighted-dip']}],
+  pushh:[
+    {key:'unilateral', name:'Push-up toward one arm', steps:['wall-pushup','incline-pushup','pushup','archer-pushup','incline-one-arm-pushup','assisted-one-arm-pushup','one-arm-pushup']},
+    {key:'standard', name:'Standard push-up base', steps:['wall-pushup','incline-pushup','knee-pushup','pushup','diamond-pushup']},
+    {key:'planche-press', name:'Leaned pressing', steps:['wall-pushup','incline-pushup','pushup','pseudo-planche-pushup']},
+  ],
+  pushv:[
+    {key:'press', name:'Overhead pressing', steps:['incline-pike-pushup','pike-pushup','elevated-pike-pushup','partial-wall-hspu','wall-hspu','freestanding-hspu']},
+    {key:'support', name:'Inverted support', steps:['wall-handstand-hold']},
+  ],
+  legs:[
+    {key:'pistol', name:'Pistol squat', steps:['assisted-squat','bodyweight-squat','split-squat','bulgarian-split-squat','box-pistol','assisted-pistol','counterbalance-pistol','pistol-squat']},
+    {key:'shrimp', name:'Shrimp squat', steps:['assisted-squat','bodyweight-squat','split-squat','bulgarian-split-squat','assisted-shrimp-squat','shrimp-squat']},
+  ],
+  hinge:[
+    {key:'knee-flexion', name:'Hamstring curls toward Nordic', steps:['sliding-hamstring-curl','assisted-nordic-curl','partial-nordic-curl','nordic-curl']},
+    {key:'eccentric', name:'Nordic lowering practice', steps:['sliding-hamstring-curl','nordic-negative','assisted-nordic-curl','nordic-curl']},
+    {key:'hip-extension', name:'Hip extension', steps:['glute-bridge','single-leg-glute-bridge']},
+    {key:'back-extension', name:'Back extension', steps:['back-extension-hold']},
+  ],
+  core:[{key:'support', name:'Core and supported leg holds', steps:['dead-bug','hollow-hold','tuck-lsit','one-leg-lsit','lsit','vsit']}],
+  handstand:[{key:'balance', name:'Handstand balance', steps:['wall-plank','chest-to-wall-handstand','heel-pulls','freestanding-handstand']}],
+  frontlever:[
+    {key:'straddle', name:'Front lever via straddle', steps:['assisted-tuck-fl','tuck-fl','adv-tuck-fl','assisted-straddle-fl','straddle-fl','assisted-full-fl','full-fl']},
+    {key:'half-lay', name:'Front lever via half-lay', steps:['assisted-tuck-fl','tuck-fl','adv-tuck-fl','half-lay-fl','assisted-full-fl','full-fl']},
+  ],
+  planche:[{key:'assisted', name:'Planche with assisted bridges', steps:['planche-lean','assisted-tuck-planche','tuck-planche','adv-tuck-planche','assisted-straddle-planche','straddle-planche','assisted-full-planche','full-planche']}],
+  muscleup:[
+    {key:'whole', name:'Strict muscle-up with decreasing assistance', steps:['chest-to-bar','explosive-pullup','band-muscleup','strict-muscleup']},
+    {key:'transition', name:'Transition and whole movement', steps:['low-bar-transition','jumping-muscleup','band-muscleup','strict-muscleup']},
+    {key:'dip', name:'Straight-bar dip component', steps:['straight-bar-dip']},
+  ],
+  pullvar:[
+    {key:'wide', name:'Wide grip', steps:['wide-pullup']},
+    {key:'commando', name:'Commando grip', steps:['commando-pullup']},
+    {key:'lsit', name:'L-sit pulling', steps:['lsit-pullup']},
+    {key:'typewriter', name:'Typewriter pulling', steps:['typewriter-pullup']},
+    {key:'power', name:'Explosive release', steps:['clapping-pullup']},
+  ],
+  plyopush:[
+    {key:'clap', name:'Explosive pressing', steps:['explosive-incline-pushup','clap-pushup','double-clap-pushup']},
+    {key:'behind', name:'Behind-back coordination', steps:['clap-pushup','double-clap-pushup','behind-back-clap-pushup']},
+    {key:'superman', name:'Whole-body release', steps:['explosive-incline-pushup','clap-pushup','superman-pushup']},
+  ],
+  tri:[
+    {key:'extension', name:'Bodyweight triceps extension', steps:['bw-tricep-ext-high','bw-tricep-ext-low']},
+    {key:'sphinx', name:'Sphinx pressing', steps:['sphinx-pushup']},
+    {key:'bench', name:'Bench dip variation', steps:['bench-dip']},
+    {key:'tiger', name:'Tiger bend skill', steps:['tiger-bend']},
+  ],
+  curl:[
+    {key:'curl', name:'Bodyweight curls', steps:['bw-curl-incline','bw-curl']},
+    {key:'chin', name:'Chin-ups and added load', steps:['chin-up','weighted-chin-up']},
+  ],
+  grip:[
+    {key:'one-arm', name:'Grip toward one arm', steps:['dead-hang','assisted-one-arm-hang','one-arm-hang']},
+    {key:'towel', name:'Towel grip', steps:['dead-hang','towel-hang']},
+  ],
+  jump:[
+    {key:'vertical', name:'Vertical jump output', steps:['squat-jump']},
+    {key:'tuck', name:'Tuck-jump coordination', steps:['squat-jump','tuck-jump']},
+    {key:'horizontal', name:'Broad jump output', steps:['broad-jump']},
+    {key:'box', name:'Box jump and landing', steps:['box-jump']},
+    {key:'reactive', name:'Reactive jumping', steps:['depth-jump']},
+  ],
+  lunge:[
+    {key:'lunge', name:'Lunges', steps:['reverse-lunge','bw-walking-lunge']},
+    {key:'lateral', name:'Lateral squatting', steps:['lateral-lunge','cossack-squat']},
+    {key:'skater', name:'Skater squat', steps:['skater-squat']},
+  ],
+  knee:[
+    {key:'sissy', name:'Sissy squat', steps:['assisted-sissy-squat','sissy-squat']},
+    {key:'reverse-nordic', name:'Reverse Nordic', steps:['partial-reverse-nordic','reverse-nordic']},
+    {key:'dragon', name:'Dragon squat coordination', steps:['dragon-squat']},
+  ],
+  calf:[
+    {key:'load', name:'Calf raises and added load', steps:['bw-calf-raise','single-leg-calf-raise','weighted-calf-raise']},
+    {key:'range', name:'Controlled calf range', steps:['bw-calf-raise','single-leg-calf-raise','deficit-calf-raise']},
+  ],
+  legraise:[
+    {key:'raise', name:'Leg raises', steps:['lying-leg-raise','hanging-knee-raise','hanging-leg-raise','toes-to-bar']},
+    {key:'rotation', name:'Hanging rotation', steps:['toes-to-bar','windshield-wiper']},
+  ],
+  dragonflag:[
+    {key:'strength', name:'Dragon flag with shorter levers', steps:['reverse-crunch','tuck-dragon-flag','one-leg-dragon-flag','dragon-flag']},
+    {key:'negative', name:'Dragon flag lowering', steps:['reverse-crunch','tuck-dragon-flag','dragon-flag-negative']},
+  ],
+  sidecore:[
+    {key:'side-plank', name:'Side support', steps:['side-plank','star-side-plank']},
+    {key:'adductors', name:'Copenhagen adductor loading', steps:['short-copenhagen','copenhagen-plank']},
+  ],
+  abwheel:[{key:'range', name:'Rollouts with measured range', steps:['short-rollout','kneeling-rollout','standing-rollout-wall','standing-rollout']}],
+  bridge:[
+    {key:'bridge', name:'Bridge skill', steps:['table-bridge','full-bridge','wall-walk-bridge','stand-to-stand-bridge']},
+    {key:'straight', name:'Straight bridge support', steps:['straight-bridge']},
+  ],
+  backlever:[{key:'assisted', name:'Back lever with supported entry', steps:['german-hang-feet','german-hang','skin-the-cat','assisted-tuck-bl','tuck-bl','adv-tuck-bl','assisted-straddle-bl','straddle-bl','assisted-full-bl','full-bl']}],
+  flag:[{key:'flag', name:'Human flag', steps:['side-plank','vertical-flag','tuck-flag','straddle-flag','human-flag']}],
+  armbalance:[
+    {key:'crow', name:'Crow and crane', steps:['frog-stand','crow-pose','crane-pose']},
+    {key:'elbow', name:'Elbow lever', steps:['elbow-lever','one-arm-elbow-lever']},
+  ],
+  press:[
+    {key:'press', name:'Press with decreasing height and assistance', steps:['pike-compression','elevated-straddle-press','assisted-straddle-press','straddle-press','pike-press']},
+    {key:'negative', name:'Press lowering practice', steps:['pike-compression','press-negative']},
+  ],
+  onearmhs:[{key:'balance', name:'One-arm balancing', steps:['hs-shoulder-tap','straddle-handstand','weight-shift-hs','fingertip-oahs','oahs']}],
+  planchepush:[{key:'assisted', name:'Planche pressing with assisted bridges', steps:['pseudo-planche-pushup','assisted-tuck-planche-pushup','tuck-planche-pushup','adv-tuck-planche-pushup','assisted-straddle-planche-pushup','straddle-planche-pushup','assisted-full-planche-pushup','full-planche-pushup']}],
+  rings:[
+    {key:'dip', name:'Ring support and dip', steps:['ring-support','feet-assisted-ring-dip','ring-dip']},
+    {key:'muscle-up', name:'False grip, transition and whole movement', steps:['feet-assisted-false-grip-hang','false-grip-hang','false-grip-pullup','low-ring-transition','assisted-ring-muscleup','ring-muscleup']},
+    {key:'turnout', name:'Turned-out support', steps:['ring-support','rto-support']},
+    {key:'push-up', name:'Ring push-up', steps:['ring-pushup']},
+  ],
+  pistoldrill:[
+    {key:'box', name:'Pistol depth', steps:['box-pistol','counterbalance-pistol']},
+    {key:'assistance', name:'Pistol assistance', steps:['assisted-pistol','counterbalance-pistol']},
+  ],
+  hsdrill:[
+    {key:'entry', name:'Handstand entry and exit', steps:['cartwheel-bail','kick-up']},
+    {key:'balance', name:'Wall balance drill', steps:['btw-heel-pulls']},
+  ],
+  mudrill:[
+    {key:'whole', name:'Transition into assisted whole movement', steps:['low-bar-transition','band-muscleup']},
+    {key:'negative', name:'Muscle-up lowering', steps:['muscleup-negative']},
+  ],
+  weightedpull:[{key:'weighted', name:'Pull-up with increasing load', steps:['pullup','weighted-pullup']}],
+  leverrow:[{key:'lever-row', name:'Rows toward tuck front lever', steps:['incline-row','inverted-row','feet-elevated-row','assisted-tuck-fl-row','tuck-fl-row']}],
+  ringdip:[{key:'dip', name:'Ring dip strength', steps:['ring-support','feet-assisted-ring-dip','ring-dip']}],
+  bardip:[{key:'dip', name:'Straight-bar dip strength', steps:['feet-assisted-straight-bar-dip','straight-bar-dip']}],
+};
+/* Reproducible difficulty matters as much as the rep count. No band colour or
+   measured distance is a universal readiness threshold. Field values describe this user's setup. */
+const LADDER_SETUP_FIELDS={
+  band:[{key:'band',label:'Band / assistance',type:'text',hint:'Brand, band identity and how much help. Colour alone differs between brands.'},{key:'anchor',label:'Assistance setup',type:'text',hint:'Anchor height, band length and where it supports you. Keep this reproducible.'}],
+  incline:[{key:'height',label:'Hand support height',type:'number',unit:'cm',min:0,step:1},{key:'stance',label:'Body and foot position',type:'text',hint:'Record heel position, bar or ring height and any assistance.'}],
+  box:[{key:'height',label:'Box / target height',type:'number',unit:'cm',min:0,step:1},{key:'support',label:'Support and range',type:'text',hint:'Record foot position, hand help and the endpoint used.'}],
+  lean:[{key:'lean',label:'Shoulders past wrists',type:'number',unit:'cm',min:0,step:0.5},{key:'position',label:'Hand and foot setup',type:'text',hint:'Same hand orientation, foot position and body line. A side video helps reproduce it.'}],
+  load:[{key:'load',label:'Added load',type:'number',unit:'kg',min:0,step:0.5}],
+  weighted:[{key:'load',label:'Added load',type:'number',unit:'kg',min:0.1,step:0.5}],
+  support:[{key:'support',label:'Assistance / support setup',type:'text',hint:'Describe support, grip position and help used. Reduce one aspect at a time.'}],
+  range:[{key:'range',label:'Range / target distance',type:'number',unit:'cm',min:0,step:1},{key:'position',label:'Position and endpoint',type:'text',hint:'Use the same starting position and endpoint to compare sessions.'}],
+  power:[{key:'target',label:'Jump target / box height',type:'number',unit:'cm',min:0,step:1},{key:'standard',label:'Output and landing standard',type:'text',hint:'Use a repeatable reach marker, distance line or landing shape. A high box alone does not measure jump power.'}],
+};
+const LADDER_STEP_OPTIONS={
+  'band-pullup':{setup:LADDER_SETUP_FIELDS.band},
+  'band-dip':{setup:LADDER_SETUP_FIELDS.band},
+  'weighted-pullup':{setup:LADDER_SETUP_FIELDS.weighted,volume:'pullup'},
+  'weighted-dip':{setup:LADDER_SETUP_FIELDS.weighted,volume:'dip'},
+  'weighted-chin-up':{setup:LADDER_SETUP_FIELDS.weighted,volume:'chin-up'},
+  'weighted-calf-raise':{setup:LADDER_SETUP_FIELDS.weighted,volume:'single-leg-calf-raise'},
+  'assisted-archer-pullup':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-oap':{setup:[{key:'supportHeight',label:'Assisting hand below bar',type:'number',unit:'cm',min:0,step:1},...LADDER_SETUP_FIELDS.support]},
+  'assisted-one-arm-hang':{setup:[{key:'supportHeight',label:'Assisting hand below bar',type:'number',unit:'cm',min:0,step:1},...LADDER_SETUP_FIELDS.support]},
+  'incline-row':{setup:LADDER_SETUP_FIELDS.incline},
+  'inverted-row':{setup:LADDER_SETUP_FIELDS.incline},
+  'feet-elevated-row':{setup:LADDER_SETUP_FIELDS.box},
+  'assisted-archer-row':{setup:LADDER_SETUP_FIELDS.incline},
+  'archer-row':{setup:LADDER_SETUP_FIELDS.incline},
+  'incline-one-arm-row':{setup:LADDER_SETUP_FIELDS.incline},
+  'one-arm-row':{setup:LADDER_SETUP_FIELDS.incline},
+  'assisted-tuck-fl-row':{setup:LADDER_SETUP_FIELDS.band},
+  'incline-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'incline-one-arm-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'assisted-one-arm-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'pseudo-planche-pushup':{setup:LADDER_SETUP_FIELDS.lean},
+  'planche-lean':{setup:LADDER_SETUP_FIELDS.lean},
+  'elevated-pike-pushup':{setup:LADDER_SETUP_FIELDS.box,volume:'pike-pushup'},
+  'incline-pike-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'partial-wall-hspu':{setup:LADDER_SETUP_FIELDS.box},
+  'box-pistol':{setup:LADDER_SETUP_FIELDS.box},
+  'assisted-pistol':{setup:LADDER_SETUP_FIELDS.support},
+  'counterbalance-pistol':{setup:[...LADDER_SETUP_FIELDS.load,{key:'reach',label:'Counterweight reach',type:'text',hint:'Keep the same arm position and object.'}]},
+  'assisted-shrimp-squat':{setup:LADDER_SETUP_FIELDS.box},
+  'sliding-hamstring-curl':{setup:LADDER_SETUP_FIELDS.range},
+  'nordic-negative':{setup:LADDER_SETUP_FIELDS.range},
+  'assisted-nordic-curl':{setup:LADDER_SETUP_FIELDS.band},
+  'partial-nordic-curl':{setup:LADDER_SETUP_FIELDS.box},
+  'assisted-tuck-fl':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-straddle-fl':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-full-fl':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-tuck-planche':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-straddle-planche':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-full-planche':{setup:LADDER_SETUP_FIELDS.band},
+  'band-muscleup':{setup:LADDER_SETUP_FIELDS.band},
+  'jumping-muscleup':{setup:LADDER_SETUP_FIELDS.box},
+  'low-bar-transition':{setup:LADDER_SETUP_FIELDS.support},
+  'explosive-pullup':{practice:'power',setup:[{key:'height',label:'Pull height standard',type:'text',hint:'Record the bar contact point. Stop when height or control drops.'}]},
+  'clapping-pullup':{practice:'power'},
+  'explosive-incline-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'bw-tricep-ext-high':{setup:LADDER_SETUP_FIELDS.incline},
+  'bw-tricep-ext-low':{setup:LADDER_SETUP_FIELDS.incline},
+  'bw-curl-incline':{setup:LADDER_SETUP_FIELDS.incline},
+  'bw-curl':{setup:LADDER_SETUP_FIELDS.incline},
+  'squat-jump':{setup:LADDER_SETUP_FIELDS.power},
+  'broad-jump':{setup:LADDER_SETUP_FIELDS.power},
+  'box-jump':{setup:LADDER_SETUP_FIELDS.power},
+  'depth-jump':{setup:LADDER_SETUP_FIELDS.power},
+  'assisted-sissy-squat':{setup:LADDER_SETUP_FIELDS.support},
+  'partial-reverse-nordic':{setup:LADDER_SETUP_FIELDS.range},
+  'short-rollout':{setup:LADDER_SETUP_FIELDS.range},
+  'standing-rollout-wall':{setup:LADDER_SETUP_FIELDS.range},
+  'german-hang-feet':{setup:LADDER_SETUP_FIELDS.support},
+  'assisted-tuck-bl':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-straddle-bl':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-full-bl':{setup:LADDER_SETUP_FIELDS.band},
+  'elevated-straddle-press':{setup:LADDER_SETUP_FIELDS.box},
+  'assisted-straddle-press':{setup:LADDER_SETUP_FIELDS.band},
+  'fingertip-oahs':{setup:LADDER_SETUP_FIELDS.support},
+  'assisted-tuck-planche-pushup':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-straddle-planche-pushup':{setup:LADDER_SETUP_FIELDS.band},
+  'assisted-full-planche-pushup':{setup:LADDER_SETUP_FIELDS.band},
+  'ring-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'feet-assisted-false-grip-hang':{setup:LADDER_SETUP_FIELDS.support},
+  'feet-assisted-ring-dip':{setup:LADDER_SETUP_FIELDS.support},
+  'feet-assisted-straight-bar-dip':{setup:LADDER_SETUP_FIELDS.support},
+  'low-ring-transition':{setup:LADDER_SETUP_FIELDS.support},
+  'assisted-ring-muscleup':{setup:LADDER_SETUP_FIELDS.band},
+};
+Object.values(LADDERS).forEach(L=>L.steps.forEach(st=>{
+  Object.assign(st,{entry:st.k==='hold'?5:1,practice:L.practice||(L.q==='balance'?'balance':'strength')},LADDER_STEP_OPTIONS[st.id]||{});
+  if(st.practice==='power') st.cue+=' Reset between reps; count only reps that keep output and a controlled landing. Stop the set when either declines.';
+}));
 const LADDER_ORDER=['pull','row','dip','pushh','pushv','legs','hinge','core','handstand','frontlever','planche','muscleup',
   'pullvar','plyopush','tri','curl','grip','jump','lunge','knee','calf','legraise','dragonflag','sidecore','abwheel','bridge',
   'backlever','flag','armbalance','press','onearmhs','planchepush','rings',
-  'pistoldrill','hsdrill','mudrill','ankle','wrist','scap','overhead','shoulderext','balance','landing','compression','pike','straddle','hipflex'];
+  'pistoldrill','hsdrill','mudrill','ankle','wrist','scap','overhead','shoulderext','balance','landing','compression','pike','straddle','hipflex','weightedpull','leverrow','ringdip','bardip'];
 const PATTERNS=['Pull','Push','Legs','Core','Arms','Skill','Prep'];
 /* What each piece of prep builds, and where it goes in a session. */
 const QN={mobility:'Mobility', active:'Active range', joints:'Joint prep', control:'Control', balance:'Balance', technique:'Technique', strength:'Strength'};
@@ -5225,7 +5572,7 @@ const SUPPORT={pull:['row','core'], row:['pull'], dip:['pushh'], pushh:['core'],
   pullvar:['pull','core'], plyopush:['pushh'], tri:['dip'], curl:['row'], grip:['pull'], jump:['legs'], lunge:['legs'], knee:['legs'],
   calf:['jump'], legraise:['core'], dragonflag:['core'], sidecore:['core'], abwheel:['core'], bridge:['hinge'], backlever:['dip','core'],
   flag:['sidecore','pull'], armbalance:['core'], press:['handstand','core'], onearmhs:['handstand'], planchepush:['planche','pushh'], rings:['dip','pull'],
-  pistoldrill:['legs'], hsdrill:['handstand'], mudrill:['pull','dip']};
+  pistoldrill:['legs'], hsdrill:['handstand'], mudrill:['pull','dip'], weightedpull:['row','core'], leverrow:['pull','core'], ringdip:['dip'], bardip:['dip']};
 /* Your own ladders (state.custom) are added to LADDERS and LADDER_ORDER when the data loads. Each one borrows
    the library tab, icon, support work and muscles of the standard ladder it is most like. */
 function registerCustom(list){
@@ -5253,58 +5600,59 @@ const GOALS={
   muscleup:{n:'Strict muscle-up', l:'muscleup', r:4, std:1, sup:['pull','dip'], why:'A high pull, a clean transition and a dip, in one move.'},
   frontlever:{n:'Full front lever, 5 s', l:'frontlever', r:4, std:5, sup:['pull','core'], why:'Straight-body hold under the bar. Lats and core, and patience.'},
   tuckplanche:{n:'Tuck planche, 10 s', l:'planche', r:1, std:10, sup:['pushh','core'], why:'The first real planche. Wrists and elbows set the pace.'},
-  straddleplanche:{n:'Straddle planche, 5 s', l:'planche', r:3, std:5, sup:['pushh','core'], why:'A multi-year goal. Progress slowly; tendons adapt slower than muscle.'},
+  straddleplanche:{n:'Straddle planche, 5 s', l:'planche', r:3, std:5, sup:['pushh','core'], why:'A demanding straight-arm strength goal. Build leverage and exposure gradually.'},
   lsit:{n:'L-sit, 20 s', l:'core', r:4, std:20, sup:['dip'], why:'Compression and shoulder strength, and a gateway to V-sits.'},
   pistol:{n:'Pistol squat', l:'legs', r:5, std:1, sup:['hinge'], why:'Full-depth single-leg squat without holding on to anything.'},
   nordic:{n:'Nordic curl', l:'hinge', r:4, std:1, sup:['legs'], why:'Lower all the way and pull back up with the hamstrings alone.'},
   typewriter:{n:'Typewriter pull-up, 5 reps', l:'pullvar', r:3, std:5, sup:['pull'], why:'Side-to-side strength at the top of the bar, and a big step toward one arm.'},
   lsitpull:{n:'L-sit pull-up, 5 reps', l:'pullvar', r:2, std:5, sup:['pull','core'], why:'Pulling with the legs held out: back and abs at once.'},
-  clappush:{n:'10 clap push-ups', l:'plyopush', r:1, std:10, sup:['pushh'], why:'Power, not just strength. Fast pressing that carries over to sport.'},
+  clappush:{n:'10 controlled clap push-ups', l:'plyopush', r:1, std:10, sup:['pushh'], why:'A power endurance goal: count only reps that maintain height and a controlled landing.'},
   tigerbend:{n:'Tiger bend push-up', l:'tri', r:4, std:1, sup:['dip','handstand'], why:'A rare triceps feat from a handstand to the forearms and back.'},
   bwcurl:{n:'12 horizontal bodyweight curls', l:'curl', r:1, std:12, sup:['row'], why:'Real biceps work with no weights, on a bar or rings.'},
   oahang:{n:'One-arm dead hang, 20 s', l:'grip', r:3, std:20, sup:['pull'], why:'Grip and shoulder strength every bar skill leans on.'},
-  boxjump:{n:'Box jump, 5 in a row', l:'jump', r:3, std:5, sup:['legs'], why:'Leg power: jump high, land soft.'},
+  boxjump:{n:'Box jump, 5 controlled reps', l:'jump', r:3, std:5, sup:['legs'], why:'Keep a consistent box height and landing shape. Box height alone is not a measure of jump power.'},
   cossack:{n:'Cossack squat, 10 each side', l:'lunge', r:3, std:10, sup:['legs'], why:'Deep single-leg strength side to side, with hip mobility built in.'},
-  skater:{n:'Skater squat', l:'lunge', r:4, std:1, sup:['legs','hinge'], why:'A one-leg squat that’s kinder to the hips than a pistol.'},
+  skater:{n:'Skater squat', l:'lunge', r:4, std:1, sup:['legs','hinge'], why:'A single-leg squat with the free knee behind you, trained through a controlled depth.'},
   sissy:{n:'10 sissy squats', l:'knee', r:1, std:10, sup:['legs'], why:'Quads and knees strong through their whole range.'},
-  revnordic:{n:'Full reverse Nordic, 5 reps', l:'knee', r:3, std:5, sup:['legs'], why:'Quads loaded long. Good armour for the knees.'},
+  revnordic:{n:'Full reverse Nordic, 5 reps', l:'knee', r:3, std:5, sup:['legs'], why:'Quad strength through a long position. Increase the range gradually.'},
   calf25:{n:'25 single-leg calf raises', l:'calf', r:1, std:25, sup:[], why:'Full-range calf strength, one leg at a time.'},
   t2b:{n:'10 strict toes-to-bar', l:'legraise', r:3, std:10, sup:['pull'], why:'Abs, hip flexors and grip, with no swing.'},
   dragonflag:{n:'Dragon flag, 5 reps', l:'dragonflag', r:4, std:5, sup:['core'], why:'The classic straight-body core move.'},
-  copenhagen:{n:'Copenhagen plank, 30 s', l:'sidecore', r:3, std:30, sup:['core'], why:'Obliques and inner thighs. Well supported for groin injury prevention.'},
+  copenhagen:{n:'Copenhagen plank, 30 s', l:'sidecore', r:3, std:30, sup:['core'], why:'Oblique and adductor strength. Start with knee support before increasing the lever.'},
   abwheel:{n:'Standing ab wheel rollout', l:'abwheel', r:3, std:1, sup:['core'], why:'All the way out from your feet and back.'},
   bridge:{n:'Stand-to-stand bridge', l:'bridge', r:4, std:1, sup:['hinge'], why:'A mobile, strong spine: arch back to your hands and stand up again.'},
   tuckbl:{n:'Tuck back lever, 10 s', l:'backlever', r:2, std:10, sup:['dip','core'], why:'The first real back lever, and shoulders that tolerate it.'},
-  backlever:{n:'Full back lever, 5 s', l:'backlever', r:5, std:5, sup:['dip','core'], why:'Usually the first full lever people get. Go slowly on the biceps.'},
+  backlever:{n:'Full back lever, 5 s', l:'backlever', r:5, std:5, sup:['dip','core'], why:'A demanding face-down straight-arm hold. Build supported range and assistance gradually.'},
   humanflag:{n:'Human flag, 5 s', l:'flag', r:4, std:5, sup:['sidecore','pull'], why:'Side strength on a pole, one side at a time.'},
   crow:{n:'Crow pose, 30 s', l:'armbalance', r:1, std:30, sup:['core'], why:'The first arm balance. Mostly balance, a little strength.'},
   elbowlever:{n:'Elbow lever, 20 s', l:'armbalance', r:3, std:20, sup:['core'], why:'Level on your hands with the elbows in your hips.'},
   press:{n:'Straddle press to handstand', l:'press', r:3, std:1, sup:['handstand','core'], why:'Lift into a handstand from the floor, no jump.'},
   oahs:{n:'One-arm handstand, 5 s', l:'onearmhs', r:4, std:5, sup:['handstand'], why:'The long game of hand balancing. Years for most people.'},
-  planchepu:{n:'Full planche push-up', l:'planchepush', r:4, std:1, sup:['planche','pushh'], why:'Elite pushing strength. Tendons set the pace.'},
+  planchepu:{n:'Full planche push-up', l:'planchepush', r:4, std:1, sup:['planche','pushh'], why:'Advanced pressing strength with a long straight-body lever. Reduce assistance gradually.'},
   ringdip10:{n:'10 ring dips', l:'rings', r:3, std:10, sup:['dip'], why:'Dips on moving rings: much more stability than bars.'},
   ringmu:{n:'Ring muscle-up', l:'rings', r:6, std:1, sup:['pull','dip'], why:'False grip, a high pull, a turn and a dip. The gymnast version.'},
+  weightedpull:{n:'5 controlled weighted pull-ups', l:'weightedpull', r:1, std:5, sup:['row','core'], why:'Choose and record a manageable added load. Build strict reps, then increase that load gradually.'},
 };
 const GOAL_ORDER=Object.keys(GOALS);
 /* How hard each goal is, and roughly how long it takes someone who trains for it regularly. */
 const GOAL_LV={pullup1:1, pullup10:2, oapu:4, pushup20:1, oapush:3, dip10:2, hspu:3, handstand:2, muscleup:3, frontlever:4, tuckplanche:3,
   straddleplanche:4, lsit:2, pistol:2, nordic:3, typewriter:3, lsitpull:2, clappush:1, tigerbend:4, bwcurl:1, oahang:3, boxjump:1, cossack:1,
   skater:2, sissy:2, revnordic:2, calf25:1, t2b:2, dragonflag:3, copenhagen:2, abwheel:3, bridge:3, tuckbl:2, backlever:3, humanflag:4, crow:1,
-  elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3};
+  elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3, weightedpull:2};
 const LV_N=['','Beginner','Intermediate','Advanced','Elite'], LV_T=['','a few weeks','a few months','6 to 12 months','a year or more'];
 const CAT_N={Pull:'Pulling', Push:'Pushing', Legs:'Legs', Core:'Core', Arms:'Arms', Skill:'Skills'};
 const STARTERS=['pullup1','pushup20','crow'];
 /* ==================== WHAT A GOAL TAKES ====================
    A goal is more than its own ladder. need: the other qualities it rests on, each a standard on some ladder:
    [ladder, rung, at least (default: the rung's target), what it builds (default: the ladder's own)].
-   A need is in place once you are past that rung, have done it at that standard, or have done a harder rung of
-   that ladder at its target. Until then the app schedules it; afterwards it stops. takes: why, in plain words.
+   A need requires recent performance of its own standard or a specific user confirmation. Missing needs
+   get building work; confirmed needs retain lighter maintenance. takes: why, in plain words.
    ev: the evidence behind it. Your own goals borrow from the standard goal nearest them on the same ladder. */
 const GOAL_NEEDS={
   pullup1:{need:[['core',1,30,'control']], ev:['qualities'],
     takes:'A first pull-up is strength relative to body weight: the lats, biceps and the muscles that pull the shoulder blades down have to lift all of you from a dead hang. Negatives and bands build that strength, and rows add pulling work you can do for more reps. A hollow body stops the legs swinging, which wastes force and turns the rep into a kip. Body mass counts too: the same strength has less to lift.'},
   pullup10:{need:[['core',1,30,'control'],['grip',0,60,'strength']], ev:['qualities','failure'],
-    takes:'Ten strict reps is strength endurance as much as strength. A set lasts 30 seconds or more under load, so the grip has to outlast the lats; a minute-long dead hang covers it. Pulling volume across the week, taken close to failure, is what moves the number, and the hollow body keeps every rep strict.'},
+    takes:'Ten strict reps needs pulling strength, endurance and a grip that lasts the set. Hollow holds and dead hangs are useful supporting checks, but neither duration guarantees ten pull-ups. Build repeatable pulling volume without exhausting every set, and test the actual strict pull-up.'},
   oapu:{need:[['grip',3,20,'strength'],['sidecore',0,45,'control'],['pullvar',3,4,'strength']], ev:['qualities','tendon'],
     takes:'One arm lifts your whole weight while the body tries to spin around it. That takes a one-arm grip you can hang from, a trunk stiff enough to stop the rotation (a long side plank is the simple measure), and one-sided strength at every height of the pull, which typewriter and archer pull-ups build. Expect years: the elbow tendons adapt more slowly than the muscles do.'},
   pushup20:{need:[['core',1,30,'control'],['scap',0,12]], ev:['qualities','scap'],
@@ -5317,10 +5665,10 @@ const GOAL_NEEDS={
     takes:'Pressing your weight overhead needs the arms to reach fully overhead with the ribs down. Short of that, the lower back arches to make up the angle, which wastes force and loads the spine. It also needs wrists ready for about 90 degrees of extension under full body weight, shoulders that push tall at the top (handstand shrugs), and a hollow line held through every rep.'},
   handstand:{need:[['wrist',2,12],['overhead',1,10],['scap',2,8],['core',1,45,'control'],['hsdrill',2,5,'technique']], ev:['balance','wrists','practice'],
     takes:'A handstand is a balance skill first. Studies of how people hold one find most of the fine control comes from the wrists and fingers: pressing the fingertips stops a fall toward your back, pushing through the heels of the hands stops a fall the other way. That needs wrists conditioned for 90 degrees of loaded extension, full overhead range so you can stack without arching, a hollow body and shoulders pushing tall. Balance practice transfers poorly between tasks, so it is trained on the hands, little and often, with a safe bail learned first.'},
-  muscleup:{need:[['pull',4,12,'strength'],['dip',3,12,'strength'],['mudrill',1,3,'technique'],['shoulderext',0,30]], ev:['qualities','parts'],
-    takes:'A strict muscle-up joins a pull high enough to bring the bar to your lower chest, a fast transition over the bar, and a deep dip that starts with the shoulders behind the body. The usual coaching standard before trying one is about 12 strict pull-ups and 12 dips. The transition is its own skill, best practised alone with low-bar drills and slow negatives, and the bottom of the straight-bar dip needs shoulder extension range.'},
-  frontlever:{need:[['pull',4,12,'strength'],['core',1,60,'control'],['row',3,6,'strength']], ev:['leverage','qualities'],
-    takes:'The front lever is straight-arm pulling: the lats press the arms down toward the hips to hold the body level. Bent-arm strength (a dozen pull-ups) and tuck front lever rows build the muscle, and a minute-long hollow hold builds the trunk stiffness that stops the hips sagging as the lever lengthens. Height matters too: a taller body is a longer lever.'},
+  muscleup:{need:[['pull',4,12,'strength'],['bardip',1,8,'strength'],['mudrill',2,3,'technique'],['shoulderext',0,30]], ev:['qualities','parts'],
+    takes:'A strict muscle-up combines a high pull, transition over the bar and straight-bar dip. Pull-up and dip counts are coaching capacity checks, not a guarantee or a universal minimum. Train the straight-bar dip independently, drill the transition on a low bar, and practise band-assisted whole muscle-ups with recorded assistance. Reduce help while keeping the same range and no kip.'},
+  frontlever:{need:[['pull',4,12,'strength'],['core',1,60,'control'],['leverrow',4,6,'strength']], ev:['leverage','qualities'],
+    takes:'The front lever requires straight-arm pulling and trunk control at a particular leverage. Pull-ups and front-lever rows provide complementary strength work, while assisted lever holds train the actual shape. Their listed counts are useful coaching checks rather than validated prerequisites. Reduce assistance or lengthen the lever gradually; body proportions affect how large each jump feels.'},
   tuckplanche:{need:[['wrist',2,12],['scap',0,12],['pushh',6,8,'strength'],['core',1,45,'control']], ev:['tendon','wrists','scap'],
     takes:'In a planche the shoulders sit well in front of the hands, so the front delts and serratus anterior hold you up while the wrists are in heavy extension. It needs conditioned wrists, shoulder blades pushed apart and held there, pseudo planche push-ups for strength in that leaned position, and a hollow body with the pelvis tucked so the hips can rise. Tendons adapt more slowly than muscle, so the straight-arm load goes up gradually.'},
   straddleplanche:{need:[['wrist',2,12],['scap',0,12],['pushh',6,12,'strength'],['core',1,60,'control'],['straddle',0,60]], ev:['leverage','tendon','mobility'],
@@ -5329,8 +5677,8 @@ const GOAL_NEEDS={
     takes:'An L-sit holds straight legs at hip height, so the hamstrings must let you sit upright with locked knees, and the hip flexors and abs must lift the legs at their shortest length, where they are weakest. That is active compression, trained with pike lifts. The arms press you up with the shoulder blades held down, the position a scapular dip trains.'},
   pistol:{need:[['ankle',2,12],['balance',1,30],['compression',0,10],['pistoldrill',2,5,'technique']], ev:['ankle','balance','qualities'],
     takes:'A pistol is single-leg strength through a range most people never load. The knee travels well past the toes with the heel down, which takes good ankle dorsiflexion, while the hip flexors hold the other leg straight out in front. Balance has to keep your centre of mass over one foot all the way down, and strength alone seldom finishes the job: box and counterbalanced pistols train the exact bottom position. A shoe with a small heel lift reduces the ankle range needed.'},
-  nordic:{need:[], ev:['qualities'],
-    takes:'The Nordic curl is almost entirely knee-flexor strength, worked hardest while the hamstrings lengthen, with the glutes keeping the hips straight. It needs no special range or balance, so the ladder and the hinge support work cover it. Nordic programmes have good evidence for cutting hamstring strain injuries in team sports. Kneel on padding and anchor the heels under something that cannot move.'},
+  nordic:{need:[], ev:['qualities','nordic'],
+    takes:'A Nordic is demanding knee-flexor strength while the hips stay straight. Hip bridges and back-extension holds train different actions and cannot establish readiness. Sliding curls and assisted full-range Nordics build both lowering and returning; partial Nordics let the range increase gradually. A successful negative alone does not prove an unassisted return. Record support and range, kneel on padding and secure the heel anchor.'},
   typewriter:{need:[['pull',5,5,'strength'],['grip',0,60,'strength']], ev:['qualities'],
     takes:'A typewriter holds the top of a pull-up while sliding from one hand to the other, so each arm briefly takes most of your weight with the elbow bent. Archer pull-ups build that one-sided strength, and the grip has to last the whole slow set.'},
   lsitpull:{need:[['pike',0,60],['compression',1,10],['pull',4,8,'strength']], ev:['mobility','qualities'],
@@ -5344,7 +5692,7 @@ const GOAL_NEEDS={
   oahang:{need:[['pull',1,10,'control']], ev:['qualities'],
     takes:'Hanging from one hand loads the finger flexors with your whole weight and asks the shoulder to stay engaged, drawn down and slightly back, rather than hanging on its ligaments. Scapular pull-ups train that position; the towel and assisted hangs build the grip toward it.'},
   boxjump:{need:[['landing',1,5],['ankle',1,12]], ev:['landing','ankle'],
-    takes:'A box jump is power going up and control coming down. Training landings, with hips and knees bending together and the knees over the toes, is the best-supported way to make jump work safe, and ankle range lets the knees travel forward to soak up the landing. The height that counts is how high your hips get, not how far you tuck the knees.'},
+    takes:'A box jump combines jumping and landing control. Use a consistent box height and land with the whole foot and a similar shallow squat. A higher box can reflect more knee tuck rather than more power; use a repeatable reach or jump-distance test to assess output. Reset between reps and stop when output or landing control declines.'},
   cossack:{need:[['straddle',0,60],['ankle',2,12]], ev:['ankle','mobility'],
     takes:'In a Cossack squat one leg bends fully with the heel down while the other stays straight out to the side, toes up. The bent side needs plenty of ankle dorsiflexion; the straight side needs adductor length, which the frog stretch trains. Strength through the bottom is the last piece, and the ladder builds it.'},
   skater:{need:[['balance',1,30],['ankle',1,12]], ev:['balance','ankle'],
@@ -5354,13 +5702,13 @@ const GOAL_NEEDS={
   revnordic:{need:[['hipflex',2,45]], ev:['mobility','tendon'],
     takes:'The reverse Nordic leans the body back from kneeling with the hips straight, stretching the rectus femoris over hip and knee together; an upright couch stretch measures that length. The quads then bring you back from a long position, which the ladder builds.'},
   calf25:{need:[['ankle',0,45],['balance',0,30]], ev:['mobility','balance'],
-    takes:'Twenty-five single-leg heel raises is the classic clinical standard for normal calf capacity. Each rep goes from a full stretch to as high as you can rise, so ankle range matters, and you need to balance on one foot without leaning on the wall.'},
+    takes:'Single-leg heel raises assess calf strength endurance. Twenty-five is this app’s coaching target, not a universal definition of normal capacity; results depend on age, range and tempo. Keep the step, balance support and heel height consistent while building repeatable reps.'},
   t2b:{need:[['pike',1,45],['compression',1,10]], ev:['mobility','qualities'],
     takes:'Strict toes-to-bar needs the hips to fold well past 90 degrees with the knees straight, so hamstring length (fingertips to toes when seated) is part of it, and the hip flexors and abs must finish the lift at their shortest, which pike lifts train. Pressing the bar down with straight arms keeps the body from swinging.'},
   dragonflag:{need:[['core',1,60,'control']], ev:['leverage','qualities'],
     takes:'A dragon flag keeps a straight body from shoulders to toes while it pivots on the upper back, so the abs stop the hips folding or sagging under a long lever. A one-minute hollow hold is the base; the lats also work hard, anchoring you through the grip behind your head.'},
   copenhagen:{need:[], ev:['qualities'],
-    takes:'The Copenhagen plank holds your weight on the inner-thigh muscles. Copenhagen adduction programmes have cut groin problems in football players. The side plank rungs before it build the trunk part, so the ladder covers it.'},
+    takes:'The Copenhagen plank loads the adductors and trunk in a side-support position. Start with knee support and progress toward foot support gradually. An ordinary side plank trains trunk support but does not establish the required adductor strength. Evidence from multiweek adductor programmes in athletes does not make any one hold duration an injury-prevention guarantee.'},
   abwheel:{need:[['overhead',1,10],['core',1,60,'control']], ev:['mobility','leverage'],
     takes:'Fully extended from standing, the arms are straight overhead and the trunk must stop the lower back sagging under a very long lever. That needs full overhead range with the ribs down and the trunk stiffness of a minute-long hollow hold, on top of the rollout strength the ladder builds.'},
   bridge:{need:[['overhead',1,10],['hipflex',1,45],['wrist',0,15]], ev:['mobility','wrists'],
@@ -5383,40 +5731,47 @@ const GOAL_NEEDS={
     takes:'A planche push-up lowers and presses out of a planche, so it needs the hold plus strength through the bent-arm range in that leaned position. Everything the planche needs applies: conditioned wrists, shoulder blades held apart, a hollow body and adductor range for the straddle stage. The elbow and biceps tendons set the pace.'},
   ringdip10:{need:[['shoulderext',0,30],['dip',3,10,'strength'],['scap',1,10]], ev:['qualities','mobility'],
     takes:'Rings move, so the shoulder stabilisers work to keep them close to the body on top of the dip itself. Ten bar dips, shoulder extension range for the bottom and shoulder blades held down make the base; the support and turned-out holds on the ladder add the stability.'},
-  ringmu:{need:[['pull',4,12,'strength'],['muscleup',0,5,'strength'],['mudrill',0,5,'technique'],['shoulderext',1,30]], ev:['parts','qualities'],
-    takes:'On rings the false grip, with the wrist over the ring, puts the hands where they need to be to turn over without regripping. It needs high pulling (chest to bar), a transition practised on its own on low rings or a bar, ring dips, and shoulder extension range for the deep bottom of the dip. The false grip loads the wrist flexors in a new way, so build hang time gradually.'},
+  ringmu:{need:[['pull',4,12,'strength'],['ringdip',2,8,'strength'],['shoulderext',1,30]], ev:['parts','qualities'],
+    takes:'A ring muscle-up combines false-grip pulling, transition and ring-dip strength. Train ring dips independently while practising the false grip and low-ring transition, then join the whole movement with recorded assistance. The listed supporting counts are coaching checks; no one count guarantees the skill. Reduce help without losing false grip or introducing a kip.'},
+  weightedpull:{need:[['core',1,30,'control']], ev:['qualities','overload'],
+    takes:'Weighted pull-ups build bilateral pulling strength with a directly measurable load. Start with an added load you can control, preserve strict full-range reps and build repeatable sets before adding a small increment. This is a separate goal from unilateral pulling so both can be trained without treating an archer pull-up as a mandatory bridge.'},
 };
 
 /* ==================== UNLOCKS ====================
    Standout moves the app offers you once your logged numbers say you are ready to try one. The rules are
    widely used coaching standards rather than lab results. Every line has to be met, by any one of its
-   options: [ladder, rung, at least] is a best of that much on that rung, or being past that rung already.
+   options: [ladder, rung, at least] requires recent checked performance of that movement at that standard.
    A move stops being "ready" once you have done it or are training it. */
 const UNLOCKS=[
-  {k:'muscleup', l:'muscleup', r:4, goal:'muscleup', req:[[['pull',4,12],['pullvar',0,10]], [['dip',3,12],['rings',3,8]], [['muscleup',0,5],['muscleup',1,3],['pull',5,3]]]},
+  {k:'muscleup', l:'muscleup', r:4, goal:'muscleup', req:[[['pull',4,12]], [['bardip',1,8]], [['muscleup',1,3]]]},
   {k:'tuckfl', l:'frontlever', r:0, req:[[['pull',4,8],['pullvar',0,8]], [['core',1,30],['legraise',2,8],['dragonflag',1,6]]]},
   {k:'handstand', l:'handstand', r:3, goal:'handstand', req:[[['handstand',2,8]], [['handstand',1,45],['pushv',2,60]]]},
   {k:'tuckplanche', l:'planche', r:1, goal:'tuckplanche', req:[[['planche',0,30],['planchepush',0,8]], [['pushh',6,5],['dip',3,12]]]},
   {k:'lsit', l:'core', r:4, goal:'lsit', req:[[['core',3,15]], [['dip',0,30],['dip',3,5],['rings',0,30]]]},
-  {k:'pistol', l:'legs', r:5, goal:'pistol', req:[[['legs',4,5],['lunge',4,5],['legs',3,15]]]},
+  {k:'pistol', l:'legs', r:5, goal:'pistol', req:[[['legs',8,5],['pistoldrill',2,5]]]},
   {k:'tuckflag', l:'flag', r:2, req:[[['pull',4,10],['pullvar',0,10]], [['sidecore',1,20],['sidecore',3,20],['flag',1,10]]]},
   {k:'tuckbl', l:'backlever', r:2, goal:'tuckbl', req:[[['backlever',1,5]], [['dip',3,10],['rings',3,6]]]},
   {k:'oapush', l:'pushh', r:7, goal:'oapush', req:[[['pushh',5,6]], [['core',1,45],['sidecore',0,45],['sidecore',1,20]]]},
-  {k:'dragonflag', l:'dragonflag', r:4, goal:'dragonflag', req:[[['dragonflag',3,4],['dragonflag',2,8]]]},
-  {k:'nordic', l:'hinge', r:4, goal:'nordic', req:[[['hinge',3,8]]]},
+  {k:'dragonflag', l:'dragonflag', r:4, goal:'dragonflag', req:[[['dragonflag',3,4]]]},
+  {k:'nordic', l:'hinge', r:4, goal:'nordic', req:[[['hinge',7,3]]]},
   {k:'t2b', l:'legraise', r:3, goal:'t2b', req:[[['legraise',2,10]], [['pull',4,5],['pullvar',0,5]]]},
   {k:'crow', l:'armbalance', r:1, goal:'crow', req:[[['armbalance',0,30],['pushh',4,10]]]},
   {k:'clap', l:'plyopush', r:1, goal:'clappush', req:[[['pushh',3,20],['pushh',4,12],['plyopush',0,10]]]},
   {k:'archer', l:'pull', r:5, req:[[['pull',4,12],['pullvar',1,8]]]},
   {k:'hspu', l:'pushv', r:4, goal:'hspu', req:[[['pushv',3,6]]]},
   {k:'typewriter', l:'pullvar', r:3, goal:'typewriter', req:[[['pull',5,5],['pullvar',2,5]]]},
-  {k:'ringmu', l:'rings', r:6, goal:'ringmu', req:[[['rings',5,5]], [['rings',3,8],['dip',3,15]]]},
+  {k:'ringmu', l:'rings', r:6, goal:'ringmu', req:[[['rings',5,5]], [['ringdip',2,8],['rings',3,8]]]},
 ];
 
 /* ==================== EVIDENCE ==================== */
 const PM='https://pubmed.ncbi.nlm.nih.gov/?term=';
 const EV_GROUPS=['Foundations','Progression','Skills','Practice','What it takes'];
+const RT2026='https://pubmed.ncbi.nlm.nih.gov/41843416/';
 const EVIDENCE={
+  nordic:{t:'A scalable path to the Nordic curl',c:'mod',g:'Progression',
+    s:'The Nordic curl loads knee flexion strongly. Assistance can make the full movement manageable, while bridges train a different hip-extension action. A study of assisted Nordics found lower load and perceived difficulty without a significant reduction in hamstring surface muscle activity. This supports assistance as a progression tool; it does not prove any fixed rep count guarantees an unassisted curl.',
+    a:'Practise assisted lowering and returning through a controlled range, then reduce assistance or extend range gradually. Record the setup. Keep hip-extension work as a separate component.',
+    src:[['Burrows et al. 2020, Traditional and assisted Nordic hamstring exercise','J Strength Cond Res','https://pubmed.ncbi.nlm.nih.gov/32569123/']]},
   works:{ t:'Bodyweight builds muscle', c:'high', g:'Foundations',
     s:'Muscle responds to mechanical tension and how close a set goes to failure, not to what is providing the resistance. Trials comparing push-up training against bench press at matched effort find similar gains in strength and size. There’s nothing second-rate about training without a barbell.',
     a:'Judge a set by how hard it was and how close to failure you took it, not by whether iron was involved.',
@@ -5428,25 +5783,25 @@ const EVIDENCE={
     src:[['Schoenfeld et al. 2017, Load and hypertrophy meta-analysis','J Strength Cond Res',PM+'Strength+and+Hypertrophy+Adaptations+Between+Low-+vs+High-Load+Resistance+Training'],
          ['Lasevicius et al. 2018, Effects of load on hypertrophy','Eur J Sport Sci',PM+'Effects+of+different+intensities+of+resistance+training+with+equated+volume+load+on+muscle+strength+and+hypertrophy']] },
   failure:{ t:'Lighter means closer to failure', c:'mod', g:'Foundations',
-    s:'The lighter the resistance, the further into a set you have to go before the larger motor units are recruited and the growth stimulus arrives. Stopping a set of thirty push-ups with ten in reserve does very little. The same reserve on a hard progression does plenty.',
-    a:'On easy progressions, take sets to within one or two reps of failure. On hard ones you can leave a little more in the tank.',
+    s:'For muscle growth, challenging lighter-load sets generally need to finish closer to failure. Strength, balance and power have different aims: exhausting every set is unnecessary. In a trial of trained men, pull-up sets stopped at less velocity loss produced better strength outcomes than more fatiguing sets. That study does not establish an exact reps-in-reserve rule for everyone.',
+    a:'Keep strength work challenging with some clean reps in reserve. Stop balance and power practice when control or output falls. Use closer-to-failure easier work when muscle growth is the aim, without letting form break.',
     src:[['Lasevicius et al. 2022, Training to failure with low loads','J Strength Cond Res',PM+'Muscle+failure+promotes+greater+muscle+hypertrophy+in+low-load+but+not+in+high-load+resistance+training'],
-         ['Refalo et al. 2023, Proximity to failure and hypertrophy','J Sports Sci',PM+'Influence+of+resistance+training+proximity-to-failure+on+skeletal+muscle+hypertrophy']] },
+         ['Sánchez-Moreno et al. 2020, Pull-up fatigue thresholds','J Strength Cond Res','https://pubmed.ncbi.nlm.nih.gov/32213783/']] },
   overload:{ t:'How you overload without weights', c:'high', g:'Progression',
-    s:'Progressive overload is the requirement; added weight is only one way to meet it. In calisthenics you meet it by shifting to a harder leverage, adding range of motion, slowing the tempo, adding reps, removing assistance, or eventually strapping weight on. What matters is that the demand keeps climbing.',
-    a:'Add reps until you clear the target for the rung, then move to the next progression rather than drifting into endless high-rep sets.',
+    s:'Progressive training can use more load, reps, controlled range, longer leverage or less assistance. Record the setup so the change is real and repeatable. Slowing a rep may help control, but is not automatically equivalent to increasing force demand or improving maximum strength.',
+    a:'Build repeatable reps or hold time at a recorded setup. Then increase one demand gradually: load, range, leverage or reduced assistance. Check a related next movement directly.',
     src:[['Plotkin et al. 2022, Progressive overload approaches','PeerJ',PM+'Progressive+overload+without+progressing+load+the+effects+of+load+or+repetition+progression'],
-         ['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',PM+'ACSM+position+stand+resistance+training+progression+models']] },
+         ['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',RT2026]] },
   leverage:{ t:'Leverage is the dial', c:'high', g:'Progression',
-    s:'A hold gets harder as your mass moves further from the point you’re turning around. That’s why a tuck front lever is manageable and a full one isn’t: straightening the legs roughly doubles the distance from the bar to your centre of mass, and the torque your lats must resist rises with it. Straddling splits the difference.',
+    s:'Moving body mass farther from a joint generally increases the torque needed to hold a position. Body proportions and geometry determine how large the change is. Tucks, straddles and assistance are useful ways to scale a lever; hold time alone does not establish readiness for a substantially longer lever.',
     a:'When a hold is too hard, shorten the lever by tucking or straddling. When it gets easy, lengthen it. That’s the whole game.',
     src:[['Zatsiorsky, Kinetics of Human Motion','Human Kinetics',PM+'biomechanics+of+gymnastics+static+holds+moment+arm'],
          ['Bernasconi et al. 2004, Muscle activity during gymnastic holds','J Sports Sci Med',PM+'Electromyographic+analysis+of+the+gymnastic+cross+and+static+holds']] },
   criteria:{ t:'Earning the next rung', c:'mod', g:'Progression',
-    s:'Moving up when you can technically scrape one ugly rep is the fastest route to a plateau or a strain. A repeatable standard, such as three clean sets at the target, means the next progression starts from real strength rather than from hope.',
-    a:'Clear the target for a rung in a single session with good form before you move up. This app tracks that for you.',
-    src:[['Kraemer &amp; Ratamess 2004, Fundamentals of resistance training','Med Sci Sports Exerc',PM+'Fundamentals+of+resistance+training+progression+and+exercise+prescription'],
-         ['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',PM+'ACSM+position+stand+resistance+training+progression+models']] },
+    s:'General resistance-training research supports progressive loading and consistent technique. It does not validate universal calisthenics rep targets or prove that completing one movement guarantees the next. The app uses repeatable current performance plus a controlled trial of the next movement as practical coaching rules.',
+    a:'Repeat the target with clean form and the same setup on two training days, then check a manageable version of the next movement. These are coaching defaults; keep building the current movement if the next is too difficult.',
+    src:[['Kotarsky et al. 2018, Progressive push-up training trial','J Strength Cond Res','https://pubmed.ncbi.nlm.nih.gov/29466268/'],
+         ['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',RT2026]] },
   isometric:{ t:'Holds build angle-specific strength', c:'mod', g:'Skills',
     s:'Isometric training produces its largest gains close to the joint angle you trained, with the carryover falling away as you move from it. Long holds at one position build that position well, and the positions either side much less.',
     a:'Train a static skill at more than one angle, and pair holds with full-range pulling and pushing so the strength is usable everywhere.',
@@ -5458,18 +5813,18 @@ const EVIDENCE={
     src:[['Donovan &amp; Radosevich 1999, Distribution of practice meta-analysis','J Appl Psychol',PM+'meta-analytic+review+of+the+distribution+of+practice+effect'],
          ['Wulf et al. 2010, Motor skill learning and performance','Med Educ',PM+'Motor+skill+learning+and+performance+a+review+of+influential+factors']] },
   tendon:{ t:'Tendons lag behind muscle', c:'mod', g:'Skills',
-    s:'Connective tissue remodels more slowly than muscle, so it’s common for your muscles to be ready for planche or lever work well before your elbows and wrists are. That gap is where most calisthenics injuries live, and it’s why sudden jumps in straight-arm work hurt people.',
-    a:'Move up straight-arm progressions slower than you think you need to, and hold each stage for weeks after it first feels possible.',
+    s:'Tendons adapt to repeated mechanical loading over time, and muscle performance alone does not establish joint or tendon tolerance. Most adaptation research studies other movements rather than planches and levers. Increase demanding straight-arm loading gradually; a rep or hold target cannot guarantee that the next load is appropriate.',
+    a:'Build straight-arm loading gradually and leave recovery between hard sessions. Keep a manageable assisted version when the next lever is too demanding, and reduce loading if symptoms appear.',
     src:[['Bohm et al. 2015, Human tendon adaptation to mechanical loading','Sports Med Open',PM+'Human+tendon+adaptation+in+response+to+mechanical+loading+a+systematic+review'],
          ['Magnusson &amp; Kjaer 2019, Tendon loading and adaptation','J Physiol',PM+'The+impact+of+loading+magnitude+and+range+of+motion+on+tendon']] },
   volume:{ t:'How much to do', c:'high', g:'Practice',
-    s:'More hard sets per muscle per week generally means more growth, with clear diminishing returns and a best dose that varies a lot between people. Somewhere around ten hard sets per pattern per week is a reasonable place to start rather than a ceiling.',
+    s:'More challenging weekly sets can support muscle growth, with diminishing returns and substantial individual variation. ACSM describes about ten sets per muscle group as a hypertrophy optimization guideline, not a minimum strength dose or a requirement for each skill. Balance attempts and easy warm-ups are not equivalent to hard strength sets.',
     a:'Track hard sets by pattern. Add sets only when you’re recovering well and progress has stalled.',
-    src:[['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',PM+'ACSM+position+stand+resistance+training+progression+models'],
+    src:[['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',RT2026],
          ['Pelland et al. 2026, Volume and frequency dose-response','Sports Med',PM+'resistance+training+volume+dose-response+hypertrophy+meta-regression']] },
   frequency:{ t:'How often', c:'mod', g:'Practice',
     s:'When weekly volume is matched, spreading it over more days doesn’t reliably change how much muscle you build. Higher frequency mainly makes a given weekly volume easier to complete with good quality, which matters a lot in calisthenics where form degrades fast.',
-    a:'Two or three sessions per pattern per week works well. Skills can be touched almost daily because they are practised, not hammered.',
+    a:'Two or three challenging strength sessions per movement each week is a practical starting point. Brief balance practice can be more frequent. Planche and lever work still impose substantial strength loads, so allow recovery between hard sessions.',
     src:[['Schoenfeld et al. 2019, Training frequency and hypertrophy','Sports Med',PM+'How+many+times+per+week+should+a+muscle+be+trained+systematic+review'],
          ['Pelland et al. 2026, Volume and frequency dose-response','Sports Med',PM+'resistance+training+frequency+dose-response+hypertrophy']] },
   rom:{ t:'Use the whole range', c:'mod', g:'Practice',
@@ -5490,7 +5845,7 @@ const EVIDENCE={
   /* What a goal takes besides its own ladder */
   qualities:{ t:'A goal needs more than strength', c:'mod', g:'What it takes',
     s:'Training adaptations are specific: strength gained in one movement, range or speed carries over only partly to another. A skill like a pistol squat or a handstand rests on several separate qualities at once: strength in that exact position, enough range of motion to get into it, balance in it, joints and tendons that tolerate the load, and the technique to put it together. A shortfall in any one of them can stop the skill however strong you are.',
-    a:'Each goal lists what else it takes, with a measurable standard for each. Train the ones not yet in place alongside the main ladder; once one is in place, the app stops scheduling it.',
+    a:'Train missing supporting qualities alongside the main movement. Retain small maintenance exposures after meeting a standard, and recheck it after a layoff. The listed numerical standards are coaching guides; only the exact demonstrated movement counts as proof.',
     src:[['Sale &amp; MacDougall 1981, Specificity in strength training','Can J Appl Sport Sci',PM+'Specificity+in+strength+training+a+review+for+the+coach+and+athlete'],
          ['Morrissey et al. 1995, Resistance training modes: specificity and effectiveness','Med Sci Sports Exerc',PM+'Resistance+training+modes+specificity+and+effectiveness']] },
   balance:{ t:'Balance is trained, and it is specific', c:'mod', g:'What it takes',
@@ -5540,8 +5895,8 @@ let state=null;
 function defaultState(){
   const rung={}; LADDER_ORDER.forEach(k=>rung[k]=0);
   return { v:2, onboarded:false, route:'today',
-    settings:{theme:'system', rest:90, sound:true, vibrate:true},
-    rung, placed:{}, said:{}, advances:[], history:[], active:null, repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull' };
+    settings:{theme:'system', rest:120, sound:true, vibrate:true},
+    rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull' };
 }
 /* Fill in anything missing and upgrade version 1 data (no goals, no placement). */
 function normalize(p){
@@ -5551,6 +5906,8 @@ function normalize(p){
   ['advances','history','goals','tests'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=[]; });
   if(!s.placed||typeof s.placed!=='object') s.placed={};
   if(!s.said||typeof s.said!=='object') s.said={};
+  if(!s.paths||typeof s.paths!=='object') s.paths={};
+  if(!s.needClaims||typeof s.needClaims!=='object') s.needClaims={};
   if(!Array.isArray(s.custom)) s.custom=[];
   registerCustom(s.custom);
   s.custom.forEach(c=>{ if(s.rung[c.id]==null) s.rung[c.id]=0; });
@@ -5559,6 +5916,8 @@ function normalize(p){
     s.v=2;
   }
   s.goals=s.goals.filter(g=>g&&LADDERS[g.l]&&LADDERS[g.l].steps[g.r]);
+  Object.keys(s.rung).forEach(id=>{if(s.paths[id]||!LADDER_PATHS[id]||!LADDERS[id])return;
+    const rid=rungId(id,s.rung[id]),route=LADDER_PATHS[id].find(p=>p.steps.includes(rid));if(route)s.paths[id]=route.key;});
   if(s.route==='ladders') s.route='library';
   if(!['today','train','goals','progress','library'].includes(s.route)) s.route='today';
   if(!PATTERNS.includes(s.libTab)) s.libTab='Pull';
@@ -5574,7 +5933,7 @@ function load(){
   catch(e){ Safe.rescue(LS_KEY, raw, e); state=defaultState(); }
 }
 let saveTimer=null;
-function payload(){ return {v:state.v, onboarded:state.onboarded, route:state.route, settings:state.settings, rung:state.rung, placed:state.placed, said:state.said,
+function payload(){ return {v:state.v,onboarded:state.onboarded,route:state.route,settings:state.settings,rung:state.rung,paths:state.paths,needClaims:state.needClaims,placed:state.placed,said:state.said,
   advances:state.advances, history:state.history, active:state.active, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab}; }
 function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
@@ -5612,23 +5971,102 @@ function evChip(k,l){ return `<button class="ev-chip" data-act="evidence" data-k
 
 /* ==================== LADDER LOGIC ==================== */
 function stepsOf(id){ return LADDERS[id].steps; }
-function curIdx(id){ return Math.min(state.rung[id]||0, stepsOf(id).length-1); }
+/* Raw rung indices never change: old backups and history keep their exercise identities.
+   Routes describe related progressions without turning the catalog into a difficulty ranking. */
+function pathFor(id,goal,skipNeeds){
+  const L=LADDERS[id], routes=LADDER_PATHS[id]||[];
+  if(!routes.length) return L.steps.map((_,i)=>i);
+  let gs=goal?[goal]:activeGoals().filter(g=>g.l===id);
+  if(!gs.length&&!goal&&!skipNeeds)gs=activeGoals().flatMap(g=>(needsSrc(g)||{}).need||[]).filter(n=>n[0]===id).map(n=>({l:id,r:n[1]}));
+  const selected=routes.find(p=>p.key===(state.paths||{})[id]);
+  const includes=(p,g)=>p.steps.includes(L.steps[g.r].id);
+  const route=(selected&&gs.every(g=>includes(selected,g))?selected:null)||routes.find(p=>gs.length&&gs.every(g=>includes(p,g)))||
+    (gs.length?routes.find(p=>includes(p,gs[0])):null)||selected||routes[0];
+  return route.steps.map(rid=>L.steps.findIndex(st=>st.id===rid)).filter(i=>i>=0);
+}
+function curIdx(id){
+  const raw=Math.max(0,Math.min(state.rung[id]||0,stepsOf(id).length-1)), path=pathFor(id);
+  if(path.includes(raw)) return raw;
+  // A saved position on another branch proves no capacity on this one.
+  const proof=path.slice().reverse().find(i=>entryReady(id,i));if(proof!=null)return proof;
+  // Old logs can locate a familiar training exercise without certifying readiness.
+  for(let w=state.history.length-1;w>=0;w--){const e=(state.history[w].entries||[]).find(e=>e.ladderId===id&&path.includes(e.stepIdx)&&e.sets.some(s=>s.done));if(e)return e.stepIdx;}
+  return path[0];
+}
+function nextRung(id,i){ const p=pathFor(id), at=p.indexOf(i); return at>=0&&at+1<p.length?p[at+1]:null; }
+function previousRung(id,i){ const p=pathFor(id), at=p.indexOf(i); return at>0?p[at-1]:null; }
+function rungRank(id,i,g){ return pathFor(id,g).indexOf(i); }
 function curStep(id){ return stepsOf(id)[curIdx(id)]; }
 function unitS(st){ return st.k==='hold'?'s':''; }
 function goalText(st){ return `${st.sets} x ${st.v}${unitS(st)}`; }
 function isSkill(id){ return !!LADDERS[id].skill; }
+function practiceOf(id,i){const L=LADDERS[id];return stepsOf(id)[i==null?curIdx(id):i].practice||L.practice||(L.like&&LADDERS[L.like]&&LADDERS[L.like].practice)||'strength';}
+function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||Math.min(st.v,st.k==='hold'?5:3); }
+const PROOF_DAYS=90, CLEAR_DAYS=42;
+function proofSets(id,i,days){
+  const rid=rungId(id,i), st=stepsOf(id)[i], since=Date.now()-days*86400000, out=[];
+  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+    if(rungId(e.ladderId,e.stepIdx)!==rid) return;
+    (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{};
+      if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,target:e.target||st.v}); });
+  }));
+  return out;
+}
+function verifiedBestFor(id,i){
+  const st=stepsOf(id)[i], since=Date.now()-PROOF_DAYS*86400000;
+  let best=proofSets(id,i,PROOF_DAYS).reduce((m,s)=>Math.max(m,s.v),0), rid=rungId(id,i);
+  state.tests.forEach(t=>{if(t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupValid(st,t.setup||{}))best=Math.max(best,t.v||0);});
+  return best;
+}
+function currentProof(id,i){
+  const st=stepsOf(id)[i], groups=new Map(), since=Date.now()-CLEAR_DAYS*86400000, rid=rungId(id,i);
+  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+    if(rungId(e.ladderId,e.stepIdx)!==rid) return;
+    const setsBySetup=new Map();
+    (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{}, key=setupKey(st,setup);
+      if(!s.done||s.clean!==true||!(s.v>=st.v)||key==null) return;
+      const group=setsBySetup.get(key)||{n:0,setup}; group.n++; setsBySetup.set(key,group); });
+    setsBySetup.forEach((v,key)=>{ if(v.n<st.sets) return;
+      const g=groups.get(key)||{dates:new Set(),setup:v.setup,last:0}; g.dates.add(dayStart(w.date));g.last=Math.max(g.last,w.date);groups.set(key,g); });
+  }));
+  const g=[...groups.values()].sort((a,b)=>b.dates.size-a.dates.size||b.last-a.last)[0];
+  return {days:g?g.dates.size:0,ready:!!g&&g.dates.size>=2,setup:g?g.setup:{}};
+}
+function entryReady(id,i){ return verifiedBestFor(id,i)>=entryMinimum(id,i); }
+function desiredStandard(id,i){
+  let v=stepsOf(id)[i].v;
+  activeGoals().forEach(g=>{ if(g.l===id&&g.r===i) v=Math.max(v,g.std);
+    goalNeeds(g).forEach(n=>{if(n.l===id&&n.r===i) v=Math.max(v,n.v);}); });
+  return v;
+}
+function rungTarget(id,i,role){
+  const st=stepsOf(id)[i], limit=desiredStandard(id,i), increment=st.k==='hold'?5:1;
+  if(role==='maintenance') return Math.min(st.v,limit);
+  let target=st.v;
+  const rid=rungId(id,i), since=Date.now()-CLEAR_DAYS*86400000, byTarget=new Map();
+  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+    if(rungId(e.ladderId,e.stepIdx)!==rid) return;
+    const t=Math.max(st.v,e.target||st.v), keys=new Map();
+    (e.sets||[]).forEach(s=>{const key=setupKey(st,s.setup||e.setup||{});if(s.done&&s.clean===true&&s.v>=t&&key!=null) keys.set(key,(keys.get(key)||0)+1);});
+    keys.forEach((n,key)=>{if(n<st.sets)return;const k=t+'|'+key, days=byTarget.get(k)||new Set();days.add(dayStart(w.date));byTarget.set(k,days);});
+    target=Math.max(target,Math.min(limit,t));
+  }));
+  if([...byTarget.entries()].some(([k,days])=>Number(k.split('|')[0])===target&&days.size>=2)) target+=increment;
+  return Math.min(limit,target);
+}
 /* Does a logged entry clear its rung? All target sets done at or above the target. */
 function clearsRung(entry){
   const st=stepsOf(entry.ladderId)[entry.stepIdx]; if(!st) return false;
-  return entry.sets.filter(s=>s.done && (s.v||0)>=st.v).length>=st.sets;
+  const groups=new Map();
+  entry.sets.forEach(s=>{const k=setupKey(st,s.setup||entry.setup||{});if(s.done&&s.clean===true&&(s.v||0)>=(entry.target||st.v)&&k!=null)groups.set(k,(groups.get(k)||0)+1);});
+  return [...groups.values()].some(n=>n>=st.sets);
 }
 function moveTo(id, to){
   const steps=stepsOf(id), from=curIdx(id); to=Math.max(0,Math.min(steps.length-1,to));
   state.placed[id]=true;
-  if(state.said[id]!=null && state.said[id]>=to && to<from){ if(to>0) state.said[id]=to-1; else delete state.said[id]; }
   if(to===from){ save(); return false; }
   state.rung[id]=to;
-  if(to>from) state.advances.push({date:Date.now(), id, from, to, name:steps[to].n});
+  if(rungRank(id,to)>rungRank(id,from)) state.advances.push({date:Date.now(), id, from, to, name:steps[to].n});
   save(); return true;
 }
 function isPrep(id){ return !!(LADDERS[id]&&LADDERS[id].prep); }
@@ -5650,21 +6088,34 @@ function lastTestFor(id){ for(let i=state.tests.length-1;i>=0;i--) if(state.test
 function activeGoals(){ return state.goals.filter(g=>!g.achieved); }
 function goalsOn(id){ return activeGoals().filter(g=>g.l===id); }
 /* Highest rung an unfinished goal on this ladder needs; the app won’t push you past it. */
-function capFor(id){ const gs=goalsOn(id); return gs.length? Math.max(...gs.map(g=>g.r)) : stepsOf(id).length-1; }
+function capFor(id){const p=pathFor(id),gs=goalsOn(id).filter(g=>p.includes(g.r));
+  if(gs.length)return p[Math.max(...gs.map(g=>p.indexOf(g.r)))];
+  const ns=activeGoals().flatMap(goalNeeds).filter(n=>n.l===id&&p.includes(n.r)&&!needMet(n));
+  return ns.length?p[Math.max(...ns.map(n=>p.indexOf(n.r)))]:p[p.length-1];}
+function pendingStandard(id){const p=pathFor(id),cur=p.indexOf(curIdx(id));
+  return activeGoals().flatMap(goalNeeds).filter(n=>n.l===id&&!needMet(n)&&p.includes(n.r)&&p.indexOf(n.r)<cur).sort((a,b)=>p.indexOf(b.r)-p.indexOf(a.r))[0]||null;}
 function stdText(g){ const st=stepsOf(g.l)[g.r]; return st.k==='hold'? g.std+' s hold' : g.std+' clean rep'+(g.std===1?'':'s'); }
-function goalProgress(g){ const cur=curIdx(g.l), part= cur>=g.r? Math.min(1,bestFor(g.l,g.r)/g.std) : 0;
-  return Math.min(1,(Math.min(cur,g.r)+part)/(g.r+1)); }
-function goalMet(g){ return curIdx(g.l)>g.r || bestFor(g.l,g.r)>=g.std; }
+function goalProgress(g){const p=pathFor(g.l,g),end=p.indexOf(g.r),route=p.slice(0,end+1),part=Math.min(1,verifiedBestFor(g.l,g.r)/g.std);
+  return goalMet(g)?1:Math.min(0.99,(route.filter(i=>i!==g.r&&currentProof(g.l,i).ready).length+part)/Math.max(1,route.length));}
+function goalMet(g){ return verifiedBestFor(g.l,g.r)>=g.std; }
 function checkGoals(){ const done=[]; activeGoals().forEach(g=>{ if(state.placed[g.l] && goalMet(g)){ g.achieved=Date.now(); done.push(g); } }); if(done.length) save(); return done; }
 function makeGoal(key){ const G=GOALS[key]; return {id:uid(), key, n:G.n, l:G.l, r:G.r, std:G.std, sup:(G.sup||[]).slice(), added:Date.now(), achieved:null}; }
-function nextGoals(g){ return GOAL_ORDER.filter(k=>{ const G=GOALS[k]; return G.l===g.l && (G.r>g.r||(G.r===g.r&&G.std>g.std)) && !state.goals.some(x=>x.key===k&&!x.achieved); }).slice(0,2); }
+function nextGoals(g){
+  const path=pathFor(g.l,g), at=path.indexOf(g.r);
+  return GOAL_ORDER.filter(k=>{ const G=GOALS[k], rank=path.indexOf(G.r);
+    return G.l===g.l&&rank>=0&&(rank>at||(G.r===g.r&&G.std>g.std))&&!state.goals.some(x=>x.key===k&&!x.achieved);
+  }).sort((a,b)=>path.indexOf(GOALS[a].r)-path.indexOf(GOALS[b].r)||GOALS[a].std-GOALS[b].std).slice(0,2);
+}
 /* ---- what else a goal takes (GOAL_NEEDS). Your own goal borrows from the standard goal nearest it on the same
    ladder, or on the ladder yours is most like. */
 function needsSrc(g){
   if(GOAL_NEEDS[g.key]) return GOAL_NEEDS[g.key];
   const L=LADDERS[g.l], l= L&&L.custom? L.like : g.l;
-  const ks=GOAL_ORDER.filter(k=>GOALS[k].l===l && GOAL_NEEDS[k]);
-  const k=ks.filter(k=>GOALS[k].r<=g.r).sort((a,b)=>GOALS[b].r-GOALS[a].r)[0] || ks.sort((a,b)=>GOALS[a].r-GOALS[b].r)[0];
+  const path=pathFor(l,L&&L.custom?null:g,true),own=pathFor(g.l,g,true);
+  const at=L&&L.custom?Math.round(Math.max(0,own.indexOf(g.r))*Math.max(0,path.length-1)/Math.max(1,own.length-1)):path.indexOf(g.r);
+  const ks=GOAL_ORDER.filter(k=>GOALS[k].l===l&&GOAL_NEEDS[k]&&path.includes(GOALS[k].r));
+  const rank=k=>path.indexOf(GOALS[k].r);
+  const k=ks.filter(k=>rank(k)<=at).sort((a,b)=>rank(b)-rank(a))[0]||ks.sort((a,b)=>rank(a)-rank(b))[0];
   return k? GOAL_NEEDS[k] : null;
 }
 /* [{l ladder, r rung, v at least, q what it builds}] */
@@ -5673,29 +6124,34 @@ function goalNeeds(g){
   return N.need.filter(([l,r])=>LADDERS[l] && stepsOf(l)[r] && l!==g.l)
     .map(([l,r,v,q])=>({l, r, v:v||stepsOf(l)[r].v, q:q||LADDERS[l].q||'strength'}));
 }
-/* In place: past that rung, told the app you can do it, done it at the standard, or done a harder rung of that ladder at its target. */
+/* In place: recent clean performance of this movement at its own standard, or a recent specific user confirmation. */
+function needKey(n){ return rungId(n.l,n.r)+'|'+n.v; }
 function needMet(n){
-  if(state.placed[n.l] && (curIdx(n.l)>n.r || (state.said[n.l]!=null && state.said[n.l]>=n.r))) return true;
-  if(bestFor(n.l,n.r)>=n.v) return true;
-  return stepsOf(n.l).some((st,i)=>i>n.r && bestFor(n.l,i)>=st.v);
+  const claim=(state.needClaims||{})[needKey(n)];
+  return verifiedBestFor(n.l,n.r)>=n.v||!!(claim&&claim.v===n.v&&Number.isFinite(claim.date)&&claim.date<=Date.now()&&claim.date>=Date.now()-PROOF_DAYS*86400000);
 }
 function needsText(g){ const ns=goalNeeds(g); return ns.length? ns.filter(needMet).length+' of '+ns.length+' in place' : ''; }
 function planIds(){
-  const goals=activeGoals(), mains=[], sups=[], needs=[];
+  const goals=activeGoals(), mains=[], sups=[], needs=[], maintenance=[];
   goals.forEach(g=>{ if(!mains.includes(g.l)) mains.push(g.l); });
   goals.forEach(g=>(g.sup||[]).forEach(x=>{ if(!mains.includes(x)&&!sups.includes(x)) sups.push(x); }));
-  // what else your goals take, until it is in place; a ladder two goals need is trained toward the higher standard.
+  // Build missing qualities and retain lighter maintenance once confirmed; shared needs use the higher standard.
   // One on a goal or support ladder is already trained there.
-  goals.forEach(g=>goalNeeds(g).forEach(n=>{ if(mains.includes(n.l)||sups.includes(n.l)||needMet(n)) return;
-    const o=needs.find(x=>x.l===n.l); if(!o) needs.push({l:n.l, r:n.r}); else if(n.r>o.r) o.r=n.r; }));
-  return {mains, sups, needs};
+  goals.forEach(g=>goalNeeds(g).forEach(n=>{
+    if(mains.includes(n.l)||sups.includes(n.l)) return;
+    const dest=needMet(n)?maintenance:needs, o=dest.find(x=>x.l===n.l);
+    if(!o) dest.push({l:n.l,r:n.r,v:n.v}); else if(n.v>o.v||rungRank(n.l,n.r)>rungRank(n.l,o.r)){o.r=n.r;o.v=n.v;}
+  }));
+  return {mains, sups, needs, maintenance};
 }
 /* Warm-up first. Then balance, technique and straight-arm skills while you’re fresh, goal work, support and what
    else your goals need, core, and long stretches last (held 60 seconds or more, they can sap strength for a while). */
 function orderIds(ids){
   const {mains,sups,needs}=planIds(), nids=needs.map(n=>n.l);
   const rank=id=>{ const L=LADDERS[id]; if(L&&L.prep) return WHEN_RANK[L.when]!=null? WHEN_RANK[L.when] : 3;
-    if(id==='hsdrill'||(L&&L.like==='hsdrill')) return -0.5;   // the bail and kick-ups open handstand practice
+    if(id==='hsdrill'||(L&&L.like==='hsdrill'))return -1.5;
+    if(practiceOf(id)==='balance')return -1;
+    if(practiceOf(id)==='power')return -0.5;
     return isSkill(id)?0 : id==='core'?4 : mains.includes(id)?1 : (sups.includes(id)||nids.includes(id))?2 : 3; };
   return ids.slice().sort((a,b)=>rank(a)-rank(b) || LADDER_ORDER.indexOf(a)-LADDER_ORDER.indexOf(b));
 }
@@ -5703,16 +6159,16 @@ function defaultPicks(){ return todayPlan().map(x=>x.id); }
 
 /* ==================== TODAY'S PLAN ====================
    Sessions rotate so no two in a row are the same:
-   - goal work alternates a heavy day (your rung, its target) with a volume day (the rung below, one more set,
-     taken close to failure). With two or more goals they take turns, so each session has some of both.
-     Balance and straight-arm skills stay on your rung every time: they are practised little and often.
+   - strength work alternates a target day with lighter work on the same related movement; leave some reserve.
+     With two or more goals they take turns. Balance and power use brief quality practice while fresh;
+     demanding straight-arm strength still needs recovery between hard sessions.
    - support work is shared out across sessions, one ladder per movement, so two goals that both bring core
      work share one core slot, and the movements take turns.
    - one extra exercise that suits your goals, a different one each session.
    - the same exercise never appears twice, even when two ladders share it; they share the credit instead.
    - what else your goals take (balance, mobility, joint prep, control, technique, other strength standards) comes
      on top, up to four a session, taking turns when there are more, each at your rung on that ladder but never past
-     its standard. Once one is in place it drops out. Hand balancing and straight-arm pushing always get the wrist warm-up.
+     its standard. Confirmed needs retain lighter maintenance. Hand balancing and straight-arm pushing always get the wrist warm-up.
    The rotation moves on once per day you train, so a plan holds for the whole day. */
 const FAM={pull:'vpull', pullvar:'vpull', muscleup:'vpull', row:'hpull', dip:'dip', rings:'dip', pushh:'hpush', plyopush:'hpush',
   planche:'planche', planchepush:'planche', pushv:'vpush', press:'vpush', handstand:'balance', onearmhs:'balance', armbalance:'balance',
@@ -5726,29 +6182,26 @@ const VARIETY={vpull:['curl','grip','legraise'], hpull:['curl','grip','sidecore'
   core:['legraise','sidecore','bridge'], lateral:['legraise','grip'], tri:['plyopush','dip'], curl:['grip','row'], grip:['curl','legraise']};
 function famOf(id){ const L=LADDERS[id]; return FAM[id]||FAM[L&&L.like]||id; }
 function rotation(){ return new Set(state.history.map(w=>dayStart(w.date))).size; }
-/* A first rung for a ladder you haven’t placed yet: half as far up it as you are, on average, up your goal
-   ladders. Errs low on purpose; clearing it moves you up after the session. */
-function guessRung(id, mains){
-  const fr=mains.filter(m=>state.placed[m]).map(m=>curIdx(m)/Math.max(1,stepsOf(m).length-1));
-  const f=fr.length? fr.reduce((a,b)=>a+b,0)/fr.length : 0;
-  return Math.max(0, Math.min(stepsOf(id).length-1, Math.floor(f*0.5*(stepsOf(id).length-1))));
-}
+/* An unplaced ladder starts at its first related movement; later steps need repeatable evidence and a direct check. */
+function guessRung(id, mains){ return pathFor(id)[0]; }
 /* [{id, i rung, sets, role: goal|volume|support|extra|new}]; ahead looks that many sessions further on. */
 const NEED_CAP=4;
 const WRIST_LOAD=['handstand','planche','planchepush','armbalance','press','onearmhs','hsdrill','pushv','plyopush'];
 function todayPlan(ahead){
-  const {mains,sups,needs}=planIds(), r=rotation()+(ahead||0), out=[], seen=new Set(), fams=new Set();
+  const {mains,sups,needs,maintenance}=planIds(), r=rotation()+(ahead||0), out=[], seen=new Set(), fams=new Set();
   const add=(id,i,sets,role)=>{ const st=stepsOf(id)[i]; if(!st||seen.has(st.id)||out.some(x=>x.id===id)) return false;
-    seen.add(st.id); fams.add(famOf(id)); out.push({id,i,sets,role}); return true; };
-  mains.forEach((id,k)=>{ const cur=curIdx(id);
-    if(!isSkill(id) && state.placed[id] && cur>0 && (r+k)%2===1) add(id, cur-1, stepsOf(id)[cur-1].sets+1, 'volume');
-    else add(id, cur, stepsOf(id)[cur].sets, 'goal'); });
+    seen.add(st.id); fams.add(famOf(id)); out.push({id,i,sets,role,target:rungTarget(id,i,role)}); return true; };
+  mains.forEach((id,k)=>{ const cur=curIdx(id), st=stepsOf(id)[cur], vi=st.volume?stepsOf(id).findIndex(x=>x.id===st.volume):-1;
+    const need=pendingStandard(id);
+    if(need&&(r+k)%2===1)add(id,need.r,stepsOf(id)[need.r].sets,'need');
+    else if(practiceOf(id,cur)==='strength'&&state.placed[id]&&vi>=0&&(r+k)%2===1) add(id,vi,stepsOf(id)[vi].sets+1,'volume');
+    else add(id,cur,st.sets,'goal'); });
   const byFam={}, order=[];
   sups.forEach(id=>{ if(mains.includes(id)) return; const f=famOf(id); if(!byFam[f]){ byFam[f]=[]; order.push(f); } byFam[f].push(id); });
   const n=order.length, take= n<=1? n : Math.ceil(n/2);
   // slot c counts every support slot ever handed out: it walks the movements in turn, and each time a movement
   // comes round again it takes its next ladder
-  for(let j=0;j<take;j++){ const c=r*take+j, ids=byFam[order[c%n]], id=ids[Math.floor(c/n)%ids.length]; add(id, curIdx(id), curStep(id).sets, 'support'); }
+  for(let j=0;j<take;j++){const c=r*take+j,ids=byFam[order[c%n]],id=ids[Math.floor(c/n)%ids.length],need=pendingStandard(id),i=need?need.r:curIdx(id);add(id,i,stepsOf(id)[i].sets,need?'need':'support');}
   const k=Math.min(NEED_CAP, needs.length);
   if(mains.length && out.length+k<6){   // no extra when what else your goals take already fills the session
     const pool=[]; mains.forEach(id=>(VARIETY[famOf(id)]||[]).forEach(x=>{ if(LADDERS[x]&&!pool.includes(x)) pool.push(x); }));
@@ -5756,25 +6209,27 @@ function todayPlan(ahead){
     if(free.length){ const id=free[r%free.length], placed=!!state.placed[id], i=placed? curIdx(id) : guessRung(id, mains);
       add(id, i, stepsOf(id)[i].sets, placed?'extra':'new'); }
   }
-  const plan=out.slice(0,6), more=[], taken=new Set(plan.map(x=>stepsOf(x.id)[x.i].id));
+  const plan=out.slice(), more=[], taken=new Set(plan.map(x=>stepsOf(x.id)[x.i].id));
   const put=(id,i,role)=>{ const st=stepsOf(id)[i]; if(!st||taken.has(st.id)||plan.some(x=>x.id===id)||more.some(x=>x.id===id)) return;
-    taken.add(st.id); more.push({id, i, sets:st.sets, role}); };
+    taken.add(st.id); more.push({id,i,sets:role==='maintenance'?1:st.sets,role,target:rungTarget(id,i,role)}); };
   const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), at= ns.length>NEED_CAP? (r*NEED_CAP)%ns.length : 0;
-  for(let j=0;j<k;j++){ const n=ns[(at+j)%ns.length]; put(n.l, state.placed[n.l]? Math.min(curIdx(n.l), n.r) : 0, isPrep(n.l)?'prep':'need'); }
-  if(LADDERS.wrist && plan.concat(more).some(x=>WRIST_LOAD.includes(LADDERS[x.id].like||x.id))) put('wrist', state.placed.wrist? curIdx('wrist') : 0, 'prep');
+  for(let j=0;j<k;j++){ const n=ns[(at+j)%ns.length], p=pathFor(n.l), cur=curIdx(n.l), target=p.indexOf(n.r);
+    put(n.l,state.placed[n.l]&&target>=0?p[Math.min(p.indexOf(cur),target)]:p[0],isPrep(n.l)?'prep':'need'); }
+  if(maintenance.length){const n=maintenance[r%maintenance.length];put(n.l,n.r,'maintenance');}
+  if(LADDERS.wrist && plan.concat(more).some(x=>WRIST_LOAD.includes(LADDERS[x.id].like||x.id))) put('wrist', state.placed.wrist?curIdx('wrist'):pathFor('wrist')[0], 'prep');
   return plan.concat(more);
 }
-const ROLE_N={goal:'goal', volume:'goal &middot; volume day', support:'support', extra:'extra', new:'new to you', need:'what your goal needs'};
+const ROLE_N={goal:'goal', volume:'goal &middot; volume day', support:'support', extra:'extra', new:'new to you', need:'what your goal needs',maintenance:'maintain and recheck'};
 const WHEN_S={warm:'warm-up', early:'while fresh', mid:'with the main work', end:'at the end'};
 function roleText(x){ const L=LADDERS[x.id]; return x.role==='prep'? (WHEN_S[L.when]||'prep') : ROLE_N[x.role]||''; }
-function planEntry(x){ const st=stepsOf(x.id)[x.i]; return {ladderId:x.id, stepIdx:x.i, kind:st.k, sets:Array.from({length:x.sets},makeSet), role:x.role}; }
-function planText(x){ const st=stepsOf(x.id)[x.i]; return `${x.sets} x ${st.v}${unitS(st)}`; }
+function planEntry(x){ const st=stepsOf(x.id)[x.i]; return {ladderId:x.id,stepIdx:x.i,kind:st.k,target:x.target||rungTarget(x.id,x.i,x.role),setup:lastSetupFor(x.id,x.i),clean:false,sets:Array.from({length:x.sets},makeSet),role:x.role}; }
+function planText(x){ const st=stepsOf(x.id)[x.i]; return `${x.sets} x ${x.target||rungTarget(x.id,x.i,x.role)}${unitS(st)}`; }
 
 function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
 /* ---- unlocks */
-function meets(l,r,v){ return !!LADDERS[l] && ((state.placed[l] && curIdx(l)>r) || bestFor(l,r)>=v); }
+function meets(l,r,v){ return !!LADDERS[l]&&verifiedBestFor(l,r)>=v; }
 function readyMoves(){
-  return UNLOCKS.filter(u=>LADDERS[u.l] && stepsOf(u.l)[u.r] && !(state.placed[u.l] && curIdx(u.l)>=u.r) && bestFor(u.l,u.r)===0
+  return UNLOCKS.filter(u=>LADDERS[u.l] && stepsOf(u.l)[u.r] && curIdx(u.l)!==u.r && verifiedBestFor(u.l,u.r)===0
     && u.req.every(line=>line.some(([l,r,v])=>meets(l,r,v))));
 }
 function newUnlocks(){ state.unlocked=state.unlocked||{}; return readyMoves().filter(u=>!state.unlocked[u.k]); }
@@ -5782,10 +6237,10 @@ function markUnlocked(list){ state.unlocked=state.unlocked||{}; list.forEach(u=>
 /* What earned it, in your own numbers: "pull-up best 12, bar dip best 12". */
 function readyWhy(u){
   return listText(u.req.map(line=>{ const [l,r,v]=line.find(([l,r,v])=>meets(l,r,v)), st=stepsOf(l)[r], b=bestFor(l,r);
-    return b>=v? `${esc(st.n.toLowerCase())} best ${b}${unitS(st)}` : `already past ${esc(st.n.toLowerCase())}`; }));
+    return `${esc(st.n.toLowerCase())} verified best ${verifiedBestFor(l,r)}${unitS(st)}`; }));
 }
 function unlockRow(u, compact){
-  const st=stepsOf(u.l)[u.r], has=activeGoals().some(g=>g.l===u.l&&g.r>=u.r);
+  const st=stepsOf(u.l)[u.r], has=activeGoals().some(g=>g.l===u.l&&g.r===u.r);
   return `<div class="unl">
     <div class="unl-h"><span class="unl-ico">${I.flame}</span><div style="min-width:0"><div class="unl-n">${esc(st.n)}</div><div class="unl-w">${esc(LADDERS[u.l].n)} &middot; your ${readyWhy(u)}</div></div></div>
     <div class="grid2" style="margin-top:10px"><button class="btn primary sm block" data-act="unl-try" data-k="${u.k}">${I.play} Try it now</button>
@@ -5809,10 +6264,12 @@ function unlockCard(){
     ${R.map(u=>unlockRow(u)).join('')}</div>`;
 }
 /* ---- choosing goals */
-function goalDist(k){ const G=GOALS[k]; return state.placed[G.l]? G.r-curIdx(G.l) : null; }
-function goalMetNow(k){ const G=GOALS[k], d=goalDist(k); return d!=null && (d<0 || (d===0 && bestFor(G.l,G.r)>=G.std)); }
+function goalDist(k){ const G=GOALS[k],p=pathFor(G.l,G);return state.placed[G.l]?p.indexOf(G.r)-Math.max(0,p.indexOf(curIdx(G.l))):null; }
+function goalMetNow(k){ return goalMet(GOALS[k]); }
 function userLevel(){ const ids=LADDER_ORDER.filter(id=>state.placed[id]&&!LADDERS[id].custom);
-  if(!ids.length) return 0; const f=ids.reduce((t,id)=>t+curIdx(id)/Math.max(1,stepsOf(id).length-1),0)/ids.length; return Math.max(1,Math.min(4,1+Math.round(f*3))); }
+  if(!ids.length) return 0;
+  const f=ids.reduce((t,id)=>{const path=pathFor(id);return t+Math.max(0,path.indexOf(curIdx(id)))/Math.max(1,path.length-1);},0)/ids.length;
+  return Math.max(1,Math.min(4,1+Math.round(f*3))); }
 /* Three goals that suit where you are: a few rungs away, spread over different movements. */
 function suggestGoals(skip){
   const done=new Set(state.goals.filter(g=>g.achieved).map(g=>g.key)), lv=userLevel(), mine=new Set(activeGoals().map(g=>LADDERS[g.l]&&LADDERS[g.l].p));
@@ -5829,7 +6286,7 @@ function goalHint(k){
   if(readyMoves().some(u=>u.goal===k)) return '<b>Ready to try</b>';
   if(goalMetNow(k)) return 'You can already do this';
   if(d==null) return 'Usually '+LV_T[GOAL_LV[k]||2];
-  return d===0? 'You are on this rung now' : d===1? 'One rung away' : d+' rungs away';
+  return d<0?'Earlier on this path: check your current ability':d===0? 'You are on this rung now' : d===1? 'One rung away' : d+' rungs away';
 }
 
 /* ==================== HOW-TO ==================== */
@@ -5843,10 +6300,11 @@ function howtoHtml(hid){
 }
 function openRungHow(id,i){
   const L=LADDERS[id], st=stepsOf(id)[i], cur=curIdx(id), gs=goalsOn(id).filter(g=>g.r===i);
+  const path=pathFor(id), at=path.indexOf(i);
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><button class="iconbtn" data-act="ladder" data-id="${id}" data-back aria-label="Back">${I.back}</button><h3>${esc(st.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
-      <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="chip">${esc(L.n)}</span><span class="chip">Rung ${i+1} of ${stepsOf(id).length}</span>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="chip">${esc(L.n)}</span><span class="chip">${at>=0?'Step '+(at+1)+' of '+path.length:'Alternative movement'}</span>
         <span class="chip brass mono">${goalText(st)}</span>${i===cur&&state.placed[id]?'<span class="chip good">Your rung</span>':''}${gs.length?`<span class="chip brass">${I.target} Goal</span>`:''}</div>
       ${st.cue?`<div class="tip" style="margin-bottom:16px"><div class="lbl">${I.info}<span>Key point</span></div><p>${esc(st.cue)}</p></div>`:''}
       ${howtoHtml(st.id)}
@@ -5883,7 +6341,7 @@ function nextPlacement(){
 let ncheck=null;
 function openNeedCheck(goals, then){
   const mains=new Set(goals.map(g=>g.l)), seen=new Set(), rows=[];
-  goals.forEach(g=>goalNeeds(g).forEach(n=>{ const k=n.l+':'+n.r; if(mains.has(n.l)||needMet(n)||seen.has(k)) return; seen.add(k); rows.push({g, n, k}); }));
+  goals.forEach(g=>goalNeeds(g).forEach(n=>{const k=needKey(n);if(mains.has(n.l)||needMet(n)||seen.has(k))return;seen.add(k);rows.push({g,n,k});}));
   if(!rows.length){ then(); return; }
   ncheck={rows, then, sel:new Set()};
   renderNeedCheck();
@@ -5905,9 +6363,8 @@ function renderNeedCheck(){
 function applyNeedCheck(){
   const c=ncheck; if(!c) return; ncheck=null;
   c.rows.forEach(({n,k})=>{
-    if(c.sel.has(k)){ if(!state.placed[n.l]||curIdx(n.l)<n.r) moveTo(n.l, Math.min(n.r+1, stepsOf(n.l).length-1));
-      state.said[n.l]=Math.max(state.said[n.l]!=null? state.said[n.l] : -1, n.r); }
-    else if(!state.placed[n.l]) moveTo(n.l, 0); });
+    if(c.sel.has(k)){state.needClaims[needKey(n)]={date:Date.now(),v:n.v};if(!state.placed[n.l])moveTo(n.l,n.r);}
+    else if(!state.placed[n.l])moveTo(n.l,pathFor(n.l)[0]); });
   save(); if(window.__hub) window.__hub.changed('cal'); c.then();
 }
 /* Which of your goals a ladder is needed for, and what for. */
@@ -5922,9 +6379,9 @@ function openSurvey(id){
     <div class="sheet-body">
       <div class="lc-head" style="margin-bottom:6px"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
         <div class="lc-t"><div class="a">${gs.length?'For your goal':nd?esc(QN[nd.n.q]||'Support')+' for '+esc(nd.g.n):'Support work'}</div><div class="b">${L.n}</div></div></div>
-      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Tap the <b style="color:var(--ink)">hardest one you can already do for the full target</b> with clean form. ${gs.length?'Next you test that one: make its target and you start on the rung above.':'Not sure? Pick the one you are sure of.'}</p>
-      ${steps.map((st,i)=>`<button class="pick ${was===i?'on':''}" data-act="survey-pick" data-id="${id}" data-i="${i}"><span class="rn">${i+1}</span>
-        <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${goalText(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`).join('')}
+      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Pick a movement you can practise with clean form and a manageable setup. You start on that movement. A check confirms what you can do; it does not assume the next step is ready.</p>
+      ${pathFor(id).map((i,k)=>{const st=steps[i];return `<button class="pick ${was===i?'on':''}" data-act="survey-pick" data-id="${id}" data-i="${i}"><span class="rn">${k+1}</span>
+        <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${goalText(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`;}).join('')}
       <button class="btn ${was===-1?'primary':'ghost'} block" data-act="survey-pick" data-id="${id}" data-i="-1" style="margin-top:4px">None of these yet</button>
     </div>`);
 }
@@ -5935,13 +6392,13 @@ function openTestOffer(ids){
   openModal(`<div class="sheet-grab"></div><div class="sheet-body">
     <div style="text-align:center;padding:4px 0 6px"><div class="celebico">${I.test}</div>
       <h2 class="disp" style="font-size:25px;margin:0 0 8px;text-transform:uppercase">Show what you can do</h2>
-      <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:320px">One all-out set of ${ids.map((id,k)=>`<b style="color:var(--ink)">${esc(stepsOf(id)[picks[k]].n)}</b>`).join(' and ')}, the one you said you can do. Make its target and you start on the rung above; fall short and you start on it. Warm up first and do it fresh.</p></div>
+      <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:320px">Check ${ids.map((id,k)=>`<b style="color:var(--ink)">${esc(stepsOf(id)[picks[k]].n)}</b>`).join(' and ')} with the setup you use. Warm up, stop before form changes, and record the clean result. Your plan starts on the movement you demonstrated.</p></div>
     <button class="btn primary block" data-act="test-verify" data-ids="${ids.join(',')}" data-is="${picks.join(',')}">${I.test} Test now</button>
     <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}" style="margin-top:8px">Skip the test, start training</button>
   </div>`);
 }
 let testCtx=null, tseq=0;
-function beginTests(ids, startAt, picks){ testCtx={queue:ids.slice(), results:[], startAt, picks:picks||null}; nextTestLadder(); }
+function beginTests(ids,startAt,picks,advance){testCtx={queue:ids.slice(),results:[],startAt,picks:picks||null,advance:advance||null};nextTestLadder();}
 function nextTestLadder(){
   if(!testCtx.queue.length){ finishTests(); return; }
   const id=testCtx.queue.shift(), pk=testCtx.picks&&testCtx.picks[id];
@@ -5951,16 +6408,19 @@ function nextTestLadder(){
 }
 function openTestStep(note){
   const id=testCtx.id, i=testCtx.i, L=LADDERS[id], st=stepsOf(id)[i], how=howtoHtml(st.id);
+  const path=pathFor(id), at=path.indexOf(i);
   const c=JSON.stringify(testCtx);
   nav.reg('test:'+(++tseq), ()=>{ testCtx=JSON.parse(c); openTestStep(note); }, true);
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Test: ${L.n}</h3><button class="iconbtn" data-act="test-quit" aria-label="Stop testing">${I.x}</button></div>
     <div class="sheet-body">
       ${note?`<div class="banner info">${I.info}<span>${note}</span></div>`:''}
-      <div class="eyebrow">Rung ${i+1} of ${stepsOf(id).length}</div>
+      <div class="eyebrow">${at>=0?'Step '+(at+1)+' of '+path.length:'Alternative movement'}</div>
       <h2 class="disp testname">${esc(st.n)}</h2>
-      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">${testCtx.verify?`You said you can do ${goalText(st)}. `:''}One all-out set with clean form${st.k==='hold'?', held as long as you can':''}. Stop the moment form breaks. ${testCtx.verify?`Reach ${st.v}${unitS(st)} and you start on the next rung.`:'The rung target is '+goalText(st)+'.'}</p>
+      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Warm up and check this movement while fresh. Stop when control or form changes. ${testCtx.advance?`The entry check is ${entryMinimum(id,i)}${unitS(st)}; repeating the previous rung alone does not prove this one.`:`Record what you can do cleanly. The training target starts at ${goalText(st)}.`}</p>
       ${how?`<details class="howbox"><summary>${I.info} How to do it</summary>${how}</details>`:''}
+      ${setupInputs(st,lastSetupFor(id,i),'data-test-setup="1"',false)}
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:12px 0"><input id="testclean" type="checkbox">The recorded reps or seconds use clean form and the stated setup${/each side|per side/i.test(st.cue||'')?' on both sides':''}.</label>
       <div class="field"><label>${st.k==='hold'?'Seconds held':'Clean reps'}</label><input id="testv" class="bignum" inputmode="numeric" placeholder="0" autocomplete="off"></div>
       <button class="btn primary block" data-act="test-record">${I.check} Record</button>
       <button class="btn ghost block" data-act="test-zero" style="margin-top:8px">Couldn&rsquo;t do one</button>
@@ -5968,24 +6428,22 @@ function openTestStep(note){
 }
 /* Outgrew it: move up. Nowhere near: move down. In between: this is the rung. */
 function recordTest(v){
-  const id=testCtx.id, i=testCtx.i, st=stepsOf(id)[i], cap=capFor(id), un=unitS(st);
-  state.tests.push({date:Date.now(), ladderId:id, stepIdx:i, v});
-  const hiT=Math.ceil(st.v*1.25), loT=Math.max(1,Math.ceil(st.v*0.4));
-  if(testCtx.verify){   // the rung you said you can do: make its target and move up one, otherwise start on it
-    const at2= v>=st.v && i<cap? i+1 : i; save(); moveTo(id, at2); testCtx.results.push({id, at:at2, v, i}); nextTestLadder(); return; }
-  let next=null, at=null, msg='';
-  if(v>=hiT && i<cap && i+1<testCtx.hi){ testCtx.lo=i; next=i+1; msg=`${v}${un} on ${esc(st.n)} is well past its ${st.v}${un} target. Try the next rung.`; }
-  else if(v<loT && i>0 && i-1>testCtx.lo){ testCtx.hi=i; next=i-1; msg=(v? `${v}${un} is a stretch for now.`:'Not yet, and that’s fine.')+' Test the rung below.'; }
-  else at=(v>=hiT && i<cap)? i+1 : i;
-  save();
-  if(next!=null && testCtx.tries<6){ testCtx.tries++; testCtx.i=next; openTestStep(msg); return; }
-  if(at==null) at=i;
-  moveTo(id, at);
-  testCtx.results.push({id, at, v, i});
+  const id=testCtx.id,i=testCtx.i,st=stepsOf(id)[i],setup={},clean=!!($('#testclean')||{}).checked;
+  __root.querySelectorAll('[data-test-setup][data-key]').forEach(el=>{const f=setupFields(st).find(x=>x.key===el.dataset.key);setup[el.dataset.key]=f&&f.type==='number'?(el.value===''?null:Number(el.value)):el.value.trim();});
+  if(v>0&&!setupValid(st,setup)){toast('Record the setup first');return;}
+  if(v>0&&!clean){toast('Confirm clean form, or record zero and try an easier setup');return;}
+  state.tests.push({date:Date.now(),ladderId:id,stepIdx:i,v,setup,clean:v>0&&clean});
+  let at=curIdx(id);
+  if(testCtx.advance){
+    if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&clean&&setupValid(st,setup)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
+    else toast('Keep building the current movement or use a more manageable assisted setup');
+  }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
+  save();testCtx.results.push({id,at,v,i});
   nextTestLadder();
 }
 function finishTests(){
-  const res=testCtx.results; testCtx=null;
+  const res=testCtx.results,advance=testCtx.advance;testCtx=null;
+  if(advance){tb.seal();render();if(advance.manual){closeModal();const done=checkGoals();if(done.length)celebrate(done,0);else toast(res.some(r=>r.at===r.i)?'Next movement checked; rung updated':'Current rung kept');}else offerAdvance(advance.list,advance.index+1,advance.rec);return;}
   render();
   const done=checkGoals();
   const summary=()=>{
@@ -6060,16 +6518,17 @@ function renderGoalPicker(){
 /* What else a goal takes, in a few words: the prep ladder, or the exercise for any other standard. */
 function needNames(k){ return [...new Set(GOAL_NEEDS[k].need.map(([l,r])=>{ const L=LADDERS[l]; return L&&stepsOf(l)[r]&&(L.prep? L.n : stepsOf(l)[r].n).toLowerCase(); }).filter(Boolean))]; }
 function gsave(){ return gsel.size? `${I.arrow} Continue with ${gsel.size} goal${gsel.size>1?'s':''}` : 'Pick at least one'; }
-function openCustomGoal(l){ cg={l:l||'pull', r:null, std:''}; cg.r=Math.min(curIdx(cg.l)+1, stepsOf(cg.l).length-1); renderCustom(); }
+function openCustomGoal(l){ cg={l:l||'pull', r:null, std:''}; cg.r=nextRung(cg.l,curIdx(cg.l))??curIdx(cg.l); renderCustom(); }
 function renderCustom(){
   const steps=stepsOf(cg.l), st=steps[cg.r], c=cg;
+  const path=pathFor(cg.l), choices=path.concat(steps.map((_,i)=>i).filter(i=>!path.includes(i)));
   nav.reg('custom', ()=>{ cg=c; renderCustom(); }, true);
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><button class="iconbtn" data-act="goal-add" data-back aria-label="Back">${I.back}</button><h3>Your own goal</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="field"><label>Movement</label>${PATTERNS.map(p=>{ const ids=LADDER_ORDER.filter(id=>LADDERS[id].p===p); return ids.length? `<div class="grouphdr" style="margin-top:8px">${p}</div><div class="pillpick">${ids.map(id=>`<button class="${cg.l===id?'on':''}" data-act="cg-l" data-id="${id}">${esc(LADDERS[id].n)}</button>`).join('')}</div>` : ''; }).join('')}</div>
       <div class="field"><label>Exercise you want to achieve</label>
-        ${steps.map((s,i)=>`<button class="pick ${cg.r===i?'on':''}" data-act="cg-r" data-i="${i}"><span class="rn">${i+1}</span><span class="pt"><span class="a">${esc(s.n)}</span><span class="b">${s.k==='hold'?'hold':'reps'}</span></span></button>`).join('')}</div>
+        ${choices.map(i=>{const s=steps[i],at=path.indexOf(i);return `<button class="pick ${cg.r===i?'on':''}" data-act="cg-r" data-i="${i}"><span class="rn">${at>=0?at+1:'&bull;'}</span><span class="pt"><span class="a">${esc(s.n)}</span><span class="b">${at<0?'Alternative movement &middot; ':''}${s.k==='hold'?'hold':'reps'}</span></span></button>`;}).join('')}</div>
       <div class="field"><label>${st.k==='hold'?'Seconds in one hold':'Reps in one set'}</label>
         <input id="cgstd" class="mono" inputmode="numeric" value="${esc(cg.std!==''?cg.std:st.v)}"></div>
       <button class="btn primary block" data-act="cg-save">${I.target} Set this goal</button>
@@ -6091,9 +6550,71 @@ function addGoals(list){
 }
 
 /* ==================== SESSION ==================== */
+/* Difficulty belongs to the set: changing today's setup never changes an earlier attempt. */
+function setupFields(st){ return st&&Array.isArray(st.setup)?st.setup.filter(f=>f&&typeof f.key==='string'&&f.key&&f.label&&(f.type==='number'||f.type==='text')):[]; }
+function setupValid(st,setup){
+  return setupFields(st).every(f=>{
+    const v=setup&&setup[f.key];
+    if(v==null||String(v).trim()==='') return false;
+    if(f.type==='text') return typeof v==='string'&&v.trim().length>0;
+    if(typeof v!=='number'&&typeof v!=='string') return false;
+    const n=Number(v); return Number.isFinite(n)&&n>=(f.min==null?0:Number(f.min));
+  });
+}
+function setupSummary(st,setup){
+  return setupFields(st).map(f=>{
+    const v=setup&&setup[f.key]; if(v==null||String(v).trim()==='') return '';
+    return f.label+': '+String(v).trim()+(f.unit?' '+f.unit:'');
+  }).filter(Boolean).join(' · ');
+}
+function setupKey(st,setup){
+  if(!setupValid(st,setup)) return null;
+  return JSON.stringify(setupFields(st).map(f=>[f.key,f.type==='number'?Number(setup[f.key]):String(setup[f.key]).trim().toLowerCase().replace(/\s+/g,' ')]));
+}
+function lastSetupFor(id,i){
+  const st=LADDERS[id]&&stepsOf(id)[i]; if(!st) return {};
+  const history=state.history||[];
+  for(let wi=history.length-1;wi>=0;wi--){
+    const entries=history[wi].entries||[];
+    for(let ei=entries.length-1;ei>=0;ei--){
+      const e=entries[ei]; if(e.ladderId!==id||e.stepIdx!==i) continue;
+      const sets=e.sets||[];
+      for(let si=sets.length-1;si>=0;si--){
+        const s=sets[si], setup=s.setup||e.setup;
+        if(s.done!==false&&setupValid(st,setup)) return Object.assign({},setup);
+      }
+      if(setupValid(st,e.setup)) return Object.assign({},e.setup);
+    }
+  }
+  return {};
+}
+function setupProgressionText(st){
+  const fields=setupFields(st), has=key=>fields.some(f=>f.key===key), numeric=key=>fields.some(f=>f.key===key&&f.type==='number');
+  let change='Adjust one setup detail to make the movement a little more demanding.';
+  if(st.practice==='power') change=has('target')?'Improve measured reach or distance while keeping landing quality. A taller box alone does not show more jump power.':'Keep the movement explosive as you modestly increase its demand; stop when output or control falls.';
+  else if(numeric('lean')) change='Add a little shoulder lean while keeping the same hand and foot positions.';
+  else if(numeric('load')) change=has('reach')?'Reduce the counterweight a little while keeping the same reach.':'Add a small amount of load while keeping the same range.';
+  else if(numeric('supportHeight')) change='Move the assisting hand a little farther below the bar, using less help.';
+  else if(numeric('range')) change='Increase the controlled range or target distance a little, keeping the same starting position.';
+  else if(has('band')) change='Use slightly less band assistance with the same anchor and body position.';
+  else if(numeric('height')){
+    if(['feet-elevated-row','elevated-pike-pushup'].includes(st.id)) change='Raise the foot support a little while keeping the same body line.';
+    else if(st.id==='jumping-muscleup') change='Reduce leg help while keeping the bar and starting position reproducible.';
+    else change='Lower the hand support, starting surface or padded target a little, as appropriate to this exercise.';
+  }else if(has('support')) change='Reduce one source of hand or foot assistance while keeping the same range and position.';
+  return 'Repeat the target cleanly on two training days with the same setup, then make one small change. '+change+' Keep form and log the new setup; this also applies at the final step.';
+}
+function setupInputs(st,setup,attrs,disabled){
+  return setupFields(st).map(f=>{
+    const value=setup&&setup[f.key]!=null?setup[f.key]:'';
+    return `<label style="display:block;min-width:0;font-size:12px;color:var(--muted)">${esc(f.label)}${f.unit?' ('+esc(f.unit)+')':''}
+      <input class="edtext" style="margin-top:4px;padding:8px 10px;font-size:13px" type="${f.type==='number'?'number':'text'}" ${f.type==='number'?`inputmode="decimal" min="${f.min==null?0:esc(f.min)}" step="${f.step==null?'any':esc(f.step)}"`:'maxlength="120"'} ${attrs} data-key="${esc(f.key)}" value="${esc(value)}"${disabled?' disabled':''}>
+      ${f.hint?`<span style="display:block;font-size:11px;line-height:1.4;margin-top:3px">${esc(f.hint)}</span>`:''}</label>`;
+  }).join('');
+}
 function makeSet(){ return {v:null, rir:null, done:false}; }
 function entryFor(id,idx){ const i= idx==null? curIdx(id) : idx, st=stepsOf(id)[i];
-  return {ladderId:id, stepIdx:i, kind:st.k, sets:Array.from({length:st.sets},makeSet)}; }
+  return {ladderId:id,stepIdx:i,kind:st.k,target:rungTarget(id,i),setup:lastSetupFor(id,i),clean:false,sets:Array.from({length:st.sets},makeSet)}; }
 let pick=null;
 function openBuilder(){ pick=new Set(defaultPicks()); renderBuilder(); }
 function builderRow(id){
@@ -6157,7 +6678,7 @@ function endSession(){
   tb.keep('end', a.id, a.name);
   const o=endOpt||{keep:true, repeat:true}; endOpt=null;
   const entries=a.entries.filter(e=>e.sets.some(s=>s.done))
-    .map(e=>({ladderId:e.ladderId, stepIdx:e.stepIdx, kind:e.kind, sets:e.sets.filter(s=>s.done)}));
+    .map(e=>({ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)}));
   if(o.keep && entries.length){ const r={id:a.id, name:a.name, date:Date.now(), durationSec:Math.floor((Date.now()-a.startedAt)/1000), entries, cleared:[], partial:true};
     const open=OpenSets.left(a.entries, ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) r.open=open;
     state.history.push(r); }
@@ -6181,30 +6702,32 @@ function addToSession(id,idx){
 function toggleDone(ei,si){
   const e=state.active.entries[ei], s=e.sets[si]; if(!s) return;
   const st=stepsOf(e.ladderId)[e.stepIdx];
-  if(!s.done && s.v==null) s.v=st.v;          // assume you hit target if left blank
+  if(!s.done){
+    if(s.v==null||!Number.isFinite(s.v)||s.v<0){toast('Enter the reps or seconds you actually completed');return;}
+    if(!setupValid(st,e.setup||{})){toast('Record the setup so this effort can be compared');return;}
+    s.setup=Object.assign({},e.setup||{});s.clean=e.clean===true;
+  }
   s.done=!s.done;
   save(); render();
   const L=LADDERS[e.ladderId];   // prep has its own short rest
-  if(s.done) startRest(L.rest? Math.min(L.rest, state.settings.rest) : isSkill(e.ladderId)? Math.max(120,state.settings.rest) : state.settings.rest);
+  if(s.done) startRest(L.rest?Math.min(L.rest,state.settings.rest):practiceOf(e.ladderId,e.stepIdx)==='balance'?60:Math.max(120,state.settings.rest));
 }
 function finishWorkout(){
   const a=state.active; if(!a) return;
   const entries=a.entries.filter(e=>e.sets.some(s=>s.done))
-    .map(e=>({ladderId:e.ladderId, stepIdx:e.stepIdx, kind:e.kind, sets:e.sets.filter(s=>s.done)}));
+    .map(e=>({ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)}));
   if(!entries.length){ toast('Tick off at least one set first'); return; }
   tb.keep('finish', a.id, a.name);   // so finishing can be taken back
   // a ladder you had not placed yet is placed where you trained it
   entries.forEach(e=>{ if(!state.placed[e.ladderId]){ state.placed[e.ladderId]=true; state.rung[e.ladderId]=e.stepIdx; } });
-  // offer the next rung only on the rung you are on (or harder), and never past an unfinished goal;
-  // a ladder whose current rung is the same exercise gets the offer too, judged on its own target
   const earned=[];
-  entries.forEach(e=>{ const rid=rungId(e.ladderId,e.stepIdx);
-    const on=[{id:e.ladderId, i:e.stepIdx}].concat(LADDER_ORDER.filter(id=>id!==e.ladderId&&state.placed[id]&&rungId(id,curIdx(id))===rid).map(id=>({id, i:curIdx(id)})));
-    on.forEach(({id,i})=>{ if(earned.some(x=>x.id===id)) return;
-      if(clearsRung({ladderId:id, stepIdx:i, sets:e.sets}) && i>=curIdx(id) && i<capFor(id)) earned.push({id, to:i+1}); }); });
-  const rec={id:a.id, name:a.name, date:a.cont? a.cont.rec.date : Date.now(), durationSec:Math.floor((Date.now()-a.startedAt)/1000), entries, cleared:earned.map(x=>x.id)};
+  const rec={id:a.id,name:a.name,date:a.cont?a.cont.rec.date:Date.now(),durationSec:Math.floor((Date.now()-a.startedAt)/1000),entries,cleared:[]};
   const open=OpenSets.left(a.entries, ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) rec.open=open;   // the sets you didn't tick off, kept apart
   insertRec(rec); state.repeat=null;
+  LADDER_ORDER.filter(id=>state.placed[id]).forEach(id=>{
+    const i=curIdx(id),to=nextRung(id,i),cap=capFor(id);
+    if(to!=null&&rungRank(id,to)<=rungRank(id,cap)&&currentProof(id,i).ready&&entries.some(e=>rungId(e.ladderId,e.stepIdx)===rungId(id,i))) earned.push({id,from:i,to});
+  });
   state.active=null; stopRest(); save(); tb.seal();
   state.route='today'; render();
   offerAdvance(earned,0,rec);
@@ -6212,8 +6735,8 @@ function finishWorkout(){
 }
 function offerAdvance(list,i,rec){
   if(i>=list.length){ afterAdvances(rec); return; }
-  const {id,to}=list[i], L=LADDERS[id], nxt=L.steps[to], from=L.steps[to-1];
-  if(!nxt||curIdx(id)>=to){ offerAdvance(list,i+1,rec); return; }
+  const {id,to,from:fi}=list[i],L=LADDERS[id],nxt=L.steps[to],from=L.steps[fi==null?previousRung(id,to):fi];
+  if(!nxt||curIdx(id)===to){offerAdvance(list,i+1,rec);return;}
   window._advQ={list,i,rec};
   nav.reg('adv:'+rec.id+':'+i, ()=>offerAdvance(list,i,rec), true);
   openModal(`<div class="sheet-grab"></div>
@@ -6223,11 +6746,11 @@ function offerAdvance(list,i,rec){
         <div class="eyebrow">Rung cleared</div>
         <h2 class="disp" style="font-size:24px;margin:8px 0 6px;text-transform:uppercase">${esc(from.n)}</h2>
         <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 auto 16px;max-width:300px">
-          You hit ${goalText(from)} with clean form. Next on ${L.n} is <b style="color:var(--ink)">${esc(nxt.n)}</b>, target ${goalText(nxt)}.</p>
+          You repeated ${goalText(from)} with clean form and the same setup on two training days. Next is <b style="color:var(--ink)">${esc(nxt.n)}</b>. Check ${entryMinimum(id,to)}${unitS(nxt)} with control before making it your training rung.</p>
       </div>
-      <button class="btn primary block" data-act="adv-yes" data-id="${id}" data-to="${to}">${I.up} Move up</button>
+      <button class="btn primary block" data-act="adv-yes" data-id="${id}" data-to="${to}">${I.test} ${entryReady(id,to)?'Use the checked next rung':'Check the next rung'}</button>
       <button class="btn ghost block" data-act="adv-no" style="margin-top:8px">Stay here a bit longer</button>
-      <p class="muted" style="font-size:11.5px;line-height:1.5;margin-top:12px;text-align:center">No rush. Repeating a rung for a few more sessions is never wasted, especially on straight-arm work.</p>
+      <p class="muted" style="font-size:11.5px;line-height:1.5;margin-top:12px;text-align:center">These are coaching defaults, not a guarantee. If the next step is too hard, reduce assistance gradually or keep building the current movement. Do the check fresh on another day if you are tired.</p>
     </div>`);
 }
 function afterAdvances(rec){ const done=checkGoals();
@@ -6236,8 +6759,11 @@ function afterAdvances(rec){ const done=checkGoals();
 function sessionDone(rec){
   tb.seal();
   const n=rec.entries.reduce((m,e)=>m+e.sets.length,0);
-  const near=activeGoals().filter(g=>rec.entries.some(e=>e.ladderId===g.l)).map(g=>`<div class="lrow"><div class="li brass">${I.target}</div><div class="lb"><div class="a">${esc(g.n)}</div>
-    <div class="b">${esc(curStep(g.l).n)}${curIdx(g.l)>=g.r?' &middot; best '+bestFor(g.l,g.r)+' of '+g.std:''}</div></div><div class="lv">${Math.round(goalProgress(g)*100)}%</div></div>`).join('');
+  const near=activeGoals().filter(g=>rec.entries.some(e=>e.ladderId===g.l)).map(g=>{
+    const path=pathFor(g.l,g), at=path.indexOf(curIdx(g.l));
+    return `<div class="lrow"><div class="li brass">${I.target}</div><div class="lb"><div class="a">${esc(g.n)}</div>
+    <div class="b">${esc(curStep(g.l).n)}${at>=0?' &middot; step '+(at+1)+' of '+path.length:''} &middot; checked goal best ${verifiedBestFor(g.l,g.r)} of ${g.std}${unitS(stepsOf(g.l)[g.r])}</div></div><div class="lv">${Math.round(goalProgress(g)*100)}%</div></div>`;
+  }).join('');
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-body">
       <div style="text-align:center;padding:8px 0 4px">
@@ -6324,7 +6850,7 @@ function goalCard(g){
   return `<button class="goal-card" data-act="go-goals">
     <div class="spread"><div class="gt">${esc(g.n)}</div><span class="chip brass">${pct}%</span></div>
     <div class="gbar"><i style="width:${Math.max(3,pct)}%"></i></div>
-    <div class="gs">${!placed?'Not placed yet':cur>=g.r?`On the goal rung &middot; best <b>${bestFor(g.l,g.r)}${unitS(gst)}</b> of ${g.std}${unitS(gst)}`:`Now: <b>${esc(st.n)}</b> &middot; rung ${cur+1} of ${g.r+1}`}</div>
+    <div class="gs">${!placed?'Not placed yet':cur===g.r?`On the goal movement &middot; verified best <b>${verifiedBestFor(g.l,g.r)}${unitS(gst)}</b> of ${g.std}${unitS(gst)}`:`Now: <b>${esc(st.n)}</b> &middot; step ${Math.max(0,rungRank(g.l,cur,g))+1} of ${rungRank(g.l,g.r,g)+1}`}</div>
     ${needsText(g)?`<div class="gs" style="margin-top:2px">What else it takes: ${needsText(g)}</div>`:''}</button>`;
 }
 function testsDue(){ const ids=[...new Set(activeGoals().map(g=>g.l))].filter(id=>state.placed[id]);
@@ -6341,7 +6867,7 @@ function viewToday(){
     hero=`<div class="hero"><div class="eyebrow">${greeting()}</div><h2>Today&rsquo;s session</h2>
       <div class="nxlist">${xs.map(x=>{ const st=stepsOf(x.id)[x.i]; return `<button class="nx" data-act="how" data-id="${esc(x.id)}" data-i="${x.i}"><span>${esc(st.n)}</span><b class="mono">${planText(x)}</b>
         <i>${esc(LADDERS[x.id].n)} &middot; ${roleText(x)}</i></button>`; }).join('')}</div>
-      <p class="sub" style="margin:10px 0 0;font-size:12.5px">Changes each session: goal work swaps between heavy and volume days, support work takes turns, and one extra exercise rotates. What else your goals take, like balance and mobility, comes along until it is in place: warm-ups first, long stretches last.</p>
+      <p class="sub" style="margin:10px 0 0;font-size:12.5px">Train the movement and setup you can control. Related easier work supports strength days; balance and power stay fresh. Targets grow toward your goals, and supporting mobility and technique stay in a small maintenance rotation.</p>
       <div class="grid2" style="margin-top:14px"><button class="btn primary block" data-act="start-plan">${I.play} Start</button>
         <button class="btn ghost block" data-act="builder">${I.sliders} Choose</button></div></div>`;
   } else {
@@ -6392,10 +6918,10 @@ function viewGoals(){
 }
 function goalFull(g){
   const L=LADDERS[g.l], cur=curIdx(g.l), placed=state.placed[g.l], pct=Math.round(goalProgress(g)*100), lt=lastTestFor(g.l);
-  const path=stepsOf(g.l).slice(0,g.r+1).map((st,i)=>{
-    const cls=!placed?'locked':i<cur?'cleared':i===cur?'current':'locked', isGoal=i===g.r, best=bestFor(g.l,i);
+  const route=pathFor(g.l,g),path=route.slice(0,route.indexOf(g.r)+1).map((i,k)=>{const st=stepsOf(g.l)[i],proven=currentProof(g.l,i).ready;
+    const cls=!placed?'locked':i===cur?'current':proven?'cleared':'locked',isGoal=i===g.r,best=verifiedBestFor(g.l,i);
     return `<button class="rung ${cls} ${isGoal?'goal':''}" data-act="how" data-id="${g.l}" data-i="${i}">
-      <div class="mark"><div class="dot">${placed&&i<cur?I.check:isGoal?I.target:(placed&&i===cur?'':i+1)}</div></div>
+      <div class="mark"><div class="dot">${proven?I.check:isGoal?I.target:(placed&&i===cur?'':k+1)}</div></div>
       <div class="body"><div class="n">${esc(st.n)}</div>
         <div class="g">${isGoal?'Goal: '+stdText(g)+' in one set':goalText(st)+(st.k==='hold'?' hold':' reps')}${best?'  &middot;  best '+best+unitS(st):''}</div>
         ${placed&&i===cur?`<div class="cue">${esc(st.cue)}</div>`:''}</div>
@@ -6425,8 +6951,8 @@ function goalFull(g){
 
 /* One thing a goal takes: its standard, and where you are with it. Tap for how to do it. */
 function needRow(n){
-  const st=stepsOf(n.l)[n.r], ok=needMet(n), b=bestFor(n.l,n.r), L=LADDERS[n.l], placed=state.placed[n.l], i=curIdx(n.l);
-  const where= ok? 'in place' : b? 'best '+b+unitS(st) : placed&&i<n.r? 'now on '+esc(stepsOf(n.l)[i].n.toLowerCase()) : placed? 'on it now' : 'not placed yet';
+  const st=stepsOf(n.l)[n.r],ok=needMet(n),b=verifiedBestFor(n.l,n.r),L=LADDERS[n.l],placed=state.placed[n.l],i=curIdx(n.l);
+  const claim=(state.needClaims||{})[needKey(n)],where=ok?(b>=n.v?'recent performance verified':'confirmed by you; recheck after a layoff'):b?'verified best '+b+unitS(st):placed?'now on '+esc(stepsOf(n.l)[i].n.toLowerCase()):'not placed yet';
   return `<button class="lrow" data-act="how" data-id="${n.l}" data-i="${n.r}" style="width:100%;text-align:left">
     <div class="li" ${ok?'style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)"':''}>${ok?I.check:(I[L.ic]||I.ladder)}</div>
     <div class="lb"><div class="a">${esc(st.n)}</div><div class="b">${esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'} &middot; ${where}</div></div></button>`;
@@ -6438,7 +6964,7 @@ function viewLibrary(){
   const segs=PATTERNS.map(p=>`<button class="seg-tab ${tab===p?'on':''}" data-act="lib-tab" data-t="${p}">${p}</button>`).join('');
   const ids=LADDER_ORDER.filter(id=>LADDERS[id].p===tab);
   const intro= tab==='Skill'
-    ? `<div class="banner info">${I.info}<span>Skills are practised, not ground out. Work them fresh, at the start of a session, in short sets well short of failure.</span></div>`
+    ? `<div class="banner info">${I.info}<span>Practise balance briefly while fresh. Planche and lever work build demanding strength: use controlled sets and recover between hard sessions.</span></div>`
     : tab==='Arms'? `<div class="banner brass">${I.book}<span>Direct arm and grip work. Pulling and pushing ladders train the arms too; these top them up.</span></div>`
     : tab==='Prep'? `<div class="banner brass">${I.book}<span>What goals take besides strength: range of motion, balance, joints ready for the load, control and landing. Each rung is a measurable standard, so the app knows when one is in place. They aren’t hard sets.</span></div>
       <div class="row" style="gap:6px;flex-wrap:wrap;margin:-4px 0 12px">${evChip('qualities','Why goals need these')}${evChip('stretchtime','Why stretches go last')}</div>`
@@ -6447,23 +6973,23 @@ function viewLibrary(){
   const groups= tab==='Prep'? Object.keys(WHEN_N).map(w=>({h:WHEN_N[w], ids:ids.filter(id=>LADDERS[id].when===w)})).filter(x=>x.ids.length) : [{h:'', ids}];
   return `<div class="seg-tabs">${segs}</div>${intro}
     ${groups.map(G=>(G.h?`<div class="grouphdr" style="margin-top:4px">${G.h}</div>`:'')+G.ids.map(id=>{ const L=LADDERS[id], i=curIdx(id), st=L.steps[i], best=bestFor(id,i), placed=state.placed[id];
-      const track=L.steps.map((s,k)=>`<i class="${placed&&k<i?'on':placed&&k===i?'cur':''}"></i>`).join('');
+      const route=pathFor(id),track=route.map(k=>`<i class="${placed&&k===i?'cur':currentProof(id,k).ready?'on':''}"></i>`).join('');
       return `<button class="ladder-card" data-act="ladder" data-id="${id}">
         <div class="lc-head"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
           <div class="lc-t"><div class="a">${esc(L.n)}${L.custom?' &middot; yours':''}${goalsOn(id).length?' &middot; goal':''}</div><div class="b">${placed?esc(st.n):L.steps.length+' rungs'}</div></div>
           <span style="color:var(--faint)">${I.arrow}</span></div>
         <div class="track">${track}</div>
-        <div class="lc-foot"><span>${placed?'Rung '+(i+1)+' of '+L.steps.length:'Not placed yet'}</span><span>${placed?(best?`best ${best}${unitS(st)} &middot; `:'')+'target '+goalText(st):L.m}</span></div>
+        <div class="lc-foot"><span>${placed?'Step '+(route.indexOf(i)+1)+' of '+route.length:'Not placed yet'}</span><span>${placed?(best?`logged best ${best}${unitS(st)} &middot; `:'')+'target '+goalText(st):L.m}</span></div>
       </button>`; }).join('')).join('')}
     <button class="btn ghost block" data-act="cl-new" data-like="${esc(LIKE_DEFAULT[tab]||'core')}" style="margin-top:4px">${I.plus} Build your own ladder</button>
     <p class="muted" style="font-size:12px;line-height:1.5;margin:8px 4px 0">Missing an exercise? Build a ladder of your own, easiest rung first. It trains, tests and counts like the others.</p>`;
 }
 function openLadder(id){
   const L=LADDERS[id], cur=curIdx(id), placed=state.placed[id], gs=goalsOn(id), ready=new Set(readyMoves().filter(u=>u.l===id).map(u=>u.r));
-  const rungs=L.steps.map((st,i)=>{
-    const cls=!placed?'locked':i<cur?'cleared':i===cur?'current':'locked', best=bestFor(id,i), isGoal=gs.some(g=>g.r===i);
+  const route=pathFor(id),routes=LADDER_PATHS[id]||[],rungs=route.map((i,k)=>{const st=L.steps[i],proven=currentProof(id,i).ready;
+    const cls=!placed?'locked':i===cur?'current':proven?'cleared':'locked',best=verifiedBestFor(id,i),isGoal=gs.some(g=>g.r===i);
     return `<button class="rung ${cls} ${isGoal?'goal':''}" data-act="how" data-id="${id}" data-i="${i}">
-      <div class="mark"><div class="dot">${placed&&i<cur?I.check:isGoal?I.target:(placed&&i===cur?'':i+1)}</div></div>
+      <div class="mark"><div class="dot">${proven?I.check:isGoal?I.target:(placed&&i===cur?'':k+1)}</div></div>
       <div class="body"><div class="n">${esc(st.n)}</div>
         <div class="g">${goalText(st)}${st.k==='hold'?' hold':' reps'}${best?`  &middot;  best ${best}${unitS(st)}`:''}${ready.has(i)?'  &middot;  <b style="color:var(--brass-ink)">ready to try</b>':''}</div></div>
       <div class="side">${placed&&i===cur?'<span class="chip brass">Here</span>':`<span class="faint">${I.info}</span>`}</div></button>`; }).join('');
@@ -6471,14 +6997,15 @@ function openLadder(id){
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>${esc(L.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
-      <p class="muted" style="font-size:13px;line-height:1.55;margin:0 0 12px">${L.custom?'Your own ladder, counted like '+esc(LADDERS[L.like].n.toLowerCase())+' ('+L.m.toLowerCase()+')':L.m}. Tap any rung for how to do it. ${L.prep?esc(QN[L.q]||'Prep')+' work, done '+({warm:'in the warm-up, before the main work',early:'early in the session while you are fresh',mid:'with the main work',end:'at the end of the session'}[L.when]||'')+'. Not counted as hard sets. Clear the target in one session to earn the next rung.':L.skill?'Practised fresh, never to failure.':'Clear the target in one session to earn the next rung.'}</p>
+      <p class="muted" style="font-size:13px;line-height:1.55;margin:0 0 12px">${L.m}. Repeat the current target cleanly on two days with the same setup, then check a controlled version of the next movement. Reps and times are coaching defaults. ${practiceOf(id)==='balance'?'Practise balance briefly while fresh.':practiceOf(id)==='power'?'Keep every rep explosive; stop when height or control drops.':'Build challenging strength work with recovery between sessions.'}</p>
+      ${routes.length>1?`<div class="pillpick" style="margin-bottom:12px">${routes.map(p=>`<button data-act="ladder-path" data-id="${id}" data-path="${esc(p.key)}" class="${p.steps.map(rid=>L.steps.findIndex(st=>st.id===rid)).join(',')===route.join(',')?'on':''}" ${gs.some(g=>!p.steps.includes(L.steps[g.r].id))?'disabled':''}>${esc(p.name)}</button>`).join('')}</div><p class="muted" style="font-size:12px">Choose a related path. An active goal selects the path that includes its movement; other branches are alternatives.</p>`:''}
       <div class="ladder">${rungs}</div>
       <div class="grid2" style="margin-top:16px">
         <button class="btn primary block" data-act="add-to-session" data-id="${id}">${I.plus} Add today</button>
         <button class="btn ghost block" data-act="test-go" data-ids="${id}">${I.test} Test me</button></div>
       <div class="grid2" style="margin-top:8px">
-        <button class="btn ghost block" data-act="demote" data-id="${id}" ${!placed||cur<=0?'disabled':''}>${I.back} Step back</button>
-        <button class="btn ghost block" data-act="advance" data-id="${id}" ${placed&&cur>=L.steps.length-1?'disabled':''}>${I.up} ${placed?'Move up':'I am here'}</button></div>
+        <button class="btn ghost block" data-act="demote" data-id="${id}" ${previousRung(id,cur)==null?'disabled':''}>${I.back} Step back</button>
+        <button class="btn ghost block" data-act="advance" data-id="${id}" ${nextRung(id,cur)==null?'disabled':''}>${I.test} Check next step</button></div>
       <button class="btn ghost block" data-act="goal-custom" data-l="${id}" style="margin-top:8px">${I.target} Make a rung here my goal</button>
       ${L.custom?`<div class="grid2" style="margin-top:8px">
         <button class="btn ghost block" data-act="cl-edit" data-id="${id}">${I.pen} Edit ladder</button>
@@ -6586,35 +7113,43 @@ function viewTrain(){
 }
 function exCard(e,ei){
   const st=stepsOf(e.ladderId)[e.stepIdx], L=LADDERS[e.ladderId], cur=curIdx(e.ladderId);
+  const path=pathFor(e.ladderId), rank=path.indexOf(e.stepIdx), currentRank=path.indexOf(cur);
   const unitTxt=e.kind==='hold'?'Secs':'Reps';
+  const target=e.target==null?st.v:e.target, fields=setupFields(st), practice=st.practice||L.practice, showRir=e.kind!=='hold'&&practice!=='balance'&&practice!=='power';
   const nextIdx=e.sets.findIndex(s=>!s.done);
   const cleared=clearsRung(e), gs=goalsOn(e.ladderId);
   const rows=e.sets.map((s,si)=>{
     const isNext=!s.done&&si===nextIdx;
     return `<div class="setrow ${s.done?'done':''} ${isNext?'next':''}">
       <div class="sidx">${si+1}</div>
-      <input class="sinput" inputmode="numeric" data-field="v" data-ex="${ei}" data-set="${si}" value="${s.v!=null?s.v:''}" placeholder="${st.v}" aria-label="Set ${si+1} ${e.kind==='hold'?'seconds':'reps'}">
-      <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve">
-      <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
+      <input class="sinput" inputmode="numeric" data-field="v" data-ex="${ei}" data-set="${si}" value="${s.v!=null?s.v:''}" placeholder="${target}" aria-label="Set ${si+1} ${e.kind==='hold'?'seconds':'reps'}">
+      ${showRir?`<input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve, optional">`:'<span aria-hidden="true"></span>'}
+      <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="${s.done?'Mark set incomplete':'Log set'}">${I.check}</button>
       <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
-    </div>`; }).join('');
+    </div>${s.done?`<div class="muted" style="font-size:11px;line-height:1.4;padding:0 6px 6px 34px">${s.clean===true?'Clean form confirmed':s.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}${setupSummary(st,s.setup)?' · '+esc(setupSummary(st,s.setup)):fields.length?' · Setup was not recorded':''}</div>`:''}`; }).join('');
   return `<div class="card excard">
     <div class="exhead">
       <div class="en"><h3 data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}" style="cursor:pointer">${esc(st.n)}<span class="hinfo">${I.info}</span></h3>
         <div class="row" style="gap:5px;flex-wrap:wrap">
           <span class="chip">${L.n}</span>
-          <span class="chip brass mono">${goalText(st)}</span>
+          <span class="chip brass mono">${goalText(Object.assign({},st,{v:target,sets:e.sets.length}))}</span>
           ${gs.length?`<span class="chip">${I.target} ${esc(gs[0].n)}</span>`:''}
           ${L.prep?`<span class="chip steel">${esc(QN[L.q]||'Prep')} &middot; ${esc(WHEN_S[L.when]||'prep')}</span>`:''}
-          ${e.role==='volume'&&e.stepIdx<cur?'<span class="chip">Volume day: easier rung, one more set</span>' : !state.placed[e.ladderId]?'<span class="chip">New to you: a first guess, change it in the menu</span>' : e.stepIdx<cur?'<span class="chip">Easier today</span>':e.stepIdx>cur?'<span class="chip">Harder today</span>':''}
-          ${cleared?`<span class="chip good">${I.check} Cleared</span>`:''}
+          ${e.role==='volume'?'<span class="chip">Lighter strength day</span>':rank<0?'<span class="chip">Alternative movement</span>':!state.placed[e.ladderId]?'<span class="chip">New to you: change it in the menu</span>':rank<currentRank?'<span class="chip">Earlier on this path</span>':rank>currentRank?'<span class="chip">Practising a later step</span>':''}
+          ${cleared?`<span class="chip good">${I.check} Target met today</span>`:''}
         </div>
       </div>
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
     </div>
+    ${fields.length?`<div style="padding:0 14px 12px"><div class="grouphdr" style="margin:2px 0 7px">Setup for upcoming sets</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">${setupInputs(st,e.setup,`data-field="setup" data-ex="${ei}"`,false)}</div>
+      <p class="muted" data-setup-status="${ei}" style="font-size:11.5px;line-height:1.45;margin:7px 0 0">${setupValid(st,e.setup)?'Setup is saved with each set. Change one detail at a time as you progress.':'Fill in every setup detail before logging a set. Earlier sets keep their own setup.'}</p>
+      <p class="muted" style="font-size:11.5px;line-height:1.45;margin:7px 0 0">${esc(setupProgressionText(st))}</p></div>`:''}
+    <label style="display:flex;gap:8px;align-items:flex-start;padding:0 14px 12px;font-size:12px;line-height:1.45;color:var(--muted)"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''} style="margin-top:3px"><span>Clean form on upcoming sets<br><span style="font-size:11px">Controlled movement, prescribed range or position, no pain. Clear this if form breaks; practice attempts still count in your log.</span></span></label>
     <div class="setgrid">
-      <div class="setrow-head"><span>Set</span><span>${unitTxt}</span><span>RIR</span><span></span><span></span></div>
+      <div class="setrow-head"><span>Set</span><span>${unitTxt}</span><span>${showRir?'RIR':''}</span><span></span><span></span></div>
       ${rows}
+      ${showRir?`<p class="muted" style="font-size:11px;line-height:1.4;margin:5px 4px 0">RIR is optional: how many more clean reps you could do. Finish strength sets with a little in reserve.</p>`:''}
     </div>
     <div class="excard-actions">
       <button class="tinybtn" data-act="add-set" data-ex="${ei}">${I.plus} Add set</button>
@@ -6646,15 +7181,15 @@ function openSetMenu(ei,si){
 }
 function openExMenu(ei){
   const e=state.active.entries[ei], st=stepsOf(e.ladderId)[e.stepIdx], last=stepsOf(e.ladderId).length-1;
-  const easier=stepsOf(e.ladderId)[e.stepIdx-1], harder=stepsOf(e.ladderId)[e.stepIdx+1];
+  const prev=previousRung(e.ladderId,e.stepIdx),next=nextRung(e.ladderId,e.stepIdx),easier=prev==null?null:stepsOf(e.ladderId)[prev],harder=next==null?null:stepsOf(e.ladderId)[next],back=previousRung(e.ladderId,curIdx(e.ladderId));
   nav.reg('exmenu:'+ei, ()=>openExMenu(ei));
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>${esc(st.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body tight">
       <button class="actitem" data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}">${I.info}<span>How to do it</span></button>
-      ${curIdx(e.ladderId)>0?`<button class="actitem" data-act="ex-stepback" data-ex="${ei}">${I.down}<span>Step back a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[curIdx(e.ladderId)-1].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
+      ${back!=null?`<button class="actitem" data-act="ex-stepback" data-ex="${ei}">${I.down}<span>Step back a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[back].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
       ${easier?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="-1">${I.down}<span>Easier, just today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(easier.n)}; your rung stays where it is</div></span></button>`:''}
-      ${harder&&e.stepIdx<last?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="1">${I.up}<span>Try the next rung today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(harder.n)}</div></span></button>`:''}
+      ${harder?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="1">${I.up}<span>Try the next rung today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(harder.n)}; check a controlled version while fresh</div></span></button>`:''}
       <button class="actitem" data-act="ladder" data-id="${esc(e.ladderId)}">${I.ladder}<span>See the whole ladder</span></button>
       <button class="actitem danger" data-act="rm-ex" data-ex="${ei}">${I.trash}<span>Remove from session</span></button>
     </div>`);
@@ -6702,13 +7237,14 @@ function progOverview(){
 function progRungs(){
   const ids=LADDER_ORDER.filter(id=>state.placed[id]), rest=LADDER_ORDER.length-ids.length;
   return (ids.length? ids : LADDER_ORDER).map(id=>{
-    const L=LADDERS[id], i=curIdx(id), st=L.steps[i], best=bestFor(id,i), placed=state.placed[id];
+    const L=LADDERS[id], i=curIdx(id), st=L.steps[i], best=bestFor(id,i), placed=state.placed[id], path=pathFor(id);
+    const proven=new Set(path.filter(k=>currentProof(id,k).ready));
     return `<button class="ladder-card" data-act="ladder" data-id="${id}">
       <div class="lc-head"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
         <div class="lc-t"><div class="a">${L.n}${L.skill?' &middot; skill':''}</div><div class="b">${placed?esc(st.n):'Not placed yet'}</div></div>
         <span style="color:var(--faint)">${I.arrow}</span></div>
-      <div class="track">${L.steps.map((s,k)=>`<i class="${placed&&k<i?'on':placed&&k===i?'cur':''}"></i>`).join('')}</div>
-      <div class="lc-foot"><span>${placed?i+' of '+(L.steps.length-1)+' cleared':'&ndash;'}</span><span>${best?`best ${best}${unitS(st)}`:'no logs yet'}</span></div>
+      <div class="track">${path.map(k=>`<i class="${placed&&k===i?'cur':proven.has(k)?'on':''}"></i>`).join('')}</div>
+      <div class="lc-foot"><span>${placed?'Step '+(path.indexOf(i)+1)+' of '+path.length+' &middot; '+proven.size+' repeatable':'&ndash;'}</span><span>${best?`logged best ${best}${unitS(st)}`:'no logs yet'}</span></div>
     </button>`; }).join('')+(ids.length&&rest? `<button class="btn ghost block" data-act="nav" data-route="library">${I.book} ${rest} more ladders you haven’t placed yet</button>` : '');
 }
 function progHistory(){
@@ -6723,9 +7259,10 @@ function progHistory(){
         ${w.cleared&&w.cleared.length?`<span class="chip good">${I.up} ${w.cleared.length}</span>`:''}
       </div>
       ${w.entries.map(e=>{ const st=LADDERS[e.ladderId]&&stepsOf(e.ladderId)[e.stepIdx];
-        const vals=e.sets.filter(s=>s.done).map(s=>s.v+(e.kind==='hold'?'s':'')).join(', ');
+        const done=e.sets.filter(s=>s.done!==false), vals=done.map(s=>s.v+(e.kind==='hold'?'s':'')).join(', ');
+        const setups=[...new Set(done.map(s=>setupSummary(st,s.setup||e.setup)).filter(Boolean))];
         return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div>
-          <div class="b">${vals||'no sets completed'}</div></div></div>`; }).join('')}
+          <div class="b">${vals||'no sets completed'}${setups.length?'<br>'+setups.map(esc).join('<br>'):setupFields(st).length?'<br>Setup was not recorded':''}</div></div></div>`; }).join('')}
       <div style="margin-top:6px;text-align:right"><button class="tinybtn" data-act="ed-open" data-id="${esc(w.id)}" style="padding:5px 9px">${I.pen} Edit</button></div>
     </div>`; }).join('');
 }
@@ -6740,7 +7277,7 @@ function evidenceHtml(){
         <div class="en"><div class="t">${e.t}</div><div class="s">${e.a}</div></div>
         <span class="conf ${e.c}">${e.c==='high'?'Strong':e.c==='mod'?'Moderate':'Early'}</span></button>`; }).join('');
   }).join('');
-  return `<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Every rung, target and nudge in here traces back to one of these. Each topic gives the finding in plain language, how sure the research is, what to do about it, and the papers. Where the evidence is thin, it says so.</p>
+  return `<p class="muted" style="font-size:13px;line-height:1.6;margin:0">These sources inform the training principles. Exercise paths, rep and hold targets, and the two-day advancement rule are coaching defaults; research has not validated each transition. Each topic explains the finding, its limits, practical guidance and sources.</p>
     ${groups}
     <p class="muted" style="font-size:11px;line-height:1.55;margin:16px 4px 0">Summarised from the sources listed. Results are averages with real variation between people. Not medical advice; if a joint hurts, back off and get it looked at.</p>`;
 }
@@ -6755,7 +7292,7 @@ function openEvidence(k){
       <div class="section-label" style="margin:18px 3px 8px">The sources <span class="ln"></span></div>
       ${e.src.map(([c,j,u])=>`<a class="ev-source" href="${u}" target="_blank" rel="noopener">
         <div class="es-t"><div class="c">${c}</div><div class="u">${j}</div></div>${I.arrow}</a>`).join('')}
-      <p class="muted" style="font-size:11px;line-height:1.55;margin-top:12px">Links open a search for the work. Summaries are mine; the findings are theirs.</p>
+      <p class="muted" style="font-size:11px;line-height:1.55;margin-top:12px">Links open source pages or searches for the cited work. The app translates general findings into practical coaching guidance.</p>
     </div>`);
 }
 function openEvidenceLib(){
@@ -6825,7 +7362,7 @@ function onboard(){
       <div class="stack" style="gap:10px;margin-bottom:18px">
         ${[['Your goals, your call','A first pull-up, a handstand, a muscle-up, or your own. You choose what to train each day, too.'],
            ['Start where you really are','A quick survey and an optional test place you on each ladder: hard enough to count, easy enough to do well.'],
-           ['Earn every rung','Clear the target with clean form and the app offers the next step. Every exercise comes with instructions.']]
+           ['Build repeatable progress','Record your setup and repeat the target cleanly on two training days, then check the next movement directly. Targets are coaching defaults.']]
           .map(x=>`<div class="row" style="align-items:flex-start;gap:11px">
             <div style="width:7px;height:7px;border-radius:99px;background:var(--brass);margin-top:7px;flex:none"></div>
             <div><div style="font-weight:700;font-size:14px">${x[0]}</div>
@@ -6868,6 +7405,9 @@ __root.addEventListener('click', e=>{
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'evidence-lib': openEvidenceLib(); break;
     case 'ladder': openLadder(el.dataset.id); break;
+    case 'ladder-path': {const id=el.dataset.id,p=(LADDER_PATHS[id]||[]).find(p=>p.key===el.dataset.path);if(!p)break;
+      if(goalsOn(id).some(g=>!p.steps.includes(stepsOf(id)[g.r].id))){toast('This goal uses another path');break;}
+      state.paths[id]=p.key;state.rung[id]=curIdx(id);save();openLadder(id);break;}
     case 'how': openRungHow(el.dataset.id, +el.dataset.i); break;
     case 'lib-tab': state.libTab=el.dataset.t; save(); render(); break;
     case 'prog-tab': state.progTab=el.dataset.t; save(); render(); break;
@@ -6882,16 +7422,15 @@ __root.addEventListener('click', e=>{
     case 'unl-goal': { const u=UNLOCKS.find(x=>x.k===el.dataset.k); if(!u) break; markUnlocked([u]);
       const st=stepsOf(u.l)[u.r];
       const g= u.goal&&GOALS[u.goal]? makeGoal(u.goal) : {id:uid(), key:'custom', n:st.n+', '+(st.k==='hold'? Math.min(10,st.v)+' s' : '1 rep'), l:u.l, r:u.r, std:st.k==='hold'?Math.min(10,st.v):1, sup:supFor(u.l), added:Date.now(), achieved:null};
-      if(!activeGoals().some(x=>x.l===g.l&&x.r>=g.r)) state.goals.push(g);
-      // you are ready to try it, so that is where you start on that ladder
-      if(!state.placed[u.l] || curIdx(u.l)<u.r){ state.rung[u.l]=u.r; state.placed[u.l]=true; }
+      if(!activeGoals().some(x=>x.l===g.l&&x.r===g.r&&x.std>=g.std))state.goals.push(g);
+      // An invitation to try a skill does not place an untested movement in the plan.
       state.onboarded=true; save(); render(); toast(esc(g.n)+' is a goal now. It joins your sessions from the next one.');
       if(window._unl) showUnlocks(window._unl.list, window._unl.then); else closeModal();
       if(window.__hub) window.__hub.changed('cal'); break; }
     case 'gpick': { const k=el.dataset.k; if(gsel.has(k)) gsel.delete(k); else gsel.add(k); el.classList.toggle('on',gsel.has(k)); const b=$('#gsave'); if(b) b.innerHTML=MiloSecurity.html(gsave()); break; }
     case 'gsave': { if(!gsel||!gsel.size){ toast('Pick at least one goal'); break; } addGoals([...gsel].map(makeGoal)); gsel=null; break; }
     case 'goal-custom': openCustomGoal(el.dataset.l); break;
-    case 'cg-l': cg.l=el.dataset.id; cg.r=Math.min(curIdx(cg.l)+1, stepsOf(cg.l).length-1); cg.std=''; renderCustom(); break;
+    case 'cg-l': cg.l=el.dataset.id; cg.r=nextRung(cg.l,curIdx(cg.l))??curIdx(cg.l); cg.std=''; renderCustom(); break;
     case 'cg-r': cg.r=+el.dataset.i; cg.std=''; renderCustom(); break;
     case 'cg-save': { const st=stepsOf(cg.l)[cg.r]; const std=Math.max(1,parseInt(($('#cgstd')||{}).value)||st.v);
       const g={id:uid(), key:'custom', n:st.n+', '+(st.k==='hold'? std+' s' : std+' rep'+(std===1?'':'s')), l:cg.l, r:cg.r, std, sup:supFor(cg.l), added:Date.now(), achieved:null};
@@ -6902,12 +7441,8 @@ __root.addEventListener('click', e=>{
     case 'sheet-back': nav.back(); break;
     case 'goal-rm': state.goals=state.goals.filter(x=>x.id!==el.dataset.id); save(); closeModal(); render(); toast('Goal removed'); break;
     case 'place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) startPlacement([g]); break; }
-    case 'survey-pick': { const id=el.dataset.id, i=+el.dataset.i; surveyAns[id]=i;
-      // a goal ladder waits on the test of the rung you picked; support ladders start on the rung above it
-      const tested=place&&place.tests.includes(id)&&goalsOn(id).length&&i>=0;
-      moveTo(id, tested? i : Math.min(i+1, stepsOf(id).length-1));
-      // what you said you can do counts toward what else your goals take, even on a ladder's top rung
-      if(!tested){ if(i>=0) state.said[id]=i; else delete state.said[id]; save(); }
+    case 'survey-pick': { const id=el.dataset.id,i=+el.dataset.i;surveyAns[id]=i;
+      moveTo(id,i>=0?i:pathFor(id)[0]);
       if(place){ place.survey.shift(); nextPlacement(); } break; }
     case 'need-place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) openNeedCheck([g], ()=>{ closeModal(); render(); toast('Saved. Your sessions follow it from now on'); }); break; }
     case 'nchk': { const k=el.dataset.k; if(ncheck.sel.has(k)) ncheck.sel.delete(k); else ncheck.sel.add(k); el.classList.toggle('on', ncheck.sel.has(k)); break; }
@@ -6918,7 +7453,7 @@ __root.addEventListener('click', e=>{
       ids.forEach((id,k)=>{ if(LADDERS[id]) pk[id]=is[k]; }); beginTests(Object.keys(pk), null, pk); break; }
     case 'test-go': { const ids=(el.dataset.ids||'').split(',').filter(x=>LADDERS[x]); if(!ids.length) break;
       beginTests(ids, el.dataset.i!=null? +el.dataset.i : null); break; }
-    case 'test-later': (el.dataset.ids||'').split(',').forEach((id,k)=>{ const i=+(el.dataset.is||'').split(',')[k]; if(LADDERS[id]&&i>=0) moveTo(id, Math.min(i+1, capFor(id), stepsOf(id).length-1)); }); closeModal(); state.route='goals'; save(); render(); toast('Your plan is ready'); break;
+    case 'test-later': (el.dataset.ids||'').split(',').forEach((id,k)=>{const i=+(el.dataset.is||'').split(',')[k];if(LADDERS[id]&&i>=0)moveTo(id,i);});closeModal();state.route='goals';save();render();toast('Your plan is ready');break;
     case 'test-record': { const v=parseInt(($('#testv')||{}).value); if(isNaN(v)||v<0){ toast('Enter your reps or seconds'); break; } recordTest(v); break; }
     case 'test-zero': recordTest(0); break;
     case 'ed-open': openEditSession(el.dataset.id); break;
@@ -6933,7 +7468,7 @@ __root.addEventListener('click', e=>{
     case 'ed-add-set': edAddSet(+el.dataset.e); break;
     case 'ed-save': saveEdit(); break;
     case 'ed-del': deleteEdit(); break;
-    case 'test-quit': { const r=testCtx&&testCtx.results; testCtx=null; closeModal(); render(); if(r&&r.length) toast('Saved what you tested'); break; }
+    case 'test-quit': {const r=testCtx&&testCtx.results,q=testCtx&&testCtx.advance;testCtx=null;closeModal();render();if(q&&!q.manual)offerAdvance(q.list,q.index+1,q.rec);else if(r&&r.length)toast('Saved what you tested');break;}
 
     /* sessions */
     case 'start-plan': if(A){ state.route='train'; render(); break; } beginSession(defaultPicks()); break;
@@ -6947,18 +7482,18 @@ __root.addEventListener('click', e=>{
     case 'del-set': { const s=A.entries[ei].sets; if(s.length>1) s.pop(); save(); render(); break; }
     case 'rm-set': { const s=A.entries[ei].sets; if(s.length>1) s.splice(si,1); save(); closeModal(); render(); break; }
     case 'rm-ex': A.entries.splice(ei,1); save(); closeModal(); render(); toast('Removed'); break;
-    case 'ex-stepback': { const en=A.entries[ei], id=en.ladderId, to=curIdx(id)-1; if(to<0) break;
+    case 'ex-stepback': { const en=A.entries[ei],id=en.ladderId,to=previousRung(id,curIdx(id));if(to==null)break;
       moveTo(id, to);
       const ne=entryFor(id, to);
       if(en.sets.some(s=>s.done)) A.entries.splice(ei+1,0,ne); else A.entries[ei]=ne;   // sets already logged stay as they were
       save(); closeModal(); render(); toast('Your rung on '+LADDERS[id].n+' is now '+esc(stepsOf(id)[to].n));
       if(window.__hub) window.__hub.changed('cal'); break; }
-    case 'ex-shift': { const en=A.entries[ei], to=en.stepIdx+(+el.dataset.d);
-      if(!stepsOf(en.ladderId)[to]) break;
+    case 'ex-shift': { const en=A.entries[ei],to=+el.dataset.d<0?previousRung(en.ladderId,en.stepIdx):nextRung(en.ladderId,en.stepIdx);
+      if(to==null)break;
       if(en.sets.some(s=>s.done)){ toast('Already logging this one; add the other version instead'); closeModal(); break; }
       A.entries[ei]=entryFor(en.ladderId,to); save(); closeModal(); render(); toast((+el.dataset.d<0?'Easier':'Harder')+' version for today'); break; }
     case 'fill-target': { const en=A.entries[ei], st=stepsOf(en.ladderId)[en.stepIdx];
-      en.sets.forEach(s=>{ if(s.v==null) s.v=st.v; }); save(); render(); toast('Filled with the target'); break; }
+      en.sets.forEach(s=>{if(s.v==null)s.v=en.target||st.v;});save();render();toast('Filled with the target; change it to your actual result');break; }
     case 'ex-menu': openExMenu(ei); break;
     case 'set-menu': openSetMenu(ei,si); break;
     case 'session-menu': openModal(`<div class="sheet-grab"></div><div class="sheet-head"><h3>Session</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
@@ -6991,10 +7526,15 @@ __root.addEventListener('click', e=>{
     case 'cl-del-go': deleteCustomLadder(el.dataset.id); break;
 
     /* rungs */
-    case 'advance': { const id=el.dataset.id; if(!state.placed[id]){ moveTo(id,curIdx(id)); closeModal(); render(); toast('Placed on '+esc(curStep(id).n)); break; }
-      if(moveTo(id,curIdx(id)+1)){ closeModal(); render(); toast('Moved up a rung'); const d=checkGoals(); if(d.length) celebrate(d,0); } break; }
-    case 'demote': { const id=el.dataset.id; if(moveTo(id,curIdx(id)-1)){ closeModal(); render(); toast('Stepped back'); } break; }
-    case 'adv-yes': { const q=window._advQ; moveTo(el.dataset.id,+el.dataset.to); tb.seal(); render(); if(q) offerAdvance(q.list,q.i+1,q.rec); else closeModal(); break; }
+    case 'advance': {const id=el.dataset.id,from=curIdx(id),to=nextRung(id,from);if(to==null)break;
+      if(rungRank(id,to)>rungRank(id,capFor(id))){toast('Reach the exact goal standard on this movement first');break;}
+      if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days with the same setup first');break;}
+      if(entryReady(id,to)){moveTo(id,to);closeModal();render();toast('Next movement checked; rung updated');}else beginTests([id],to,null,{from,manual:true});break;}
+    case 'demote': {const id=el.dataset.id,to=previousRung(id,curIdx(id));if(to!=null&&moveTo(id,to)){closeModal();render();toast('Stepped back');}break;}
+    case 'adv-yes': {const q=window._advQ,id=el.dataset.id,to=+el.dataset.to,from=curIdx(id);
+      if(!currentProof(id,from).ready){toast('Repeat the current setup first');break;}
+      if(entryReady(id,to)){moveTo(id,to);if(q&&!q.rec.cleared.includes(id))q.rec.cleared.push(id);tb.seal();render();if(q)offerAdvance(q.list,q.i+1,q.rec);else closeModal();}
+      else beginTests([id],to,null,q?{from,list:q.list,index:q.i,rec:q.rec}:null);break;}
     case 'adv-no': { const q=window._advQ; render(); if(q) offerAdvance(q.list,q.i+1,q.rec); else closeModal(); break; }
 
     /* settings */
@@ -7025,9 +7565,18 @@ __root.addEventListener('input', e=>{
   const el=e.target.closest('[data-field]'); if(!el||!state.active) return;
   const f=el.dataset.field, ei=+el.dataset.ex, si=+el.dataset.set;
   const en=state.active.entries[ei]; if(!en) return;
+  if(f==='clean'){ en.clean=el.checked; save(); return; }
+  if(f==='setup'){
+    const st=stepsOf(en.ladderId)[en.stepIdx], field=setupFields(st).find(x=>x.key===el.dataset.key); if(!field) return;
+    en.setup=en.setup||{};
+    en.setup[field.key]=field.type==='number'?(el.value===''?null:Number(el.value)):el.value;
+    const status=__root.querySelector(`[data-setup-status="${ei}"]`);
+    if(status) status.textContent=setupValid(st,en.setup)?'Setup is saved with each set. Change one detail at a time as you progress.':'Fill in every setup detail before logging a set. Earlier sets keep their own setup.';
+    save(); return;
+  }
   const s=en.sets[si]; if(!s) return;
   const n=el.value===''?null:parseInt(el.value);
-  if(f==='v') s.v=isNaN(n)?null:n; else s.rir=isNaN(n)?null:n;
+  if(f==='v') s.v=isNaN(n)?null:n; else if(f==='rir') s.rir=isNaN(n)?null:n; else return;
   save();
 });
 __root.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='testv'){ e.preventDefault(); const b=__root.querySelector('[data-act="test-record"]'); if(b) b.click(); } });
@@ -7048,13 +7597,18 @@ function openEditSession(id, view){
 function renderEdit(){
   const r=edit.rec;
   const ex=r.entries.map((e,ei)=>{ const st=LADDERS[e.ladderId]&&stepsOf(e.ladderId)[e.stepIdx]; if(!st) return '';
+    const fields=setupFields(st), practice=st.practice||LADDERS[e.ladderId].practice, showRir=e.kind!=='hold'&&practice!=='balance'&&practice!=='power';
     const rows=e.sets.map((x,si)=>`<div class="edrow two"><span class="edi">${si+1}</span>
         <input class="edin"${edit.view?' disabled':''} inputmode="numeric" data-ed="v" data-e="${ei}" data-s="${si}" value="${x.v!=null?x.v:''}" placeholder="${e.kind==='hold'?'secs':'reps'}" aria-label="${e.kind==='hold'?'Seconds':'Reps'}">
-        <input class="edin"${edit.view?' disabled':''} inputmode="numeric" data-ed="rir" data-e="${ei}" data-s="${si}" value="${x.rir!=null?x.rir:''}" placeholder="RIR" aria-label="Reps in reserve">
-        <button class="edx" data-act="ed-rm-set" data-e="${ei}" data-s="${si}" aria-label="Remove set">${I.x}</button></div>`).join('');
-    return `<div class="edex"><div class="edh"><div><b>${esc(st.n)}</b><small>${LADDERS[e.ladderId].n} &middot; target ${goalText(st)}</small></div><button class="tinybtn" data-act="ed-rm-ex" data-e="${ei}">Remove</button></div>
-      ${e.sets.length? `<div class="edrow two head"><span></span><span>${e.kind==='hold'?'Secs':'Reps'}</span><span>RIR</span><span></span></div>${rows}` : '<p class="edwhy" style="margin:0 0 8px">'+(e.left&&e.left.length?'Not started.':'No sets left.')+'</p>'}
-      ${leftRows(e, ei, x=>(x.v!=null? x.v+unitS(st) : 'Target '+st.v+unitS(st))+(x.rir!=null? ' &middot; RIR '+x.rir : ''))}
+        ${showRir?`<input class="edin"${edit.view?' disabled':''} inputmode="numeric" data-ed="rir" data-e="${ei}" data-s="${si}" value="${x.rir!=null?x.rir:''}" placeholder="RIR" aria-label="Reps in reserve, optional">`:'<span></span>'}
+        <button class="edx" data-act="ed-rm-set" data-e="${ei}" data-s="${si}" aria-label="Remove set">${I.x}</button></div>
+      <div style="margin:0 0 12px 28px">
+        ${edit.view?`<p class="muted" style="font-size:11.5px;margin:0 0 6px">${x.clean===true?'Clean form confirmed':x.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}</p>`:`<label style="display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px"><input type="checkbox" data-ed="clean" data-e="${ei}" data-s="${si}"${x.clean===true?' checked':''}>Clean form on set ${si+1}</label>`}
+        ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||'Setup was not recorded')}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
+      </div>`).join('');
+    return `<div class="edex"><div class="edh"><div><b>${esc(st.n)}</b><small>${esc(LADDERS[e.ladderId].n)} &middot; target ${goalText(Object.assign({},st,{v:e.target==null?st.v:e.target}))}</small></div><button class="tinybtn" data-act="ed-rm-ex" data-e="${ei}">Remove</button></div>
+      ${e.sets.length? `<div class="edrow two head"><span></span><span>${e.kind==='hold'?'Secs':'Reps'}</span><span>${showRir?'RIR':''}</span><span></span></div>${rows}` : '<p class="edwhy" style="margin:0 0 8px">'+(e.left&&e.left.length?'Not started.':'No sets left.')+'</p>'}
+      ${leftRows(e, ei, x=>(x.v!=null? x.v+unitS(st) : 'Target '+(e.target==null?st.v:e.target)+unitS(st))+(showRir&&x.rir!=null? ' &middot; RIR '+x.rir : '')+(setupSummary(st,x.setup||e.setup)?' &middot; '+esc(setupSummary(st,x.setup||e.setup)):''))}
       <button class="tinybtn" data-act="ed-add-set" data-e="${ei}">${I.plus} Add set</button></div>`; }).join('');
   const sc=[...__root.querySelectorAll('.sheet, .sheet-body')].map(x=>x.scrollTop);
   nav.reg('edit:'+edit.id, ()=>renderEdit());
@@ -7076,7 +7630,7 @@ function leftRows(en, ei, label){
   return `<div class="edlh">Not ticked off</div>${en.left.map((x,si)=>`<div class="edleft"><span class="ep">${label(x)}</span>${edit.view?'':`<button class="tinybtn" data-act="ed-tick" data-e="${ei}" data-s="${si}">${I.check} Did it</button>`}</div>`).join('')}`;
 }
 function leftNote(){ const n=OpenSets.count(edit.rec); return n? ` ${n} set${n===1?'':'s'} you didn’t tick off ${n===1?'is':'are'} waiting below.` : ''; }
-const ladderOf=e=>({ladderId:e.ladderId, stepIdx:e.stepIdx, kind:e.kind});
+const ladderOf=e=>({ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,clean:e.clean,role:e.role});
 function longDate(ts){ const d=new Date(ts), o={weekday:'short', day:'numeric', month:'short'}; if(d.getFullYear()!==new Date().getFullYear()) o.year='numeric'; return d.toLocaleDateString(undefined,o); }
 /* Every finished session, newest first, with its date. Each opens read-only. */
 function openSessionList(){
@@ -7091,13 +7645,21 @@ function openSessionList(){
 function edInput(el){
   const f=el.dataset.ed, r=edit.rec, v=el.value;
   if(f==='name'){ r.name=v; return; }
-  const x=r.entries[+el.dataset.e].sets[+el.dataset.s]; if(!x) return;
+  const en=r.entries[+el.dataset.e], x=en&&en.sets[+el.dataset.s]; if(!x) return;
+  if(f==='clean'){ x.clean=el.checked; return; }
+  if(f==='setup'){
+    const st=LADDERS[en.ladderId]&&stepsOf(en.ladderId)[en.stepIdx], field=setupFields(st).find(z=>z.key===el.dataset.key); if(!field) return;
+    x.setup=Object.assign({},x.setup||en.setup||{});
+    x.setup[field.key]=field.type==='number'?(v===''?null:Number(v)):v;
+    return;
+  }
+  if(f!=='v'&&f!=='rir') return;
   const n=parseInt(v); x[f]=isNaN(n)? null : Math.max(0,n);
 }
 function edAddSet(ei){
   const e=edit.rec.entries[ei]; if(!e) return;
   const last=e.sets[e.sets.length-1];
-  e.sets.push({v:last?last.v:null, rir:last?last.rir:null, done:true}); renderEdit();
+  e.sets.push({v:last?last.v:null, rir:last?last.rir:null, done:true, clean:false, setup:Object.assign({},last&&last.setup||e.setup||{})}); renderEdit();
 }
 function saveEdit(){
   const r=OpenSets.join(JSON.parse(JSON.stringify(edit.rec)));   // what's still not ticked off stays with the session
