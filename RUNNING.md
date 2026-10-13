@@ -1,6 +1,9 @@
-# Run Milo on Mac and iPhone
+# Using Milo
 
-## Open the GitHub Pages app
+## Open the app
+
+The published link opens the full app; you do not need to install the source
+or run commands to use it.
 
 Open [Milo](https://gwilltsherman-byte.github.io/milovancroton/) in a browser on
 your Mac, or in Safari on your iPhone. On iPhone, choose Share, Add to Home
@@ -20,6 +23,7 @@ cd milovancroton
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
+If you already downloaded this repository, skip the clone and enter that folder.
 Open `http://localhost:8000`. Keep Terminal open; Control-C stops the server.
 There is no dependency installation or build step.
 
@@ -35,8 +39,9 @@ replacing `MAC_IP` with that address. Allow the local server in the Mac
 firewall if prompted. The Mac must stay awake. Offline installation requires
 HTTPS or localhost, so use the GitHub Pages address for offline iPhone use.
 
-## Publish updates on GitHub
+## Host a fork on GitHub Pages
 
-The repository already has Pages enabled. In Settings, Pages, use Deploy from
-a branch with `main` and `/(root)`. GitHub publishes the static files.
+In your fork's Settings, Pages, choose Deploy from a branch, select `main` and
+`/(root)`, then save. GitHub publishes the static app files.
 After changes to app assets, run the integrity tool described in the README.
+

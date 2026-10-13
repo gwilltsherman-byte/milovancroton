@@ -1,5 +1,5 @@
 name: First workout feedback
-description: Tell us how Milo worked during your workout.
+description: Tell me how Milo worked during your workout.
 body:
   - type: dropdown
     id: trainer

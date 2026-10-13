@@ -10,7 +10,7 @@ Free, no account, and it keeps working with no signal once it has loaded. On a w
 
 ## Why it is built this way
 
-Each app was written on its own and they have different visual languages on purpose, because they are used in different moods. Rather than blend them into a grey average, the shell keeps all three intact and lets you switch with one tap at the top.
+I keep Muscle, Strength and Ladder separate because each has a different training goal. Each trainer has its own layout, and you can switch between them with one tap at the top.
 
 Muscle and Strength are split on purpose. Growing muscle and raising a one-rep max overlap, but they are trained and measured differently: growth is about hard sets per muscle close to failure, strength is about heavy, specific practice with long rests and effort kept a few reps short. Each tab only tracks what matters for its own goal.
 
@@ -89,11 +89,9 @@ Pinch zoom works, but double-tap zoom is off so a quick second tap (on +30s, say
 
 ## Running it
 
-Double-click `index.html`. That is the app.
+[Open Milo](https://gwilltsherman-byte.github.io/milovancroton/) in your browser. That is the full app. You can use the same link on your phone and computer.
 
-Want it on your phone? Drop the folder on any static host and add it to your home screen.
-
-**GitHub Pages.** Push this repo, open Settings > Pages, point it at `main`. The demo is hosted at [gwilltsherman-byte.github.io/milovancroton](https://gwilltsherman-byte.github.io/milovancroton/). Paths are relative so a subfolder is fine.
+For a local copy or your own hosted copy, follow [RUNNING.md](../RUNNING.md). The app uses relative paths, so it can run in a subfolder.
 
 
 ## Adding it to your phone
@@ -112,8 +110,9 @@ These are training logs. If a joint hurts or you feel off, stop and see someone 
 
 ## Under the hood
 
-One `index.html`, plain JavaScript, no framework, no build step. `sw.js` does the offline caching. `manifest.webmanifest` makes it installable. The three PNGs are the home-screen icon. `docs/screenshots` holds the pictures in this README; the app never loads them.
+`index.html` loads the trainers from `app.js` and backup checks from `security.js`. The app uses plain JavaScript without a framework or build step. `sw.js` handles offline caching, and `manifest.webmanifest` supplies installation details. The PNGs provide the home-screen icons. `docs/screenshots` holds the pictures in this guide; the app never loads them.
 
 ## License
 
 MIT. See [LICENSE](../LICENSE).
+

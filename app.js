@@ -2127,7 +2127,7 @@ function openCoach(){
     <div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Coach</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
-      <p class="muted" style="font-size:13px;line-height:1.5;margin:0 0 14px">Ask a question and I'll answer from your own data, showing the reasoning. No magic, just the same rules the app already uses. Pick one:</p>
+      <p class="muted" style="font-size:13px;line-height:1.5;margin:0 0 14px">Choose a question to see what your training logs show. Milo explains each answer using the same rules as its training plans.</p>
       ${COACH_Q.map(q=>`<button class="ev-lib-item" data-act="coach-q" data-q="${esc(q.id)}"><div class="eli-n"><div class="t">${q.label}</div></div><span style="color:var(--faint)">${I.arrow}</span></button>`).join('')}
     </div>`);
 }
@@ -2168,7 +2168,7 @@ function coachEffort(){
   const rirs=[];
   state.history.slice(-6).forEach(w=>w.entries.forEach(en=> en.sets.filter(s=>isWork(s)&&s.done&&s.rir!=null).forEach(s=>rirs.push(s.rir)) ));
   const n=rirs.length;
-  if(n<5) return {n, avg:null, verdict:'Not enough to say yet', flag:'ok', reasons:['log a few more sets with a reps-in-reserve value and I can read how hard you\'re actually training']};
+  if(n<5) return {n, avg:null, verdict:'Not enough to say yet', flag:'ok', reasons:['log a few more sets with a reps-in-reserve value to see how hard you\'re training']};
   const avg=rirs.reduce((a,b)=>a+b,0)/n, failShare=rirs.filter(r=>r<=0).length/n;
   const parts=['across your last '+n+' logged sets you averaged about '+avg.toFixed(1)+' reps in reserve'];
   let verdict, flag;
@@ -2205,7 +2205,7 @@ function coachBalance(){
 function coachBalanceAnswer(){
   const r=coachBalance();
   let verdict, flag, body;
-  if(!r.anyData){ verdict='Not enough to judge yet'; flag='ok'; body='Log a bit more across opposing muscle groups and I can check your push/pull and quad/ham split.'; }
+  if(!r.anyData){ verdict='Not enough to judge yet'; flag='ok'; body='Log more sets across opposing muscle groups to check your push/pull and quad/ham split.'; }
   else if(!r.gaps.length){ verdict='Looks balanced'; flag='good'; body='Your opposing muscle groups are within a sensible range of each other over the last week. Nothing to fix.'; }
   else { verdict=r.gaps.length>1?'A couple of gaps worth a look':'One gap worth a look'; flag='warn'; body=r.gaps.join('. ')+'.'; }
   const inner=`
@@ -2845,7 +2845,7 @@ function renderGenerator(){
     <div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Generate a program</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
-      <p class="muted" style="font-size:13px;line-height:1.5;margin:0 0 14px">Answer four questions and I'll assemble a balanced, auto-regulated block from your equipment (${esc(eq)}). You can tweak everything before starting.</p>
+      <p class="muted" style="font-size:13px;line-height:1.5;margin:0 0 14px">Answer four questions to build a balanced training block from your equipment (${esc(eq)}). The block adjusts to your logged effort and recovery. You can change it before starting.</p>
       ${canGap?`<div class="field"><label>Build it around</label><div class="pillpick"><button class="${gap?'':'on'}" data-act="gen-set" data-f="gap" data-v="0">Muscle alone</button><button class="${gap?'on':''}" data-act="gen-set" data-f="gap" data-v="1">Strength &amp; Ladder</button></div>
         ${gap?`<p class="muted" style="font-size:12.5px;line-height:1.5;margin:8px 2px 0">${G.covered.length? `Strength and Ladder already train ${andList(G.covered.map(mn))} directly, with plenty of hard sets each week, so this block leaves them alone: that work is covered, and they are the muscles most likely to be sore. ` : ''}It trains ${andList(G.targets.map(mn))}, isolation work first, each toward about ${genOpts.experience==='beginner'?8:genOpts.experience==='advanced'?12:10} hard sets a week.${(()=>{ const side=G.targets.filter(k=>(G.cov[k]||0)>=2); return side.length? ` Strength and Ladder already work ${andList(side.map(mn))} on the side, so ${side.length===1?'it gets':'they get'} a few sets fewer, but never less than about 6 a week of their own.` : ''; })()} Put it on your days without Strength.</p>`:''}</div>`:''}
       <div class="field"><label>Days per week</label>${gap? pills('days',[[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6']]) : pills('days',[[3,'3'],[4,'4'],[5,'5'],[6,'6']])}</div>
