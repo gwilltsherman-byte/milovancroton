@@ -93,7 +93,7 @@ Double-click `index.html`. That is the app.
 
 Want it on your phone? Drop the folder on any static host and add it to your home screen.
 
-**GitHub Pages.** Push this repo, open Settings > Pages, point it at `main`. The demo is hosted at [gwilltsherman-byte.github.io/milovancroton](https://gwilltsherman-byte.github.io/milovancroton/). Paths are relative so a subfolder is fine.
+**GitHub Pages.** Push this repo, open Settings > Pages, point it at `main`. The demo is hosted at [gwilltsherman-byte.github.io/milovancroton](https://gwilltsherman-byte.github.io/milovancroton-clean/). Paths are relative so a subfolder is fine.
 
 **Netlify.** Drag the folder onto [app.netlify.com/drop](https://app.netlify.com/drop). You get a link straight away, no account.
 

@@ -2,18 +2,19 @@ const test = require('node:test'), assert = require('node:assert/strict'), vm = 
 const code=fs.readFileSync(require('node:path').join(__dirname,'../sw.js'),'utf8');
 function worker(overrides={}) {
   const handlers={},deleted=[];
-  const current='milovancroton-'+code.match(/const CACHE = PREFIX \+ '([^']+)'/)[1];
+  const prefix=code.match(/const PREFIX = '([^']+)'/)[1];
+  const current=prefix+code.match(/const CACHE = PREFIX \+ '([^']+)'/)[1];
   vm.runInNewContext(code,{URL,Request,Set,Promise,setTimeout,
     self:{registration:{scope:'https://example.test/milo/'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}},skipWaiting:async()=>{}},
-    caches:{keys:async()=>['other-app-cache','trainlog-v58','milovancroton-v58',current],delete:async k=>deleted.push(k)},
+    caches:{keys:async()=>['other-app-cache','trainlog-v58','milovancroton-v58',prefix+'v58',current],delete:async k=>deleted.push(k)},
     ...overrides,
   });
-  return {handlers,deleted};
+  return {handlers,deleted,prefix};
 }
 test('activation removes only obsolete Milo caches',async()=>{
-  const {handlers,deleted}=worker(); let work;
+  const {handlers,deleted,prefix}=worker(); let work;
   handlers.activate({waitUntil:p=>work=p}); await work;
-  assert.deepEqual(deleted,['milovancroton-v58']);
+  assert.deepEqual(deleted,[prefix+'v58']);
 });
 test('foreign origins, sibling apps and unknown paths are never intercepted',()=>{
   const {handlers}=worker();

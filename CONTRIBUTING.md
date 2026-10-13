@@ -4,7 +4,7 @@ Bug reports, feedback and small focused pull requests are welcome.
 
 ## Report a problem
 
-Use the [issue forms](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose). Include your browser, device, trainer, the steps you took, and what you expected. A screenshot helps when the problem is visual. You do not need to share your workout backup or personal health details.
+Use the [issue forms](https://github.com/gwilltsherman-byte/milovancroton-clean/issues/new/choose). Include your browser, device, trainer, the steps you took, and what you expected. A screenshot helps when the problem is visual. You do not need to share your workout backup or personal health details.
 
 ## Try a change locally
 
