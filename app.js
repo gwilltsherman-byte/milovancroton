@@ -6000,12 +6000,12 @@ function curStep(id){ return stepsOf(id)[curIdx(id)]; }
 function unitS(st){ return st.k==='hold'?'s':''; }
 function goalText(st){ return `${st.sets} x ${st.v}${unitS(st)}`; }
 function isSkill(id){ return !!LADDERS[id].skill; }
-function practiceOf(id,i){ return stepsOf(id)[i==null?curIdx(id):i].practice||LADDERS[id].practice||(isSkill(id)?'strength':'strength'); }
+function practiceOf(id,i){const L=LADDERS[id];return stepsOf(id)[i==null?curIdx(id):i].practice||L.practice||(L.like&&LADDERS[L.like]&&LADDERS[L.like].practice)||'strength';}
 function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||Math.min(st.v,st.k==='hold'?5:3); }
 const PROOF_DAYS=90, CLEAR_DAYS=42;
 function proofSets(id,i,days){
   const rid=rungId(id,i), st=stepsOf(id)[i], since=Date.now()-days*86400000, out=[];
-  state.history.filter(w=>w.date>=since).forEach(w=>(w.entries||[]).forEach(e=>{
+  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{};
       if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,target:e.target||st.v}); });
@@ -6015,12 +6015,12 @@ function proofSets(id,i,days){
 function verifiedBestFor(id,i){
   const st=stepsOf(id)[i], since=Date.now()-PROOF_DAYS*86400000;
   let best=proofSets(id,i,PROOF_DAYS).reduce((m,s)=>Math.max(m,s.v),0), rid=rungId(id,i);
-  state.tests.forEach(t=>{ if(t.date>=since&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupValid(st,t.setup||{})) best=Math.max(best,t.v||0); });
+  state.tests.forEach(t=>{if(t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupValid(st,t.setup||{}))best=Math.max(best,t.v||0);});
   return best;
 }
 function currentProof(id,i){
   const st=stepsOf(id)[i], groups=new Map(), since=Date.now()-CLEAR_DAYS*86400000, rid=rungId(id,i);
-  state.history.filter(w=>w.date>=since).forEach(w=>(w.entries||[]).forEach(e=>{
+  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     const setsBySetup=new Map();
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{}, key=setupKey(st,setup);
@@ -6044,7 +6044,7 @@ function rungTarget(id,i,role){
   if(role==='maintenance') return Math.min(st.v,limit);
   let target=st.v;
   const rid=rungId(id,i), since=Date.now()-CLEAR_DAYS*86400000, byTarget=new Map();
-  state.history.filter(w=>w.date>=since).forEach(w=>(w.entries||[]).forEach(e=>{
+  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     const t=Math.max(st.v,e.target||st.v), keys=new Map();
     (e.sets||[]).forEach(s=>{const key=setupKey(st,s.setup||e.setup||{});if(s.done&&s.clean===true&&s.v>=t&&key!=null) keys.set(key,(keys.get(key)||0)+1);});
