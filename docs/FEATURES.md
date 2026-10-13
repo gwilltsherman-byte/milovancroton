@@ -10,7 +10,7 @@ Free, no account, and it keeps working with no signal once it has loaded. On a w
 
 ## Why it is built this way
 
-Each app was written on its own and they have different visual languages on purpose, because they are used in different moods. Rather than blend them into a grey average, the shell keeps all three intact and lets you switch with one tap at the top.
+I keep Muscle, Strength and Ladder separate because each has a different training goal. Each trainer has its own layout, and you can switch between them with one tap at the top.
 
 Muscle and Strength are split on purpose. Growing muscle and raising a one-rep max overlap, but they are trained and measured differently: growth is about hard sets per muscle close to failure, strength is about heavy, specific practice with long rests and effort kept a few reps short. Each tab only tracks what matters for its own goal.
 
@@ -38,7 +38,15 @@ Under the hood each one runs in its own shadow root, so their styles and their c
   </tr>
 </table>
 
-**Ladder.** Forty-two ready-made goals plus custom ones, each marked Beginner, Intermediate, Advanced or Elite. The goal picker starts with three suggestions (good first goals if you are new; otherwise goals a few rungs away, spread over different movements, with how far away each one is), then lets you browse by what you want, easiest first. Standout moves unlock as you get stronger: when your logged numbers meet a widely used coaching standard (for example 12 pull-ups, 12 dips and 5 chest-to-bar pull-ups for a muscle-up, or 8 pull-ups and a 30 second hollow hold for a tuck front lever), the app tells you after the session, lists it on Today as ready to try, and lets you try it on the spot or make it a goal. A first success is celebrated. Every goal also lists what else it takes, because strength alone rarely gets you there: a pistol needs ankle range, single-leg balance and the hip-flexor strength to hold the free leg up; a handstand needs wrists ready for the load, full overhead range, a hollow body and a safe bail. Each need is a measurable standard (knee-to-wall at 10 cm, a 30 second single-leg stand on a cushion) with a plain explanation of why and links to the research. Placement asks about them in one checklist. Until a need is in place your sessions include it, up to four a session taking turns: warm-up drills first, balance and technique while you’re fresh, long stretches last (static holds of a minute or more just before training can sap strength for a while). Hand balancing always gets the wrist warm-up. Prep work isn’t counted as hard sets. There are forty-seven ladders in seven tabs. Pull: vertical and horizontal pulling, and pull-up variations (wide, commando, L-sit, typewriter, clapping). Push: dips, push-ups, overhead pushing and explosive push-ups. Legs: squat, hinge, jumps, lunges and lateral work (Cossack, skater), knee strength (sissy squat, reverse Nordic), calves and pistol drills. Core: L-sit and hollow work, leg raises to toes-to-bar, dragon flag, side core to Copenhagen plank, ab wheel and bridges. Arms: triceps (to tiger bend), biceps (bodyweight curls, chin-ups) and grip (to a one-arm hang). Skill: handstand, front lever, back lever, planche, planche push-up, muscle-up, rings, human flag, arm balances, press to handstand, one-arm handstand, handstand drills (bail, heel pulls, kick-ups) and muscle-up drills. Prep: ankle, wrist and overhead mobility, shoulder extension, shoulder blade control, single-leg balance, landing, compression, and pike, straddle and hip flexor flexibility, grouped by where they go in a session. For anything still missing, build your own ladder: name it, add rungs easiest first with reps or a hold, and pick the standard ladder it is most like. It then trains, tests and takes goals like the rest, and its sets count toward the right muscles in Muscle and Together. You pick the hardest rung you can already do and then test it: make its target and you start on the rung above, fall short and you start on it. A retest every four weeks keeps it honest, and the app will not push you past a goal you have not reached yet. Each rung has a target, a key cue and full instructions. Sessions rotate so no two in a row are the same: goal work alternates heavy days (your rung) and volume days (the rung below, one more set), with several goals taking turns; balance and straight-arm skills stay on your rung every time. Support work is shared out across sessions, one ladder per movement, so goals that bring the same kind of work share a slot, and one extra exercise that suits your goals rotates in (a ladder you have not placed starts low and is placed where you train it). No exercise appears twice in a session, and ladders that share an exercise, such as Side plank in Human flag and Side core, share the credit: one logged set counts as a best and can clear the rung on both. Mid-session you can go easier just for today, or step back a rung for good.
+**Ladder.** Choose a calisthenics goal, such as a first pull-up, a handstand, a muscle-up or a pistol squat, or create your own. The library groups pulling, pushing, legs, core, arms, skills and preparation. Related movements have their own paths: weighted pulling is separate from one-arm pulling, hip extension is separate from Nordic curls, and ring dips can train alongside false-grip and muscle-up work. Assisted movements, shorter levers and adjustable heights bridge larger jumps.
+
+Record the reps or seconds you actually completed, the setup that determines difficulty, and whether the movement met its form standard. Each set keeps its own assistance, load, height, range or leverage, even if you change the setup for the next set. Practice attempts remain in your log but do not certify readiness. A later exercise never substitutes for an exact earlier requirement, such as twelve pull-ups.
+
+Repeat a step target cleanly on two training days with the same setup, then check a controlled version of the next movement. These are coaching defaults, not research-proven guarantees that one skill leads to another. When the setup is repeatable, change one demand gradually: reduce assistance or starting height where appropriate, or increase load, controlled range or leverage. Targets can also grow toward a higher goal or supporting standard, such as a thirty- or sixty-second handstand.
+
+Each goal includes supporting strength, mobility, balance and technique where relevant. Missing qualities join the sessions, and completed qualities remain in a smaller maintenance rotation. Warm-ups come first, balance and power work come while fresh, and longer stretches come last. Brief balance practice can be frequent; demanding planche and lever work still needs recovery. Related easier exercises provide volume work without assuming that the previous catalog entry is a suitable regression.
+
+Every exercise has written instructions. Custom ladders and goals remain available. Existing workouts, exercise identities, open sets and backups are preserved; old records without form confirmation or the required setup remain visible but need a current confirmation or check before they establish readiness. The evidence library separates general research findings from coaching choices. See [Ladder progression and evidence](ladder-progression.md) for the rules, sources and their limits.
 
 <table>
   <tr>
@@ -89,11 +97,9 @@ Pinch zoom works, but double-tap zoom is off so a quick second tap (on +30s, say
 
 ## Running it
 
-Double-click `index.html`. That is the app.
+[Open Milo](https://gwilltsherman-byte.github.io/milovancroton/) in your browser. That is the full app. You can use the same link on your phone and computer.
 
-Want it on your phone? Drop the folder on any static host and add it to your home screen.
-
-**GitHub Pages.** Push this repo, open Settings > Pages, point it at `main`. The demo is hosted at [gwilltsherman-byte.github.io/milovancroton](https://gwilltsherman-byte.github.io/milovancroton/). Paths are relative so a subfolder is fine.
+For a local copy or your own hosted copy, follow [RUNNING.md](../RUNNING.md). The app uses relative paths, so it can run in a subfolder.
 
 
 ## Adding it to your phone
@@ -112,8 +118,9 @@ These are training logs. If a joint hurts or you feel off, stop and see someone 
 
 ## Under the hood
 
-One `index.html`, plain JavaScript, no framework, no build step. `sw.js` does the offline caching. `manifest.webmanifest` makes it installable. The three PNGs are the home-screen icon. `docs/screenshots` holds the pictures in this README; the app never loads them.
+`index.html` loads the trainers from `app.js` and backup checks from `security.js`. The app uses plain JavaScript without a framework or build step. `sw.js` handles offline caching, and `manifest.webmanifest` supplies installation details. The PNGs provide the home-screen icons. `docs/screenshots` holds the pictures in this guide; the app never loads them.
 
 ## License
 
 MIT. See [LICENSE](../LICENSE).
+

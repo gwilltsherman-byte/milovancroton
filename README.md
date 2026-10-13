@@ -1,8 +1,8 @@
 # Milo van Croton
 
-[Run on Mac and iPhone](RUNNING.md), including GitHub hosting options.
+Milo is my workout tracker for muscle growth, strength and calisthenics. Use it to plan sessions, log your sets and follow your progress. It works offline after the first load, needs no account, and saves your training data in your browser.
 
-Track workouts for muscle growth, strength and calisthenics. Milo works offline after the first load, needs no account, and saves your training data in your browser.
+[Use Milo on Mac or iPhone](RUNNING.md).
 
 **[Try Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
 
@@ -37,7 +37,7 @@ Workout data stays in your browser. Milo has no account system, analytics or clo
 
 ## Run it yourself
 
-Download the [latest release](https://github.com/gwilltsherman-byte/milovancroton/releases/latest), extract it, and serve the folder with any static web server. For example, if Python is installed:
+Download this repository from **Code > Download ZIP**, extract it, and serve the folder with any static web server. For example, if Python is installed:
 
 ```sh
 python3 -m http.server 8000
@@ -83,4 +83,5 @@ node --test tests/*.test.cjs
 Serve the repository and open `tests/browser.html` for the browser regression suite.
 The integrity tool also changes the offline cache whenever app assets change. After an app
 update, reload once to use the new offline cache. See [SECURITY.md](SECURITY.md)
-for private reporting and hosting/account controls. Bundled font licenses are in `assets/fonts/`.
+for security reporting and backup guidance. Bundled font licenses are in `assets/fonts/`.
+
