@@ -2,7 +2,7 @@
 
 ## Open the GitHub Pages app
 
-Open [Milo](https://gwilltsherman-byte.github.io/milovancroton-clean/) in a browser on
+Open [Milo](https://gwilltsherman-byte.github.io/milovancroton/) in a browser on
 your Mac, or in Safari on your iPhone. On iPhone, choose Share, Add to Home
 Screen, then Add. If Safari offers Open as Web App, leave it enabled.
 
@@ -15,8 +15,8 @@ move workouts between devices. They do not sync automatically.
 Install Python 3 if `python3 --version` is unavailable, then run:
 
 ```sh
-git clone https://github.com/gwilltsherman-byte/milovancroton-clean.git
-cd milovancroton-clean
+git clone https://github.com/gwilltsherman-byte/milovancroton.git
+cd milovancroton
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 

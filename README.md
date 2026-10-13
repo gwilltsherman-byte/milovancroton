@@ -4,13 +4,13 @@
 
 Track workouts for muscle growth, strength and calisthenics. Milo works offline after the first load, needs no account, and saves your training data in your browser.
 
-**[Try Milo](https://gwilltsherman-byte.github.io/milovancroton-clean/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton-clean/issues/new/choose)
+**[Try Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
 
 <img src="docs/screenshots/banner.jpg" alt="Milo van Croton with previews of its Muscle, Strength and Ladder trainers" width="100%">
 
 ## Start a workout
 
-1. [Open Milo](https://gwilltsherman-byte.github.io/milovancroton-clean/) on your phone or computer.
+1. [Open Milo](https://gwilltsherman-byte.github.io/milovancroton/) on your phone or computer.
 2. Choose **Muscle**, **Strength** or **Ladder** and set up a plan or goal.
 3. Start a session and tick off your sets as you train.
 
@@ -37,7 +37,7 @@ Workout data stays in your browser. Milo has no account system, analytics or clo
 
 ## Run it yourself
 
-Download the [latest release](https://github.com/gwilltsherman-byte/milovancroton-clean/releases/latest), extract it, and serve the folder with any static web server. For example, if Python is installed:
+Download the [latest release](https://github.com/gwilltsherman-byte/milovancroton/releases/latest), extract it, and serve the folder with any static web server. For example, if Python is installed:
 
 ```sh
 python3 -m http.server 8000
@@ -47,7 +47,7 @@ Open `http://localhost:8000`. There is no build step or package installation. Gi
 
 ## Help improve Milo
 
-Try it during one workout, then [share feedback](https://github.com/gwilltsherman-byte/milovancroton-clean/issues/new/choose): what you tried, where you got stuck, and whether you would use it again. Contributions are welcome; start with [CONTRIBUTING.md](CONTRIBUTING.md).
+Try it during one workout, then [share feedback](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose): what you tried, where you got stuck, and whether you would use it again. Contributions are welcome; start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
 If you find Milo useful, a GitHub star helps other people find it.
 
@@ -84,4 +84,3 @@ Serve the repository and open `tests/browser.html` for the browser regression su
 The integrity tool also changes the offline cache whenever app assets change. After an app
 update, reload once to use the new offline cache. See [SECURITY.md](SECURITY.md)
 for private reporting and hosting/account controls. Bundled font licenses are in `assets/fonts/`.
-

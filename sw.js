@@ -1,6 +1,6 @@
 /* Offline cache belongs only to this app and contains only its static assets. */
-const PREFIX = 'milo-clean-';
-const CACHE = PREFIX + 'v59-f019a4fa8e89e440008b';
+const PREFIX = 'milo-app-';
+const CACHE = PREFIX + 'v59-5b00f208a31f87cf4210';
 const NAV_WAIT = 3000;
 const BASE = new URL('./', self.registration.scope);
 const SHELL = ['./', './index.html', './security.js', './app.js', './fonts.css',
@@ -64,4 +64,3 @@ self.addEventListener('fetch', event => {
     return res;
   })());
 });
-
