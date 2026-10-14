@@ -248,6 +248,8 @@ The shared shell uses a 64px top bar and, from 1000px wide, a fixed 216px traine
 
 Below 1000px, trainer selection becomes a compact horizontal strip and route navigation moves to a fixed bottom bar with safe-area padding. Leave content clearance for the bottom navigation, active timer, and Together strip. At 720–999px the workspace caps at 760px with 32px gutters. Ordinary phone gutters are 20px, with tighter adaptations below 390px.
 
+The shared header reserves `env(safe-area-inset-top)` above its controls in installed iPhone apps. Its measured full height positions the trainer navigation beneath it, including after scrolling and orientation changes. Narrow-screen padding must preserve that top inset.
+
 At 1100px and above, the Today surface can place the next session beside supporting metrics and guidance, using a 1.45:1 relationship. The seven-day sequence spans the available content width. Narrower layouts return to one readable column. These compositions are surface patterns, not a requirement for every screen; settings, libraries, and set tables follow their own existing structures.
 
 Preserve wrapping for exercise names, button text, and explanatory copy. Set-entry grids adapt separately on small phones; never remove a logging action merely to fit a row. See the sidecar for the implemented breakpoints, including the smaller control-specific adaptations.
