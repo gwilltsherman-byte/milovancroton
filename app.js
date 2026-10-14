@@ -10985,7 +10985,7 @@ render();
 
   /* Section headers stick just under the top bar, which grows while a combined day is running. */
   const shellbar=document.querySelector('.shellbar');
-  function syncShellTop(){ const mobile=matchMedia('(max-width:999px)').matches; const side=document.querySelector('.sidebar'); document.documentElement.style.setProperty('--shell-top',(shellbar.offsetHeight+(mobile?side.offsetHeight:0))+'px'); document.querySelector('.sw').setAttribute('aria-orientation',mobile?'horizontal':'vertical'); }
+  function syncShellTop(){ const mobile=matchMedia('(max-width:999px)').matches; const side=document.querySelector('.sidebar'); document.documentElement.style.setProperty('--shell-bar-height',shellbar.offsetHeight+'px'); document.documentElement.style.setProperty('--shell-top',(shellbar.offsetHeight+(mobile?side.offsetHeight:0))+'px'); document.querySelector('.sw').setAttribute('aria-orientation',mobile?'horizontal':'vertical'); }
   if(window.ResizeObserver) new ResizeObserver(syncShellTop).observe(shellbar);
   syncShellTop();
   window.addEventListener('resize',syncShellTop);

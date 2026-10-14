@@ -1,5 +1,5 @@
 /* Milo's shared frame. Trainer surfaces use the same palette in trainer.css. */
-:root{--sh-bg:#f1f4ef;--sh-solid:#fff;--sh-ink:#20392d;--sh-muted:#59685e;--sh-border:#d6dfd5;--sh-well:#e8eee5;--shell-green:#234c3b;--shell-lime:#d4e6b5;--shell-top:64px;color-scheme:light}
+:root{--sh-bg:#f1f4ef;--sh-solid:#fff;--sh-ink:#20392d;--sh-muted:#59685e;--sh-border:#d6dfd5;--sh-well:#e8eee5;--shell-green:#234c3b;--shell-lime:#d4e6b5;--shell-safe-top:env(safe-area-inset-top,0px);--shell-bar-height:calc(64px + var(--shell-safe-top));--shell-top:var(--shell-bar-height);color-scheme:light}
 :root[data-theme="dark"]{--sh-bg:#121b17;--sh-solid:#1a2720;--sh-ink:#eef3e9;--sh-muted:#a4b7a9;--sh-border:#35483b;--sh-well:#233529;color-scheme:dark}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--sh-bg:#121b17;--sh-solid:#1a2720;--sh-ink:#eef3e9;--sh-muted:#a4b7a9;--sh-border:#35483b;--sh-well:#233529;color-scheme:dark}}
 body{background:var(--sh-bg);color:var(--sh-ink);font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -8,7 +8,7 @@ button,a,input,textarea{touch-action:manipulation}
 :focus-visible{outline:3px solid #709949;outline-offset:4px}
 .skip-link{position:fixed;top:-70px;left:20px;z-index:200;background:var(--sh-solid);color:var(--sh-ink);padding:14px 20px;border-radius:8px}
 .skip-link:focus{top:8px}
-.shellbar{height:64px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--sh-solid);border-bottom:1px solid var(--sh-border);backdrop-filter:none;-webkit-backdrop-filter:none}
+.shellbar{height:calc(64px + var(--shell-safe-top));padding:var(--shell-safe-top) 32px 0;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--sh-solid);border-bottom:1px solid var(--sh-border);backdrop-filter:none;-webkit-backdrop-filter:none}
 .milo-brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--sh-ink);flex:none}
 .milo-mark{width:29px;height:32px;display:block;color:var(--shell-green)}
 :root[data-theme="dark"] .milo-mark{color:var(--shell-lime)}
@@ -21,7 +21,7 @@ button,a,input,textarea{touch-action:manipulation}
 .shbtn{width:44px;height:44px;border-radius:8px;background:none;color:var(--sh-ink);border:1px solid var(--sh-border)}
 .shbtn:hover{background:var(--sh-well)}
 .backup-button{width:auto;display:flex;gap:8px;padding:0 13px;font:600 13px "Public Sans",sans-serif}
-.sidebar{position:fixed;top:64px;bottom:0;left:0;width:216px;background:var(--shell-green);color:#eef3e9;padding:32px 18px 24px;z-index:45;display:flex;flex-direction:column}
+.sidebar{position:fixed;top:var(--shell-bar-height);bottom:0;left:0;width:216px;background:var(--shell-green);color:#eef3e9;padding:32px 18px 24px;z-index:45;display:flex;flex-direction:column}
 .sw{display:flex;flex-direction:column;gap:8px;padding:0;margin:0;border:none;border-radius:0;background:none;max-width:none;width:100%}
 .seg{justify-content:flex-start;gap:12px;min-height:64px;padding:11px 14px;border-radius:8px;font-size:14px;font-weight:600;color:#d4e0d8;white-space:normal;text-align:left;transition:background .15s,color .15s}
 .seg svg{width:22px;height:22px;flex:none}
@@ -36,7 +36,7 @@ button,a,input,textarea{touch-action:manipulation}
 .sidebar-foot p{font-size:12px;line-height:1.65;color:#c6d8ca;margin:16px 0 0}
 .sidebar-foot button{display:flex;align-items:center;gap:8px;border:0;padding:10px 0;background:none;color:#f2f6ed;font:500 13px "Public Sans",sans-serif;text-align:left;cursor:pointer}
 .sidebar-foot svg{width:17px;height:17px}
-#main{margin-left:216px;min-height:calc(100dvh - 64px);outline:none}
+#main{margin-left:216px;min-height:calc(100dvh - var(--shell-bar-height));outline:none}
 .tgstrip{position:fixed;left:232px;right:16px;bottom:12px;max-width:760px;margin:0 auto;z-index:55;padding:8px;background:var(--sh-solid);border:1px solid var(--sh-border);border-radius:12px;box-shadow:0 8px 30px #10271a26}
 .tgstrip .tgs-main{min-height:44px;border:0;background:none}
 .tgstrip .tgs-go{min-height:44px;background:var(--shell-lime);color:#20392d}
@@ -48,12 +48,12 @@ button,a,input,textarea{touch-action:manipulation}
 .guide-step{display:grid;grid-template-columns:28px 1fr;gap:10px;margin:20px 0}.guide-step>b{font:600 20px Archivo,sans-serif;color:var(--sh-muted)}.guide-step h3{margin:0 0 5px}.guide-step p{margin:0}
 .shtoast{border-radius:8px;bottom:90px;max-width:calc(100vw - 32px);line-height:1.5}
 @media(max-width:999px){
- .shellbar{height:auto;min-height:64px;padding:10px 20px;gap:12px}.shell-tagline{display:none}.shell-tools{gap:8px}.shell-date{display:none}
- .sidebar{position:sticky;top:64px;width:auto;height:auto;padding:7px 14px;background:var(--shell-green);border:0;z-index:49}
+ .shellbar{height:auto;min-height:calc(64px + var(--shell-safe-top));padding:calc(10px + var(--shell-safe-top)) 20px 10px;gap:12px}.shell-tagline{display:none}.shell-tools{gap:8px}.shell-date{display:none}
+ .sidebar{position:sticky;top:var(--shell-bar-height);width:auto;height:auto;padding:7px 14px;background:var(--shell-green);border:0;z-index:49}
  .sw{flex-direction:row;gap:4px}.seg{flex:1;justify-content:center;min-height:44px;padding:8px 4px;gap:6px;font-size:12px;border-radius:6px}.seg svg{width:17px;height:17px}.seg small{display:none}.sidebar-foot{display:none}
  #main{margin-left:0}.tgstrip{left:8px;right:8px;bottom:82px}.milo-wordmark{font-size:26px}.milo-mark{height:29px}
 }
-@media(max-width:380px){.shellbar{padding:10px 16px}.backup-button{width:44px;padding:0;justify-content:center}.backup-button span{display:none}.sidebar{padding:6px 8px}.seg{font-size:11.5px;gap:4px}.seg svg{width:15px;height:15px}.bk{padding:22px}}
+@media(max-width:380px){.shellbar{padding-left:16px;padding-right:16px}.backup-button{width:44px;padding:0;justify-content:center}.backup-button span{display:none}.sidebar{padding:6px 8px}.seg{font-size:11.5px;gap:4px}.seg svg{width:15px;height:15px}.bk{padding:22px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 .mobile-guide{display:none}@media(max-width:999px){.mobile-guide{display:grid}}

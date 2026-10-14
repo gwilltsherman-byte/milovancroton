@@ -51,6 +51,28 @@
     localStorage.setItem('milo.persist','1');
     let {win,doc}=await load();
     let root=rootOf(doc,'lift');
+    // A normal desktop viewport reports a zero inset. Supply the same CSS token
+    // with an iPhone-sized value to exercise the actual sticky header geometry.
+    const safeStyle=doc.createElement('style');
+    safeStyle.textContent=':root{--shell-safe-top:59px}'; doc.head.appendChild(safeStyle);
+    const bar=doc.querySelector('.shellbar'), side=doc.querySelector('.sidebar');
+    for(const width of [430,360]){
+      frame.style.width=width+'px';
+      await until(()=>win.innerWidth===width && Number.parseFloat(doc.documentElement.style.getPropertyValue('--shell-bar-height'))===bar.offsetHeight,'Header height did not update');
+      win.scrollTo(0,0);
+      check([doc.querySelector('.milo-brand'),...doc.querySelectorAll('.shell-tools button')].every(el=>el.getBoundingClientRect().top>=59),'Header controls clear the iPhone status area at '+width+'px');
+      check(side.getBoundingClientRect().top>=bar.getBoundingClientRect().bottom-1,'Trainer tabs follow the full inset header at '+width+'px');
+      win.scrollTo(0,400); await pause(50);
+      check(side.getBoundingClientRect().top>=bar.getBoundingClientRect().bottom-1,'Sticky trainer tabs remain below the header while scrolling at '+width+'px');
+    }
+    safeStyle.textContent=':root{--shell-safe-top:0px}';
+    for(const width of [932,1100]){
+      frame.style.width=width+'px'; win.scrollTo(0,0);
+      await until(()=>win.innerWidth===width && Number.parseFloat(doc.documentElement.style.getPropertyValue('--shell-bar-height'))===bar.offsetHeight,'Zero-inset header did not update');
+      check(bar.offsetHeight<=65,'No extra status-area gap with a zero inset at '+width+'px');
+      check(side.getBoundingClientRect().top>=bar.getBoundingClientRect().bottom-1,'Navigation remains aligned after rotation or desktop resize at '+width+'px');
+    }
+    safeStyle.remove(); frame.style.width=''; win.scrollTo(0,0);
     await pause(450); // The previous automatic welcome sheet opened after 350 ms.
     check(!dialog(root) && !doc.querySelector('dialog[open]'),'Fresh Muscle opens without a blocking welcome dialog');
     check(days(root).length===7 && days(root).every(day=>dayCount(day)===0),'Fresh weekly strip contains seven days with zero saved sessions');
