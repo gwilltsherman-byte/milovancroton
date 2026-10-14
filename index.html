@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-GcQJO+V6nMXVH8MutPjap0zfZ343xrNovbQTdOIDDyQ='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-qXe1Hm3vOIhVL3HHDs+h9764KT/Ekz8aAMK4dGh/37c='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -120,21 +120,43 @@ body{background:#0A0D12; overflow-x:hidden;
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 </style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
 
+<a class="skip-link" href="#main">Skip to training</a>
 <header class="shellbar">
-  <div class="shrow">
-  <div class="sw" role="tablist" aria-label="Choose a trainer">
-    <button class="seg" id="tab-lift" data-m="lift" role="tab" aria-controls="m-lift"><i style="background:#FF5C3C"></i><span>Muscle</span></button>
-    <button class="seg" id="tab-str" data-m="str" role="tab" aria-controls="m-str"><i style="background:#5B8CFF"></i><span>Strength</span></button>
-    <button class="seg" id="tab-cal" data-m="cal" role="tab" aria-controls="m-cal"><i style="background:#F2C14E"></i><span>Ladder</span></button>
-    <button class="seg" id="tab-mix" data-m="mix" role="tab" aria-controls="m-mix"><i class="tri"></i><span>Together</span></button>
+  <a class="milo-brand" href="./" aria-label="Milo home">
+    <svg class="milo-mark" viewBox="0 0 30 34" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 29V12l12 10 12-10v17M3 5l12 10L27 5"/></svg>
+    <span class="milo-wordmark">milo<small>van Croton</small></span>
+  </a>
+  <p class="shell-tagline">A little stronger, every session.</p>
+  <div class="shell-tools">
+    <span class="shell-date" id="shell-date"></span>
+    <button class="shbtn mobile-guide" data-open-guide aria-label="How Milo works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg></button>
+    <button class="shbtn" id="theme-toggle" aria-label="Change color theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></svg></button>
+    <button class="shbtn backup-button" id="bkbtn" aria-label="Back up or restore your data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg><span>Backup</span></button>
   </div>
-  <button class="shbtn" id="bkbtn" aria-label="Back up or restore your data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg></button>
-  </div>
-  <div class="tgstrip" id="tgstrip" hidden></div>
 </header>
+<aside class="sidebar" aria-label="Training sections">
+  <div class="sw" role="tablist" aria-label="Choose a trainer">
+    <button class="seg" id="tab-lift" data-m="lift" role="tab" aria-controls="m-lift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg><span>Muscle<small>Build muscle</small></span></button>
+    <button class="seg" id="tab-str" data-m="str" role="tab" aria-controls="m-str"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17 10 11l4 3 6-9M14 5h6v6M4 21h16"/></svg><span>Strength<small>Move more weight</small></span></button>
+    <button class="seg" id="tab-cal" data-m="cal" role="tab" aria-controls="m-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 3v18M17 3v18M7 6h10M7 12h10M7 18h10"/></svg><span>Ladder<small>Earn your next skill</small></span></button>
+    <button class="seg" id="tab-mix" data-m="mix" role="tab" aria-controls="m-mix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4v6a7 7 0 0 0 7 7m7-13v6a7 7 0 0 1-7 7v4M9 7l3-3 3 3M12 4v13"/></svg><span>Together<small>Balance your week</small></span></button>
+  </div>
+  <div class="sidebar-foot"><button id="guide-open" data-open-guide><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>How Milo works</button><p>Your training stays<br>on this device.<br>No account needed.</p></div>
+</aside>
+<div class="tgstrip" id="tgstrip" hidden></div>
+<dialog class="bk" id="guide" aria-labelledby="guide-title">
+  <h2 id="guide-title">Make the next session count.</h2>
+  <p>Milo brings your plans, workouts and progress together. Choose a trainer to get started.</p>
+  <div class="guide-step"><b>1</b><div><h3>Find your starting point</h3><p>Build a block in Muscle, set up your equipment in Strength, or choose a skill in Ladder.</p></div></div>
+  <div class="guide-step"><b>2</b><div><h3>Train. Log. Repeat.</h3><p>Record the sets you actually complete. Your session saves as you go, so you can come back to it.</p></div></div>
+  <div class="guide-step"><b>3</b><div><h3>See what changes</h3><p>Review your history and progress. Use Together when you want a shared week across trainers.</p></div></div>
+  <p>Works offline after the first load. Your data stays in this browser; use Backup before moving devices or clearing browser data. Units and training preferences are in each trainer’s Settings.</p>
+  <button class="b pri" id="guide-done" style="width:100%">Got it</button>
+</dialog>
 
 <dialog class="bk" id="bk" aria-labelledby="bk-title">
   <h2 id="bk-title">Back up your data</h2>
@@ -148,7 +170,7 @@ body{background:#0A0D12; overflow-x:hidden;
   <hr>
   <h3>Restore</h3>
   <p>Paste a backup, or pick a saved backup file. Whatever the backup holds replaces what the app has now; you can undo it afterwards.</p>
-  <textarea id="bk-in" placeholder="Paste your backup here" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+  <textarea aria-label="Backup to restore" id="bk-in" placeholder="Paste your backup here" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
   <div class="row">
     <button class="b" id="bk-file">Choose a file</button>
     <button class="b pri" id="bk-restore">Restore</button>
@@ -159,7 +181,7 @@ body{background:#0A0D12; overflow-x:hidden;
   <button class="done" id="bk-done">Done</button>
 </dialog>
 
-<main id="main">
+<main id="main" tabindex="-1">
 <div id="m-lift" class="mod" role="tabpanel" aria-labelledby="tab-lift" hidden></div>
 <div id="m-str"  class="mod" role="tabpanel" aria-labelledby="tab-str" hidden></div>
 <div id="m-cal"  class="mod" role="tabpanel" aria-labelledby="tab-cal" hidden></div>
@@ -746,12 +768,13 @@ svg{width:18px; height:18px; flex:none}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} .tinput input{width:31px} }
 </style>
+<link rel="stylesheet" href="trainer.css">
 <div id="app">
   <div class="appbar">
     <div class="brand">
       <div class="logo" id="logo"></div>
       <div class="txt">
-        <h1>Hypertrophy Log</h1>
+        <h1>Muscle</h1>
         <p id="subtitle">Evidence-led muscle growth</p>
       </div>
     </div>
@@ -1257,11 +1280,12 @@ button.banner{font:inherit}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
+<link rel="stylesheet" href="trainer.css">
 <div id="app">
   <header class="appbar">
     <div class="brand">
       <div class="logo" id="logo"></div>
-      <div class="txt"><h1>Progression Ladder</h1><p id="subtitle">Calisthenics, earned</p></div>
+      <div class="txt"><h1>Ladder</h1><p id="subtitle">Calisthenics, earned</p></div>
     </div>
     <button class="iconbtn" data-act="evidence-lib" aria-label="Evidence" id="libbtn"></button>
     <button class="iconbtn" data-act="settings" aria-label="Settings" id="setbtn"></button>
@@ -1772,11 +1796,12 @@ svg{width:18px; height:18px; flex:none}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
+<link rel="stylesheet" href="trainer.css">
 <div id="app">
   <header class="appbar">
     <div class="brand">
       <div class="logo" id="logo"></div>
-      <div class="txt"><h1>Strength Log</h1><p id="subtitle">Evidence-led strength</p></div>
+      <div class="txt"><h1>Strength</h1><p id="subtitle">Evidence-led strength</p></div>
     </div>
     <button class="iconbtn" data-act="evidence-lib" aria-label="Evidence library" id="libbtn"></button>
     <button class="iconbtn" data-act="settings" aria-label="Settings" id="setbtn"></button>
@@ -2000,6 +2025,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
+<link rel="stylesheet" href="trainer.css">
 <div id="app">
   <header class="appbar">
     <div class="logo" aria-hidden="true"><i style="background:#FF5C3C"></i><i style="background:#5B8CFF"></i><i style="background:#F2C14E"></i></div>
@@ -2024,7 +2050,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=aaeb279ed49117e8c549" integrity="sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=19c4093be57a9cc5d51f" integrity="sha256-GcQJO+V6nMXVH8MutPjap0zfZ343xrNovbQTdOIDDyQ=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=a977b51e6def3888552f" integrity="sha256-qXe1Hm3vOIhVL3HHDs+h9764KT/Ekz8aAMK4dGh/37c=" crossorigin="anonymous"></script>
 </body>
 </html>
 

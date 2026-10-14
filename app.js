@@ -1,3 +1,28 @@
+/* Shared presentation: counts use real saved sessions, never sample history. */
+window.MiloDesign = {
+  week(history) {
+    const today=new Date(); today.setHours(0,0,0,0);
+    const days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()-6+i);return d;});
+    const cells=days.map(d=>{const end=new Date(d);end.setDate(end.getDate()+1);
+      const count=history.filter(h=>h.date>=d.getTime()&&h.date<end.getTime()).length;
+      const name=d.toLocaleDateString(undefined,{weekday:'short'});
+      const full=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+      return `<div class="day-item ${count?'trained':''} ${d.getTime()===today.getTime()?'is-today':''}" aria-label="${full}: ${count} session${count===1?'':'s'}"><span class="day-name">${name}</span><span class="day-date">${d.getDate()}</span><span class="day-mark">${count?'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 10 3 3 7-7"/></svg>':'<span aria-hidden="true">—</span>'}</span></div>`;
+    }).join('');
+    const count=history.filter(h=>h.date>=days[0].getTime()&&h.date<today.getTime()+86400000).length;
+    return `<section class="training-week"><header><h3>Your last 7 days</h3><button class="tinybtn" data-act="sessions">View history <span aria-hidden="true">→</span></button></header><div class="day-strip">${cells}</div><p class="training-week-note">${count?count+' session'+(count===1?'':'s')+' recorded. Every session adds to your story.':'Your first session starts the story. Completed workouts will appear here.'}</p></section>`;
+  },
+  decorate(root, route, history) {
+    const view=root.getElementById('view'); if(!view||!view.dataset) return;
+    view.dataset.route=route;
+    if(route==='today'){
+      const stack=view.querySelector('.stack');
+      if(stack){stack.classList.add('today-layout');stack.insertAdjacentHTML('beforeend',MiloSecurity.html(this.week(history)));}
+    }
+    root.querySelectorAll('.tab').forEach(b=>{if(b.classList.contains('active'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  }
+};
+
 
 /* ==================== EXERCISE INSTRUCTIONS ====================
    Shared by every section, keyed by exercise id.
@@ -1727,6 +1752,7 @@ function render(){
   else if(state.route==='progress') view.innerHTML = MiloSecurity.html(viewProgress());
   $('#subtitle').textContent = {today:'Evidence-led muscle growth', train: state.active? state.active.name : 'Live logger', plan:'Mesocycle planner', library:'Exercise library', progress:'Your training data'}[state.route];
   view.scrollTop = 0;
+  if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   if(state.route==='library'){ const si=$('#libsearch'); if(si){ si.value=state.libSearch; } }
 }
 
@@ -1771,7 +1797,7 @@ function viewToday(){
     </div>`;
   const startCards = state.active ? '' : `
     <div class="grid2" style="margin-top:2px">
-      <button class="btn primary block" data-act="start-empty">${I.plus} Empty session</button>
+      <button class="btn ghost block" data-act="start-empty">${I.plus} Free session</button>
       <button class="btn ghost block" data-act="open-templates">${I.layers} Templates</button>
     </div>`;
 
@@ -1781,14 +1807,14 @@ function viewToday(){
   if(am){
     const nextDay = am.days.find(d=>!isDayDone(am,d.id,am.currentWeek));
     const doneN = am.days.filter(d=>isDayDone(am,d.id,am.currentWeek)).length;
-    mesoCard = `<div class="card pad" data-act="nav" data-route="plan" style="cursor:pointer">
+    mesoCard = `<div class="current-block">
       <div class="spread">
         <div style="min-width:0">
           <div class="section-label" style="margin:0 0 4px">Current block ${isDeloadWeek(am,am.currentWeek)?'&middot; deload':''}</div>
           <div style="font-family:Archivo;font-weight:800;font-size:16px;letter-spacing:-.01em">${esc(am.name)}</div>
           <div class="muted" style="font-size:12px;margin-top:2px">Week ${am.currentWeek}/${am.totalWeeks} &middot; ${doneN}/${am.days.length} days done${nextDay?' &middot; next: '+esc(nextDay.name):''}</div>
         </div>
-        ${nextDay && !state.active? `<button class="btn primary sm" data-act="meso-startday" data-day="${esc(nextDay.id)}">${I.play} Start</button>` : `<div class="mli" style="width:36px;height:36px;border-radius:11px;background:var(--steel-soft);color:var(--steel);display:grid;place-items:center">${I.arrow}</div>`}
+        ${nextDay && !state.active? `<button class="btn primary sm" data-act="meso-startday" data-day="${esc(nextDay.id)}">${I.play} Start</button>` : `<button class="btn ghost sm" data-act="nav" data-route="plan">View plan</button>`}
       </div>
     </div>`;
   }
@@ -1816,15 +1842,14 @@ function viewToday(){
   return `
   <div class="stack">
     <div class="hero">
-      <div class="greet">${greet}</div>
-      <h2>${state.active?'Session in progress':'Ready to train'}</h2>
-      <p class="sub">${state.active?'Pick up where you left off.':'Hard sets, counted per muscle. Quick, works offline, and honest about the science.'}</p>
+      <h2>${state.active?'Session in progress':am?'Your next session starts here.':'Build muscle, one session at a time.'}</h2>
+      <p class="sub">${state.active?'Pick up where you left off.':am?'Follow your block, log your sets, and give each muscle time to recover.':'Plan your next block or start with a session. Log your sets and see your training take shape.'}</p>
       ${resumeHtml}
       ${repeatHtml}
+      ${mesoCard}
+      ${!am&&!state.active?`<button class="btn primary block" data-act="gen-open">${I.calendar} Build my training plan</button>`:''}
       ${startCards}
     </div>
-
-    ${mesoCard}
 
     <div class="grid3">
       <div class="metric"><div class="k"><span class="kt">Direct sets</span><span class="q">7d</span></div><div class="v tnum">${totalDirect}</div></div>
@@ -3109,7 +3134,7 @@ function viewMesoDashboard(m){
       <div class="dh">
         <div class="dnum">${done?I.check:(di+1)}</div>
         <div style="flex:1;min-width:0"><h3>${esc(d.name)}</h3><div class="dsub">${nSetsTotal} sets &middot; ${muscles}</div></div>
-        ${done?`<span class="chip" style="background:var(--good);color:#fff;border-color:transparent">Logged</span>`
+        ${done?`<span class="chip good">Logged</span>`
               :`<button class="btn primary sm" data-act="meso-startday" data-day="${esc(d.id)}">${I.play} Start</button>`}
       </div>
       <div style="margin-top:8px">${exRows}</div>
@@ -4878,12 +4903,12 @@ function hubStart(tg){
 }
 function hubSetup(days, gap, calPerWeek){
   state.route='plan'; state.planMode='home'; render(); window.scrollTo(0,0);
-  if(!state.onboarded) return;   // the welcome sheet is up, and it leads on to planning
   openGenerator(); genOpts.gap=!!gap&&gapAvailable(); genOpts.calPerWeek=calPerWeek||null;
   if(days) genOpts.days=Math.max(genOpts.gap?1:3, Math.min(6,days));
   renderGenerator();
 }
 if(window.__hub) window.__hub.reg('lift', {
+  syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   sheetOpen:()=>modalOn, running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   info:hubInfo, work:hubWork, start:hubStart, setup:hubSetup, upcoming:hubUpcoming,
   open(){ state.route=state.active?'train':'plan'; render(); window.scrollTo(0,0); },
@@ -4899,7 +4924,7 @@ if(window.__hub) window.__hub.reg('lift', {
 new MutationObserver(()=>$('#view').classList.toggle('resting',$('#resttimer').classList.contains('on'))).observe($('#resttimer'),{attributes:true, attributeFilter:['class']});
 load();
 render();
-if(!state.onboarded) setTimeout(onboard, 350);
+// Getting-started guidance is available from the shared guide.
 if(state.active && state.active.restEndsAt){ tickRest(); }
 window.addEventListener('beforeunload', flush);
 window.addEventListener('pagehide', flush);
@@ -6864,14 +6889,14 @@ function viewToday(){
       <button class="btn primary block" data-act="nav" data-route="train">${I.flag} Back to session</button></div>`;
   } else if(goals.length){
     const P=todayPlan(), xs=orderIds(P.map(x=>x.id)).map(id=>P.find(x=>x.id===id));
-    hero=`<div class="hero"><div class="eyebrow">${greeting()}</div><h2>Today&rsquo;s session</h2>
+    hero=`<div class="hero"><h2>Today&rsquo;s session</h2>
       <div class="nxlist">${xs.map(x=>{ const st=stepsOf(x.id)[x.i]; return `<button class="nx" data-act="how" data-id="${esc(x.id)}" data-i="${x.i}"><span>${esc(st.n)}</span><b class="mono">${planText(x)}</b>
         <i>${esc(LADDERS[x.id].n)} &middot; ${roleText(x)}</i></button>`; }).join('')}</div>
       <p class="sub" style="margin:10px 0 0;font-size:12.5px">Train the movement and setup you can control. Related easier work supports strength days; balance and power stay fresh. Targets grow toward your goals, and supporting mobility and technique stay in a small maintenance rotation.</p>
       <div class="grid2" style="margin-top:14px"><button class="btn primary block" data-act="start-plan">${I.play} Start</button>
         <button class="btn ghost block" data-act="builder">${I.sliders} Choose</button></div></div>`;
   } else {
-    hero=`<div class="hero"><div class="eyebrow">${greeting()}</div><h2>What do you want to be able to do?</h2>
+    hero=`<div class="hero"><h2>What do you want to be able to do?</h2>
       <p class="sub">Pick a skill: your first pull-up, a handstand, a muscle-up, a pistol squat. The app works out where you are and builds the path there, one earned rung at a time.</p>
       <button class="btn primary block" data-act="goal-add">${I.target} Choose my goals</button>
       <button class="btn ghost block" data-act="builder" style="margin-top:8px">${I.plus} Just train today</button></div>`;
@@ -7384,6 +7409,7 @@ function render(){
   $('#subtitle').textContent={today:'Calisthenics, earned', train:state.active?state.active.name:'Session',
     goals:'Your goals', progress:'What you have built', library:'Every progression'}[state.route]||'';
   renderTabs();
+  if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   const a=state.active; if(a&&a.restEndsAt) tickRest();
 }
 function renderTabs(){
@@ -7710,13 +7736,14 @@ function hubInfo(){
   return o;
 }
 if(window.__hub) window.__hub.reg('cal', {
+  syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
   info:hubInfo, work:hubWork, upcoming:k=>hubPicks(k),
   start(o){ if(state.active) return null; const drop=(o&&o.drop)||[];
     const ids=orderIds(defaultPicks()).filter(id=>!drop.includes(id)); if(!ids.length) return null;
     beginSession(ids); return state.active? state.active.id : null; },
-  setup(){ state.route='today'; render(); window.scrollTo(0,0); if(state.onboarded) openGoalPicker(); },
+  setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(); },
   open(){ state.route=state.active?'train':'today'; render(); window.scrollTo(0,0); },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
@@ -7732,7 +7759,7 @@ $('#logo').innerHTML=MiloSecurity.html(I.ladder);
 $('#libbtn').innerHTML=MiloSecurity.html(I.book);
 $('#setbtn').innerHTML=MiloSecurity.html(I.sliders);
 render();
-if(!state.onboarded) setTimeout(onboard,350);
+// Getting-started guidance is available from the shared guide.
 window.addEventListener('beforeunload', flush);
 window.addEventListener('pagehide', flush);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flush(); });
@@ -8610,7 +8637,7 @@ function viewToday(){
       <div class="grid2" style="margin-top:14px"><button class="btn primary block" data-act="start-day" data-d="${d}">${I.play} Start</button>
         <button class="btn ghost block" data-act="free">${I.plus} Free session</button></div></div>`;
   } else {
-    hero=`<div class="hero"><div class="eyebrow">${greeting()}</div><h2>What do you want stronger?</h2>
+    hero=`<div class="hero"><h2>What do you want stronger?</h2>
       <p class="sub">Pick the areas, tell the app what kit you have, and it chooses the best strength exercise for each. Barbell, dumbbells, machines or just bodyweight.</p>
       <button class="btn primary block" data-act="setup">${I.target} Set up my plan</button>
       <button class="btn ghost block" data-act="free" style="margin-top:8px">${I.plus} Just log a session</button></div>`;
@@ -9323,6 +9350,7 @@ function render(){
   $('#subtitle').textContent={today:'Evidence-led strength', train:state.active?state.active.name:'Session', program:D?D.n:'Your plan',
     progress:'Your numbers over time', tools:'Calculators'}[state.route]||'';
   renderTabs();
+  if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   tickRest();
 }
 function renderTabs(){
@@ -9623,12 +9651,13 @@ function hubInfo(){
     days:D.days.map((x,i)=>hubDay(D,i,P.week))});
 }
 if(window.__hub) window.__hub.reg('str', {
+  syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
   info:hubInfo, work:hubWork, upcoming:hubUpcoming,
   start(){ if(state.active) return null; const D=progDef(); if(!state.program||!D) return null;
     startProgramDay(nextDayIdx()); return state.active? state.active.id : null; },
-  setup(){ state.route='today'; render(); window.scrollTo(0,0); if(state.onboarded) openSetup(); },
+  setup(){ state.route='today'; render(); window.scrollTo(0,0); openSetup(); },
   open(){ state.route=state.active?'train':'today'; render(); window.scrollTo(0,0); },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
@@ -9644,7 +9673,7 @@ $('#logo').innerHTML=MiloSecurity.html(I.bar);
 $('#libbtn').innerHTML=MiloSecurity.html(I.book);
 $('#setbtn').innerHTML=MiloSecurity.html(I.sliders);
 render();
-if(!state.onboarded) setTimeout(onboard,350);
+// Getting-started guidance is available from the shared guide.
 window.addEventListener('beforeunload', flush);
 window.addEventListener('pagehide', flush);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flush(); });
@@ -10250,13 +10279,15 @@ function ciForm(C){
     <div class="spread"><span class="eyebrow">Check-in &middot; about 30 seconds</span>${rec&&!rec.skip? `<span class="chip">Editing today</span>` : ''}</div>
     <div class="h2">How are you today?</div>
     <p class="lead">Saved on this phone. It shapes today’s plan, and over a few weeks it teaches the app how much training each of your muscles takes before it feels sore.</p>
-    ${WELL.map(wellRow).join('')}
+    <div class="wellness-grid">${WELL.map(wellRow).join('')}</div>
+    <div class="wellness-grid">
     ${T? `<div class="field"><label>Muscle soreness</label>${yn('ci-sore', d.soreAsked)}
       ${d.soreAsked? `<p class="hint" style="margin:10px 0 4px">What you feel now: 0 is none, 10 is the worst you can imagine. Muscles trained lately, or in today’s plan, are listed; add any other.</p>
         ${soreKeys.map(k=>row('sore',k,Y_STAR,names[k])).join('')}${add('ci-add-sore', soreMore, names)}` : ''}</div>` : ''}
     <div class="field"><label>Joint pain</label>${yn('ci-pain', d.painAsked)}
       ${d.painAsked? `<p class="hint" style="margin:10px 0 4px">Pain in the joint itself (not muscle burn) right now: 0 is none, 10 is the worst you can imagine. Which joint?</p>
         ${painKeys.map(k=>row('pain',k,3,jn[k])).join('')}${add('ci-add-pain', painMore, jn)}` : ''}</div>
+    </div>
     <div style="margin-top:20px"><button class="btn pri block" id="cisave" data-a="ci-save" ${ciCanSave()?'':'disabled'}>${IC.check} Save check-in</button></div>
     <button class="btn ghost block" data-a="${rec? 'ci-cancel' : 'ci-skip'}" style="margin-top:8px">${rec? 'Cancel' : 'Skip today'}</button>
   </section>`;
@@ -10804,7 +10835,10 @@ render();
   window.__setTheme=function(t){
     theme=t||'system'; stampTheme(); paintBg();
     try{ localStorage.setItem(SK+'.theme',theme); }catch(e){}
-    // keep each module's own settings screen in agreement
+    // Keep loaded state in agreement too: a route render or pending save must not
+    // restore an older theme. Registration happens before a trainer loads its state.
+    MODS.forEach(m=>{ const api=apis[m]; if(api&&api.syncTheme) api.syncTheme(theme); });
+    // Keep settings for trainers that have not been opened in agreement.
     MODS.forEach(m=>{ try{
       if(!KEYS[m]) return;
       const raw=localStorage.getItem(KEYS[m]); if(!raw) return;
@@ -10951,9 +10985,10 @@ render();
 
   /* Section headers stick just under the top bar, which grows while a combined day is running. */
   const shellbar=document.querySelector('.shellbar');
-  function syncShellTop(){ document.documentElement.style.setProperty('--shell-top', shellbar.offsetHeight+'px'); }
+  function syncShellTop(){ const mobile=matchMedia('(max-width:999px)').matches; const side=document.querySelector('.sidebar'); document.documentElement.style.setProperty('--shell-top',(shellbar.offsetHeight+(mobile?side.offsetHeight:0))+'px'); document.querySelector('.sw').setAttribute('aria-orientation',mobile?'horizontal':'vertical'); }
   if(window.ResizeObserver) new ResizeObserver(syncShellTop).observe(shellbar);
   syncShellTop();
+  window.addEventListener('resize',syncShellTop);
 
   /* Lets one section send you to another, e.g. Muscle pointing max-strength work at Strength. */
   window.__go=function(m){ show(m); };
@@ -10963,6 +10998,9 @@ render();
     const host=hostOf(m);
     const r=host.attachShadow({mode:'open'});
     r.appendChild(document.getElementById('t-'+m).content.cloneNode(true));
+    const nav=r.getElementById('tabbar'), app=r.getElementById('app'), bar=r.querySelector('.appbar');
+    if(nav&&app&&bar) bar.after(nav);
+    r.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"]')){e.preventDefault();e.target.click();} });
     roots[m]=r;
   });
 
@@ -10972,13 +11010,22 @@ render();
   document.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>show(b.dataset.m)));
   /* Arrow keys, Home and End move between the four tabs (only the open one is in the tab order). */
   document.querySelector('.sw').addEventListener('keydown',e=>{
+    if(e.ctrlKey||e.metaKey||e.altKey) return;
     const i=MODS.indexOf(active); let j=-1;
-    if(e.key==='ArrowRight') j=(i+1)%MODS.length; else if(e.key==='ArrowLeft') j=(i+MODS.length-1)%MODS.length;
+    if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%MODS.length; else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i+MODS.length-1)%MODS.length;
     else if(e.key==='Home') j=0; else if(e.key==='End') j=MODS.length-1;
     if(j<0) return;
     e.preventDefault(); show(MODS[j]); document.querySelector('.seg[data-m="'+MODS[j]+'"]').focus();
   });
 
+  document.getElementById('shell-date').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('theme-toggle').addEventListener('click',()=>{
+    const dark=theme==='dark'||(theme==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);
+    window.__setTheme(dark?'light':'dark');
+    document.getElementById('theme-toggle').setAttribute('aria-label',dark?'Switch to dark theme':'Switch to light theme');
+  });
+  document.querySelectorAll('[data-open-guide]').forEach(b=>b.addEventListener('click',()=>document.getElementById('guide').showModal()));
+  document.getElementById('guide-done').addEventListener('click',()=>document.getElementById('guide').close());
   let start='lift';
   try{ start=localStorage.getItem(SK+'.mod')||'lift'; }catch(e){}
   // a home-screen shortcut or a link: index.html?m=str opens that section

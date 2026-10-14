@@ -98,7 +98,7 @@ test('integrity generation versions script URLs by content and stays idempotent'
     fs.writeFileSync(path.join(fixture,'index.html'),'<meta charset="utf-8">\n<script defer src="security.js"></script>\n<script defer src="app.js?v=old-version"></script>\n');
     const security = 'window.fixtureSecurity=true;', app = 'window.fixtureApp=1;';
     fs.writeFileSync(path.join(fixture,'security.js'),security); fs.writeFileSync(path.join(fixture,'app.js'),app);
-    for (const name of ['fonts.css','manifest.webmanifest','icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png']) fs.writeFileSync(path.join(fixture,name),'fixture');
+    for (const name of ['fonts.css', 'shell.css', 'trainer.css','manifest.webmanifest','icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png']) fs.writeFileSync(path.join(fixture,name),'fixture');
     const generator = path.join(fixture,'tools/update-integrity.cjs');
     const run = (...args)=>execFileSync(process.execPath,[generator,...args],{cwd:fixture,timeout:10000});
     run();
