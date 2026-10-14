@@ -23,7 +23,7 @@ const swPath = path.join(root, 'sw.js');
 const originalSW = fs.readFileSync(swPath, 'utf8');
 const normalizedSW = originalSW.replace(/const CACHE = PREFIX \+ '[^']+';/, "const CACHE = PREFIX + 'generated';");
 const fingerprint = crypto.createHash('sha256').update(html).update(normalizedSW);
-for (const file of [...sources, 'fonts.css', 'shell.css', 'trainer.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png',
+for (const file of [...sources, 'fonts.css', 'shell.css', 'trainer.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'favicon.svg', 'favicon-32.png',
   ...fs.readdirSync(path.join(root, 'assets/fonts')).filter(f => /\.(ttf|woff2?)$/.test(f)).sort().map(f => 'assets/fonts/' + f)]) {
   fingerprint.update(file).update(fs.readFileSync(path.join(root, file)));
 }

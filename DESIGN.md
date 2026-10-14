@@ -99,6 +99,18 @@ typography:
     fontWeight: 800
     lineHeight: 0.9
     letterSpacing: "-0.04em"
+  wordmark-mobile:
+    fontFamily: 'Archivo, "Public Sans", sans-serif'
+    fontSize: "26px"
+    fontWeight: 800
+    lineHeight: 0.9
+    letterSpacing: "-0.04em"
+  wordmark-subtitle:
+    fontFamily: '"Public Sans", sans-serif'
+    fontSize: "11px"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "0.04em"
 rounded:
   chip: "6px"
   set-control: "7px"
@@ -108,6 +120,7 @@ rounded:
   lg: "14px"
   xl: "16px"
 spacing:
+  brand-gap: "11px"
   control-gap: "8px"
   grid-gap: "12px"
   stack-gap: "20px"
@@ -119,6 +132,25 @@ spacing:
   gutter-tablet: "32px"
   gutter-desktop: "40px"
 components:
+  brand-symbol:
+    textColor: "{colors.accent}"
+    width: "36px"
+    height: "36px"
+  brand-symbol-mobile:
+    textColor: "{colors.accent}"
+    width: "34px"
+    height: "34px"
+  brand-symbol-dark:
+    textColor: "{colors.selected}"
+    width: "36px"
+    height: "36px"
+  brand-symbol-mobile-dark:
+    textColor: "{colors.selected}"
+    width: "34px"
+    height: "34px"
+  brand-app-icon:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.selected}"
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.on-accent}"
@@ -194,12 +226,13 @@ Muscle, Strength, Ladder, and Together share one visual language. Training numbe
 **Key Characteristics:**
 
 - Evergreen wayfinding with pale leaf selection.
+- A bold bull symbol paired with the lowercase Milo wordmark.
 - Archivo headings paired with locally served Public Sans.
 - Flat, bordered working surfaces with compact, readable density.
 - Consistent navigation and controls across all four trainers.
 - Visible focus, responsive layouts, and restrained state changes.
 
-The normative tokens above are extracted from `shell.css` and `trainer.css`. The latter is loaded inside each trainer's shadow root; `fonts.css` supplies local font files. Values in `.impeccable/design.json` extend this document with motion, breakpoint, elevation, and component-preview metadata. Its generated tonal ramps are preview aids, not extra application colors.
+The normative tokens above are extracted from `shell.css`, `trainer.css`, and the brand asset generator. `trainer.css` is loaded inside each trainer's shadow root; `fonts.css` supplies local font files. Values in `.impeccable/design.json` extend this document with motion, breakpoint, elevation, and component-preview metadata. Its generated tonal ramps are preview aids, not extra application colors.
 
 ## Colors
 
@@ -211,6 +244,8 @@ The palette combines evergreen structure, mineral neutrals, and clear status col
 - **Pale Leaf** (`selected`): the selected trainer in the shell and selected choices in light mode. In dark trainer surfaces, `dark-accent` supplies this light foreground/action color while `dark-selected` provides a deeper selection fill.
 - **Soft Leaf** (`accent-soft`): selected route tabs, the next set, and low-emphasis guidance.
 - **Field Green** (`hero`): the next-session surface. Keep this broad fill calmer than a primary button.
+
+The bull uses Evergreen on light surfaces and Pale Leaf on dark surfaces. App icons use Pale Leaf on a full-bleed Evergreen square; these are the same established palette roles.
 
 ### Neutral
 
@@ -239,6 +274,7 @@ Archivo gives titles a compact, assured character. Public Sans keeps instruction
 - **Label:** form labels and compact control text. Supporting metadata may use 11–12px; avoid using it for the user's primary task.
 - **Metric:** prominent values. Desktop values increase to 30px. Use tabular numerals for quantities, set fields, dates, timers, and progress values.
 - **Input:** editable values stay at 16px in general fields and set logging.
+- **Wordmark:** keep `milo` lowercase in the existing Archivo treatment. Use `wordmark` on desktop and `wordmark-mobile` below 1000px; `van Croton` sits beneath it in Public Sans using `wordmark-subtitle`, with 3px top separation.
 
 **The Stable Number Rule.** Let values change without changing their alignment. Preserve tabular numerals and clear units instead of introducing a decorative monospaced face.
 
@@ -269,6 +305,18 @@ Use gently rounded rectangles: small controls generally use `sm`, primary button
 One-pixel borders establish ordinary boundaries. Active desktop route tabs use a two-pixel underline. Mobile sheets have rounded upper corners and a short grab handle; centered dialogs round all four corners. Use simple inline stroke icons, sized to their role, without decorative badges around every heading.
 
 ## Components
+
+### Milo Identity
+
+The bold, symmetrical bull is Milo's shared identity. Its broad horns and compact face connect the header, browser tab, and installed app while retaining the evergreen visual system. The new symbol replaces the thin header monogram and the former gold app icon.
+
+`assets/brand/milo-symbol.svg` is the canonical editable vector: one filled path with two eye cutouts on a 64-unit square canvas. Preserve the silhouette, aspect ratio, and canvas. The inline header copy uses `currentColor`, Evergreen in light mode and Pale Leaf in explicit or system dark mode. Keep it decorative beside the wordmark (`aria-hidden="true"`, `focusable="false"`); the link's accessible name is “Milo home.” Standalone SVGs retain their accessible title or label.
+
+- **Lockup:** use the `brand-symbol` and `brand-gap` tokens beside the wordmark. Below 1000px, use `brand-symbol-mobile` and `wordmark-mobile`. Preserve the 11px gap between the symbol canvas and the wordmark, and keep surrounding content outside the original canvas; never crop to the path's bounding box.
+- **Minimum sizes:** use the full symbol with eye cutouts at 34px or larger. Smaller browser-tab placements use the dedicated compact favicon silhouette, which removes the eye cutouts. The SVG favicon supports a 16px tab placement; its PNG fallback is 32px. Keep the subtitle at its established size rather than shrinking the entire lockup.
+- **App icons:** retain a full-bleed Evergreen background. The ordinary and Apple icons center the full symbol at scale 0.82; the maskable icon uses 0.70 to keep the mark within the circular safe area. Do not bake a rounded device mask into these files. The favicon alone includes a rounded square background.
+- **Treatment:** use solid fills without strokes, shading, gradients, shadows, animation, or extra enclosure around the header mark. Do not stretch, rotate, or recolor the bull by trainer.
+- **Source and exports:** the original SVG was authored for Milo on 2026-10-13. PNGs are direct `sharp` rasterizations of the vector, not image-generation output, and embed this origin in an `impeccable:prompt` PNG text entry. `tools/generate-brand.cjs` derives the inline header, light symbol, app-icon SVG, favicons, and install icons from the canonical source. See `assets/brand/README.md` for regeneration and provenance.
 
 ### Buttons
 
@@ -312,6 +360,7 @@ Short state transitions use the existing 150ms timing; next-row background uses 
 - **Do** use tabular numerals, explicit units, and wrapping exercise names in compact working layouts.
 - **Do** show real training history and honest empty states.
 - **Do** keep phone logging controls reachable and clear of fixed navigation and timers.
+- **Do** regenerate every logo derivative from the canonical bull SVG and preserve its spacing, theme behavior, and maskable safe area.
 
 ### Don't:
 
@@ -321,3 +370,4 @@ Short state transitions use the existing 150ms timing; next-row background uses 
 - **Don't** add decorative motion or animate route entry.
 - **Don't** manufacture achievements or completed days to fill an empty screen.
 - **Don't** introduce remote font dependencies or framework-only component previews.
+- **Don't** distort the bull, add effects, restore the old monogram or gold app icon, or give individual trainers separate logo colors.
