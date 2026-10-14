@@ -4,7 +4,7 @@ Milo is my workout tracker for muscle growth, strength and calisthenics. Use it 
 
 [Use Milo on Mac or iPhone](RUNNING.md).
 
-**[Try Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
+**[Open Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
 
 <img src="docs/screenshots/training-studio-desktop.jpg" alt="Milo’s evergreen training interface with a local test session in progress" width="100%">
 
