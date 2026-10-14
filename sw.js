@@ -1,10 +1,10 @@
 /* Offline cache belongs only to this app and contains only its static assets. */
 const PREFIX = 'milo-app-';
-const CACHE = PREFIX + 'v59-e1bf5bdbfe287edc10e2';
+const CACHE = PREFIX + 'v59-600dc03d1d00fe2e7ebd';
 const NAV_WAIT = 3000;
 const BASE = new URL('./', self.registration.scope);
 const SHELL = ['./', './index.html', './security.js', './app.js', './fonts.css', './shell.css', './trainer.css',
-  './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
+  './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.svg', './favicon-32.png'];
 const PATHS = new Set(SHELL.map(path => new URL(path, BASE).pathname));
 const SCRIPTS = new Set(['app.js', 'security.js'].map(path => new URL(path, BASE).pathname));
 const ownAsset = url => url.origin === BASE.origin &&

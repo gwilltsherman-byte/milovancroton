@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T02:16:33.943116Z",
+  "generatedAt": "2026-10-14T03:57:50.649993Z",
   "title": "Design System: Milo van Croton",
   "extensions": {
     "colorMeta": {
@@ -660,7 +660,15 @@
       },
       "wordmark": {
         "displayName": "Milo Wordmark",
-        "purpose": "Shared shell identity; 26px below 1000px."
+        "purpose": "Lowercase milo in the shared shell identity, paired with the bull symbol."
+      },
+      "wordmark-mobile": {
+        "displayName": "Mobile Milo Wordmark",
+        "purpose": "Lowercase milo below 1000px; preserves the existing Archivo weight and tracking."
+      },
+      "wordmark-subtitle": {
+        "displayName": "Milo Subtitle",
+        "purpose": "Public Sans van Croton below the wordmark, separated by a 3px top margin."
       }
     },
     "shadows": [
@@ -740,7 +748,53 @@
         "name": "wide-workspace-min",
         "value": "1100px"
       }
-    ]
+    ],
+    "identity": {
+      "name": "Milo bull",
+      "source": "assets/brand/milo-symbol.svg",
+      "provenance": {
+        "authoredFor": "Milo",
+        "authoredOn": "2026-10-13",
+        "method": "Original editable SVG path; PNG derivatives rasterized with sharp. No image-generation source.",
+        "pngMetadata": "Standard tEXt entry keyed impeccable:prompt records the original vector source, date, generator, and rasterization method."
+      },
+      "geometry": {
+        "viewBox": "0 0 64 64",
+        "fillRule": "evenodd",
+        "eyeCutouts": 2,
+        "compactVariant": "Same silhouette with eye cutouts removed"
+      },
+      "usage": {
+        "header": "Inline currentColor; Evergreen in light mode and Pale Leaf in dark mode, including system theme.",
+        "lockup": "Lowercase milo in Archivo with the Public Sans van Croton subtitle.",
+        "clearSpace": "Preserve the complete 64-unit canvas and the brand-gap token between symbol and wordmark; do not crop to path bounds.",
+        "minimumFullSymbol": "34px",
+        "minimumCompactFavicon": "16px",
+        "effects": "Solid fills only; no strokes, shading, gradients, shadows, rotation, distortion, or animation."
+      },
+      "exports": {
+        "lightSymbol": "assets/brand/milo-symbol-light.svg",
+        "appIconVector": "assets/brand/milo-app-icon.svg",
+        "standardPng": [
+          "icon-192.png",
+          "icon-512.png",
+          "apple-touch-icon.png"
+        ],
+        "maskablePng": "icon-maskable-512.png",
+        "favicons": [
+          "favicon.svg",
+          "favicon-32.png"
+        ],
+        "standardScale": 0.82,
+        "maskableScale": 0.7,
+        "background": "Full-bleed Evergreen on install icons; only the favicon has built-in rounded corners."
+      },
+      "regeneration": [
+        "NODE_PATH=/path/to/node_modules node tools/generate-brand.cjs",
+        "node tools/update-integrity.cjs"
+      ],
+      "documentation": "assets/brand/README.md"
+    }
   },
   "components": [
     {
@@ -829,6 +883,7 @@
     "overview": "Milo feels grounded, readable, and ready for use between sets. Evergreen wayfinding frames a mineral green workspace; white surfaces and pale leaf selections make the current task clear. The visual identity comes from useful structure, confident headings, and consistently treated controls.\n\nMuscle, Strength, Ladder, and Together share one visual language. Training numbers receive space and stable alignment; explanatory copy remains close to the decision it supports. The system carries through light, dark, and system themes without changing the meaning of a control or status.",
     "keyCharacteristics": [
       "Evergreen wayfinding with pale leaf selection.",
+      "A bold bull symbol paired with the lowercase Milo wordmark.",
       "Archivo headings paired with locally served Public Sans.",
       "Flat, bordered working surfaces with compact, readable density.",
       "Consistent navigation and controls across all four trainers.",
@@ -857,7 +912,8 @@
       "**Do** preserve light, dark, and system themes, visible keyboard focus, and reduced-motion behavior.",
       "**Do** use tabular numerals, explicit units, and wrapping exercise names in compact working layouts.",
       "**Do** show real training history and honest empty states.",
-      "**Do** keep phone logging controls reachable and clear of fixed navigation and timers."
+      "**Do** keep phone logging controls reachable and clear of fixed navigation and timers.",
+      "**Do** regenerate every logo derivative from the canonical bull SVG and preserve its spacing, theme behavior, and maskable safe area."
     ],
     "donts": [
       "**Don't** restore separate trainer palettes, decorative gradients, backdrop blur, or glowing cards.",
@@ -865,7 +921,8 @@
       "**Don't** shrink editable values or hide necessary set actions to force a narrow row.",
       "**Don't** add decorative motion or animate route entry.",
       "**Don't** manufacture achievements or completed days to fill an empty screen.",
-      "**Don't** introduce remote font dependencies or framework-only component previews."
+      "**Don't** introduce remote font dependencies or framework-only component previews.",
+      "**Don't** distort the bull, add effects, restore the old monogram or gold app icon, or give individual trainers separate logo colors."
     ]
   }
 }
