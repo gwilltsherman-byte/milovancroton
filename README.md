@@ -4,9 +4,11 @@ Milo is my workout tracker for muscle growth, strength and calisthenics. Use it 
 
 [Use Milo on Mac or iPhone](RUNNING.md).
 
-**[Try Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
+**[Open Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
 
-<img src="docs/screenshots/banner.jpg" alt="Milo van Croton with previews of its Muscle, Strength and Ladder trainers" width="100%">
+<img src="docs/screenshots/training-studio-desktop.jpg" alt="Milo’s evergreen training interface with a local test session in progress" width="100%">
+
+[Design and verification notes](docs/REDESIGN.md) · [Product context](PRODUCT.md) · [Design rules](DESIGN.md)
 
 ## Start a workout
 
@@ -72,7 +74,7 @@ scripts are blocked. Fonts and offline caches belong to this app. `_headers` als
 framing and MIME protections on hosts that support it; GitHub Pages uses the page's meta CSP
 and does not apply `_headers`.
 
-After changing `app.js` or `security.js`, run:
+After changing application scripts, styles or the shell, run:
 
 ```sh
 node tools/update-integrity.cjs
@@ -80,7 +82,8 @@ node tools/update-integrity.cjs --check
 node --test tests/*.test.cjs
 ```
 
-Serve the repository and open `tests/browser.html` for the browser regression suite.
+Serve the repository and open `tests/browser.html`, `tests/ladder-browser.html` and
+`tests/redesign-browser.html` sequentially on a separate local origin for browser regression checks.
 The integrity tool also changes the offline cache whenever app assets change. After an app
 update, reload once to use the new offline cache. See [SECURITY.md](SECURITY.md)
 for security reporting and backup guidance. Bundled font licenses are in `assets/fonts/`.
