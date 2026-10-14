@@ -3572,7 +3572,12 @@ function ssGroup(ei){
   return {sg, start, end, total:end-start+1, index:ei-start, isLast:ei===end};
 }
 function toggleDone(ei,si){
-  const s=state.active.entries[ei].sets[si];
+  const en=state.active.entries[ei], s=en.sets[si];
+  if(!s.done){   // an empty box logs the grey suggestion it shows
+    const prev=lastPerf(en.exId);
+    if(s.weight==null && prev) s.weight=prev.weight;
+    if(s.reps==null){ const hint=repHint(en,s); if(hint!=null) s.reps=hint; else if(prev) s.reps=prev.reps; }
+  }
   s.done=!s.done;
   let jumpTo=null;
   if(s.done){
@@ -6247,7 +6252,7 @@ function todayPlan(ahead){
 const ROLE_N={goal:'goal', volume:'goal &middot; volume day', support:'support', extra:'extra', new:'new to you', need:'what your goal needs',maintenance:'maintain and recheck'};
 const WHEN_S={warm:'warm-up', early:'while fresh', mid:'with the main work', end:'at the end'};
 function roleText(x){ const L=LADDERS[x.id]; return x.role==='prep'? (WHEN_S[L.when]||'prep') : ROLE_N[x.role]||''; }
-function planEntry(x){ const st=stepsOf(x.id)[x.i]; return {ladderId:x.id,stepIdx:x.i,kind:st.k,target:x.target||rungTarget(x.id,x.i,x.role),setup:lastSetupFor(x.id,x.i),clean:false,sets:Array.from({length:x.sets},makeSet),role:x.role}; }
+function planEntry(x){ const st=stepsOf(x.id)[x.i]; return {ladderId:x.id,stepIdx:x.i,kind:st.k,target:x.target||rungTarget(x.id,x.i,x.role),setup:lastSetupFor(x.id,x.i),clean:true,sets:Array.from({length:x.sets},makeSet),role:x.role}; }
 function planText(x){ const st=stepsOf(x.id)[x.i]; return `${x.sets} x ${x.target||rungTarget(x.id,x.i,x.role)}${unitS(st)}`; }
 
 function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
@@ -6445,7 +6450,7 @@ function openTestStep(note){
       <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Warm up and check this movement while fresh. Stop when control or form changes. ${testCtx.advance?`The entry check is ${entryMinimum(id,i)}${unitS(st)}; repeating the previous rung alone does not prove this one.`:`Record what you can do cleanly. The training target starts at ${goalText(st)}.`}</p>
       ${how?`<details class="howbox"><summary>${I.info} How to do it</summary>${how}</details>`:''}
       ${setupInputs(st,lastSetupFor(id,i),'data-test-setup="1"',false)}
-      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:12px 0"><input id="testclean" type="checkbox">The recorded reps or seconds use clean form and the stated setup${/each side|per side/i.test(st.cue||'')?' on both sides':''}.</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:12px 0"><input id="testclean" type="checkbox" checked>The recorded reps or seconds use clean form and the stated setup${/each side|per side/i.test(st.cue||'')?' on both sides':''}.</label>
       <div class="field"><label>${st.k==='hold'?'Seconds held':'Clean reps'}</label><input id="testv" class="bignum" inputmode="numeric" placeholder="0" autocomplete="off"></div>
       <button class="btn primary block" data-act="test-record">${I.check} Record</button>
       <button class="btn ghost block" data-act="test-zero" style="margin-top:8px">Couldn&rsquo;t do one</button>
@@ -6639,7 +6644,7 @@ function setupInputs(st,setup,attrs,disabled){
 }
 function makeSet(){ return {v:null, rir:null, done:false}; }
 function entryFor(id,idx){ const i= idx==null? curIdx(id) : idx, st=stepsOf(id)[i];
-  return {ladderId:id,stepIdx:i,kind:st.k,target:rungTarget(id,i),setup:lastSetupFor(id,i),clean:false,sets:Array.from({length:st.sets},makeSet)}; }
+  return {ladderId:id,stepIdx:i,kind:st.k,target:rungTarget(id,i),setup:lastSetupFor(id,i),clean:true,sets:Array.from({length:st.sets},makeSet)}; }
 let pick=null;
 function openBuilder(){ pick=new Set(defaultPicks()); renderBuilder(); }
 function builderRow(id){
@@ -6728,9 +6733,10 @@ function toggleDone(ei,si){
   const e=state.active.entries[ei], s=e.sets[si]; if(!s) return;
   const st=stepsOf(e.ladderId)[e.stepIdx];
   if(!s.done){
-    if(s.v==null||!Number.isFinite(s.v)||s.v<0){toast('Enter the reps or seconds you actually completed');return;}
+    const v=s.v==null? (e.target==null?st.v:e.target) : s.v;   // an empty box logs the grey target it shows
+    if(!Number.isFinite(v)||v<0){toast('Enter the reps or seconds you actually completed');return;}
     if(!setupValid(st,e.setup||{})){toast('Record the setup so this effort can be compared');return;}
-    s.setup=Object.assign({},e.setup||{});s.clean=e.clean===true;
+    s.v=v; s.setup=Object.assign({},e.setup||{});s.clean=e.clean===true;
   }
   s.done=!s.done;
   save(); render();
@@ -7490,7 +7496,7 @@ __root.addEventListener('click', e=>{
     case 'ed-rm-set': edit.rec.entries[+el.dataset.e].sets.splice(+el.dataset.s,1); renderEdit(); break;
     case 'ed-rm-ex': edit.rec.entries.splice(+el.dataset.e,1); renderEdit(); break;
     case 'ed-tick': { const en=edit.rec.entries[+el.dataset.e], st=en&&LADDERS[en.ladderId]&&stepsOf(en.ladderId)[en.stepIdx];
-      OpenSets.tick(en, +el.dataset.s, x=>{ if(x.v==null&&st) x.v=st.v; }); renderEdit(); break; }
+      OpenSets.tick(en, +el.dataset.s, x=>{ if(x.v==null&&st) x.v=st.v; if(x.clean==null) x.clean=true; }); renderEdit(); break; }
     case 'ed-add-set': edAddSet(+el.dataset.e); break;
     case 'ed-save': saveEdit(); break;
     case 'ed-del': deleteEdit(); break;
@@ -7685,7 +7691,7 @@ function edInput(el){
 function edAddSet(ei){
   const e=edit.rec.entries[ei]; if(!e) return;
   const last=e.sets[e.sets.length-1];
-  e.sets.push({v:last?last.v:null, rir:last?last.rir:null, done:true, clean:false, setup:Object.assign({},last&&last.setup||e.setup||{})}); renderEdit();
+  e.sets.push({v:last?last.v:null, rir:last?last.rir:null, done:true, clean:true, setup:Object.assign({},last&&last.setup||e.setup||{})}); renderEdit();
 }
 function saveEdit(){
   const r=OpenSets.join(JSON.parse(JSON.stringify(edit.rec)));   // what's still not ticked off stays with the session
@@ -10184,7 +10190,7 @@ const stripEl=document.getElementById('tgstrip');
 function strip(){
   if(!stripEl) return;
   const run=tg.on&&tg.run;
-  if(!run){ if(!stripEl.hidden){ stripEl.hidden=true; stripEl.innerHTML=MiloSecurity.html(''); } return; }
+  if(!run){ if(!stripEl.hidden){ stripEl.hidden=true; stripEl.innerHTML=MiloSecurity.html(''); } stripSpace(); return; }
   const cur=run.parts.find(p=>p.st==='run'), nxt=run.parts.findIndex(p=>p.st==='todo'), here=H.current();
   let btn='';
   if(cur){ if(here!==cur.m) btn=`<button class="tgs-go" data-tg="open" data-m="${cur.m}">Back to ${SEC[cur.m].n}</button>`; }
@@ -10192,7 +10198,13 @@ function strip(){
   const html=`<button class="tgs-main" data-tg="home" aria-label="Open Together"><span class="tgs-lbl">Day ${run.day+1}</span><span class="tgs-parts">${run.parts.map(p=>
     `<span class="tgs-p ${p.st==='run'?'run':p.st==='todo'?'':'done'}"><i style="background:${SEC[p.m].c}"></i>${SEC[p.m].n}</span>`).join('')}</span></button>${btn}`;
   if(stripEl.innerHTML!==html) stripEl.innerHTML=MiloSecurity.html(html);
-  stripEl.hidden=false;
+  stripEl.hidden=false; stripSpace();
+}
+/* The strip floats above each trainer's bottom edge. Its height (plus a gap) lifts their rest timer, toast and
+   end-of-page padding, so the countdown and the last buttons are never hidden under it. */
+function stripSpace(){
+  const h=stripEl.hidden? 0 : stripEl.offsetHeight+8, v=h+'px', st=document.documentElement.style;
+  if(st.getPropertyValue('--tg-strip')!==v) st.setProperty('--tg-strip', v);
 }
 if(stripEl) stripEl.addEventListener('click', e=>{
   const b=e.target.closest('[data-tg]'); if(!b) return;
