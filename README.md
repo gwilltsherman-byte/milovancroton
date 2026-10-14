@@ -1,10 +1,10 @@
 # Milo van Croton
 
+**[Open Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
+
 Milo is my workout tracker for muscle growth, strength and calisthenics. Use it to plan sessions, log your sets and follow your progress. It works offline after the first load, needs no account, and saves your training data in your browser.
 
 [Use Milo on Mac or iPhone](RUNNING.md).
-
-**[Open Milo](https://gwilltsherman-byte.github.io/milovancroton/)** · [Feature guide](docs/FEATURES.md) · [Report a problem](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose)
 
 <img src="docs/screenshots/training-studio-desktop.jpg" alt="Milo’s evergreen training interface with a local test session in progress" width="100%">
 
