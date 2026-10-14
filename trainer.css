@@ -1,19 +1,19 @@
-/* Milo's shared training field guide. Loaded inside every trainer shadow root. */
+/* Milo's shared training floor. Loaded inside every trainer shadow root. */
 :host {
-  --bg:#f1f4ef; --surface:#fff; --surface-2:#f5f7f3; --raised:#fff; --well:#edf1e9;
-  --ink:#1b2b22; --ink-2:#3f5146; --ink2:#3f5146; --muted:#5b6b60; --faint:#617165;
-  --border:#dce3d8; --border-2:#b8c7b8;
-  --accent:#234c3b; --accent-ink:#234c3b; --accent-soft:#e1ebd9; --on-accent:#fff;
-  --selected:#d4e6b5; --hero:#e6eedf;
+  --bg:#f1f2f0; --surface:#fff; --surface-2:#f6f6f3; --raised:#fff; --well:#e9eceb;
+  --ink:#21272a; --ink-2:#465159; --ink2:#465159; --muted:#5e686f; --faint:#5e686f;
+  --border:#d9dddc; --border-2:#838e91;
+  --accent:#b44720; --accent-ink:#b44720; --accent-soft:#f9e8df; --on-accent:#fff;
+  --selected:#f1cfbb; --hero:#e5e9e8;
   --heat:var(--accent); --heat-ink:var(--accent-ink); --heat-soft:var(--accent-soft);
-  --steel:var(--accent); --steel-soft:var(--accent-soft);
+  --steel:#4e6573; --steel-soft:#e5ebee; --on-steel:#fff;
   --brass:var(--accent); --brass-ink:var(--accent-ink); --brass-soft:var(--accent-soft);
   --iron:var(--accent); --iron-ink:var(--accent-ink); --iron-soft:var(--accent-soft); --on-iron:var(--on-accent);
   --gold:var(--accent); --gold-soft:var(--accent-soft); --ac:var(--accent);
   --btn:var(--accent); --btn-ink:var(--on-accent);
   --grad-heat:var(--accent); --grad-brass:var(--accent); --grad-iron:var(--accent);
-  --good:#247149; --good-ink:#245d3c; --good-soft:#e1f0e2;
-  --warn:#85540f; --warn-soft:#f8edd6; --crit:#b43636; --crit-soft:#fbe6e4;
+  --on-good:#fff; --good:#25704a; --good-ink:#245d3c; --good-soft:#e4f0e8;
+  --on-warn:#fff; --on-crit:#fff; --warn:#85540f; --warn-soft:#f8edd6; --crit:#b43636; --crit-soft:#fbe6e4;
   --shadow:none; --shadow-lg:none; --ring:transparent;
   --body:"Public Sans",system-ui,sans-serif; --disp:"Archivo","Public Sans",sans-serif; --mono:var(--body);
   --t-xs:11px; --t-sm:12px; --t-md:14px; --t-lg:17px; --t-xl:22px; --t-2xl:28px;
@@ -25,36 +25,36 @@
 
 /* Explicit and system themes share the same token vocabulary. */
 :host([data-theme="dark"]) {
-  --bg:#121b17; --surface:#1c2921; --surface-2:#223128; --raised:#26372c; --well:#17231b;
-  --ink:#eef4e9; --ink-2:#c9d6c5; --ink2:#c9d6c5; --muted:#b2c0ac; --faint:#a9b9a4;
-  --border:#37473b; --border-2:#647861;
-  --accent:#d4e6b5; --accent-ink:#d4e6b5; --accent-soft:#304632; --on-accent:#203826;
-  --selected:#3c573b; --hero:#273b2b;
+  --bg:#171b1f; --surface:#20262b; --surface-2:#283037; --raised:#303940; --well:#14191e;
+  --ink:#f4f3ef; --ink-2:#d0d5d7; --ink2:#d0d5d7; --muted:#abb5bb; --faint:#9ca8af;
+  --border:#3a454c; --border-2:#71818a;
+  --accent:#f4a070; --accent-ink:#f4a070; --accent-soft:#483126; --on-accent:#2e1d14;
+  --selected:#5b3d2c; --hero:#293339;
   --heat:var(--accent); --heat-ink:var(--accent-ink); --heat-soft:var(--accent-soft);
-  --steel:var(--accent); --steel-soft:var(--accent-soft);
+  --steel:#a5becd; --steel-soft:#293c47; --on-steel:#14232b;
   --brass:var(--accent); --brass-ink:var(--accent-ink); --brass-soft:var(--accent-soft);
   --iron:var(--accent); --iron-ink:var(--accent-ink); --iron-soft:var(--accent-soft); --on-iron:var(--on-accent);
   --gold:var(--accent); --gold-soft:var(--accent-soft); --btn:var(--accent); --btn-ink:var(--on-accent);
   --grad-heat:var(--accent); --grad-brass:var(--accent); --grad-iron:var(--accent);
-  --good:#8cce9b; --good-ink:#a7ddb0; --good-soft:#233c2d;
-  --warn:#e7c17e; --warn-soft:#3d3222; --crit:#ffaaa1; --crit-soft:#4b2b29;
+  --on-good:#152b20; --good:#92d0ab; --good-ink:#a7ddb9; --good-soft:#243c30;
+  --on-warn:#30220d; --on-crit:#451a17; --warn:#e7c17e; --warn-soft:#3d3222; --crit:#ffaaa1; --crit-soft:#4b2b29;
   --shadow:none; --shadow-lg:none; --ring:transparent; color-scheme:dark;
 }
 @media (prefers-color-scheme:dark) {
   :host(:not([data-theme="light"])) {
-    --bg:#121b17; --surface:#1c2921; --surface-2:#223128; --raised:#26372c; --well:#17231b;
-    --ink:#eef4e9; --ink-2:#c9d6c5; --ink2:#c9d6c5; --muted:#b2c0ac; --faint:#a9b9a4;
-    --border:#37473b; --border-2:#647861;
-    --accent:#d4e6b5; --accent-ink:#d4e6b5; --accent-soft:#304632; --on-accent:#203826;
-    --selected:#3c573b; --hero:#273b2b;
+    --bg:#171b1f; --surface:#20262b; --surface-2:#283037; --raised:#303940; --well:#14191e;
+    --ink:#f4f3ef; --ink-2:#d0d5d7; --ink2:#d0d5d7; --muted:#abb5bb; --faint:#9ca8af;
+    --border:#3a454c; --border-2:#71818a;
+    --accent:#f4a070; --accent-ink:#f4a070; --accent-soft:#483126; --on-accent:#2e1d14;
+    --selected:#5b3d2c; --hero:#293339;
     --heat:var(--accent); --heat-ink:var(--accent-ink); --heat-soft:var(--accent-soft);
-    --steel:var(--accent); --steel-soft:var(--accent-soft);
+    --steel:#a5becd; --steel-soft:#293c47; --on-steel:#14232b;
     --brass:var(--accent); --brass-ink:var(--accent-ink); --brass-soft:var(--accent-soft);
     --iron:var(--accent); --iron-ink:var(--accent-ink); --iron-soft:var(--accent-soft); --on-iron:var(--on-accent);
     --gold:var(--accent); --gold-soft:var(--accent-soft); --btn:var(--accent); --btn-ink:var(--on-accent);
     --grad-heat:var(--accent); --grad-brass:var(--accent); --grad-iron:var(--accent);
-    --good:#8cce9b; --good-ink:#a7ddb0; --good-soft:#233c2d;
-    --warn:#e7c17e; --warn-soft:#3d3222; --crit:#ffaaa1; --crit-soft:#4b2b29;
+    --on-good:#152b20; --good:#92d0ab; --good-ink:#a7ddb9; --good-soft:#243c30;
+    --on-warn:#30220d; --on-crit:#451a17; --warn:#e7c17e; --warn-soft:#3d3222; --crit:#ffaaa1; --crit-soft:#4b2b29;
     --shadow:none; --shadow-lg:none; --ring:transparent; color-scheme:dark;
   }
 }
@@ -169,8 +169,8 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .day-date {font-size:19px; font-weight:650; line-height:1.2; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
 .day-mark {height:16px; width:16px; display:grid; place-items:center; color:var(--faint); font-size:13px}
 .day-mark svg {width:14px; height:14px}
-.day-item.trained {background:var(--accent); color:var(--on-accent)}
-.day-item.trained :is(.day-name,.day-mark) {color:var(--on-accent)}
+.day-item.trained {background:var(--good); color:var(--on-good)}
+.day-item.trained :is(.day-name,.day-mark) {color:var(--on-good)}
 .day-item.today,.day-item.is-today {outline:1px solid var(--border-2); outline-offset:-1px}
 .training-week-note {margin:15px 0 0; color:var(--muted); font-size:12px; line-height:1.5}
 
@@ -200,7 +200,7 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .rung .body .cue {font-size:13px; line-height:1.6}
 .rung.current {background:var(--accent-soft); margin-left:0; padding-left:10px; border-radius:10px}
 .rung.current .dot {background:var(--accent); color:var(--on-accent)}
-.rung.cleared .dot,.daycard.done .dnum {background:var(--accent); color:var(--on-accent)}
+.rung.cleared .dot,.rung.goal.cleared .dot,.daycard.done .dnum {background:var(--good); color:var(--on-good)}
 .rung .mark::before {background:var(--border-2)}
 .weekdots i.dl {background:var(--well); border:1px dashed var(--border-2)}
 .tile {padding:18px; border-radius:12px}
@@ -230,13 +230,14 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .setrow-head span {font-size:10px; letter-spacing:.025em; font-weight:600; color:var(--muted)}
 .setrow {padding-top:5px; padding-bottom:5px; border-radius:8px}
 .setrow.next {background:var(--accent-soft)}
-.sinput {height:44px; font-size:16px; font-weight:650; border-width:1px; border-radius:7px; background:var(--surface-2)}
+.sinput {height:44px; font-size:16px; font-weight:650; border:1px solid var(--border-2); border-radius:7px; background:var(--surface-2)}
 .sinput[data-field="weight"] {font-size:16px}
 .sinput::placeholder {color:var(--muted)}
 .sidx {font-size:11px; letter-spacing:0; border-radius:5px}
-.setrow.next .sidx,.setrow.done .sidx,.setrow.done .donebtn {color:var(--on-accent); background:var(--accent)}
+.setrow.next .sidx {color:var(--on-accent); background:var(--accent)}
+.setrow.done .sidx,.setrow.done .donebtn {color:var(--on-good); background:var(--good)}
 .donebtn,.setopt {height:44px; border-radius:7px; border-width:1px}
-.donebtn {background:var(--surface); color:var(--muted)}
+.donebtn {background:var(--surface); color:var(--muted); border-color:var(--border-2)}
 .setopt {color:var(--muted)}
 .excard-actions {padding:0 16px 16px; gap:8px; mask-image:none; -webkit-mask-image:none; scrollbar-width:thin}
 .target-row {padding:0 18px 14px}
@@ -269,7 +270,8 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .rt-btn {min-height:40px; border-radius:7px; padding:9px 12px}
 .rt-btn.skip {background:var(--accent); color:var(--on-accent)}
 .resttimer.flash {box-shadow:none}
-.rbar i,.volfill,.stdbar i {background:var(--accent)}
+.rbar i {background:var(--accent)}
+.volfill,.stdbar i {background:var(--steel)}
 
 /* Search, evidence, settings, and all existing sheets. */
 .seg-tabs {background:var(--well); padding:4px; border-radius:9px; margin-bottom:20px; gap:3px}
@@ -293,7 +295,7 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .ev-lib-item,.ev-item {padding:16px; border-radius:12px; margin-bottom:10px; gap:12px}
 .ev-lib-item .eli-n .t,.ev-item .en .t {font-size:15px; line-height:1.4}
 .ev-lib-item .eli-n .s,.ev-item .en .s {font-size:12px; line-height:1.6; margin-top:5px}
-.scrim {background:rgb(11 24 16 / .54); backdrop-filter:none; -webkit-backdrop-filter:none}
+.scrim {background:rgb(16 22 27 / .58); backdrop-filter:none; -webkit-backdrop-filter:none}
 .sheet {max-width:600px; border-radius:16px 16px 0 0; background:var(--surface); max-height:90dvh; border:1px solid var(--border)}
 .scrim.center .sheet {border-radius:16px; max-width:540px}
 .sheet-head {padding:13px 20px 14px; gap:14px}
@@ -320,7 +322,9 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .toggle-group button.on {background:var(--surface); color:var(--accent-ink)}
 .review-hero h2 {font-size:30px; font-weight:750; letter-spacing:-.035em}
 .pr-badge {background:var(--accent); color:var(--on-accent); border-radius:5px}
-.optrow button.on.g,.optrow button.on.n {background:var(--accent); color:var(--on-accent)}
+.optrow button.on.n {background:var(--accent); color:var(--on-accent)}
+.optrow button.on.g {background:var(--good); color:var(--on-good)}
+.optrow button.on.w {background:var(--warn); color:var(--on-warn)}
 .optrow button.on.c {background:var(--crit-soft); color:var(--crit); border:1px solid var(--crit)}
 .review-hero .rk {display:none}
 .review-hero p {font-size:14px; line-height:1.6}
@@ -348,7 +352,8 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 :host(#m-mix) .lead {font-size:14px; line-height:1.65; max-width:65ch}
 .pick {border-radius:10px; padding:15px; margin-bottom:10px}
 .pick.on {background:var(--accent-soft); border-color:var(--accent)}
-.pick.on .ck {background:var(--accent); color:var(--on-accent)}
+.pick.on .ck,.pick.on .rn {background:var(--accent); color:var(--on-accent)}
+.celebico,.unl-ico {background:var(--good); color:var(--on-good); box-shadow:none}
 .pick .pt2 span {line-height:1.55; margin-top:5px}
 .pick .dot,.logo i {background:var(--accent)!important}
 .part {padding:17px 0; gap:13px}

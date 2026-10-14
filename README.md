@@ -6,7 +6,7 @@ Milo is my workout tracker for muscle growth, strength and calisthenics. Use it 
 
 [Use Milo on Mac or iPhone](RUNNING.md).
 
-<img src="docs/screenshots/training-studio-desktop.jpg" alt="Milo’s evergreen training interface with a local test session in progress" width="100%">
+<img src="docs/screenshots/training-studio-desktop.jpg" alt="Milo’s carbon-and-chalk training interface with orange actions and a completed local test session" width="100%">
 
 [Design and verification notes](docs/REDESIGN.md) · [Product context](PRODUCT.md) · [Design rules](DESIGN.md)
 

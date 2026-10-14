@@ -1,51 +1,78 @@
 ---
 name: Milo van Croton
-description: An evergreen training field guide for planning, logging, and understanding real work.
+description: A precise training floor in chalk, carbon, and orange for planning, logging, and understanding real work.
 colors:
-  bg: "#f1f4ef"
+  bg: "#f1f2f0"
   surface: "#ffffff"
-  surface-2: "#f5f7f3"
-  well: "#edf1e9"
-  ink: "#1b2b22"
-  ink-2: "#3f5146"
-  muted: "#5b6b60"
-  border: "#dce3d8"
-  border-2: "#b8c7b8"
-  accent: "#234c3b"
-  accent-soft: "#e1ebd9"
+  surface-2: "#f6f6f3"
+  well: "#e9eceb"
+  ink: "#21272a"
+  ink-2: "#465159"
+  muted: "#5e686f"
+  border: "#d9dddc"
+  border-2: "#838e91"
+  accent: "#b44720"
+  accent-soft: "#f9e8df"
   on-accent: "#ffffff"
-  selected: "#d4e6b5"
-  hero: "#e6eedf"
-  good: "#247149"
-  good-soft: "#e1f0e2"
+  selected: "#f1cfbb"
+  hero: "#e5e9e8"
+  steel: "#4e6573"
+  steel-soft: "#e5ebee"
+  good: "#25704a"
+  on-good: "#ffffff"
+  good-soft: "#e4f0e8"
   warn: "#85540f"
   warn-soft: "#f8edd6"
   crit: "#b43636"
   crit-soft: "#fbe6e4"
-  shell-ink: "#20392d"
-  shell-muted: "#59685e"
-  shell-border: "#d6dfd5"
-  shell-well: "#e8eee5"
-  dark-bg: "#121b17"
-  dark-surface: "#1c2921"
-  dark-surface-2: "#223128"
-  dark-well: "#17231b"
-  dark-ink: "#eef4e9"
-  dark-ink-2: "#c9d6c5"
-  dark-muted: "#b2c0ac"
-  dark-border: "#37473b"
-  dark-border-2: "#647861"
-  dark-accent: "#d4e6b5"
-  dark-accent-soft: "#304632"
-  dark-on-accent: "#203826"
-  dark-selected: "#3c573b"
-  dark-hero: "#273b2b"
-  dark-good: "#8cce9b"
-  dark-good-soft: "#233c2d"
+  shell-ink: "#21272a"
+  shell-muted: "#5e686f"
+  shell-border: "#d9dddc"
+  shell-well: "#e9eceb"
+  rail: "#20292f"
+  brand-signal: "#f5a879"
+  dark-bg: "#171b1f"
+  dark-surface: "#20262b"
+  dark-surface-2: "#283037"
+  dark-well: "#14191e"
+  dark-ink: "#f4f3ef"
+  dark-ink-2: "#d0d5d7"
+  dark-muted: "#abb5bb"
+  dark-border: "#3a454c"
+  dark-border-2: "#71818a"
+  dark-accent: "#f4a070"
+  dark-accent-soft: "#483126"
+  dark-on-accent: "#2e1d14"
+  dark-selected: "#5b3d2c"
+  dark-hero: "#293339"
+  dark-steel: "#a5becd"
+  dark-steel-soft: "#293c47"
+  dark-good: "#92d0ab"
+  dark-on-good: "#152b20"
+  dark-good-soft: "#243c30"
   dark-warn: "#e7c17e"
   dark-warn-soft: "#3d3222"
   dark-crit: "#ffaaa1"
   dark-crit-soft: "#4b2b29"
+  raised: "#ffffff"
+  faint: "#5e686f"
+  good-ink: "#245d3c"
+  on-steel: "#ffffff"
+  on-warn: "#ffffff"
+  on-crit: "#ffffff"
+  rail-ink: "#f4f3ef"
+  rail-label: "#e1e6e8"
+  rail-muted: "#b5c0c6"
+  rail-selection-ink: "#2e1d14"
+  rail-selection-muted: "#573420"
+  rail-hover: "#34434d"
+  rail-foot: "#bcc7ce"
+  dark-raised: "#303940"
+  dark-faint: "#9ca8af"
+  dark-good-ink: "#a7ddb9"
+  dark-on-steel: "#14232b"
+  dark-on-warn: "#30220d"
+  dark-on-crit: "#451a17"
 typography:
   display:
     fontFamily: 'Archivo, "Public Sans", sans-serif'
@@ -141,16 +168,16 @@ components:
     width: "34px"
     height: "34px"
   brand-symbol-dark:
-    textColor: "{colors.selected}"
+    textColor: "{colors.brand-signal}"
     width: "36px"
     height: "36px"
   brand-symbol-mobile-dark:
-    textColor: "{colors.selected}"
+    textColor: "{colors.brand-signal}"
     width: "34px"
     height: "34px"
   brand-app-icon:
-    backgroundColor: "{colors.accent}"
-    textColor: "{colors.selected}"
+    backgroundColor: "{colors.rail}"
+    textColor: "{colors.brand-signal}"
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.on-accent}"
@@ -176,8 +203,8 @@ components:
     rounded: "{rounded.sm}"
     padding: "12px"
   trainer-navigation-selected:
-    backgroundColor: "{colors.selected}"
-    textColor: "{colors.shell-ink}"
+    backgroundColor: "{colors.brand-signal}"
+    textColor: "{colors.dark-on-accent}"
     rounded: "{rounded.sm}"
     padding: "11px 14px"
   route-navigation-selected:
@@ -217,50 +244,43 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Evergreen Training Field Guide"**
+**Creative North Star: "The Training Floor"**
 
-Milo feels grounded, readable, and ready for use between sets. Evergreen wayfinding frames a mineral green workspace; white surfaces and pale leaf selections make the current task clear. The visual identity comes from useful structure, confident headings, and consistently treated controls.
+Milo's identity comes from the working setting: chalk-white space for reading a session, carbon structure for moving between trainers, steel for measured progress, and burnt orange for the next deliberate action. The bull remains the central mark. Archivo headings and Public Sans controls retain the precision needed between sets.
 
-Muscle, Strength, Ladder, and Together share one visual language. Training numbers receive space and stable alignment; explanatory copy remains close to the decision it supports. The system carries through light, dark, and system themes without changing the meaning of a control or status.
+This is the color correction requested on 2026-10-14 after Milo and Sideband were given overly similar green identities. Milo now has its own athletic, practical character. Orange is concentrated in actions and selected controls; broad surfaces stay neutral. Actual completed work and readiness use green, so doing the next set and finishing one have distinct meanings.
 
-**Key Characteristics:**
+Muscle, Strength, Ladder, and Together share this system. Light mode supports bright training spaces; dark mode uses layered carbon surfaces and a lighter orange for evening use. Neither theme relies on hue alone: keep completion checks, selected states, text labels, and explicit status wording.
 
-- Evergreen wayfinding with pale leaf selection.
-- A bold bull symbol paired with the lowercase Milo wordmark.
-- Archivo headings paired with locally served Public Sans.
-- Flat, bordered working surfaces with compact, readable density.
-- Consistent navigation and controls across all four trainers.
-- Visible focus, responsive layouts, and restrained state changes.
-
-The normative tokens above are extracted from `shell.css`, `trainer.css`, and the brand asset generator. `trainer.css` is loaded inside each trainer's shadow root; `fonts.css` supplies local font files. Values in `.impeccable/design.json` extend this document with motion, breakpoint, elevation, and component-preview metadata. Its generated tonal ramps are preview aids, not extra application colors.
+The normative tokens above are extracted from `shell.css`, `trainer.css`, and `tools/generate-brand.cjs`. `trainer.css` is loaded inside every trainer's shadow root; `fonts.css` supplies local typefaces. `.impeccable/design.json` retains matching previews, metadata, and tonal ramps. Preview ramps are not additional application colors.
 
 ## Colors
 
-The palette combines evergreen structure, mineral neutrals, and clear status colors. Use semantic CSS variables so theme changes propagate to every control.
+### Action and identity
 
-### Primary
+- **Burnt Orange** (`accent`, `#b44720`): primary actions, current route, links, next set, and keyboard focus. White text on the primary button has 5.44:1 contrast.
+- **Signal Orange** (`brand-signal`, `#f5a879`): selected trainer and the bull against carbon. This brighter version is appropriate against the dark frame; it is not used for small text on white.
+- **Orange Wash** (`accent-soft`) and **Selection** (`selected`): low-emphasis interactive selection. They do not color entire working screens.
+- **Evening Orange** (`dark-accent`, `#f4a070`): dark-theme actions and focus, paired with dark `on-accent` text rather than white.
 
-- **Evergreen** (`accent`): primary actions, completed work, current progression, and links. The shell keeps evergreen navigation in both themes.
-- **Pale Leaf** (`selected`): the selected trainer in the shell and selected choices in light mode. In dark trainer surfaces, `dark-accent` supplies this light foreground/action color while `dark-selected` provides a deeper selection fill.
-- **Soft Leaf** (`accent-soft`): selected route tabs, the next set, and low-emphasis guidance.
-- **Field Green** (`hero`): the next-session surface. Keep this broad fill calmer than a primary button.
+The bull uses Burnt Orange in the light header and Signal Orange in the dark header. Installed icons and favicons use the Signal Orange bull on Carbon (`rail`). Preserve the silhouette and derive every export from the canonical SVG.
 
-The bull uses Evergreen on light surfaces and Pale Leaf on dark surfaces. App icons use Pale Leaf on a full-bleed Evergreen square; these are the same established palette roles.
+### Structure and measurement
 
-### Neutral
+- **Chalk** (`bg`): the overall ground. **Porcelain** (`surface`) is the main working surface; `surface-2` and `well` organize fields and grouped controls.
+- **Carbon** (`rail`): the trainer rail in both themes. Rail text uses a corresponding cool light neutral, with a warmer dark ink on the selected orange tile.
+- **Steel Ground** (`hero`): the neutral next-session panel. It supports the action without borrowing the action's color.
+- **Steel** (`steel`): volume and standard bars and measurement labels. Use it for information, rather than making every chart orange.
+- **Carbon Ink** (`ink`), **Supporting Ink** (`ink-2`), and **Secondary Ink** (`muted`): content hierarchy. The secondary label role remains readable on both the canvas and the next-session surface.
+- **Soft Edge** (`border`) separates passive surfaces. **Control Edge** (`border-2`) defines input and actionable boundaries and meets 3:1 against fields in both themes.
 
-- **Mineral Ground** (`bg`): the page and workspace backdrop.
-- **Paper** (`surface`): cards, dialogs, navigation, and ordinary controls.
-- **Quiet Paper** (`surface-2`) and **Recess** (`well`): input interiors, day tiles, and grouped choices.
-- **Forest Ink** (`ink`), **Supporting Ink** (`ink-2`), and **Muted Ink** (`muted`): primary content, explanation, and secondary labels respectively.
-- **Soft Edge** (`border`) and **Control Edge** (`border-2`): surface separation and stronger interactive boundaries.
-- Shell-specific ink, muted, border, and well tokens preserve the shared frame's implemented contrast. Dark counterparts in the stylesheet replace the corresponding light roles; do not darken an entire screen with opacity.
+Dark mode is explicitly composed: carbon canvas, progressively lighter raised surfaces, cool light text, and a warm action accent. Keep opaque surfaces; do not simulate dark mode by dimming the light palette.
 
 ### Status
 
-`good` confirms successful work, `warn` calls attention to a condition, and `crit` identifies destructive actions or critical feedback. Each has a soft background and an explicit dark counterpart. Pair status color with words, icons, or the existing completion mark.
+`good` is reserved for completed sets, completed days, cleared rungs, and actual positive readiness. `on-good` supplies a readable completion glyph or label. Filled steel, warning, and critical states use their corresponding `on-steel`, `on-warn`, and `on-crit` ink tokens; never hardcode white text over a pale dark-theme status. `warn` and `crit` retain warning and destructive meanings, with corresponding soft fills and dark-theme values. Do not recolor statuses by trainer or use them as decoration.
 
-**The Meaningful Accent Rule.** Use accent for action, selection, and recorded progress. It must not become ornamental striping or a separate identity for each trainer.
+**The Meaningful Accent Rule.** Orange directs the next action, steel presents measurement, and green confirms completed work. The full canvas stays neutral. Preserve those meanings across every trainer and theme.
 
 ## Typography
 
@@ -294,7 +314,7 @@ Preserve wrapping for exercise names, button text, and explanatory copy. Set-ent
 
 Trainer surfaces are flat. Background changes, borders, and spacing separate the workspace, cards, fields, and selected states. Cards, metrics, primary buttons, rest timers, and trainer sheets use no box shadow; gradients and backdrop blur are removed from the shared visual treatment.
 
-The shell's floating Together strip uses `0 8px 30px #10271a26`; backup/help dialogs use `0 20px 60px #10271a40`. The shell toast retains its existing transient shadow. Dialog scrims dim the surrounding interface; trainer sheets stay opaque and readable.
+The shell's floating Together strip uses `0 8px 30px #10161b26`; backup/help dialogs use `0 20px 60px #10161b40`. The shell toast retains its existing transient shadow. Dialog scrims dim the surrounding interface; trainer sheets stay opaque and readable.
 
 **The Flat Workspace Rule.** Reserve elevation for transient shell overlays. Do not add shadows to ordinary training cards or accent buttons.
 
@@ -308,45 +328,45 @@ One-pixel borders establish ordinary boundaries. Active desktop route tabs use a
 
 ### Milo Identity
 
-The bold, symmetrical bull is Milo's shared identity. Its broad horns and compact face connect the header, browser tab, and installed app while retaining the evergreen visual system. The new symbol replaces the thin header monogram and the former gold app icon.
+The bold, symmetrical bull is Milo's shared identity. Its broad horns and compact face connect the header, browser tab, and installed app within the carbon-and-orange system. The existing bull geometry remains unchanged.
 
-`assets/brand/milo-symbol.svg` is the canonical editable vector: one filled path with two eye cutouts on a 64-unit square canvas. Preserve the silhouette, aspect ratio, and canvas. The inline header copy uses `currentColor`, Evergreen in light mode and Pale Leaf in explicit or system dark mode. Keep it decorative beside the wordmark (`aria-hidden="true"`, `focusable="false"`); the link's accessible name is “Milo home.” Standalone SVGs retain their accessible title or label.
+`assets/brand/milo-symbol.svg` is the canonical editable vector: one filled path with two eye cutouts on a 64-unit square canvas. Preserve the silhouette, aspect ratio, and canvas. The inline header copy uses `currentColor`, Burnt Orange in light mode and Signal Orange in explicit or system dark mode. Keep it decorative beside the wordmark (`aria-hidden="true"`, `focusable="false"`); the link's accessible name is “Milo home.” Standalone SVGs retain their accessible title or label.
 
 - **Lockup:** use the `brand-symbol` and `brand-gap` tokens beside the wordmark. Below 1000px, use `brand-symbol-mobile` and `wordmark-mobile`. Preserve the 11px gap between the symbol canvas and the wordmark, and keep surrounding content outside the original canvas; never crop to the path's bounding box.
 - **Minimum sizes:** use the full symbol with eye cutouts at 34px or larger. Smaller browser-tab placements use the dedicated compact favicon silhouette, which removes the eye cutouts. The SVG favicon supports a 16px tab placement; its PNG fallback is 32px. Keep the subtitle at its established size rather than shrinking the entire lockup.
-- **App icons:** retain a full-bleed Evergreen background. The ordinary and Apple icons center the full symbol at scale 0.82; the maskable icon uses 0.70 to keep the mark within the circular safe area. Do not bake a rounded device mask into these files. The favicon alone includes a rounded square background.
+- **App icons:** retain a full-bleed Carbon background. The ordinary and Apple icons center the full symbol at scale 0.82; the maskable icon uses 0.70 to keep the mark within the circular safe area. Do not bake a rounded device mask into these files. The favicon alone includes a rounded square background.
 - **Treatment:** use solid fills without strokes, shading, gradients, shadows, animation, or extra enclosure around the header mark. Do not stretch, rotate, or recolor the bull by trainer.
 - **Source and exports:** the original SVG was authored for Milo on 2026-10-13. PNGs are direct `sharp` rasterizations of the vector, not image-generation output, and embed this origin in an `impeccable:prompt` PNG text entry. `tools/generate-brand.cjs` derives the inline header, light symbol, app-icon SVG, favicons, and install icons from the canonical source. See `assets/brand/README.md` for regeneration and provenance.
 
 ### Buttons
 
-Primary buttons use accent fill and on-accent text; ghost buttons use Paper with a Control Edge border. Destructive buttons use the critical soft fill and critical text. Standard buttons have a minimum height of 46px; hero actions are at least 48px, and compact buttons are 40px. Keep text able to wrap.
+Primary buttons use accent fill and on-accent text; ghost buttons use Porcelain with a Control Edge border. Destructive buttons use the critical soft fill and critical text. Standard buttons have a minimum height of 46px; hero actions are at least 48px, and compact buttons are 40px. Keep text able to wrap.
 
-On hover-capable devices, primary fill mixes accent with ink at 89% accent. Ordinary hover uses Quiet Paper and a stronger border. Pressed primary/ghost controls move down one pixel. Disabled controls use half opacity and a disabled cursor. Keyboard focus uses an explicit three-pixel outline with three-pixel offset in trainers.
+On hover-capable devices, primary fill mixes accent with ink at 89% accent. Ordinary hover uses Quiet Porcelain and a stronger border. Pressed primary/ghost controls move down one pixel. Disabled controls use half opacity and a disabled cursor. Keyboard focus uses an explicit three-pixel outline with three-pixel offset in trainers.
 
 ### Inputs / Fields
 
-General fields use Quiet Paper, Control Edge, small corners, 16px editable text, and at least 44px height. Put sentence-case labels above the field. Focus uses a two-pixel accent outline with offset, without a glow. Search fields transfer this focus boundary to their wrapper. Keep the existing validation copy and status semantics visible.
+General fields use Quiet Porcelain, Control Edge, small corners, 16px editable text, and at least 44px height. Put sentence-case labels above the field. Focus uses a two-pixel accent outline with offset, without a glow. Search fields transfer this focus boundary to their wrapper. Keep the existing validation copy and status semantics visible.
 
 ### Navigation
 
-Trainer navigation is persistent evergreen with a pale leaf selected item. Desktop entries include an icon, name, and short explanation; mobile entries retain icons and names in a horizontal strip. Route navigation is a separate level: a text-and-icon row with an underline on desktop, and five equal bottom-bar cells with soft selected fills on phones. Use the existing selected and accessibility state attributes together.
+Trainer navigation is persistent Carbon with a Signal Orange selected item. Desktop entries include an icon, name, and short explanation; mobile entries retain icons and names in a horizontal strip. Route navigation is a separate level: a text-and-icon row with an underline on desktop, and five equal bottom-bar cells with soft selected fills on phones. Use the existing selected and accessibility state attributes together.
 
 ### Chips / Choices
 
-Informational chips are small rounded rectangles with a subtle border, quiet fill, and supporting ink. Actionable filters have larger targets; selected filters use accent fill and on-accent text. Segmented controls sit within a recessed track and select a Paper segment. Readiness choices and warning states keep their existing semantic distinctions.
+Informational chips are small rounded rectangles with a subtle border, quiet fill, and supporting ink. Actionable filters have larger targets; selected filters use accent fill and on-accent text. Segmented controls sit within a recessed track and select a Porcelain segment. Readiness choices and warning states keep their existing semantic distinctions.
 
 ### Cards / Next Session
 
-Ordinary cards use Paper, Soft Edge, large corners, and 20px padding, increasing to 24px on desktop. The next-session card uses Field Green without a border, extra-large corners, a compact eyebrow, a clear headline, supporting copy, and the primary task. Let content determine height except where the desktop surface deliberately aligns adjacent panels.
+Ordinary cards use Porcelain, Soft Edge, large corners, and 20px padding, increasing to 24px on desktop. The next-session card uses Steel Ground without a border, extra-large corners, a clear headline, supporting copy, and the primary task. Let content determine height except where the desktop surface deliberately aligns adjacent panels.
 
 ### Training Week
 
-The seven-day strip uses equal columns with compact day labels, tabular dates, and completion marks. Completed days use accent fill; today uses an inset outline. Both states may coexist. Empty days stay neutral. Populate completion only from real stored sessions; the preview sidecar contains explicitly labeled sample data.
+The seven-day strip uses equal columns with compact day labels, tabular dates, and completion marks. Completed days use good fill; today uses an inset outline. Both states may coexist. Empty days stay neutral. Populate completion only from real stored sessions; the preview sidecar contains explicitly labeled sample data.
 
 ### Set Logging / Timers
 
-Preserve the compact grid of set number, editable values, completion, and row actions. Set fields and completion controls are 44px high. The next row has a soft accent background; completed marks receive accent fill. Numbers use tabular alignment and accessible field labels. Keep the rest timer above mobile route navigation and within the content region on desktop.
+Preserve the compact grid of set number, editable values, completion, and row actions. Set fields and completion controls are 44px high. The next row has a soft accent background; completed marks receive good fill. Numbers use tabular alignment and accessible field labels. Keep the rest timer above mobile route navigation and within the content region on desktop.
 
 Short state transitions use the existing 150ms timing; next-row background uses 250ms. All animation, transitions, and smooth scrolling are disabled under reduced motion. Do not animate route entry or introduce continuous decorative movement.
 

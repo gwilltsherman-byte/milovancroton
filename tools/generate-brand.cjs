@@ -6,9 +6,9 @@ const sharp = require('sharp');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'assets/brand/milo-symbol.svg'), 'utf8');
 const glyph = source.match(/<path\b[^>]*\/>/)[0];
-const green = '#234c3b', leaf = '#d4e6b5';
+const carbon = '#20292f', signal = '#f5a879', action = '#b44720';
 const svg = (body, title) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${title}">${body}</svg>\n`;
-const icon = scale => svg(`<rect width="64" height="64" fill="${green}"/><g fill="${leaf}" transform="translate(${32*(1-scale)} ${32*(1-scale)}) scale(${scale})">${glyph}</g>`, 'Milo bull app icon');
+const icon = scale => svg(`<rect width="64" height="64" fill="${carbon}"/><g fill="${signal}" transform="translate(${32*(1-scale)} ${32*(1-scale)}) scale(${scale})">${glyph}</g>`, 'Milo bull app icon');
 // Keep the vector origin inside every exported PNG, without a tool-specific dependency.
 async function writePNG(file, sourceSVG, size) {
   const png = await sharp(Buffer.from(sourceSVG)).resize(size,size).png().toBuffer();
@@ -25,11 +25,11 @@ async function writePNG(file, sourceSVG, size) {
   fs.writeFileSync(path.join(root,file),Buffer.concat([png.subarray(0,-12),chunk,png.subarray(-12)]));
 }
 async function run() {
-  fs.writeFileSync(path.join(root, 'assets/brand/milo-symbol-light.svg'), source.replace(green, leaf));
+  fs.writeFileSync(path.join(root, 'assets/brand/milo-symbol-light.svg'), source.replace(action, signal));
   fs.writeFileSync(path.join(root, 'assets/brand/milo-app-icon.svg'), icon(.82));
   // A dedicated compact version uses the same silhouette without the tiny eye cuts.
   const compact = glyph.replace(/ZM22 33[^\"]*/, 'Z');
-  const favicon = svg(`<rect width="64" height="64" rx="13" fill="${green}"/><g fill="${leaf}">${compact}</g>`, 'Milo');
+  const favicon = svg(`<rect width="64" height="64" rx="13" fill="${carbon}"/><g fill="${signal}">${compact}</g>`, 'Milo');
   fs.writeFileSync(path.join(root, 'favicon.svg'), favicon);
   for (const [file, size, scale] of [['icon-192.png',192,.82],['icon-512.png',512,.82],['icon-maskable-512.png',512,.70],['apple-touch-icon.png',180,.82]]) {
     await writePNG(file,icon(scale),size);
