@@ -10,7 +10,7 @@ button,a,input,textarea{touch-action:manipulation}
 .skip-link:focus{top:8px}
 .shellbar{height:calc(64px + var(--shell-safe-top));padding:var(--shell-safe-top) 32px 0;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--sh-solid);border-bottom:1px solid var(--sh-border);backdrop-filter:none;-webkit-backdrop-filter:none}
 .milo-brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--sh-ink);flex:none}
-.milo-mark{width:29px;height:32px;display:block;color:var(--shell-green)}
+.milo-mark{width:36px;height:36px;display:block;flex:none;color:var(--shell-green)}
 :root[data-theme="dark"] .milo-mark{color:var(--shell-lime)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .milo-mark{color:var(--shell-lime)}}
 .milo-wordmark{font:800 29px/.9 Archivo,"Public Sans",sans-serif;letter-spacing:-.04em}
@@ -51,7 +51,7 @@ button,a,input,textarea{touch-action:manipulation}
  .shellbar{height:auto;min-height:calc(64px + var(--shell-safe-top));padding:calc(10px + var(--shell-safe-top)) 20px 10px;gap:12px}.shell-tagline{display:none}.shell-tools{gap:8px}.shell-date{display:none}
  .sidebar{position:sticky;top:var(--shell-bar-height);width:auto;height:auto;padding:7px 14px;background:var(--shell-green);border:0;z-index:49}
  .sw{flex-direction:row;gap:4px}.seg{flex:1;justify-content:center;min-height:44px;padding:8px 4px;gap:6px;font-size:12px;border-radius:6px}.seg svg{width:17px;height:17px}.seg small{display:none}.sidebar-foot{display:none}
- #main{margin-left:0}.tgstrip{left:8px;right:8px;bottom:calc(82px + env(safe-area-inset-bottom,0px))}.milo-wordmark{font-size:26px}.milo-mark{height:29px}
+ #main{margin-left:0}.tgstrip{left:8px;right:8px;bottom:calc(82px + env(safe-area-inset-bottom,0px))}.milo-wordmark{font-size:26px}.milo-mark{width:34px;height:34px}
 }
 @media(max-width:380px){.shellbar{padding-left:16px;padding-right:16px}.backup-button{width:44px;padding:0;justify-content:center}.backup-button span{display:none}.sidebar{padding:6px 8px}.seg{font-size:11.5px;gap:4px}.seg svg{width:15px;height:15px}.bk{padding:22px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
