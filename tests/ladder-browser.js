@@ -34,7 +34,7 @@
     };
     const log = set => root.querySelector(`[data-act="toggle-done"][data-ex="0"][data-set="${set}"]`).click();
     log(0);
-    check(!root.querySelector('.setrow.done'), 'blank performance does not silently become target reps');
+    check(!root.querySelector('.setrow.done') && root.querySelector('[data-field="v"][data-ex="0"][data-set="0"]').value === '', 'missing assistance blocks a blank set without filling it');
     input('[data-field="v"][data-ex="0"][data-set="0"]', '8'); log(0);
     check(!root.querySelector('.setrow.done'), 'missing assistance blocks set logging');
     const fields = [...root.querySelectorAll('[data-field="setup"][data-ex="0"]')];
@@ -51,10 +51,11 @@
       input(`[data-field="setup"][data-ex="0"][data-key="${name}"]`, typeof value === 'number' ? String(value + 1) : 'Heavy black band, knee support');
     }
     input('[data-field="clean"][data-ex="0"]', false);
-    input('[data-field="v"][data-ex="0"][data-set="1"]', '8'); log(1);
+    log(1);
     await pause(250);
     let saved = JSON.parse(localStorage.getItem(key));
     const sets = saved.active.entries[0].sets;
+    check(sets[1].done === true && sets[1].v === 8, 'a blank set logs the target shown in its box');
     check(sets[0].clean === true && sets[1].clean === false, 'clean and practice sets keep separate form confirmations');
     check(JSON.stringify(sets[0].setup) === JSON.stringify(expected), 'changing setup preserves the earlier set assistance');
     check(JSON.stringify(sets[0].setup) !== JSON.stringify(sets[1].setup), 'each set preserves its own measured setup');
