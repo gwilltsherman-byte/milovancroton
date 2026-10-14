@@ -4,9 +4,9 @@ The catalog now separates related progressions from movement alternatives. Weigh
 
 ## How readiness is established
 
-- Record the actual reps or seconds and confirm clean form. Blank fields do not become completed targets.
-- Adjustable exercises require their load, assistance, height, range or leverage setup. Each completed set keeps its own setup, even when later sets change it.
-- Repeat the current target on two distinct training days within 42 days using the same setup, then check the actual next movement with control. Entry checks usually use three reps or five seconds, bounded by the exercise target.
+- Record the actual reps or seconds. Form is assumed clean unless you clear the box. Logging a blank set records the target it shows.
+- Setup (load, assistance, height, range or leverage) is not measured. Sets of the same movement count together whatever setup was used.
+- Repeat the current target on two distinct training days within 42 days, then check the actual next movement with control. Entry checks usually use three reps or five seconds, bounded by the exercise target.
 - Goals and supporting standards require the exact exercise and value. A later position in a path never substitutes for an earlier 12-rep or 60-second standard.
 - Recent proof and specific user confirmations are considered for 90 days. After a layoff, reconfirm the standard. Existing achieved goals and all historical records are retained.
 
@@ -14,15 +14,15 @@ These counts and time windows are conservative product defaults based on coachin
 
 ## Training toward a goal
 
-At a fixed setup, prescribed targets can grow by one rep or five seconds after two successful days, up to the relevant goal or supporting standard. This allows a 15-second handstand practice target to develop toward a 30-second goal or 60-second supporting standard.
+Prescribed targets can grow by one rep or five seconds after two successful days, up to the relevant goal or supporting standard. This allows a 15-second handstand practice target to develop toward a 30-second goal or 60-second supporting standard.
 
-Once a setup is repeatable, change one demand gradually. Reduce assistance or starting height where appropriate, or increase load, controlled range or leverage. Keep the movement controllable and record the new setup. The same approach continues at the final step.
+Change one demand gradually. Reduce assistance or starting height where appropriate, or increase load, controlled range or leverage. Keep the movement controllable. The same approach continues at the final step.
 
 Volume days use explicitly related movements, not whichever exercise happens to precede one in the catalog. Unmet earlier standards remain scheduled even if placement is farther along. Completed supporting qualities receive rotating maintenance. Balance and power practice come before demanding strength work; brief balance practice can be frequent, while challenging planche and lever work still needs recovery.
 
 ## Compatibility
 
-Existing exercise IDs and numeric rung indices are unchanged. New exercises are appended, and routes reference exercise IDs. Workouts, open sets, active sessions, custom ladders and backups retain their existing identities. Old logs remain visible, but records without explicit form confirmation and required setup do not certify new readiness. Users can confirm a specific current standard or perform a fresh check.
+Existing exercise IDs and numeric rung indices are unchanged. New exercises are appended, and routes reference exercise IDs. Workouts, open sets, active sessions, custom ladders and backups retain their existing identities. Old logs remain visible, but records without explicit form confirmation do not certify new readiness. Users can confirm a specific current standard or perform a fresh check.
 
 ## Research supporting the design
 

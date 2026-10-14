@@ -172,44 +172,34 @@ test('stale successful sessions cannot satisfy the two-session advancement rule'
   assert.equal(api.evaluate('currentProof("dip",0).ready'), false);
 });
 
-test('assisted performance needs measured setup, and different assistance cannot combine into clearance', () => {
+test('setup is not measured: sets count toward readiness without it, and assisted work still cannot prove an unassisted entry', () => {
   const api = ladder(), state = api.getState();
-  const first = setupFor(api, 'pull', 3, 'Heavy black band, knee support');
-  const second = setupFor(api, 'pull', 3, 'Light red band, knee support');
-  assert.ok(Object.keys(first).length > 0, 'assisted pull-up records difficulty');
-  state.history.push(record('pull', 3, [8, 8, 8], {setup: {}, date: Date.now() - 3 * day}));
-  assert.equal(api.evaluate('verifiedBestFor("pull",3)'), 0);
-  state.history.push(record('pull', 3, [8, 8, 8], {setup: first, date: Date.now() - 2 * day}));
-  state.history.push(record('pull', 3, [8, 8, 8], {setup: second, date: Date.now() - day}));
+  assert.deepEqual(plain(api.evaluate('setupFields(stepsOf("pull")[3])')), [], 'no setup fields are asked for');
+  state.history.push(record('pull', 3, [8, 8, 8], {setup: {}, date: Date.now() - 2 * day}));
+  assert.equal(api.evaluate('verifiedBestFor("pull",3)'), 8);
   assert.equal(api.evaluate('currentProof("pull",3).ready'), false);
-  state.history.push(record('pull', 3, [8, 8, 8], {setup: second}));
-  assert.equal(api.evaluate('currentProof("pull",3).ready'), true);
+  state.history.push(record('pull', 3, [8, 8, 8], {setup: {band: 'Light red'}, date: Date.now() - day}));
+  assert.equal(api.evaluate('currentProof("pull",3).ready'), true, 'old logs with a recorded setup count alongside new ones');
   assert.equal(api.evaluate('entryReady("pull",4)'), false, 'assisted performance cannot prove an unassisted entry');
 });
 
-test('logging requires explicit performance and setup, and snapshots each set independently', () => {
+test('logging a blank set records its target as clean form, and practice attempts stay separate', () => {
   const api = ladder(), state = api.getState();
   placed(api, 'pull', 3);
   const entry = api.evaluate('planEntry({id:"pull",i:3,sets:3,role:"goal",target:8})');
   state.route = 'train';
   state.active = {id: 'active-regression', name: 'Regression session', startedAt: Date.now(), entries: [entry]};
-  api.evaluate('toggleDone(0,0)');
-  assert.equal(entry.sets[0].done, false, 'a blank value is not silently filled with the target');
-  entry.sets[0].v = 8;
-  api.evaluate('toggleDone(0,0)');
-  assert.equal(entry.sets[0].done, false, 'missing assistance blocks logging');
-  const original = setupFor(api, 'pull', 3, 'Light red band, knee support');
-  entry.setup = {...original}; entry.clean = true;
+  assert.equal(entry.clean, true, 'new exercises assume clean form');
   api.evaluate('toggleDone(0,0)');
   assert.equal(entry.sets[0].done, true);
+  assert.equal(entry.sets[0].v, 8, 'a blank set logs the target it shows');
   assert.equal(entry.sets[0].clean, true);
-  assert.deepEqual(plain(entry.sets[0].setup), original);
-  entry.setup = setupFor(api, 'pull', 3, 'Heavy black band, knee support');
-  entry.clean = false; entry.sets[1].v = 8;
+  entry.clean = false; entry.sets[1].v = 6;
   api.evaluate('toggleDone(0,1)');
   assert.equal(entry.sets[1].done, true, 'practice attempts remain loggable');
+  assert.equal(entry.sets[1].v, 6, 'an entered value is kept');
   assert.equal(entry.sets[1].clean, false);
-  assert.deepEqual(plain(entry.sets[0].setup), original, 'changing upcoming assistance leaves the first set intact');
+  assert.equal(entry.sets[0].clean, true, 'clearing the box leaves earlier sets clean');
 });
 
 test('handstand prescriptions grow toward the declared 30-second goal and 60-second support standard', () => {

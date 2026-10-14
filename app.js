@@ -5800,7 +5800,7 @@ const RT2026='https://pubmed.ncbi.nlm.nih.gov/41843416/';
 const EVIDENCE={
   nordic:{t:'A scalable path to the Nordic curl',c:'mod',g:'Progression',
     s:'The Nordic curl loads knee flexion strongly. Assistance can make the full movement manageable, while bridges train a different hip-extension action. A study of assisted Nordics found lower load and perceived difficulty without a significant reduction in hamstring surface muscle activity. This supports assistance as a progression tool; it does not prove any fixed rep count guarantees an unassisted curl.',
-    a:'Practise assisted lowering and returning through a controlled range, then reduce assistance or extend range gradually. Record the setup. Keep hip-extension work as a separate component.',
+    a:'Practise assisted lowering and returning through a controlled range, then reduce assistance or extend range gradually. Keep hip-extension work as a separate component.',
     src:[['Burrows et al. 2020, Traditional and assisted Nordic hamstring exercise','J Strength Cond Res','https://pubmed.ncbi.nlm.nih.gov/32569123/']]},
   works:{ t:'Bodyweight builds muscle', c:'high', g:'Foundations',
     s:'Muscle responds to mechanical tension and how close a set goes to failure, not to what is providing the resistance. Trials comparing push-up training against bench press at matched effort find similar gains in strength and size. There’s nothing second-rate about training without a barbell.',
@@ -5818,7 +5818,7 @@ const EVIDENCE={
     src:[['Lasevicius et al. 2022, Training to failure with low loads','J Strength Cond Res',PM+'Muscle+failure+promotes+greater+muscle+hypertrophy+in+low-load+but+not+in+high-load+resistance+training'],
          ['Sánchez-Moreno et al. 2020, Pull-up fatigue thresholds','J Strength Cond Res','https://pubmed.ncbi.nlm.nih.gov/32213783/']] },
   overload:{ t:'How you overload without weights', c:'high', g:'Progression',
-    s:'Progressive training can use more load, reps, controlled range, longer leverage or less assistance. Record the setup so the change is real and repeatable. Slowing a rep may help control, but is not automatically equivalent to increasing force demand or improving maximum strength.',
+    s:'Progressive training can use more load, reps, controlled range, longer leverage or less assistance. Keep the rest of the setup the same so the change is real and repeatable. Slowing a rep may help control, but is not automatically equivalent to increasing force demand or improving maximum strength.',
     a:'Build repeatable reps or hold time at a recorded setup. Then increase one demand gradually: load, range, leverage or reduced assistance. Check a related next movement directly.',
     src:[['Plotkin et al. 2022, Progressive overload approaches','PeerJ',PM+'Progressive+overload+without+progressing+load+the+effects+of+load+or+repetition+progression'],
          ['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',RT2026]] },
@@ -5829,7 +5829,7 @@ const EVIDENCE={
          ['Bernasconi et al. 2004, Muscle activity during gymnastic holds','J Sports Sci Med',PM+'Electromyographic+analysis+of+the+gymnastic+cross+and+static+holds']] },
   criteria:{ t:'Earning the next rung', c:'mod', g:'Progression',
     s:'General resistance-training research supports progressive loading and consistent technique. It does not validate universal calisthenics rep targets or prove that completing one movement guarantees the next. The app uses repeatable current performance plus a controlled trial of the next movement as practical coaching rules.',
-    a:'Repeat the target with clean form and the same setup on two training days, then check a manageable version of the next movement. These are coaching defaults; keep building the current movement if the next is too difficult.',
+    a:'Repeat the target with clean form on two training days, then check a manageable version of the next movement. These are coaching defaults; keep building the current movement if the next is too difficult.',
     src:[['Kotarsky et al. 2018, Progressive push-up training trial','J Strength Cond Res','https://pubmed.ncbi.nlm.nih.gov/29466268/'],
          ['ACSM 2026 Position Stand on resistance training','Med Sci Sports Exerc',RT2026]] },
   isometric:{ t:'Holds build angle-specific strength', c:'mod', g:'Skills',
@@ -6422,7 +6422,7 @@ function openTestOffer(ids){
   openModal(`<div class="sheet-grab"></div><div class="sheet-body">
     <div style="text-align:center;padding:4px 0 6px"><div class="celebico">${I.test}</div>
       <h2 class="disp" style="font-size:25px;margin:0 0 8px;text-transform:uppercase">Show what you can do</h2>
-      <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:320px">Check ${ids.map((id,k)=>`<b style="color:var(--ink)">${esc(stepsOf(id)[picks[k]].n)}</b>`).join(' and ')} with the setup you use. Warm up, stop before form changes, and record the clean result. Your plan starts on the movement you demonstrated.</p></div>
+      <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:320px">Check ${ids.map((id,k)=>`<b style="color:var(--ink)">${esc(stepsOf(id)[picks[k]].n)}</b>`).join(' and ')}. Warm up, stop before form changes, and record the clean result. Your plan starts on the movement you demonstrated.</p></div>
     <button class="btn primary block" data-act="test-verify" data-ids="${ids.join(',')}" data-is="${picks.join(',')}">${I.test} Test now</button>
     <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}" style="margin-top:8px">Skip the test, start training</button>
   </div>`);
@@ -6450,7 +6450,7 @@ function openTestStep(note){
       <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Warm up and check this movement while fresh. Stop when control or form changes. ${testCtx.advance?`The entry check is ${entryMinimum(id,i)}${unitS(st)}; repeating the previous rung alone does not prove this one.`:`Record what you can do cleanly. The training target starts at ${goalText(st)}.`}</p>
       ${how?`<details class="howbox"><summary>${I.info} How to do it</summary>${how}</details>`:''}
       ${setupInputs(st,lastSetupFor(id,i),'data-test-setup="1"',false)}
-      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:12px 0"><input id="testclean" type="checkbox" checked>The recorded reps or seconds use clean form and the stated setup${/each side|per side/i.test(st.cue||'')?' on both sides':''}.</label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:12px 0"><input id="testclean" type="checkbox" checked>The recorded reps or seconds use clean form${/each side|per side/i.test(st.cue||'')?' on both sides':''}.</label>
       <div class="field"><label>${st.k==='hold'?'Seconds held':'Clean reps'}</label><input id="testv" class="bignum" inputmode="numeric" placeholder="0" autocomplete="off"></div>
       <button class="btn primary block" data-act="test-record">${I.check} Record</button>
       <button class="btn ghost block" data-act="test-zero" style="margin-top:8px">Couldn&rsquo;t do one</button>
@@ -6581,7 +6581,9 @@ function addGoals(list){
 
 /* ==================== SESSION ==================== */
 /* Difficulty belongs to the set: changing today's setup never changes an earlier attempt. */
-function setupFields(st){ return st&&Array.isArray(st.setup)?st.setup.filter(f=>f&&typeof f.key==='string'&&f.key&&f.label&&(f.type==='number'||f.type==='text')):[]; }
+/* Measured setup (band, lean, box height...) is no longer asked for: it was too much to measure every set. With no
+   fields, every setup is valid and all sets of a movement compare as one setup, old logs included. */
+function setupFields(st){ return []; }
 function setupValid(st,setup){
   return setupFields(st).every(f=>{
     const v=setup&&setup[f.key];
@@ -6777,7 +6779,7 @@ function offerAdvance(list,i,rec){
         <div class="eyebrow">Rung cleared</div>
         <h2 class="disp" style="font-size:24px;margin:8px 0 6px;text-transform:uppercase">${esc(from.n)}</h2>
         <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 auto 16px;max-width:300px">
-          You repeated ${goalText(from)} with clean form and the same setup on two training days. Next is <b style="color:var(--ink)">${esc(nxt.n)}</b>. Check ${entryMinimum(id,to)}${unitS(nxt)} with control before making it your training rung.</p>
+          You repeated ${goalText(from)} with clean form on two training days. Next is <b style="color:var(--ink)">${esc(nxt.n)}</b>. Check ${entryMinimum(id,to)}${unitS(nxt)} with control before making it your training rung.</p>
       </div>
       <button class="btn primary block" data-act="adv-yes" data-id="${id}" data-to="${to}">${I.test} ${entryReady(id,to)?'Use the checked next rung':'Check the next rung'}</button>
       <button class="btn ghost block" data-act="adv-no" style="margin-top:8px">Stay here a bit longer</button>
@@ -7028,7 +7030,7 @@ function openLadder(id){
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>${esc(L.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
-      <p class="muted" style="font-size:13px;line-height:1.55;margin:0 0 12px">${L.m}. Repeat the current target cleanly on two days with the same setup, then check a controlled version of the next movement. Reps and times are coaching defaults. ${practiceOf(id)==='balance'?'Practise balance briefly while fresh.':practiceOf(id)==='power'?'Keep every rep explosive; stop when height or control drops.':'Build challenging strength work with recovery between sessions.'}</p>
+      <p class="muted" style="font-size:13px;line-height:1.55;margin:0 0 12px">${L.m}. Repeat the current target cleanly on two days, then check a controlled version of the next movement. Reps and times are coaching defaults. ${practiceOf(id)==='balance'?'Practise balance briefly while fresh.':practiceOf(id)==='power'?'Keep every rep explosive; stop when height or control drops.':'Build challenging strength work with recovery between sessions.'}</p>
       ${routes.length>1?`<div class="pillpick" style="margin-bottom:12px">${routes.map(p=>`<button data-act="ladder-path" data-id="${id}" data-path="${esc(p.key)}" class="${p.steps.map(rid=>L.steps.findIndex(st=>st.id===rid)).join(',')===route.join(',')?'on':''}" ${gs.some(g=>!p.steps.includes(L.steps[g.r].id))?'disabled':''}>${esc(p.name)}</button>`).join('')}</div><p class="muted" style="font-size:12px">Choose a related path. An active goal selects the path that includes its movement; other branches are alternatives.</p>`:''}
       <div class="ladder">${rungs}</div>
       <div class="grid2" style="margin-top:16px">
@@ -7563,11 +7565,11 @@ __root.addEventListener('click', e=>{
     /* rungs */
     case 'advance': {const id=el.dataset.id,from=curIdx(id),to=nextRung(id,from);if(to==null)break;
       if(rungRank(id,to)>rungRank(id,capFor(id))){toast('Reach the exact goal standard on this movement first');break;}
-      if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days with the same setup first');break;}
+      if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days first');break;}
       if(entryReady(id,to)){moveTo(id,to);closeModal();render();toast('Next movement checked; rung updated');}else beginTests([id],to,null,{from,manual:true});break;}
     case 'demote': {const id=el.dataset.id,to=previousRung(id,curIdx(id));if(to!=null&&moveTo(id,to)){closeModal();render();toast('Stepped back');}break;}
     case 'adv-yes': {const q=window._advQ,id=el.dataset.id,to=+el.dataset.to,from=curIdx(id);
-      if(!currentProof(id,from).ready){toast('Repeat the current setup first');break;}
+      if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days first');break;}
       if(entryReady(id,to)){moveTo(id,to);if(q&&!q.rec.cleared.includes(id))q.rec.cleared.push(id);tb.seal();render();if(q)offerAdvance(q.list,q.i+1,q.rec);else closeModal();}
       else beginTests([id],to,null,q?{from,list:q.list,index:q.i,rec:q.rec}:null);break;}
     case 'adv-no': { const q=window._advQ; render(); if(q) offerAdvance(q.list,q.i+1,q.rec); else closeModal(); break; }
