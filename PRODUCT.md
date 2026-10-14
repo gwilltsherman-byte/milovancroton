@@ -24,7 +24,7 @@ Keep all four trainers, existing exercise and research content, session editing,
 
 ## Brand Commitments
 
-Name: Milo van Croton. The user requests a complete replacement visual design and delegates design decisions. Apple, Stripe and Linear are references for principles, not templates. No new product claims or fabricated workout history.
+Name: Milo van Croton. The user requests a complete replacement visual design and delegates design decisions. Apple, Stripe and Linear are references for principles, not templates. No new product claims or fabricated workout history. On 2026-10-14 the user rejected the shared green identity with Sideband and explicitly requested purpose-grounded, distinctive color designs for both apps. Milo uses the Training Floor direction: chalk and carbon structure, steel measurement, orange action, and green only for actual completion/readiness.
 
 ## Evidence on Hand
 

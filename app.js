@@ -1930,7 +1930,7 @@ function exerciseCard(en, ei){
   const t = en.target;
   const g = ssGroup(ei);
   const ssCls = g? ' ss-member'+(g.index===0?' ss-first':'')+(g.isLast?' ss-last':'') : '';
-  const ssBadge = g? `<span class="chip" style="background:var(--steel);color:#fff;border-color:transparent;margin-bottom:6px">${I.repeat} Superset &middot; ${g.index+1}/${g.total}</span>${!g.isLast && state.active.entries[ei+1]?`<span class="chip" style="margin:0 0 6px 6px">${I.arrow} then ${esc(state.active.entries[ei+1].name)}</span>`:''}` : '';
+  const ssBadge = g? `<span class="chip" style="background:var(--steel);color:var(--on-steel);border-color:transparent;margin-bottom:6px">${I.repeat} Superset &middot; ${g.index+1}/${g.total}</span>${!g.isLast && state.active.entries[ei+1]?`<span class="chip" style="margin:0 0 6px 6px">${I.arrow} then ${esc(state.active.entries[ei+1].name)}</span>`:''}` : '';
   return `<div class="card excard${ssCls}" data-ex="${ei}">
     ${ssBadge?`<div style="padding:12px 14px 0">${ssBadge}</div>`:''}
     <div class="exhead"${ssBadge?' style="padding-top:6px"':''}>
@@ -2520,7 +2520,7 @@ function progInsights(){
     const ratio = bb? a/bb : (a?99:1);
     const flag = (a+bb>=6) && (ratio>warnRatio || ratio<1/warnRatio);
     return `<div style="margin-bottom:12px">
-      <div class="spread" style="font-size:12px;margin-bottom:5px"><span><b>${la}</b> ${a}</span>${flag?`<span class="chip" style="background:var(--warn);color:#0d1015;border-color:transparent">imbalanced</span>`:`<span class="chip steel">balanced</span>`}<span><b>${lb}</b> ${bb}</span></div>
+      <div class="spread" style="font-size:12px;margin-bottom:5px"><span><b>${la}</b> ${a}</span>${flag?`<span class="chip" style="background:var(--warn);color:var(--on-warn);border-color:transparent">imbalanced</span>`:`<span class="chip steel">balanced</span>`}<span><b>${lb}</b> ${bb}</span></div>
       <div class="split"><div class="a" style="width:${Math.max(8,ap)}%">${a}</div><div class="b" style="width:${Math.max(8,100-ap)}%">${bb}</div></div>
     </div>`;
   };
@@ -3427,7 +3427,7 @@ function confirmMesoDelete(id){
       <div style="text-align:center;padding:6px 0"><div class="logo" style="width:44px;height:44px;border-radius:13px;margin:0 auto 12px;background:var(--crit)">${I.trash}</div>
       <h2 class="disp" style="font-weight:800;font-size:19px;margin:0 0 6px">Delete "${esc(m.name)}"?</h2>
       <p class="muted" style="font-size:13px;margin:0 auto 18px;max-width:280px">The program is removed. Workouts you already logged stay in your history.</p></div>
-      <button class="btn block" data-act="meso-del-confirm" data-id="${id}" style="background:var(--crit);color:#fff;border:none">Delete program</button>
+      <button class="btn block" data-act="meso-del-confirm" data-id="${id}" style="background:var(--crit);color:var(--on-crit);border:none">Delete program</button>
       <button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Keep it</button>
     </div>`, true);
 }
@@ -3438,7 +3438,7 @@ function confirmMesoEnd(id){
       <div style="text-align:center;padding:6px 0"><div class="logo" style="width:44px;height:44px;border-radius:13px;margin:0 auto 12px;background:var(--crit)">${I.flag}</div>
       <h2 class="disp" style="font-weight:800;font-size:19px;margin:0 0 6px">End this block?</h2>
       <p class="muted" style="font-size:13px;margin:0 auto 18px;max-width:280px">It stops here and moves to your programs list. Logged workouts stay in history.</p></div>
-      <button class="btn block" data-act="meso-del-confirm" data-id="${id}" style="background:var(--crit);color:#fff;border:none">End &amp; delete block</button>
+      <button class="btn block" data-act="meso-del-confirm" data-id="${id}" style="background:var(--crit);color:var(--on-crit);border:none">End &amp; delete block</button>
       <button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Cancel</button>
     </div>`, true);
 }
@@ -3478,7 +3478,7 @@ function doImport(mode){
       <div style="text-align:center;padding:6px 0"><div class="logo" style="width:44px;height:44px;border-radius:13px;margin:0 auto 12px;background:var(--crit)">${I.upload}</div>
       <h2 class="disp" style="font-weight:800;font-size:19px;margin:0 0 6px">Replace all data?</h2>
       <p class="muted" style="font-size:13px;margin:0 auto 18px;max-width:290px">This erases what's on this device and loads ${h} session${h===1?'':'s'}, ${ex} custom exercise${ex===1?'':'s'}, and ${ms} program${ms===1?'':'s'} from the file. Can't be undone.</p></div>
-      <button class="btn block" data-act="import-replace-confirm" style="background:var(--crit);color:#fff;border:none">Replace everything</button>
+      <button class="btn block" data-act="import-replace-confirm" style="background:var(--crit);color:var(--on-crit);border:none">Replace everything</button>
       <button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Cancel</button>
     </div>`, true);
 }
@@ -3921,7 +3921,7 @@ function openTemplates(){
     const exNames=t.items.map(([id])=>{const e=exById(id);return esc(e?e.name:id);}).slice(0,4).join(' &middot; ');
     const sets=t.items.reduce((a,[,n])=>a+n,0);
     return `<button class="exlist-item" data-act="pick-template" data-tpl="${esc(t.id)}" style="width:100%;text-align:left">
-      <div class="xi" style="background:var(--grad-heat);color:#fff;border:none">${I.layers}</div>
+      <div class="xi" style="background:var(--grad-heat);color:var(--on-accent);border:none">${I.layers}</div>
       <div class="xn"><div class="t">${t.name}</div><div class="s">${t.items.length} exercises &middot; ${sets} sets &middot; ${exNames}</div></div>
       <div class="add">${I.play}</div>
     </button>`;
@@ -4765,7 +4765,7 @@ function confirmReset(){
       <div style="text-align:center;padding:6px 0"><div class="logo" style="width:46px;height:46px;border-radius:14px;margin:0 auto 12px;background:var(--crit)">${I.trash}</div>
       <h2 class="disp" style="font-weight:800;font-size:20px;margin:0 0 6px">Erase everything?</h2>
       <p class="muted" style="font-size:13.5px;margin:0 auto 18px;max-width:280px">This permanently deletes all workouts, history, and custom exercises on this device. It can't be undone.</p></div>
-      <button class="btn block" data-act="reset-confirm" style="background:var(--crit);color:#fff;border:none">Yes, erase all data</button>
+      <button class="btn block" data-act="reset-confirm" style="background:var(--crit);color:var(--on-crit);border:none">Yes, erase all data</button>
       <button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Keep my data</button>
     </div>`, true);
 }
@@ -7558,7 +7558,7 @@ __root.addEventListener('click', e=>{
     case 'cl-del': { const id=el.dataset.id; openModal(`<div class="sheet-grab"></div>
       <div class="sheet-head"><h3>Delete ${esc(LADDERS[id].n)}?</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
       <div class="sheet-body"><p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 16px">It leaves the library and your plan, with any goal on it. Sessions you already logged keep it.</p>
-      <button class="btn block" data-act="cl-del-go" data-id="${id}" style="background:var(--crit);color:#fff;border:none">Delete ladder</button>
+      <button class="btn block" data-act="cl-del-go" data-id="${id}" style="background:var(--crit);color:var(--on-crit);border:none">Delete ladder</button>
       <button class="btn ghost block" data-act="ladder" data-id="${id}" style="margin-top:8px">Keep it</button></div>`); break; }
     case 'cl-del-go': deleteCustomLadder(el.dataset.id); break;
 
@@ -7588,10 +7588,10 @@ __root.addEventListener('click', e=>{
     case 'reset-rungs': { LADDER_ORDER.forEach(k=>state.rung[k]=0); state.placed={}; state.said={}; state.advances=[]; save(); closeModal(); render(); toast('Rungs reset'); break; }
     case 'reset': openModal(`<div class="sheet-grab"></div>
       <div class="sheet-body"><div style="text-align:center;padding:8px 0">
-        <div style="width:48px;height:48px;border-radius:15px;background:var(--crit);display:grid;place-items:center;margin:0 auto 12px;color:#fff">${I.trash}</div>
+        <div style="width:48px;height:48px;border-radius:15px;background:var(--crit);display:grid;place-items:center;margin:0 auto 12px;color:var(--on-crit)">${I.trash}</div>
         <h2 class="disp" style="font-size:21px;margin:0 0 6px;text-transform:uppercase">Erase everything?</h2>
         <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 auto 18px;max-width:280px">Every session, goal, test and rung in this section, on this device. It can’t be undone.</p></div>
-      <button class="btn block" data-act="reset-go" style="background:var(--crit);color:#fff;border:none">Yes, erase it all</button>
+      <button class="btn block" data-act="reset-go" style="background:var(--crit);color:var(--on-crit);border:none">Yes, erase it all</button>
       <button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Keep my data</button></div>`); break;
     case 'reset-go': { try{ localStorage.removeItem(LS_KEY); }catch(err){} tb.clear(); state=defaultState(); registerCustom([]); state.onboarded=true; applyTheme(); closeModal(); render(); toast('Everything has been erased'); break; }
     case 'ob-goals': state.onboarded=true; save(); openGoalPicker(); break;

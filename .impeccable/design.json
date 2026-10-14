@@ -1,236 +1,226 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T03:57:50.649993Z",
+  "generatedAt": "2026-10-14T10:04:26.803620+00:00",
   "title": "Design System: Milo van Croton",
   "extensions": {
     "colorMeta": {
       "bg": {
         "role": "neutral",
-        "displayName": "Mineral Ground",
+        "displayName": "Chalk",
         "tonalRamp": [
-          "oklch(15.0% 0.0073 132.4)",
-          "oklch(26.4% 0.0073 132.4)",
-          "oklch(37.9% 0.0073 132.4)",
-          "oklch(49.3% 0.0073 132.4)",
-          "oklch(60.7% 0.0073 132.4)",
-          "oklch(72.1% 0.0073 132.4)",
-          "oklch(83.6% 0.0073 132.4)",
-          "oklch(95.0% 0.0073 132.4)"
+          "oklch(15.0% 0.0029 128.5)",
+          "oklch(26.4% 0.0029 128.5)",
+          "oklch(37.9% 0.0029 128.5)",
+          "oklch(49.3% 0.0029 128.5)",
+          "oklch(60.7% 0.0029 128.5)",
+          "oklch(72.1% 0.0029 128.5)",
+          "oklch(83.6% 0.0029 128.5)",
+          "oklch(95.0% 0.0010 128.5)"
         ]
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Paper",
+        "displayName": "Porcelain",
         "tonalRamp": [
-          "oklch(15.0% 0.0000 0.0)",
-          "oklch(26.4% 0.0000 0.0)",
-          "oklch(37.9% 0.0000 0.0)",
-          "oklch(49.3% 0.0000 0.0)",
-          "oklch(60.7% 0.0000 0.0)",
-          "oklch(72.1% 0.0000 0.0)",
-          "oklch(83.6% 0.0000 0.0)",
-          "oklch(95.0% 0.0000 0.0)"
+          "oklch(15.0% 0.0000 89.9)",
+          "oklch(26.4% 0.0000 89.9)",
+          "oklch(37.9% 0.0000 89.9)",
+          "oklch(49.3% 0.0000 89.9)",
+          "oklch(60.7% 0.0000 89.9)",
+          "oklch(72.1% 0.0000 89.9)",
+          "oklch(83.6% 0.0000 89.9)",
+          "oklch(95.0% 0.0000 89.9)"
         ]
       },
       "surface-2": {
         "role": "neutral",
-        "displayName": "Quiet Paper",
+        "displayName": "Quiet Porcelain",
         "tonalRamp": [
-          "oklch(15.0% 0.0057 128.5)",
-          "oklch(26.4% 0.0057 128.5)",
-          "oklch(37.9% 0.0057 128.5)",
-          "oklch(49.3% 0.0057 128.5)",
-          "oklch(60.7% 0.0057 128.5)",
-          "oklch(72.1% 0.0057 128.5)",
-          "oklch(83.6% 0.0057 128.5)",
-          "oklch(95.0% 0.0057 128.5)"
+          "oklch(15.0% 0.0040 106.5)",
+          "oklch(26.4% 0.0040 106.5)",
+          "oklch(37.9% 0.0040 106.5)",
+          "oklch(49.3% 0.0040 106.5)",
+          "oklch(60.7% 0.0040 106.5)",
+          "oklch(72.1% 0.0040 106.5)",
+          "oklch(83.6% 0.0040 106.5)",
+          "oklch(95.0% 0.0013 106.5)"
         ]
       },
       "well": {
         "role": "neutral",
         "displayName": "Recess",
         "tonalRamp": [
-          "oklch(15.0% 0.0114 128.6)",
-          "oklch(26.4% 0.0114 128.6)",
-          "oklch(37.9% 0.0114 128.6)",
-          "oklch(49.3% 0.0114 128.6)",
-          "oklch(60.7% 0.0114 128.6)",
-          "oklch(72.1% 0.0114 128.6)",
-          "oklch(83.6% 0.0114 128.6)",
-          "oklch(95.0% 0.0114 128.6)"
+          "oklch(15.0% 0.0035 174.5)",
+          "oklch(26.4% 0.0035 174.5)",
+          "oklch(37.9% 0.0035 174.5)",
+          "oklch(49.3% 0.0035 174.5)",
+          "oklch(60.7% 0.0035 174.5)",
+          "oklch(72.1% 0.0035 174.5)",
+          "oklch(83.6% 0.0035 174.5)",
+          "oklch(95.0% 0.0012 174.5)"
         ]
       },
       "ink": {
         "role": "neutral",
-        "displayName": "Forest Ink",
+        "displayName": "Carbon Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0273 159.3)",
-          "oklch(26.4% 0.0273 159.3)",
-          "oklch(37.9% 0.0273 159.3)",
-          "oklch(49.3% 0.0273 159.3)",
-          "oklch(60.7% 0.0273 159.3)",
-          "oklch(72.1% 0.0273 159.3)",
-          "oklch(83.6% 0.0273 159.3)",
-          "oklch(95.0% 0.0273 159.3)"
+          "oklch(15.0% 0.0103 229.3)",
+          "oklch(26.4% 0.0103 229.3)",
+          "oklch(37.9% 0.0103 229.3)",
+          "oklch(49.3% 0.0103 229.3)",
+          "oklch(60.7% 0.0103 229.3)",
+          "oklch(72.1% 0.0103 229.3)",
+          "oklch(83.6% 0.0103 229.3)",
+          "oklch(95.0% 0.0034 229.3)"
         ]
       },
       "ink-2": {
         "role": "neutral",
         "displayName": "Supporting Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0290 158.0)",
-          "oklch(26.4% 0.0290 158.0)",
-          "oklch(37.9% 0.0290 158.0)",
-          "oklch(49.3% 0.0290 158.0)",
-          "oklch(60.7% 0.0290 158.0)",
-          "oklch(72.1% 0.0290 158.0)",
-          "oklch(83.6% 0.0290 158.0)",
-          "oklch(95.0% 0.0290 158.0)"
+          "oklch(15.0% 0.0193 239.5)",
+          "oklch(26.4% 0.0193 239.5)",
+          "oklch(37.9% 0.0193 239.5)",
+          "oklch(49.3% 0.0193 239.5)",
+          "oklch(60.7% 0.0193 239.5)",
+          "oklch(72.1% 0.0193 239.5)",
+          "oklch(83.6% 0.0193 239.5)",
+          "oklch(95.0% 0.0064 239.5)"
         ]
       },
       "muted": {
         "role": "neutral",
-        "displayName": "Muted Ink",
+        "displayName": "Secondary Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0259 155.4)",
-          "oklch(26.4% 0.0259 155.4)",
-          "oklch(37.9% 0.0259 155.4)",
-          "oklch(49.3% 0.0259 155.4)",
-          "oklch(60.7% 0.0259 155.4)",
-          "oklch(72.1% 0.0259 155.4)",
-          "oklch(83.6% 0.0259 155.4)",
-          "oklch(95.0% 0.0259 155.4)"
+          "oklch(15.0% 0.0166 238.3)",
+          "oklch(26.4% 0.0166 238.3)",
+          "oklch(37.9% 0.0166 238.3)",
+          "oklch(49.3% 0.0166 238.3)",
+          "oklch(60.7% 0.0166 238.3)",
+          "oklch(72.1% 0.0166 238.3)",
+          "oklch(83.6% 0.0166 238.3)",
+          "oklch(95.0% 0.0055 238.3)"
         ]
       },
       "border": {
         "role": "neutral",
         "displayName": "Soft Edge",
         "tonalRamp": [
-          "oklch(15.0% 0.0165 133.8)",
-          "oklch(26.4% 0.0165 133.8)",
-          "oklch(37.9% 0.0165 133.8)",
-          "oklch(49.3% 0.0165 133.8)",
-          "oklch(60.7% 0.0165 133.8)",
-          "oklch(72.1% 0.0165 133.8)",
-          "oklch(83.6% 0.0165 133.8)",
-          "oklch(95.0% 0.0165 133.8)"
+          "oklch(15.0% 0.0045 179.7)",
+          "oklch(26.4% 0.0045 179.7)",
+          "oklch(37.9% 0.0045 179.7)",
+          "oklch(49.3% 0.0045 179.7)",
+          "oklch(60.7% 0.0045 179.7)",
+          "oklch(72.1% 0.0045 179.7)",
+          "oklch(83.6% 0.0045 179.7)",
+          "oklch(95.0% 0.0015 179.7)"
         ]
       },
       "border-2": {
         "role": "neutral",
         "displayName": "Control Edge",
         "tonalRamp": [
-          "oklch(15.0% 0.0264 145.3)",
-          "oklch(26.4% 0.0264 145.3)",
-          "oklch(37.9% 0.0264 145.3)",
-          "oklch(49.3% 0.0264 145.3)",
-          "oklch(60.7% 0.0264 145.3)",
-          "oklch(72.1% 0.0264 145.3)",
-          "oklch(83.6% 0.0264 145.3)",
-          "oklch(95.0% 0.0264 145.3)"
+          "oklch(15.0% 0.0136 215.9)",
+          "oklch(26.4% 0.0136 215.9)",
+          "oklch(37.9% 0.0136 215.9)",
+          "oklch(49.3% 0.0136 215.9)",
+          "oklch(60.7% 0.0136 215.9)",
+          "oklch(72.1% 0.0136 215.9)",
+          "oklch(83.6% 0.0136 215.9)",
+          "oklch(95.0% 0.0045 215.9)"
         ]
       },
       "accent": {
-        "role": "primary",
-        "displayName": "Evergreen",
+        "role": "brand",
+        "displayName": "Burnt Orange",
         "tonalRamp": [
-          "oklch(15.0% 0.0552 164.5)",
-          "oklch(26.4% 0.0552 164.5)",
-          "oklch(37.9% 0.0552 164.5)",
-          "oklch(49.3% 0.0552 164.5)",
-          "oklch(60.7% 0.0552 164.5)",
-          "oklch(72.1% 0.0552 164.5)",
-          "oklch(83.6% 0.0552 164.5)",
-          "oklch(95.0% 0.0552 164.5)"
+          "oklch(15.0% 0.1509 38.8)",
+          "oklch(26.4% 0.1509 38.8)",
+          "oklch(37.9% 0.1509 38.8)",
+          "oklch(49.3% 0.1509 38.8)",
+          "oklch(60.7% 0.1509 38.8)",
+          "oklch(72.1% 0.1509 38.8)",
+          "oklch(83.6% 0.1509 38.8)",
+          "oklch(95.0% 0.0503 38.8)"
         ]
       },
       "accent-soft": {
-        "role": "primary",
-        "displayName": "Soft Leaf",
-        "tonalRamp": [
-          "oklch(15.0% 0.0262 130.9)",
-          "oklch(26.4% 0.0262 130.9)",
-          "oklch(37.9% 0.0262 130.9)",
-          "oklch(49.3% 0.0262 130.9)",
-          "oklch(60.7% 0.0262 130.9)",
-          "oklch(72.1% 0.0262 130.9)",
-          "oklch(83.6% 0.0262 130.9)",
-          "oklch(95.0% 0.0262 130.9)"
-        ]
+        "role": "brand",
+        "displayName": "Orange Wash"
       },
       "on-accent": {
-        "role": "primary",
-        "displayName": "Action Text",
+        "role": "brand",
+        "displayName": "Action Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0000 0.0)",
-          "oklch(26.4% 0.0000 0.0)",
-          "oklch(37.9% 0.0000 0.0)",
-          "oklch(49.3% 0.0000 0.0)",
-          "oklch(60.7% 0.0000 0.0)",
-          "oklch(72.1% 0.0000 0.0)",
-          "oklch(83.6% 0.0000 0.0)",
-          "oklch(95.0% 0.0000 0.0)"
+          "oklch(15.0% 0.0000 89.9)",
+          "oklch(26.4% 0.0000 89.9)",
+          "oklch(37.9% 0.0000 89.9)",
+          "oklch(49.3% 0.0000 89.9)",
+          "oklch(60.7% 0.0000 89.9)",
+          "oklch(72.1% 0.0000 89.9)",
+          "oklch(83.6% 0.0000 89.9)",
+          "oklch(95.0% 0.0000 89.9)"
         ]
       },
       "selected": {
-        "role": "primary",
-        "displayName": "Pale Leaf",
+        "role": "brand",
+        "displayName": "Selection",
         "tonalRamp": [
-          "oklch(15.0% 0.0676 124.1)",
-          "oklch(26.4% 0.0676 124.1)",
-          "oklch(37.9% 0.0676 124.1)",
-          "oklch(49.3% 0.0676 124.1)",
-          "oklch(60.7% 0.0676 124.1)",
-          "oklch(72.1% 0.0676 124.1)",
-          "oklch(83.6% 0.0676 124.1)",
-          "oklch(95.0% 0.0676 124.1)"
+          "oklch(15.0% 0.0470 52.3)",
+          "oklch(26.4% 0.0470 52.3)",
+          "oklch(37.9% 0.0470 52.3)",
+          "oklch(49.3% 0.0470 52.3)",
+          "oklch(60.7% 0.0470 52.3)",
+          "oklch(72.1% 0.0470 52.3)",
+          "oklch(83.6% 0.0470 52.3)",
+          "oklch(95.0% 0.0157 52.3)"
         ]
       },
       "hero": {
-        "role": "primary",
-        "displayName": "Field Green",
+        "role": "neutral",
+        "displayName": "Steel Ground",
         "tonalRamp": [
-          "oklch(15.0% 0.0217 130.0)",
-          "oklch(26.4% 0.0217 130.0)",
-          "oklch(37.9% 0.0217 130.0)",
-          "oklch(49.3% 0.0217 130.0)",
-          "oklch(60.7% 0.0217 130.0)",
-          "oklch(72.1% 0.0217 130.0)",
-          "oklch(83.6% 0.0217 130.0)",
-          "oklch(95.0% 0.0217 130.0)"
+          "oklch(15.0% 0.0045 179.7)",
+          "oklch(26.4% 0.0045 179.7)",
+          "oklch(37.9% 0.0045 179.7)",
+          "oklch(49.3% 0.0045 179.7)",
+          "oklch(60.7% 0.0045 179.7)",
+          "oklch(72.1% 0.0045 179.7)",
+          "oklch(83.6% 0.0045 179.7)",
+          "oklch(95.0% 0.0015 179.7)"
         ]
       },
       "good": {
         "role": "semantic",
-        "displayName": "Success Green",
+        "displayName": "Good",
         "tonalRamp": [
-          "oklch(15.0% 0.0990 156.7)",
-          "oklch(26.4% 0.0990 156.7)",
-          "oklch(37.9% 0.0990 156.7)",
-          "oklch(49.3% 0.0990 156.7)",
-          "oklch(60.7% 0.0990 156.7)",
-          "oklch(72.1% 0.0990 156.7)",
-          "oklch(83.6% 0.0990 156.7)",
-          "oklch(95.0% 0.0990 156.7)"
+          "oklch(15.0% 0.0960 157.5)",
+          "oklch(26.4% 0.0960 157.5)",
+          "oklch(37.9% 0.0960 157.5)",
+          "oklch(49.3% 0.0960 157.5)",
+          "oklch(60.7% 0.0960 157.5)",
+          "oklch(72.1% 0.0960 157.5)",
+          "oklch(83.6% 0.0960 157.5)",
+          "oklch(95.0% 0.0320 157.5)"
         ]
       },
       "good-soft": {
         "role": "semantic",
-        "displayName": "Success Ground",
+        "displayName": "Good Soft",
         "tonalRamp": [
-          "oklch(15.0% 0.0245 147.3)",
-          "oklch(26.4% 0.0245 147.3)",
-          "oklch(37.9% 0.0245 147.3)",
-          "oklch(49.3% 0.0245 147.3)",
-          "oklch(60.7% 0.0245 147.3)",
-          "oklch(72.1% 0.0245 147.3)",
-          "oklch(83.6% 0.0245 147.3)",
-          "oklch(95.0% 0.0245 147.3)"
+          "oklch(15.0% 0.0166 156.9)",
+          "oklch(26.4% 0.0166 156.9)",
+          "oklch(37.9% 0.0166 156.9)",
+          "oklch(49.3% 0.0166 156.9)",
+          "oklch(60.7% 0.0166 156.9)",
+          "oklch(72.1% 0.0166 156.9)",
+          "oklch(83.6% 0.0166 156.9)",
+          "oklch(95.0% 0.0055 156.9)"
         ]
       },
       "warn": {
         "role": "semantic",
-        "displayName": "Warning Amber",
+        "displayName": "Warn",
         "tonalRamp": [
           "oklch(15.0% 0.1009 68.6)",
           "oklch(26.4% 0.1009 68.6)",
@@ -239,12 +229,12 @@
           "oklch(60.7% 0.1009 68.6)",
           "oklch(72.1% 0.1009 68.6)",
           "oklch(83.6% 0.1009 68.6)",
-          "oklch(95.0% 0.1009 68.6)"
+          "oklch(95.0% 0.0336 68.6)"
         ]
       },
       "warn-soft": {
         "role": "semantic",
-        "displayName": "Warning Ground",
+        "displayName": "Warn Soft",
         "tonalRamp": [
           "oklch(15.0% 0.0326 85.5)",
           "oklch(26.4% 0.0326 85.5)",
@@ -253,12 +243,12 @@
           "oklch(60.7% 0.0326 85.5)",
           "oklch(72.1% 0.0326 85.5)",
           "oklch(83.6% 0.0326 85.5)",
-          "oklch(95.0% 0.0326 85.5)"
+          "oklch(95.0% 0.0109 85.5)"
         ]
       },
       "crit": {
         "role": "semantic",
-        "displayName": "Critical Red",
+        "displayName": "Crit",
         "tonalRamp": [
           "oklch(15.0% 0.1626 24.8)",
           "oklch(26.4% 0.1626 24.8)",
@@ -267,12 +257,12 @@
           "oklch(60.7% 0.1626 24.8)",
           "oklch(72.1% 0.1626 24.8)",
           "oklch(83.6% 0.1626 24.8)",
-          "oklch(95.0% 0.1626 24.8)"
+          "oklch(95.0% 0.0542 24.8)"
         ]
       },
       "crit-soft": {
         "role": "semantic",
-        "displayName": "Critical Ground",
+        "displayName": "Crit Soft",
         "tonalRamp": [
           "oklch(15.0% 0.0232 24.1)",
           "oklch(26.4% 0.0232 24.1)",
@@ -281,292 +271,292 @@
           "oklch(60.7% 0.0232 24.1)",
           "oklch(72.1% 0.0232 24.1)",
           "oklch(83.6% 0.0232 24.1)",
-          "oklch(95.0% 0.0232 24.1)"
+          "oklch(95.0% 0.0077 24.1)"
         ]
       },
       "shell-ink": {
         "role": "neutral",
         "displayName": "Shell Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0381 162.4)",
-          "oklch(26.4% 0.0381 162.4)",
-          "oklch(37.9% 0.0381 162.4)",
-          "oklch(49.3% 0.0381 162.4)",
-          "oklch(60.7% 0.0381 162.4)",
-          "oklch(72.1% 0.0381 162.4)",
-          "oklch(83.6% 0.0381 162.4)",
-          "oklch(95.0% 0.0381 162.4)"
+          "oklch(15.0% 0.0103 229.3)",
+          "oklch(26.4% 0.0103 229.3)",
+          "oklch(37.9% 0.0103 229.3)",
+          "oklch(49.3% 0.0103 229.3)",
+          "oklch(60.7% 0.0103 229.3)",
+          "oklch(72.1% 0.0103 229.3)",
+          "oklch(83.6% 0.0103 229.3)",
+          "oklch(95.0% 0.0034 229.3)"
         ]
       },
       "shell-muted": {
         "role": "neutral",
-        "displayName": "Shell Muted Ink",
+        "displayName": "Shell Muted",
         "tonalRamp": [
-          "oklch(15.0% 0.0241 156.2)",
-          "oklch(26.4% 0.0241 156.2)",
-          "oklch(37.9% 0.0241 156.2)",
-          "oklch(49.3% 0.0241 156.2)",
-          "oklch(60.7% 0.0241 156.2)",
-          "oklch(72.1% 0.0241 156.2)",
-          "oklch(83.6% 0.0241 156.2)",
-          "oklch(95.0% 0.0241 156.2)"
+          "oklch(15.0% 0.0166 238.3)",
+          "oklch(26.4% 0.0166 238.3)",
+          "oklch(37.9% 0.0166 238.3)",
+          "oklch(49.3% 0.0166 238.3)",
+          "oklch(60.7% 0.0166 238.3)",
+          "oklch(72.1% 0.0166 238.3)",
+          "oklch(83.6% 0.0166 238.3)",
+          "oklch(95.0% 0.0055 238.3)"
         ]
       },
       "shell-border": {
         "role": "neutral",
-        "displayName": "Shell Edge",
+        "displayName": "Shell Border",
         "tonalRamp": [
-          "oklch(15.0% 0.0166 142.6)",
-          "oklch(26.4% 0.0166 142.6)",
-          "oklch(37.9% 0.0166 142.6)",
-          "oklch(49.3% 0.0166 142.6)",
-          "oklch(60.7% 0.0166 142.6)",
-          "oklch(72.1% 0.0166 142.6)",
-          "oklch(83.6% 0.0166 142.6)",
-          "oklch(95.0% 0.0166 142.6)"
+          "oklch(15.0% 0.0045 179.7)",
+          "oklch(26.4% 0.0045 179.7)",
+          "oklch(37.9% 0.0045 179.7)",
+          "oklch(49.3% 0.0045 179.7)",
+          "oklch(60.7% 0.0045 179.7)",
+          "oklch(72.1% 0.0045 179.7)",
+          "oklch(83.6% 0.0045 179.7)",
+          "oklch(95.0% 0.0015 179.7)"
         ]
       },
       "shell-well": {
         "role": "neutral",
-        "displayName": "Shell Recess",
+        "displayName": "Shell Well",
         "tonalRamp": [
-          "oklch(15.0% 0.0135 134.9)",
-          "oklch(26.4% 0.0135 134.9)",
-          "oklch(37.9% 0.0135 134.9)",
-          "oklch(49.3% 0.0135 134.9)",
-          "oklch(60.7% 0.0135 134.9)",
-          "oklch(72.1% 0.0135 134.9)",
-          "oklch(83.6% 0.0135 134.9)",
-          "oklch(95.0% 0.0135 134.9)"
+          "oklch(15.0% 0.0035 174.5)",
+          "oklch(26.4% 0.0035 174.5)",
+          "oklch(37.9% 0.0035 174.5)",
+          "oklch(49.3% 0.0035 174.5)",
+          "oklch(60.7% 0.0035 174.5)",
+          "oklch(72.1% 0.0035 174.5)",
+          "oklch(83.6% 0.0035 174.5)",
+          "oklch(95.0% 0.0012 174.5)"
         ]
       },
       "dark-bg": {
         "role": "neutral",
-        "displayName": "Dark Mineral Ground",
+        "displayName": "Evening Chalk",
         "tonalRamp": [
-          "oklch(15.0% 0.0154 165.9)",
-          "oklch(26.4% 0.0154 165.9)",
-          "oklch(37.9% 0.0154 165.9)",
-          "oklch(49.3% 0.0154 165.9)",
-          "oklch(60.7% 0.0154 165.9)",
-          "oklch(72.1% 0.0154 165.9)",
-          "oklch(83.6% 0.0154 165.9)",
-          "oklch(95.0% 0.0154 165.9)"
+          "oklch(15.0% 0.0099 248.3)",
+          "oklch(26.4% 0.0099 248.3)",
+          "oklch(37.9% 0.0099 248.3)",
+          "oklch(49.3% 0.0099 248.3)",
+          "oklch(60.7% 0.0099 248.3)",
+          "oklch(72.1% 0.0099 248.3)",
+          "oklch(83.6% 0.0099 248.3)",
+          "oklch(95.0% 0.0033 248.3)"
         ]
       },
       "dark-surface": {
         "role": "neutral",
-        "displayName": "Dark Paper",
+        "displayName": "Evening Porcelain",
         "tonalRamp": [
-          "oklch(15.0% 0.0233 157.4)",
-          "oklch(26.4% 0.0233 157.4)",
-          "oklch(37.9% 0.0233 157.4)",
-          "oklch(49.3% 0.0233 157.4)",
-          "oklch(60.7% 0.0233 157.4)",
-          "oklch(72.1% 0.0233 157.4)",
-          "oklch(83.6% 0.0233 157.4)",
-          "oklch(95.0% 0.0233 157.4)"
+          "oklch(15.0% 0.0127 243.4)",
+          "oklch(26.4% 0.0127 243.4)",
+          "oklch(37.9% 0.0127 243.4)",
+          "oklch(49.3% 0.0127 243.4)",
+          "oklch(60.7% 0.0127 243.4)",
+          "oklch(72.1% 0.0127 243.4)",
+          "oklch(83.6% 0.0127 243.4)",
+          "oklch(95.0% 0.0042 243.4)"
         ]
       },
       "dark-surface-2": {
         "role": "neutral",
-        "displayName": "Dark Quiet Paper",
+        "displayName": "Evening Quiet Porcelain",
         "tonalRamp": [
-          "oklch(15.0% 0.0259 158.0)",
-          "oklch(26.4% 0.0259 158.0)",
-          "oklch(37.9% 0.0259 158.0)",
-          "oklch(49.3% 0.0259 158.0)",
-          "oklch(60.7% 0.0259 158.0)",
-          "oklch(72.1% 0.0259 158.0)",
-          "oklch(83.6% 0.0259 158.0)",
-          "oklch(95.0% 0.0259 158.0)"
+          "oklch(15.0% 0.0168 244.8)",
+          "oklch(26.4% 0.0168 244.8)",
+          "oklch(37.9% 0.0168 244.8)",
+          "oklch(49.3% 0.0168 244.8)",
+          "oklch(60.7% 0.0168 244.8)",
+          "oklch(72.1% 0.0168 244.8)",
+          "oklch(83.6% 0.0168 244.8)",
+          "oklch(95.0% 0.0056 244.8)"
         ]
       },
       "dark-well": {
         "role": "neutral",
-        "displayName": "Dark Recess",
+        "displayName": "Evening Recess",
         "tonalRamp": [
-          "oklch(15.0% 0.0227 155.2)",
-          "oklch(26.4% 0.0227 155.2)",
-          "oklch(37.9% 0.0227 155.2)",
-          "oklch(49.3% 0.0227 155.2)",
-          "oklch(60.7% 0.0227 155.2)",
-          "oklch(72.1% 0.0227 155.2)",
-          "oklch(83.6% 0.0227 155.2)",
-          "oklch(95.0% 0.0227 155.2)"
+          "oklch(15.0% 0.0125 248.4)",
+          "oklch(26.4% 0.0125 248.4)",
+          "oklch(37.9% 0.0125 248.4)",
+          "oklch(49.3% 0.0125 248.4)",
+          "oklch(60.7% 0.0125 248.4)",
+          "oklch(72.1% 0.0125 248.4)",
+          "oklch(83.6% 0.0125 248.4)",
+          "oklch(95.0% 0.0042 248.4)"
         ]
       },
       "dark-ink": {
         "role": "neutral",
-        "displayName": "Dark Forest Ink",
+        "displayName": "Evening Carbon Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0159 130.4)",
-          "oklch(26.4% 0.0159 130.4)",
-          "oklch(37.9% 0.0159 130.4)",
-          "oklch(49.3% 0.0159 130.4)",
-          "oklch(60.7% 0.0159 130.4)",
-          "oklch(72.1% 0.0159 130.4)",
-          "oklch(83.6% 0.0159 130.4)",
-          "oklch(95.0% 0.0159 130.4)"
+          "oklch(15.0% 0.0054 95.1)",
+          "oklch(26.4% 0.0054 95.1)",
+          "oklch(37.9% 0.0054 95.1)",
+          "oklch(49.3% 0.0054 95.1)",
+          "oklch(60.7% 0.0054 95.1)",
+          "oklch(72.1% 0.0054 95.1)",
+          "oklch(83.6% 0.0054 95.1)",
+          "oklch(95.0% 0.0018 95.1)"
         ]
       },
       "dark-ink-2": {
         "role": "neutral",
-        "displayName": "Dark Supporting Ink",
+        "displayName": "Evening Supporting Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0270 138.3)",
-          "oklch(26.4% 0.0270 138.3)",
-          "oklch(37.9% 0.0270 138.3)",
-          "oklch(49.3% 0.0270 138.3)",
-          "oklch(60.7% 0.0270 138.3)",
-          "oklch(72.1% 0.0270 138.3)",
-          "oklch(83.6% 0.0270 138.3)",
-          "oklch(95.0% 0.0270 138.3)"
+          "oklch(15.0% 0.0061 223.5)",
+          "oklch(26.4% 0.0061 223.5)",
+          "oklch(37.9% 0.0061 223.5)",
+          "oklch(49.3% 0.0061 223.5)",
+          "oklch(60.7% 0.0061 223.5)",
+          "oklch(72.1% 0.0061 223.5)",
+          "oklch(83.6% 0.0061 223.5)",
+          "oklch(95.0% 0.0020 223.5)"
         ]
       },
       "dark-muted": {
         "role": "neutral",
-        "displayName": "Dark Muted Ink",
+        "displayName": "Evening Secondary Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0317 136.2)",
-          "oklch(26.4% 0.0317 136.2)",
-          "oklch(37.9% 0.0317 136.2)",
-          "oklch(49.3% 0.0317 136.2)",
-          "oklch(60.7% 0.0317 136.2)",
-          "oklch(72.1% 0.0317 136.2)",
-          "oklch(83.6% 0.0317 136.2)",
-          "oklch(95.0% 0.0317 136.2)"
+          "oklch(15.0% 0.0141 233.8)",
+          "oklch(26.4% 0.0141 233.8)",
+          "oklch(37.9% 0.0141 233.8)",
+          "oklch(49.3% 0.0141 233.8)",
+          "oklch(60.7% 0.0141 233.8)",
+          "oklch(72.1% 0.0141 233.8)",
+          "oklch(83.6% 0.0141 233.8)",
+          "oklch(95.0% 0.0047 233.8)"
         ]
       },
       "dark-border": {
         "role": "neutral",
-        "displayName": "Dark Soft Edge",
+        "displayName": "Evening Soft Edge",
         "tonalRamp": [
-          "oklch(15.0% 0.0288 152.5)",
-          "oklch(26.4% 0.0288 152.5)",
-          "oklch(37.9% 0.0288 152.5)",
-          "oklch(49.3% 0.0288 152.5)",
-          "oklch(60.7% 0.0288 152.5)",
-          "oklch(72.1% 0.0288 152.5)",
-          "oklch(83.6% 0.0288 152.5)",
-          "oklch(95.0% 0.0288 152.5)"
+          "oklch(15.0% 0.0187 235.9)",
+          "oklch(26.4% 0.0187 235.9)",
+          "oklch(37.9% 0.0187 235.9)",
+          "oklch(49.3% 0.0187 235.9)",
+          "oklch(60.7% 0.0187 235.9)",
+          "oklch(72.1% 0.0187 235.9)",
+          "oklch(83.6% 0.0187 235.9)",
+          "oklch(95.0% 0.0062 235.9)"
         ]
       },
       "dark-border-2": {
         "role": "neutral",
-        "displayName": "Dark Control Edge",
+        "displayName": "Evening Control Edge",
         "tonalRamp": [
-          "oklch(15.0% 0.0423 141.5)",
-          "oklch(26.4% 0.0423 141.5)",
-          "oklch(37.9% 0.0423 141.5)",
-          "oklch(49.3% 0.0423 141.5)",
-          "oklch(60.7% 0.0423 141.5)",
-          "oklch(72.1% 0.0423 141.5)",
-          "oklch(83.6% 0.0423 141.5)",
-          "oklch(95.0% 0.0423 141.5)"
+          "oklch(15.0% 0.0233 232.4)",
+          "oklch(26.4% 0.0233 232.4)",
+          "oklch(37.9% 0.0233 232.4)",
+          "oklch(49.3% 0.0233 232.4)",
+          "oklch(60.7% 0.0233 232.4)",
+          "oklch(72.1% 0.0233 232.4)",
+          "oklch(83.6% 0.0233 232.4)",
+          "oklch(95.0% 0.0078 232.4)"
         ]
       },
       "dark-accent": {
-        "role": "primary",
-        "displayName": "Pale Leaf Action",
+        "role": "brand",
+        "displayName": "Evening Burnt Orange",
         "tonalRamp": [
-          "oklch(15.0% 0.0676 124.1)",
-          "oklch(26.4% 0.0676 124.1)",
-          "oklch(37.9% 0.0676 124.1)",
-          "oklch(49.3% 0.0676 124.1)",
-          "oklch(60.7% 0.0676 124.1)",
-          "oklch(72.1% 0.0676 124.1)",
-          "oklch(83.6% 0.0676 124.1)",
-          "oklch(95.0% 0.0676 124.1)"
+          "oklch(15.0% 0.1186 50.1)",
+          "oklch(26.4% 0.1186 50.1)",
+          "oklch(37.9% 0.1186 50.1)",
+          "oklch(49.3% 0.1186 50.1)",
+          "oklch(60.7% 0.1186 50.1)",
+          "oklch(72.1% 0.1186 50.1)",
+          "oklch(83.6% 0.1186 50.1)",
+          "oklch(95.0% 0.0395 50.1)"
         ]
       },
       "dark-accent-soft": {
-        "role": "primary",
-        "displayName": "Dark Soft Leaf",
+        "role": "brand",
+        "displayName": "Evening Orange Wash",
         "tonalRamp": [
-          "oklch(15.0% 0.0437 146.9)",
-          "oklch(26.4% 0.0437 146.9)",
-          "oklch(37.9% 0.0437 146.9)",
-          "oklch(49.3% 0.0437 146.9)",
-          "oklch(60.7% 0.0437 146.9)",
-          "oklch(72.1% 0.0437 146.9)",
-          "oklch(83.6% 0.0437 146.9)",
-          "oklch(95.0% 0.0437 146.9)"
+          "oklch(15.0% 0.0386 46.5)",
+          "oklch(26.4% 0.0386 46.5)",
+          "oklch(37.9% 0.0386 46.5)",
+          "oklch(49.3% 0.0386 46.5)",
+          "oklch(60.7% 0.0386 46.5)",
+          "oklch(72.1% 0.0386 46.5)",
+          "oklch(83.6% 0.0386 46.5)",
+          "oklch(95.0% 0.0129 46.5)"
         ]
       },
       "dark-on-accent": {
-        "role": "primary",
-        "displayName": "Dark Action Text",
+        "role": "brand",
+        "displayName": "Evening Action Ink",
         "tonalRamp": [
-          "oklch(15.0% 0.0441 151.2)",
-          "oklch(26.4% 0.0441 151.2)",
-          "oklch(37.9% 0.0441 151.2)",
-          "oklch(49.3% 0.0441 151.2)",
-          "oklch(60.7% 0.0441 151.2)",
-          "oklch(72.1% 0.0441 151.2)",
-          "oklch(83.6% 0.0441 151.2)",
-          "oklch(95.0% 0.0441 151.2)"
+          "oklch(15.0% 0.0314 48.7)",
+          "oklch(26.4% 0.0314 48.7)",
+          "oklch(37.9% 0.0314 48.7)",
+          "oklch(49.3% 0.0314 48.7)",
+          "oklch(60.7% 0.0314 48.7)",
+          "oklch(72.1% 0.0314 48.7)",
+          "oklch(83.6% 0.0314 48.7)",
+          "oklch(95.0% 0.0105 48.7)"
         ]
       },
       "dark-selected": {
-        "role": "primary",
-        "displayName": "Deep Leaf Selection",
+        "role": "brand",
+        "displayName": "Evening Selection",
         "tonalRamp": [
-          "oklch(15.0% 0.0559 143.7)",
-          "oklch(26.4% 0.0559 143.7)",
-          "oklch(37.9% 0.0559 143.7)",
-          "oklch(49.3% 0.0559 143.7)",
-          "oklch(60.7% 0.0559 143.7)",
-          "oklch(72.1% 0.0559 143.7)",
-          "oklch(83.6% 0.0559 143.7)",
-          "oklch(95.0% 0.0559 143.7)"
+          "oklch(15.0% 0.0504 50.3)",
+          "oklch(26.4% 0.0504 50.3)",
+          "oklch(37.9% 0.0504 50.3)",
+          "oklch(49.3% 0.0504 50.3)",
+          "oklch(60.7% 0.0504 50.3)",
+          "oklch(72.1% 0.0504 50.3)",
+          "oklch(83.6% 0.0504 50.3)",
+          "oklch(95.0% 0.0168 50.3)"
         ]
       },
       "dark-hero": {
-        "role": "primary",
-        "displayName": "Dark Field Green",
+        "role": "neutral",
+        "displayName": "Evening Steel Ground",
         "tonalRamp": [
-          "oklch(15.0% 0.0381 150.1)",
-          "oklch(26.4% 0.0381 150.1)",
-          "oklch(37.9% 0.0381 150.1)",
-          "oklch(49.3% 0.0381 150.1)",
-          "oklch(60.7% 0.0381 150.1)",
-          "oklch(72.1% 0.0381 150.1)",
-          "oklch(83.6% 0.0381 150.1)",
-          "oklch(95.0% 0.0381 150.1)"
+          "oklch(15.0% 0.0173 234.4)",
+          "oklch(26.4% 0.0173 234.4)",
+          "oklch(37.9% 0.0173 234.4)",
+          "oklch(49.3% 0.0173 234.4)",
+          "oklch(60.7% 0.0173 234.4)",
+          "oklch(72.1% 0.0173 234.4)",
+          "oklch(83.6% 0.0173 234.4)",
+          "oklch(95.0% 0.0058 234.4)"
         ]
       },
       "dark-good": {
         "role": "semantic",
-        "displayName": "Dark Success Green",
+        "displayName": "Evening Good",
         "tonalRamp": [
-          "oklch(15.0% 0.0986 150.8)",
-          "oklch(26.4% 0.0986 150.8)",
-          "oklch(37.9% 0.0986 150.8)",
-          "oklch(49.3% 0.0986 150.8)",
-          "oklch(60.7% 0.0986 150.8)",
-          "oklch(72.1% 0.0986 150.8)",
-          "oklch(83.6% 0.0986 150.8)",
-          "oklch(95.0% 0.0986 150.8)"
+          "oklch(15.0% 0.0824 157.7)",
+          "oklch(26.4% 0.0824 157.7)",
+          "oklch(37.9% 0.0824 157.7)",
+          "oklch(49.3% 0.0824 157.7)",
+          "oklch(60.7% 0.0824 157.7)",
+          "oklch(72.1% 0.0824 157.7)",
+          "oklch(83.6% 0.0824 157.7)",
+          "oklch(95.0% 0.0275 157.7)"
         ]
       },
       "dark-good-soft": {
         "role": "semantic",
-        "displayName": "Dark Success Ground",
+        "displayName": "Evening Good Soft",
         "tonalRamp": [
-          "oklch(15.0% 0.0411 156.9)",
-          "oklch(26.4% 0.0411 156.9)",
-          "oklch(37.9% 0.0411 156.9)",
-          "oklch(49.3% 0.0411 156.9)",
-          "oklch(60.7% 0.0411 156.9)",
-          "oklch(72.1% 0.0411 156.9)",
-          "oklch(83.6% 0.0411 156.9)",
-          "oklch(95.0% 0.0411 156.9)"
+          "oklch(15.0% 0.0370 161.8)",
+          "oklch(26.4% 0.0370 161.8)",
+          "oklch(37.9% 0.0370 161.8)",
+          "oklch(49.3% 0.0370 161.8)",
+          "oklch(60.7% 0.0370 161.8)",
+          "oklch(72.1% 0.0370 161.8)",
+          "oklch(83.6% 0.0370 161.8)",
+          "oklch(95.0% 0.0123 161.8)"
         ]
       },
       "dark-warn": {
         "role": "semantic",
-        "displayName": "Dark Warning Amber",
+        "displayName": "Evening Warn",
         "tonalRamp": [
           "oklch(15.0% 0.0954 81.0)",
           "oklch(26.4% 0.0954 81.0)",
@@ -575,12 +565,12 @@
           "oklch(60.7% 0.0954 81.0)",
           "oklch(72.1% 0.0954 81.0)",
           "oklch(83.6% 0.0954 81.0)",
-          "oklch(95.0% 0.0954 81.0)"
+          "oklch(95.0% 0.0318 81.0)"
         ]
       },
       "dark-warn-soft": {
         "role": "semantic",
-        "displayName": "Dark Warning Ground",
+        "displayName": "Evening Warn Soft",
         "tonalRamp": [
           "oklch(15.0% 0.0308 76.6)",
           "oklch(26.4% 0.0308 76.6)",
@@ -589,12 +579,12 @@
           "oklch(60.7% 0.0308 76.6)",
           "oklch(72.1% 0.0308 76.6)",
           "oklch(83.6% 0.0308 76.6)",
-          "oklch(95.0% 0.0308 76.6)"
+          "oklch(95.0% 0.0103 76.6)"
         ]
       },
       "dark-crit": {
         "role": "semantic",
-        "displayName": "Dark Critical Red",
+        "displayName": "Evening Crit",
         "tonalRamp": [
           "oklch(15.0% 0.1018 26.2)",
           "oklch(26.4% 0.1018 26.2)",
@@ -603,12 +593,12 @@
           "oklch(60.7% 0.1018 26.2)",
           "oklch(72.1% 0.1018 26.2)",
           "oklch(83.6% 0.1018 26.2)",
-          "oklch(95.0% 0.1018 26.2)"
+          "oklch(95.0% 0.0339 26.2)"
         ]
       },
       "dark-crit-soft": {
         "role": "semantic",
-        "displayName": "Dark Critical Ground",
+        "displayName": "Evening Crit Soft",
         "tonalRamp": [
           "oklch(15.0% 0.0481 23.9)",
           "oklch(26.4% 0.0481 23.9)",
@@ -617,8 +607,196 @@
           "oklch(60.7% 0.0481 23.9)",
           "oklch(72.1% 0.0481 23.9)",
           "oklch(83.6% 0.0481 23.9)",
-          "oklch(95.0% 0.0481 23.9)"
+          "oklch(95.0% 0.0160 23.9)"
         ]
+      },
+      "steel": {
+        "role": "neutral",
+        "displayName": "Steel",
+        "tonalRamp": [
+          "oklch(15.0% 0.0355 235.2)",
+          "oklch(26.4% 0.0355 235.2)",
+          "oklch(37.9% 0.0355 235.2)",
+          "oklch(49.3% 0.0355 235.2)",
+          "oklch(60.7% 0.0355 235.2)",
+          "oklch(72.1% 0.0355 235.2)",
+          "oklch(83.6% 0.0355 235.2)",
+          "oklch(95.0% 0.0118 235.2)"
+        ]
+      },
+      "steel-soft": {
+        "role": "neutral",
+        "displayName": "Steel Wash",
+        "tonalRamp": [
+          "oklch(15.0% 0.0076 228.9)",
+          "oklch(26.4% 0.0076 228.9)",
+          "oklch(37.9% 0.0076 228.9)",
+          "oklch(49.3% 0.0076 228.9)",
+          "oklch(60.7% 0.0076 228.9)",
+          "oklch(72.1% 0.0076 228.9)",
+          "oklch(83.6% 0.0076 228.9)",
+          "oklch(95.0% 0.0025 228.9)"
+        ]
+      },
+      "on-good": {
+        "role": "semantic",
+        "displayName": "On Good",
+        "tonalRamp": [
+          "oklch(15.0% 0.0000 89.9)",
+          "oklch(26.4% 0.0000 89.9)",
+          "oklch(37.9% 0.0000 89.9)",
+          "oklch(49.3% 0.0000 89.9)",
+          "oklch(60.7% 0.0000 89.9)",
+          "oklch(72.1% 0.0000 89.9)",
+          "oklch(83.6% 0.0000 89.9)",
+          "oklch(95.0% 0.0000 89.9)"
+        ]
+      },
+      "rail": {
+        "role": "neutral",
+        "displayName": "Carbon Rail",
+        "tonalRamp": [
+          "oklch(15.0% 0.0168 237.4)",
+          "oklch(26.4% 0.0168 237.4)",
+          "oklch(37.9% 0.0168 237.4)",
+          "oklch(49.3% 0.0168 237.4)",
+          "oklch(60.7% 0.0168 237.4)",
+          "oklch(72.1% 0.0168 237.4)",
+          "oklch(83.6% 0.0168 237.4)",
+          "oklch(95.0% 0.0056 237.4)"
+        ]
+      },
+      "brand-signal": {
+        "role": "brand",
+        "displayName": "Signal Orange",
+        "tonalRamp": [
+          "oklch(15.0% 0.1103 51.9)",
+          "oklch(26.4% 0.1103 51.9)",
+          "oklch(37.9% 0.1103 51.9)",
+          "oklch(49.3% 0.1103 51.9)",
+          "oklch(60.7% 0.1103 51.9)",
+          "oklch(72.1% 0.1103 51.9)",
+          "oklch(83.6% 0.1103 51.9)",
+          "oklch(95.0% 0.0368 51.9)"
+        ]
+      },
+      "dark-steel": {
+        "role": "neutral",
+        "displayName": "Evening Steel",
+        "tonalRamp": [
+          "oklch(15.0% 0.0347 234.2)",
+          "oklch(26.4% 0.0347 234.2)",
+          "oklch(37.9% 0.0347 234.2)",
+          "oklch(49.3% 0.0347 234.2)",
+          "oklch(60.7% 0.0347 234.2)",
+          "oklch(72.1% 0.0347 234.2)",
+          "oklch(83.6% 0.0347 234.2)",
+          "oklch(95.0% 0.0116 234.2)"
+        ]
+      },
+      "dark-steel-soft": {
+        "role": "neutral",
+        "displayName": "Evening Steel Wash",
+        "tonalRamp": [
+          "oklch(15.0% 0.0311 234.3)",
+          "oklch(26.4% 0.0311 234.3)",
+          "oklch(37.9% 0.0311 234.3)",
+          "oklch(49.3% 0.0311 234.3)",
+          "oklch(60.7% 0.0311 234.3)",
+          "oklch(72.1% 0.0311 234.3)",
+          "oklch(83.6% 0.0311 234.3)",
+          "oklch(95.0% 0.0104 234.3)"
+        ]
+      },
+      "dark-on-good": {
+        "role": "semantic",
+        "displayName": "Evening On Good",
+        "tonalRamp": [
+          "oklch(15.0% 0.0352 161.0)",
+          "oklch(26.4% 0.0352 161.0)",
+          "oklch(37.9% 0.0352 161.0)",
+          "oklch(49.3% 0.0352 161.0)",
+          "oklch(60.7% 0.0352 161.0)",
+          "oklch(72.1% 0.0352 161.0)",
+          "oklch(83.6% 0.0352 161.0)",
+          "oklch(95.0% 0.0117 161.0)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised"
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Faint"
+      },
+      "good-ink": {
+        "role": "semantic",
+        "displayName": "Good Ink"
+      },
+      "on-steel": {
+        "role": "neutral",
+        "displayName": "On Steel"
+      },
+      "on-warn": {
+        "role": "semantic",
+        "displayName": "On Warn"
+      },
+      "on-crit": {
+        "role": "semantic",
+        "displayName": "On Crit"
+      },
+      "rail-ink": {
+        "role": "neutral",
+        "displayName": "Rail Ink"
+      },
+      "rail-label": {
+        "role": "neutral",
+        "displayName": "Rail Label"
+      },
+      "rail-muted": {
+        "role": "neutral",
+        "displayName": "Rail Muted"
+      },
+      "rail-selection-ink": {
+        "role": "neutral",
+        "displayName": "Rail Selection Ink"
+      },
+      "rail-selection-muted": {
+        "role": "neutral",
+        "displayName": "Rail Selection Muted"
+      },
+      "rail-hover": {
+        "role": "neutral",
+        "displayName": "Rail Hover"
+      },
+      "rail-foot": {
+        "role": "neutral",
+        "displayName": "Rail Foot"
+      },
+      "dark-raised": {
+        "role": "neutral",
+        "displayName": "Dark Raised"
+      },
+      "dark-faint": {
+        "role": "neutral",
+        "displayName": "Dark Faint"
+      },
+      "dark-good-ink": {
+        "role": "semantic",
+        "displayName": "Dark Good Ink"
+      },
+      "dark-on-steel": {
+        "role": "neutral",
+        "displayName": "Dark On Steel"
+      },
+      "dark-on-warn": {
+        "role": "semantic",
+        "displayName": "Dark On Warn"
+      },
+      "dark-on-crit": {
+        "role": "semantic",
+        "displayName": "Dark On Crit"
       }
     },
     "typographyMeta": {
@@ -640,7 +818,7 @@
       },
       "body": {
         "displayName": "Working Text",
-        "purpose": "Instructions and content; explanatory paragraphs use 1.6–1.65 line spacing."
+        "purpose": "Instructions and content; explanatory paragraphs use 1.6\u20131.65 line spacing."
       },
       "label": {
         "displayName": "Control Label",
@@ -679,12 +857,12 @@
       },
       {
         "name": "together-strip",
-        "value": "0 8px 30px #10271a26",
+        "value": "0 8px 30px #10161b26",
         "purpose": "Transient shared shell strip above the workspace."
       },
       {
         "name": "shell-dialog",
-        "value": "0 20px 60px #10271a40",
+        "value": "0 20px 60px #10161b40",
         "purpose": "Backup and help dialogs in the shared shell."
       },
       {
@@ -765,7 +943,7 @@
         "compactVariant": "Same silhouette with eye cutouts removed"
       },
       "usage": {
-        "header": "Inline currentColor; Evergreen in light mode and Pale Leaf in dark mode, including system theme.",
+        "header": "Inline currentColor; Burnt Orange in light mode and Signal Orange in dark mode, including system theme.",
         "lockup": "Lowercase milo in Archivo with the Public Sans van Croton subtitle.",
         "clearSpace": "Preserve the complete 64-unit canvas and the brand-gap token between symbol and wordmark; do not crop to path bounds.",
         "minimumFullSymbol": "34px",
@@ -787,7 +965,7 @@
         ],
         "standardScale": 0.82,
         "maskableScale": 0.7,
-        "background": "Full-bleed Evergreen on install icons; only the favicon has built-in rounded corners."
+        "background": "Full-bleed Carbon on install icons; only the favicon has built-in rounded corners."
       },
       "regeneration": [
         "NODE_PATH=/path/to/node_modules node tools/generate-brand.cjs",
@@ -803,7 +981,7 @@
       "refersTo": "button-primary",
       "description": "Accent action with keyboard focus, hover, and pressed feedback.",
       "html": "<button class=\"ds-primary\" type=\"button\">Start training<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></button>",
-      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--accent,#234c3b);color:var(--on-accent,#fff);border:1px solid var(--accent,#234c3b);}.ds-primary:focus-visible{outline:3px solid var(--accent,#234c3b);outline-offset:3px;}.ds-primary:active{transform:translateY(1px)}.ds-primary:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-primary:hover:not(:disabled){background:color-mix(in srgb,var(--accent,#234c3b) 89%,var(--ink,#1b2b22));}}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--accent,#b44720);color:var(--on-accent,#fff);border:1px solid var(--accent,#b44720);}.ds-primary:focus-visible{outline:3px solid var(--accent,#b44720);outline-offset:3px;}.ds-primary:active{transform:translateY(1px)}.ds-primary:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-primary:hover:not(:disabled){background:color-mix(in srgb,var(--accent,#b44720) 89%,var(--ink,#21272a));}}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
     },
     {
       "name": "Secondary action",
@@ -811,7 +989,7 @@
       "refersTo": "button-ghost",
       "description": "A bordered action that supports the primary task.",
       "html": "<button class=\"ds-ghost\" type=\"button\">Edit session</button>",
-      "css": ".ds-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--surface,#fff);color:var(--ink,#1b2b22);border:1px solid var(--border-2,#b8c7b8);}.ds-ghost:focus-visible{outline:3px solid var(--accent,#234c3b);outline-offset:3px;}.ds-ghost:active{transform:translateY(1px)}.ds-ghost:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-ghost:hover:not(:disabled){background:var(--surface-2,#f5f7f3);border-color:var(--border-2,#b8c7b8);}}@media(prefers-reduced-motion:reduce){.ds-ghost{transition:none}}"
+      "css": ".ds-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--surface,#fff);color:var(--ink,#21272a);border:1px solid var(--border-2,#838e91);}.ds-ghost:focus-visible{outline:3px solid var(--accent,#b44720);outline-offset:3px;}.ds-ghost:active{transform:translateY(1px)}.ds-ghost:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-ghost:hover:not(:disabled){background:var(--surface-2,#f6f6f3);border-color:var(--border-2,#838e91);}}@media(prefers-reduced-motion:reduce){.ds-ghost{transition:none}}"
     },
     {
       "name": "Destructive action",
@@ -819,7 +997,7 @@
       "refersTo": "button-danger",
       "description": "Critical text and a soft fill preserve the meaning of a destructive action.",
       "html": "<button class=\"ds-danger\" type=\"button\">Delete session</button>",
-      "css": ".ds-danger{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--crit-soft,#fbe6e4);color:var(--crit,#b43636);border:1px solid transparent;}.ds-danger:focus-visible{outline:3px solid var(--accent,#234c3b);outline-offset:3px;}.ds-danger:active{transform:translateY(1px)}.ds-danger:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-danger:hover:not(:disabled){background:var(--surface-2,#f5f7f3);border-color:var(--border-2,#b8c7b8);}}@media(prefers-reduced-motion:reduce){.ds-danger{transition:none}}"
+      "css": ".ds-danger{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--crit-soft,#fbe6e4);color:var(--crit,#b43636);border:1px solid transparent;}.ds-danger:focus-visible{outline:3px solid var(--accent,#b44720);outline-offset:3px;}.ds-danger:active{transform:translateY(1px)}.ds-danger:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-danger:hover:not(:disabled){background:var(--surface-2,#f6f6f3);border-color:var(--border-2,#838e91);}}@media(prefers-reduced-motion:reduce){.ds-danger{transition:none}}"
     },
     {
       "name": "Labeled field",
@@ -827,15 +1005,15 @@
       "refersTo": "input",
       "description": "General form field with sentence-case label, readable input, and visible focus.",
       "html": "<div class=\"ds-field\"><label for=\"ds-session-name\">Session name</label><input id=\"ds-session-name\" type=\"text\" placeholder=\"Name your session\" autocomplete=\"off\"></div>",
-      "css": ".ds-field{width:min(100%,320px);font-family:var(--body,\"Public Sans\",system-ui,sans-serif)}.ds-field label{display:block;margin-bottom:8px;color:var(--ink-2,#3f5146);font-size:12px;font-weight:650}.ds-field input{width:100%;max-width:294px;min-height:44px;padding:12px;border:1px solid var(--border-2,#b8c7b8);border-radius:8px;background:var(--surface-2,#f5f7f3);color:var(--ink,#1b2b22);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:16px;transition:.15s}.ds-field input::placeholder{color:var(--muted,#5b6b60);opacity:1}.ds-field input:focus{outline:2px solid var(--accent,#234c3b);outline-offset:2px;border-color:var(--accent,#234c3b);box-shadow:none}.ds-field input:disabled{opacity:.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-field input{transition:none}}"
+      "css": ".ds-field{width:min(100%,320px);font-family:var(--body,\"Public Sans\",system-ui,sans-serif)}.ds-field label{display:block;margin-bottom:8px;color:var(--ink-2,#465159);font-size:12px;font-weight:650}.ds-field input{width:100%;max-width:294px;min-height:44px;padding:12px;border:1px solid var(--border-2,#838e91);border-radius:8px;background:var(--surface-2,#f6f6f3);color:var(--ink,#21272a);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:16px;transition:.15s}.ds-field input::placeholder{color:var(--muted,#5e686f);opacity:1}.ds-field input:focus{outline:2px solid var(--accent,#b44720);outline-offset:2px;border-color:var(--accent,#b44720);box-shadow:none}.ds-field input:disabled{opacity:.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-field input{transition:none}}"
     },
     {
       "name": "Trainer navigation",
       "kind": "nav",
       "refersTo": "trainer-navigation-selected",
-      "description": "The four trainers share one evergreen rail and pale leaf selected item.",
+      "description": "The four trainers share one carbon rail and signal-orange selected item.",
       "html": "<div class=\"ds-trainer-nav\" role=\"tablist\" aria-label=\"Choose a trainer\"><button class=\"ds-trainer-tab\" type=\"button\" role=\"tab\" aria-selected=\"true\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12\"/></svg><span>Muscle<small>Build muscle</small></span></button><button class=\"ds-trainer-tab\" type=\"button\" role=\"tab\" aria-selected=\"false\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 17 10 11l4 3 6-9M14 5h6v6M4 21h16\"/></svg><span>Strength<small>Move more weight</small></span></button><button class=\"ds-trainer-tab\" type=\"button\" role=\"tab\" aria-selected=\"false\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 3v18M17 3v18M7 6h10M7 12h10M7 18h10\"/></svg><span>Ladder<small>Earn your next skill</small></span></button><button class=\"ds-trainer-tab\" type=\"button\" role=\"tab\" aria-selected=\"false\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 4v6a7 7 0 0 0 7 7m7-13v6a7 7 0 0 1-7 7v4M9 7l3-3 3 3M12 4v13\"/></svg><span>Together<small>Balance your week</small></span></button></div>",
-      "css": ".ds-trainer-nav{display:flex;flex-direction:column;gap:8px;padding:18px;width:180px;background:var(--shell-green,#234c3b)}.ds-trainer-tab{display:flex;align-items:center;gap:12px;min-height:64px;padding:11px 14px;border:0;border-radius:8px;background:transparent;color:#d4e0d8;text-align:left;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}.ds-trainer-tab svg{flex:none}.ds-trainer-tab small{display:block;margin-top:3px;font-size:11px;font-weight:400;line-height:1.5;color:#bdcfc0}.ds-trainer-tab[aria-selected=\"true\"]{background:var(--shell-lime,#d4e6b5);color:#20392d}.ds-trainer-tab[aria-selected=\"true\"] small{color:#49603c}.ds-trainer-tab:hover:not([aria-selected=\"true\"]){background:#315d48;color:#fff}.ds-trainer-tab:focus-visible{outline:3px solid var(--shell-lime,#d4e6b5);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-trainer-tab{transition:none}}"
+      "css": ".ds-trainer-nav{display:flex;flex-direction:column;gap:8px;padding:18px;width:180px;background:var(--shell-rail,#20292f)}.ds-trainer-tab{display:flex;align-items:center;gap:12px;min-height:64px;padding:11px 14px;border:0;border-radius:8px;background:transparent;color:#e1e6e8;text-align:left;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}.ds-trainer-tab svg{flex:none}.ds-trainer-tab small{display:block;margin-top:3px;font-size:11px;font-weight:400;line-height:1.5;color:#b5c0c6}.ds-trainer-tab[aria-selected=\"true\"]{background:var(--shell-selected,#f5a879);color:#2e1d14}.ds-trainer-tab[aria-selected=\"true\"] small{color:#573420}.ds-trainer-tab:hover:not([aria-selected=\"true\"]){background:#34434d;color:#fff}.ds-trainer-tab:focus-visible{outline:3px solid var(--shell-selected,#f5a879);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-trainer-tab{transition:none}}"
     },
     {
       "name": "Route navigation",
@@ -843,7 +1021,7 @@
       "refersTo": "route-navigation-selected",
       "description": "Compact mobile route cells use a soft selected fill; desktop uses an underline.",
       "html": "<nav class=\"ds-routes\" aria-label=\"Trainer pages\"><button class=\"ds-route\" type=\"button\" aria-current=\"page\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 10 12 3l9 7M5 9v12h14V9M9 21v-7h6v7\"/></svg>Today</button><button class=\"ds-route\" type=\"button\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12\"/></svg>Train</button><button class=\"ds-route\" type=\"button\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 5h14v16H5zM8 3v4m8-4v4M8 11h8m-8 5h5\"/></svg>Plan</button><button class=\"ds-route\" type=\"button\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 20V4m0 16h16M7 15l4-5 4 3 5-7\"/></svg>Progress</button><button class=\"ds-route\" type=\"button\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 4h6v16H4zM14 4h6v16h-6z\"/></svg>Library</button></nav>",
-      "css": ".ds-routes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:min(100%,440px);padding:8px;background:var(--surface,#fff);border-top:1px solid var(--border,#dce3d8)}.ds-route{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:48px;min-width:0;padding:7px 2px;border:0;border-radius:9px;background:transparent;color:var(--muted,#5b6b60);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:10px;font-weight:650;cursor:pointer}.ds-route[aria-current]{color:var(--accent-ink,#234c3b);background:var(--accent-soft,#e1ebd9)}.ds-route:focus-visible{outline:3px solid var(--accent,#234c3b);outline-offset:3px;}.ds-route:active{transform:translateY(1px)}@media(hover:hover){.ds-route:hover:not([aria-current]){background:var(--surface-2,#f5f7f3);color:var(--ink,#1b2b22)}}@media(min-width:1000px){.ds-routes{display:flex;gap:25px;padding:0;background:var(--bg,#f1f4ef);border-top:0;border-bottom:1px solid var(--border-2,#b8c7b8)}.ds-route{position:relative;flex-direction:row;gap:8px;min-height:47px;padding:12px 0 13px;font-size:13px;font-weight:600;border-radius:0}.ds-route svg{width:16px;height:16px}.ds-route[aria-current]{background:transparent;font-weight:700}.ds-route[aria-current]::after{content:\"\";position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--accent,#234c3b)}.ds-route:hover:not([aria-current]){background:transparent}}"
+      "css": ".ds-routes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:min(100%,440px);padding:8px;background:var(--surface,#fff);border-top:1px solid var(--border,#d9dddc)}.ds-route{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:48px;min-width:0;padding:7px 2px;border:0;border-radius:9px;background:transparent;color:var(--muted,#5e686f);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:10px;font-weight:650;cursor:pointer}.ds-route[aria-current]{color:var(--accent-ink,#b44720);background:var(--accent-soft,#f9e8df)}.ds-route:focus-visible{outline:3px solid var(--accent,#b44720);outline-offset:3px;}.ds-route:active{transform:translateY(1px)}@media(hover:hover){.ds-route:hover:not([aria-current]){background:var(--surface-2,#f6f6f3);color:var(--ink,#21272a)}}@media(min-width:1000px){.ds-routes{display:flex;gap:25px;padding:0;background:var(--bg,#f1f2f0);border-top:0;border-bottom:1px solid var(--border-2,#838e91)}.ds-route{position:relative;flex-direction:row;gap:8px;min-height:47px;padding:12px 0 13px;font-size:13px;font-weight:600;border-radius:0}.ds-route svg{width:16px;height:16px}.ds-route[aria-current]{background:transparent;font-weight:700}.ds-route[aria-current]::after{content:\"\";position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--accent,#b44720)}.ds-route:hover:not([aria-current]){background:transparent}}"
     },
     {
       "name": "Information chip",
@@ -851,23 +1029,23 @@
       "refersTo": "chip",
       "description": "A quiet label for exercise metadata; it is not an action.",
       "html": "<span class=\"ds-chip\">Bodyweight</span>",
-      "css": ".ds-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:4px 7px;border:1px solid var(--border,#dce3d8);border-radius:6px;background:var(--surface-2,#f5f7f3);color:var(--ink-2,#3f5146);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:11px;font-weight:600;line-height:1.25;white-space:normal}"
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:4px 7px;border:1px solid var(--border,#d9dddc);border-radius:6px;background:var(--surface-2,#f6f6f3);color:var(--ink-2,#465159);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:11px;font-weight:600;line-height:1.25;white-space:normal}"
     },
     {
       "name": "Next session",
       "kind": "card",
       "refersTo": "next-session",
-      "description": "The next action gets a calm field-green surface and a clear type hierarchy.",
-      "html": "<section class=\"ds-next\"><div class=\"ds-eyebrow\">Your next session</div><h2>Ready when you are.</h2><p>Choose your training and record each set as you go.</p><button class=\"ds-next-action\" type=\"button\">Start training<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></button></section>",
-      "css": ".ds-next{max-width:440px;padding:24px;border-radius:16px;background:var(--hero,#e6eedf);color:var(--ink,#1b2b22);font-family:var(--body,\"Public Sans\",system-ui,sans-serif)}.ds-eyebrow{margin-bottom:9px;font-size:12px;font-weight:600;line-height:1.5;color:var(--muted,#5b6b60)}.ds-next h2{max-width:24ch;margin:0 0 12px;font-family:var(--disp,\"Archivo\",\"Public Sans\",sans-serif);font-size:28px;font-weight:750;line-height:1.13;letter-spacing:-.035em;text-wrap:balance}.ds-next p{max-width:58ch;margin:0 0 23px;font-size:14px;line-height:1.6;color:var(--ink-2,#3f5146)}.ds-next-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--accent,#234c3b);color:var(--on-accent,#fff);border:1px solid var(--accent,#234c3b);}.ds-next-action:focus-visible{outline:3px solid var(--accent,#234c3b);outline-offset:3px;}.ds-next-action:active{transform:translateY(1px)}.ds-next-action:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-next-action:hover:not(:disabled){background:color-mix(in srgb,var(--accent,#234c3b) 89%,var(--ink,#1b2b22));}}@media(prefers-reduced-motion:reduce){.ds-next-action{transition:none}}.ds-next-action{min-height:48px}@media(min-width:1000px){.ds-next{padding:28px}.ds-next h2{font-size:32px}}"
+      "description": "A neutral steel surface separates the next task from orange action controls.",
+      "html": "<section class=\"ds-next\"><h2>Ready when you are.</h2><p>Choose your training and record each set as you go.</p><button class=\"ds-next-action\" type=\"button\">Start training<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></button></section>",
+      "css": ".ds-next{max-width:440px;padding:24px;border-radius:16px;background:var(--hero,#e5e9e8);color:var(--ink,#21272a);font-family:var(--body,\"Public Sans\",system-ui,sans-serif)}.ds-next h2{max-width:24ch;margin:0 0 12px;font-family:var(--disp,\"Archivo\",\"Public Sans\",sans-serif);font-size:28px;font-weight:750;line-height:1.13;letter-spacing:-.035em;text-wrap:balance}.ds-next p{max-width:58ch;margin:0 0 23px;font-size:14px;line-height:1.6;color:var(--ink-2,#465159)}.ds-next-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 16px;border-radius:9px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:14px;font-weight:650;line-height:1.3;text-align:center;white-space:normal;cursor:pointer;transition:.15s;background:var(--accent,#b44720);color:var(--on-accent,#fff);border:1px solid var(--accent,#b44720);}.ds-next-action:focus-visible{outline:3px solid var(--accent,#b44720);outline-offset:3px;}.ds-next-action:active{transform:translateY(1px)}.ds-next-action:disabled{opacity:.5;cursor:not-allowed}@media(hover:hover){.ds-next-action:hover:not(:disabled){background:color-mix(in srgb,var(--accent,#b44720) 89%,var(--ink,#21272a));}}@media(prefers-reduced-motion:reduce){.ds-next-action{transition:none}}.ds-next-action{min-height:48px}@media(min-width:1000px){.ds-next{padding:28px}.ds-next h2{font-size:32px}}"
     },
     {
       "name": "Training week",
       "kind": "custom",
       "refersTo": "training-week",
       "description": "Seven equal day tiles separate recorded completion from the current date.",
-      "html": "<section class=\"ds-week\" aria-label=\"Example training week\"><h3>Training this week <small>Example</small></h3><div class=\"ds-days\"><div class=\"ds-day ds-trained\"><span class=\"ds-day-name\">Mon</span><span class=\"ds-date\">12</span><span class=\"ds-day-mark\" aria-label=\"Completed\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Tue</span><span class=\"ds-date\">13</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">—</span></div><div class=\"ds-day ds-trained ds-today\" aria-label=\"Today, completed\"><span class=\"ds-day-name\">Wed</span><span class=\"ds-date\">14</span><span class=\"ds-day-mark\" aria-label=\"Completed\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Thu</span><span class=\"ds-date\">15</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">—</span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Fri</span><span class=\"ds-date\">16</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">—</span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Sat</span><span class=\"ds-date\">17</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">—</span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Sun</span><span class=\"ds-date\">18</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">—</span></div></div><p class=\"ds-week-note\">Illustrative preview. The app displays only your saved sessions.</p></section>",
-      "css": ".ds-week{max-width:640px;padding:22px;border:1px solid var(--border,#dce3d8);border-radius:14px;background:var(--surface,#fff);color:var(--ink,#1b2b22);font-family:var(--body,\"Public Sans\",system-ui,sans-serif)}.ds-week h3{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 18px;font-family:var(--disp,\"Archivo\",\"Public Sans\",sans-serif);font-size:17px;font-weight:700;letter-spacing:-.02em}.ds-week h3 small{font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:11px;font-weight:400;color:var(--muted,#5b6b60)}.ds-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}.ds-day{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;padding:12px 3px;border-radius:9px;background:var(--surface-2,#f5f7f3)}.ds-day-name{font-size:10px;font-weight:600;color:var(--muted,#5b6b60)}.ds-date{font-size:19px;font-weight:650;line-height:1.2;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.ds-day-mark{display:grid;place-items:center;width:16px;height:16px;font-size:13px;color:var(--faint,#617165)}.ds-day-mark svg{width:14px;height:14px}.ds-trained{background:var(--accent,#234c3b);color:var(--on-accent,#fff)}.ds-trained .ds-day-name,.ds-trained .ds-day-mark{color:var(--on-accent,#fff)}.ds-today{outline:1px solid var(--border-2,#b8c7b8);outline-offset:-1px}.ds-week-note{margin:15px 0 0;font-size:12px;line-height:1.5;color:var(--muted,#5b6b60)}@media(max-width:389px){.ds-week{padding:17px}.ds-days{gap:4px}.ds-day{padding:10px 2px}.ds-date{font-size:18px}.ds-day-name{font-size:9px}}"
+      "html": "<section class=\"ds-week\" aria-label=\"Example training week\"><h3>Training this week <small>Example</small></h3><div class=\"ds-days\"><div class=\"ds-day ds-trained\"><span class=\"ds-day-name\">Mon</span><span class=\"ds-date\">12</span><span class=\"ds-day-mark\" aria-label=\"Completed\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Tue</span><span class=\"ds-date\">13</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">\u2014</span></div><div class=\"ds-day ds-trained ds-today\" aria-label=\"Today, completed\"><span class=\"ds-day-name\">Wed</span><span class=\"ds-date\">14</span><span class=\"ds-day-mark\" aria-label=\"Completed\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Thu</span><span class=\"ds-date\">15</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">\u2014</span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Fri</span><span class=\"ds-date\">16</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">\u2014</span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Sat</span><span class=\"ds-date\">17</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">\u2014</span></div><div class=\"ds-day\"><span class=\"ds-day-name\">Sun</span><span class=\"ds-date\">18</span><span class=\"ds-day-mark\" aria-label=\"No recorded session\">\u2014</span></div></div><p class=\"ds-week-note\">Illustrative preview. The app displays only your saved sessions.</p></section>",
+      "css": ".ds-week{max-width:640px;padding:22px;border:1px solid var(--border,#d9dddc);border-radius:14px;background:var(--surface,#fff);color:var(--ink,#21272a);font-family:var(--body,\"Public Sans\",system-ui,sans-serif)}.ds-week h3{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 18px;font-family:var(--disp,\"Archivo\",\"Public Sans\",sans-serif);font-size:17px;font-weight:700;letter-spacing:-.02em}.ds-week h3 small{font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:11px;font-weight:400;color:var(--muted,#5e686f)}.ds-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}.ds-day{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;padding:12px 3px;border-radius:9px;background:var(--surface-2,#f6f6f3)}.ds-day-name{font-size:10px;font-weight:600;color:var(--muted,#5e686f)}.ds-date{font-size:19px;font-weight:650;line-height:1.2;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.ds-day-mark{display:grid;place-items:center;width:16px;height:16px;font-size:13px;color:var(--faint,#5e686f)}.ds-day-mark svg{width:14px;height:14px}.ds-trained{background:var(--good,#25704a);color:var(--on-good,#fff)}.ds-trained .ds-day-name,.ds-trained .ds-day-mark{color:var(--on-good,#fff)}.ds-today{outline:1px solid var(--border-2,#838e91);outline-offset:-1px}.ds-week-note{margin:15px 0 0;font-size:12px;line-height:1.5;color:var(--muted,#5e686f)}@media(max-width:389px){.ds-week{padding:17px}.ds-days{gap:4px}.ds-day{padding:10px 2px}.ds-date{font-size:18px}.ds-day-name{font-size:9px}}"
     },
     {
       "name": "Set entry",
@@ -875,24 +1053,24 @@
       "refersTo": "set-input",
       "description": "Compact editable numbers keep the next row visible and completion within reach.",
       "html": "<div class=\"ds-set-preview\"><div class=\"ds-set-head\" aria-hidden=\"true\"><span>Set</span><span>kg</span><span>Reps</span><span>RIR</span><span>Done</span><span></span></div><div class=\"ds-set-row\"><span class=\"ds-set-index\">1</span><input class=\"ds-set-input\" aria-label=\"Set 1 weight in kilograms\" inputmode=\"decimal\" placeholder=\"0\"><input class=\"ds-set-input\" aria-label=\"Set 1 repetitions\" inputmode=\"numeric\" placeholder=\"8\"><input class=\"ds-set-input ds-set-rir\" aria-label=\"Set 1 repetitions in reserve\" inputmode=\"numeric\" placeholder=\"2\"><button class=\"ds-set-done\" type=\"button\" aria-label=\"Complete set 1\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></button><button class=\"ds-set-menu\" type=\"button\" aria-label=\"Set 1 options\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"5\" r=\"1.5\"/><circle cx=\"12\" cy=\"12\" r=\"1.5\"/><circle cx=\"12\" cy=\"19\" r=\"1.5\"/></svg></button></div></div>",
-      "css": ".ds-set-preview{max-width:520px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);color:var(--ink,#1b2b22)}.ds-set-head,.ds-set-row{display:grid;grid-template-columns:24px minmax(0,1.15fr) minmax(0,.95fr) 38px 42px 26px;align-items:center;gap:5px}.ds-set-head{padding:4px 4px 9px;font-size:10px;font-weight:600;letter-spacing:.025em;text-align:center;color:var(--muted,#5b6b60)}.ds-set-row{padding:5px 3px;border-radius:8px;background:var(--accent-soft,#e1ebd9);transition:background .25s}.ds-set-index{display:grid;place-items:center;width:24px;height:24px;border-radius:5px;background:var(--accent,#234c3b);color:var(--on-accent,#fff);font-size:11px;font-weight:800}.ds-set-input{width:100%;min-width:0;height:44px;padding:0;border:1px solid var(--border,#dce3d8);border-radius:7px;background:var(--surface-2,#f5f7f3);color:var(--ink,#1b2b22);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:16px;font-weight:650;text-align:center;font-variant-numeric:tabular-nums;transition:.15s}.ds-set-input::placeholder{color:var(--muted,#5b6b60);font-weight:400}.ds-set-rir{font-size:13px;font-weight:600;color:var(--ink-2,#3f5146)}.ds-set-input:focus{outline:2px solid var(--accent,#234c3b);outline-offset:2px;border-color:var(--accent,#234c3b)}.ds-set-done{display:grid;place-items:center;width:100%;height:44px;padding:0;border:1px solid var(--border,#dce3d8);border-radius:7px;background:var(--surface,#fff);color:var(--muted,#5b6b60);cursor:pointer;transition:.15s}.ds-set-menu{display:grid;place-items:center;width:26px;height:36px;padding:0;border:0;background:transparent;color:var(--muted,#5b6b60);cursor:pointer}.ds-set-done:focus-visible,.ds-set-menu:focus-visible{outline:3px solid var(--accent,#234c3b);outline-offset:3px;}.ds-set-done:active{transform:scale(.9)}@media(hover:hover){.ds-set-done:hover{border-color:var(--accent,#234c3b);color:var(--accent,#234c3b)}}@media(max-width:389px){.ds-set-head,.ds-set-row{grid-template-columns:22px minmax(0,1fr) minmax(0,.9fr) 32px 38px 24px;gap:4px}.ds-set-input{font-size:15px}.ds-set-head{font-size:9px;letter-spacing:0}}@media(prefers-reduced-motion:reduce){.ds-set-row,.ds-set-input,.ds-set-done{transition:none}}"
+      "css": ".ds-set-preview{max-width:520px;font-family:var(--body,\"Public Sans\",system-ui,sans-serif);color:var(--ink,#21272a)}.ds-set-head,.ds-set-row{display:grid;grid-template-columns:24px minmax(0,1.15fr) minmax(0,.95fr) 38px 42px 26px;align-items:center;gap:5px}.ds-set-head{padding:4px 4px 9px;font-size:10px;font-weight:600;letter-spacing:.025em;text-align:center;color:var(--muted,#5e686f)}.ds-set-row{padding:5px 3px;border-radius:8px;background:var(--accent-soft,#f9e8df);transition:background .25s}.ds-set-index{display:grid;place-items:center;width:24px;height:24px;border-radius:5px;background:var(--accent,#b44720);color:var(--on-accent,#fff);font-size:11px;font-weight:800}.ds-set-input{width:100%;min-width:0;height:44px;padding:0;border:1px solid var(--border-2,#838e91);border-radius:7px;background:var(--surface-2,#f6f6f3);color:var(--ink,#21272a);font-family:var(--body,\"Public Sans\",system-ui,sans-serif);font-size:16px;font-weight:650;text-align:center;font-variant-numeric:tabular-nums;transition:.15s}.ds-set-input::placeholder{color:var(--muted,#5e686f);font-weight:400}.ds-set-rir{font-size:13px;font-weight:600;color:var(--ink-2,#465159)}.ds-set-input:focus{outline:2px solid var(--accent,#b44720);outline-offset:2px;border-color:var(--accent,#b44720)}.ds-set-done{display:grid;place-items:center;width:100%;height:44px;padding:0;border:1px solid var(--border-2,#838e91);border-radius:7px;background:var(--surface,#fff);color:var(--muted,#5e686f);cursor:pointer;transition:.15s}.ds-set-menu{display:grid;place-items:center;width:26px;height:36px;padding:0;border:0;background:transparent;color:var(--muted,#5e686f);cursor:pointer}.ds-set-done:focus-visible,.ds-set-menu:focus-visible{outline:3px solid var(--accent,#b44720);outline-offset:3px;}.ds-set-done:active{transform:scale(.9)}@media(hover:hover){.ds-set-done:hover{border-color:var(--accent,#b44720);color:var(--accent,#b44720)}}@media(max-width:389px){.ds-set-head,.ds-set-row{grid-template-columns:22px minmax(0,1fr) minmax(0,.9fr) 32px 38px 24px;gap:4px}.ds-set-input{font-size:15px}.ds-set-head{font-size:9px;letter-spacing:0}}@media(prefers-reduced-motion:reduce){.ds-set-row,.ds-set-input,.ds-set-done{transition:none}}"
     }
   ],
   "narrative": {
-    "northStar": "The Evergreen Training Field Guide",
-    "overview": "Milo feels grounded, readable, and ready for use between sets. Evergreen wayfinding frames a mineral green workspace; white surfaces and pale leaf selections make the current task clear. The visual identity comes from useful structure, confident headings, and consistently treated controls.\n\nMuscle, Strength, Ladder, and Together share one visual language. Training numbers receive space and stable alignment; explanatory copy remains close to the decision it supports. The system carries through light, dark, and system themes without changing the meaning of a control or status.",
+    "northStar": "The Training Floor",
+    "overview": "Milo's identity comes from the working setting: chalk-white space for reading a session, carbon structure for moving between trainers, steel for measured progress, and burnt orange for the next deliberate action. The bull remains the central mark. Archivo headings and Public Sans controls retain the precision needed between sets.\n\nThis is the color correction requested on 2026-10-14 after Milo and Sideband were given overly similar green identities. Milo now has its own athletic, practical character. Orange is concentrated in actions and selected controls; broad surfaces stay neutral. Actual completed work and readiness use green, so doing the next set and finishing one have distinct meanings.\n\nMuscle, Strength, Ladder, and Together share this system. Light mode supports bright training spaces; dark mode uses layered carbon surfaces and a lighter orange for evening use. Neither theme relies on hue alone: keep completion checks, selected states, text labels, and explicit status wording.",
     "keyCharacteristics": [
-      "Evergreen wayfinding with pale leaf selection.",
-      "A bold bull symbol paired with the lowercase Milo wordmark.",
-      "Archivo headings paired with locally served Public Sans.",
-      "Flat, bordered working surfaces with compact, readable density.",
-      "Consistent navigation and controls across all four trainers.",
-      "Visible focus, responsive layouts, and restrained state changes."
+      "Chalk and porcelain surfaces framed by carbon navigation.",
+      "Burnt-orange next actions, steel measurement, and green completion.",
+      "The original bull silhouette and lowercase Milo wordmark.",
+      "Archivo headings and locally served Public Sans controls.",
+      "One practical system across all four trainers, light/dark/system themes.",
+      "Readable numbers, visible focus, and reachable phone logging."
     ],
     "rules": [
       {
         "name": "The Meaningful Accent Rule",
-        "body": "Use accent for action, selection, and recorded progress. It must not become ornamental striping or a separate identity for each trainer.",
+        "body": "Orange directs the next action, steel presents measurement, and green confirms completed work. The full canvas stays neutral. Preserve those meanings across every trainer and theme.",
         "section": "colors"
       },
       {
