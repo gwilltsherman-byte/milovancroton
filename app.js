@@ -7210,14 +7210,17 @@ function openSetMenu(ei,si){
       <button class="actitem danger" data-act="rm-set" data-ex="${ei}" data-set="${si}">${I.trash}<span>Remove this set</span></button>
     </div>`);
 }
+/* The rung above the current one, if moving up by choice would not pass the goal this ladder is working toward. */
+function stepUpTo(id){ const to=nextRung(id,curIdx(id)); return to!=null&&rungRank(id,to)<=rungRank(id,capFor(id))? to : null; }
 function openExMenu(ei){
   const e=state.active.entries[ei], st=stepsOf(e.ladderId)[e.stepIdx], last=stepsOf(e.ladderId).length-1;
-  const prev=previousRung(e.ladderId,e.stepIdx),next=nextRung(e.ladderId,e.stepIdx),easier=prev==null?null:stepsOf(e.ladderId)[prev],harder=next==null?null:stepsOf(e.ladderId)[next],back=previousRung(e.ladderId,curIdx(e.ladderId));
+  const prev=previousRung(e.ladderId,e.stepIdx),next=nextRung(e.ladderId,e.stepIdx),easier=prev==null?null:stepsOf(e.ladderId)[prev],harder=next==null?null:stepsOf(e.ladderId)[next],back=previousRung(e.ladderId,curIdx(e.ladderId)),up=stepUpTo(e.ladderId);
   nav.reg('exmenu:'+ei, ()=>openExMenu(ei));
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>${esc(st.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body tight">
       <button class="actitem" data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}">${I.info}<span>How to do it</span></button>
+      ${up!=null?`<button class="actitem" data-act="ex-stepup" data-ex="${ei}">${I.up}<span>Move up a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[up].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
       ${back!=null?`<button class="actitem" data-act="ex-stepback" data-ex="${ei}">${I.down}<span>Step back a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[back].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
       ${easier?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="-1">${I.down}<span>Easier, just today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(easier.n)}; your rung stays where it is</div></span></button>`:''}
       ${harder?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="1">${I.up}<span>Try the next rung today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(harder.n)}; check a controlled version while fresh</div></span></button>`:''}
@@ -7514,7 +7517,7 @@ __root.addEventListener('click', e=>{
     case 'del-set': { const s=A.entries[ei].sets; if(s.length>1) s.pop(); save(); render(); break; }
     case 'rm-set': { const s=A.entries[ei].sets; if(s.length>1) s.splice(si,1); save(); closeModal(); render(); break; }
     case 'rm-ex': A.entries.splice(ei,1); save(); closeModal(); render(); toast('Removed'); break;
-    case 'ex-stepback': { const en=A.entries[ei],id=en.ladderId,to=previousRung(id,curIdx(id));if(to==null)break;
+    case 'ex-stepup': case 'ex-stepback': { const en=A.entries[ei],id=en.ladderId,to=act==='ex-stepup'?stepUpTo(id):previousRung(id,curIdx(id));if(to==null)break;
       moveTo(id, to);
       const ne=entryFor(id, to);
       if(en.sets.some(s=>s.done)) A.entries.splice(ei+1,0,ne); else A.entries[ei]=ne;   // sets already logged stay as they were
