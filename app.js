@@ -1796,7 +1796,7 @@ function viewToday(){
       <button class="iconbtn" data-act="repeat-x" aria-label="Not now">${I.x}</button>
     </div>`;
   const startCards = state.active ? '' : `
-    <div class="grid2" style="margin-top:2px">
+    <div class="grid2" style="margin-top:12px;gap:12px">
       <button class="btn ghost block" data-act="start-empty">${I.plus} Free session</button>
       <button class="btn ghost block" data-act="open-templates">${I.layers} Templates</button>
     </div>`;
