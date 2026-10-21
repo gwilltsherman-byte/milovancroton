@@ -58,6 +58,9 @@
     check(root.textContent.includes('Customize this block'), 'Customize this block opens the block’s parts');
     root.querySelector('[data-a="t-focus"][data-g="Arms"][data-v="more"]').click(); await pause(150);
     root.querySelector('[data-a="t-focus"][data-g="Core"][data-v="skip"]').click(); await pause(150);
+    // one muscle of a group left out: traps in Back
+    root.querySelector('[data-a="t-mu"][data-k="trap"]').click(); await pause(150);
+    check(root.querySelector('[data-a="t-mu"][data-k="trap"]').getAttribute('aria-pressed')==='false' && root.textContent.includes('Traps is left out'), 'a muscle in a group can be tapped off on its own');
     check(root.textContent.includes('sets a week for each muscle, instead of') && root.querySelector('.tnums'), 'More, Normal, Less and Skip say what they mean in sets, and each group shows its weekly sets');
     // the exercise library for a muscle: every exercise that works it, and nothing that reopens after you choose
     const rows=()=>[...root.querySelectorAll('[data-a="t-pick"][data-t="ex"]')].map(b=>b.dataset.k);
@@ -88,6 +91,7 @@
     P=saved().plan;
     check(P.goal.bi>before && weekOf(P,'bi')>=P.goal.bi-1, 'More for arms raises the biceps target, and the week meets it');
     check(!P.days.some(d=>d.lift.some(x=>x.mu==='abs'||x.mu==='obli')), 'Skip leaves core to the rest of the week');
+    check(!P.days.some(d=>d.lift.some(x=>x.mu==='trap'||['rack-pull','shrug','barbell-shrug','cable-shrug','cable-upright-row'].includes(x.exId))) && saved().tune.mu.trap==='skip', 'a muscle left out gets no exercises, none aimed at it for other muscles either');
     { const xs=P.days.flatMap(d=>d.lift).filter(x=>x.mu===k0).map(x=>x.exId), mine=saved().tune.ex[k0];
       check(xs.length && xs.every(id=>mine.includes(id)) && xs[0]===mine[0] && new Set(xs).size===Math.min(mine.length, xs.length), 'your picks train that muscle, taking turns in the order you picked them'); }
     check(!lats || !P.days.some(d=>d.str.some(x=>x.a==='lats')), 'a strength area you leave out is left out');
