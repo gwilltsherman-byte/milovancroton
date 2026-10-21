@@ -85,6 +85,17 @@
       check(mine && mine.custom && mine.primary.includes(k1) && !mine.comp, 'an exercise you make joins the Muscle library');
       check(root.querySelector(`[data-a="t-choose"][data-id="${mine.id}"]`).getAttribute('aria-pressed')==='true', 'and it is picked for the muscle, back in its list');
       root.querySelector('[data-a="t-back"]').click(); await pause(150); }
+    // Ladder's goals, changed from the block: remove one, take it back, and add one without being left in Ladder
+    { const rm=root.querySelector('[data-a="t-goal-rm"]'), lg=()=>JSON.parse(localStorage.getItem('proladder.v1')).goals.filter(g=>!g.achieved).length;
+      check(!!rm && root.textContent.includes('First strict pull-up') && root.textContent.includes('% of the way'), 'Ladder’s goals show in the block, each with where you are');
+      rm.click(); await pause(300);
+      check(lg()===0 && root.querySelector('#toast [data-a="t-goal-back"]'), 'a goal can be removed here, with Undo');
+      root.querySelector('#toast [data-a="t-goal-back"]').click(); await pause(300);
+      check(lg()===1, 'Undo puts the goal back');
+      root.querySelector('[data-a="t-goal-add"]').click(); await pause(300);
+      const lad=doc.getElementById('m-cal').shadowRoot, shown=win.__hub.current()==='cal' && !!lad.querySelector('#sheet.on');
+      lad.querySelector('#sheet.on .sheet-head [data-act="close-modal"]').click(); await pause(400);
+      check(shown && win.__hub.current()==='mix' && root.textContent.includes('Customize this block'), 'Add a goal opens Ladder’s goal chooser, and closing it comes back to the block'); }
     const lats=root.querySelector('[data-a="t-pick"][data-t="lift"][data-k="lats"]');
     if(lats){ lats.click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id="-"]').click(); await pause(150); }
     root.querySelector('[data-a="t-save"]').click(); await pause(300);

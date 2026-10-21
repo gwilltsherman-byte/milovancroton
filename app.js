@@ -8014,6 +8014,8 @@ function hubPicks(ahead){
     return {id, grp:LADDERS[id].like||id, ladder:LADDERS[id].n, step:st.n+(x.role==='volume'?' (volume day)':''), key:st.id, kind:st.k, sets:x.sets,
       target:planText(x), skill:isSkill(id), goal:x.role==='goal'||x.role==='volume', role:x.role, placed:!!state.placed[id], prep:isPrep(id)}; });
 }
+/* Goals removed from Together this visit, so Undo can put them back as they were. */
+const gone={};
 function hubInfo(){
   const a=state.active, goals=activeGoals();
   const o={ready:goals.length>0, onboarded:state.onboarded, busy:!!a, activeId:a?a.id:null, activeName:a?a.name:null,
@@ -8034,6 +8036,12 @@ if(window.__hub) window.__hub.reg('cal', {
     beginSession(ids, o&&o.sets); return state.active? state.active.id : null; },
   setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(); },
   open(){ state.route=state.active?'train':'today'; render(); window.scrollTo(0,0); },
+  // your goals, for Together to show and change: where you are on each, and removing or putting one back
+  goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null;
+    return {id:g.id, n:g.n, placed:!!state.placed[g.l], step:st? st.n : '', pct:Math.round(goalProgress(g)*100), skill:isSkill(g.l)}; }); },
+  removeGoal(id){ const g=state.goals.find(x=>x.id===id&&!x.achieved); if(!g) return false;
+    gone[id]=g; state.goals=state.goals.filter(x=>x!==g); save(); render(); return true; },
+  restoreGoal(id){ const g=gone[id]; if(!g||state.goals.some(x=>x.id===id)) return false; delete gone[id]; state.goals.push(g); save(); render(); return true; },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -10077,8 +10085,8 @@ const r5=n=>Math.max(5,Math.round(n/5)*5);
 const plural=(n,w)=>n+' '+w+(n===1?'':'s');
 function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
 const cap=t=>t? t.charAt(0).toUpperCase()+t.slice(1) : t;
-function toast(m, canUndo){ const t=$('#toast'), act=!!canUndo&&undos.length>0;
-  t.innerHTML=MiloSecurity.html(act? `<span>${m}</span><button class="tundo" data-a="undo">${IC.undo} Undo</button>` : m);
+function toast(m, canUndo){ const t=$('#toast'), own=canUndo&&typeof canUndo==='object'? canUndo : null, act=!!own || (!!canUndo&&undos.length>0);
+  t.innerHTML=MiloSecurity.html(act? `<span>${m}</span><button class="tundo" data-a="${own? own.a : 'undo'}" data-id="${own? esc(own.id||'') : ''}">${IC.undo} Undo</button>` : m);
   t.classList.add('on'); t.classList.toggle('act', act); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on','act'), act? 6000 : 3200); }
 
 /* ==================== STATE ==================== */
@@ -11177,6 +11185,13 @@ const PROGRAM_SOURCES=[
   ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
   ['Simão et al. 2012, Exercise order in resistance training','Sports Med','Exercise order in resistance training Simao 2012'],
 ];
+/* Why fewer Ladder goals at once move faster. */
+const LADDER_SOURCES=[
+  ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
+  ['Pelland et al. 2026, Volume and frequency dose-response','Sports Med','resistance training dose-response meta-regressions weekly volume frequency hypertrophy strength'],
+  ['Lee & Genovese 1988, Spaced practice and motor skills','Res Q Exerc Sport','Distribution of practice in motor skill acquisition learning and performance effects reconsidered'],
+  ['Spiering et al. 2021, The minimal dose to maintain strength','J Strength Cond Res','Maintaining physical performance the minimal dose of exercise needed to preserve endurance and strength over time'],
+];
 /* Why a few exercises for a muscle, kept for the block. */
 const PICK_SOURCES=[
   ['Fonseca et al. 2014, Varied exercises and even growth','J Strength Cond Res','Changes in exercises are more effective than in loading schemes to improve muscle strength'],
@@ -11291,9 +11306,16 @@ function viewTune(){
           const opts=S&&S.options? S.options(a, kit()) : [], n=P.days.filter(d=>d.str.some(x=>x.a===a)).length, cur=T.lift[a]&&opts.some(o=>o.id===T.lift[a])? T.lift[a] : S&&S.pick(a, kit()), o=opts.find(o=>o.id===cur);
           return opts.length? row('lift', a, AREA_N[a], T.off[a]? 'Left out' : plural(n,'time')+' a week', T.off[a]? '' : esc(o? o.n : ''))
             : `<div class="trow"><span class="tn"><b>${AREA_N[a]}</b><span>Nothing in your kit trains this</span></span></div>`; }).join('')+'</div>'; },
-    cal:()=>{ const i=infoOf('cal');
-        return `<p class="hint" style="margin-top:0">${i&&i.ready? 'Ladder trains toward your goals: '+i.goals.map(esc).join(' &middot; ')+'.' : 'No Ladder goals yet, so its days are empty.'} Goals and rungs live in Ladder.</p>
-          <button class="btn sm" data-a="setup" data-m="cal">${i&&i.ready? 'Change goals in Ladder' : 'Choose goals in Ladder'}</button>`; },
+    cal:()=>{ const C=H.api('cal'), gs=C&&C.goals? C.goals() : [], bal=gs.filter(g=>g.skill).length, str=gs.length-bal;
+        const rows=gs.map(g=>`<div class="trow"><span class="tn"><b>${esc(g.n)}</b><span>${g.placed? esc(g.step)+' &middot; '+g.pct+'% of the way' : 'Not placed yet: Ladder asks where you start'}</span></span>
+          <button class="btn sm ghost" data-a="t-goal-rm" data-id="${esc(g.id)}" aria-label="Remove ${esc(g.n)}">${IC.x} Remove</button></div>`).join('');
+        // more goals than a session has room for take turns, so each gets fewer of the week's sets
+        const turns= str>3 || bal>2;
+        return `<p class="hint" style="margin-top:0">${gs.length? 'Ladder trains toward these goals, each from the rung you are on. Removing one here keeps its rungs and history in Ladder.' : 'No Ladder goals yet, so its days are empty. Add one and Together trains toward it.'}</p>
+          ${gs.length? `<div class="tlist">${rows}</div>` : ''}
+          ${turns? `<p class="tnote">${IC.info}<span>A session has room for the strength work of three goals and two balance skills. With ${plural(gs.length,'goal')} they take turns, so each one gets fewer of the week’s sets and moves more slowly than it would alone. To push one faster, train fewer at once.</span></p>` : ''}
+          <div class="row2" style="margin-top:10px"><button class="btn sm" data-a="t-goal-add">${IC.plus} Add a goal</button></div>
+          ${basedOn('Why fewer goals move faster', ['Strength in a movement grows with the hard sets you do of it each week, and goals share a session’s sets: past three strength goals and two balance skills, each gets fewer, so each moves more slowly. Balance skills like the handstand are motor skills, which improve most with short practice spread over many days, so they come round often. What you already have keeps with far less work than it took to build. The caps themselves are coaching defaults drawn from these studies, not results of one trial.'], LADDER_SOURCES)}`; },
   };
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tune.fresh? 'New block &middot; week 1 of '+BLOCK : 'Week '+Math.min(plan().week,BLOCK)+' of '+BLOCK}</div>
@@ -11548,8 +11570,13 @@ __root.addEventListener('click', e=>{
     case 'open-part': { const p=tg.run&&tg.run.parts[k]; if(p) openDone(p.m, {sid:p.sid}); break; }
     case 'setup': {   // Ladder's goals are yours to choose there; Together trains toward them
       const m=el.dataset.m, api=H.api(m); if(!api) break;
-      H.go(m); if(m==='cal') api.setup(); break;
+      // choosing goals comes back to Together once you close it
+      if(m==='cal'){ H.away('cal','rec'); api.setup(); } else H.go(m); break;
     }
+    case 't-goal-add': { const C=H.api('cal'); if(!C) break; H.away('cal','rec'); C.setup(); break; }
+    case 't-goal-rm': { const C=H.api('cal'), id=el.dataset.id, g=C&&C.goals? C.goals().find(x=>x.id===id) : null;
+      if(!g||!C.removeGoal(id)) break; render(); toast(`${esc(g.n)} removed. Its rungs and history stay in Ladder.`, {a:'t-goal-back', id}); break; }
+    case 't-goal-back': { const C=H.api('cal'); if(C&&C.restoreGoal(el.dataset.id)){ render(); toast('Goal back.'); } break; }
   }
 });
 
@@ -11811,7 +11838,8 @@ render();
   /* Sent to a section from Together: closing what was opened there (kind 'rec'), or backing out of or
      finishing a session started there (kind 'run'), comes back to Together where you were. */
   let back=null;
-  function away(m, kind){ const y= active==='mix'? window.scrollY : null; show(m); back={m, kind, y}; }
+  function away(m, kind){ const y= active==='mix'? window.scrollY : null; let act0=null; try{ const i=hubApi(m).info(); act0=i&&i.busy? i.activeId : null; }catch(e){}
+    show(m); back={m, kind, y, act0}; }
   /* Continue on a session opened from Together picks it back up in its own section: you stay there to train it,
      and finishing or leaving it comes back to Together, as with a session started there. */
   function stay(m){ if(back&&back.m===m) back.kind='run'; }
@@ -11820,7 +11848,8 @@ render();
     setTimeout(()=>{ const b=back; if(!b||b.m!==m||active!==m) return;
       const api=apis[m];
       if(api&&api.sheetOpen&&api.sheetOpen()) return;                                  // a follow-up sheet opened
-      if(b.kind==='run' && why!=='left' && api&&api.info){ try{ if(api.info().busy) return; }catch(e){} }  // still training
+      // still training, or a session started there since (a goal's placement test, say)
+      if(why!=='left' && api&&api.info){ try{ const i=api.info(); if(i.busy && (b.kind==='run' || i.activeId!==b.act0)) return; }catch(e){} }
       back=null; show('mix'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
   }
   /* Muscles a Strength or Ladder set counts toward. Muscle's own table wins when it has the same exercise;
