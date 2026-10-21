@@ -9727,6 +9727,7 @@ const IC={
   sliders:sv('<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>'),
   undo:sv('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'), chev:sv('<path d="M9 6l6 6-6 6"/>'),
   skip:sv('<path d="M6 5l8 7-8 7z"/><path d="M18 5v14"/>'), flag:sv('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>'),
+  up:sv('<path d="M6 15l6-6 6 6"/>'), down:sv('<path d="M6 9l6 6 6-6"/>'),
 };
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function startOfToday(){ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
@@ -9740,7 +9741,7 @@ function toast(m){ const t=$('#toast'); t.innerHTML=MiloSecurity.html(m); t.clas
 let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null;
 function load(){
   let t=null, raw=null; try{ raw=localStorage.getItem(TG_KEY); t=raw? MiloSecurity.parseSection(raw, TG_KEY) : null; }catch(e){ Safe.rescue(TG_KEY, raw, e); }
-  t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, next:0, run:null, short:false, log:[], checkins:[]}, t&&typeof t==='object'? t : {});
+  t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, prio:null, next:0, run:null, short:false, log:[], checkins:[]}, t&&typeof t==='object'? t : {});
   // check-ins: one a day, each with a day and, unless skipped, plain numbers in range
   const num=(v,a,b)=> typeof v==='number' && v>=a && v<=b;
   t.checkins=(Array.isArray(t.checkins)? t.checkins : []).filter(c=>c && typeof c==='object' && typeof c.day==='number').map(c=>{
@@ -9751,6 +9752,8 @@ function load(){
       if(c.pain&&typeof c.pain==='object'){ o.pain={}; Object.keys(c.pain).forEach(k=>{ if(num(c.pain[k],0,10)) o.pain[k]=c.pain[k]; }); } }
     return o; }).sort((a,b)=>a.day-b.day).slice(-400);
   t.secs=ALL.filter(m=>(t.secs||[]).includes(m));
+  // your priority: all three sections, first to last, or null for the suggested order
+  t.prio= Array.isArray(t.prio) && t.prio.length===ALL.length && ALL.every(m=>t.prio.includes(m))? t.prio.slice() : null;
   if(!(t.days>=2&&t.days<=7)) t.days=4;
   if(t.custom && (!Array.isArray(t.custom)||t.custom.length!==t.days)) t.custom=null;
   if(t.run && !(t.run.parts&&t.run.parts.length)) t.run=null;
@@ -9795,31 +9798,33 @@ function clash(I){
   return [...new Set(c.picks.filter(p=>!p.skill&&sp.has(LAD_PAT[gid(p)])).map(p=>LAD_PAT[gid(p)]))];
 }
 /* Strength first, spread as evenly as it goes; then Muscle, on the emptiest days; then Ladder, away from
-   Strength when they share a movement. A section never appears twice on one day. With a time limit, days
-   that would run over cost more, and Ladder, the one without a fixed schedule, drops to fewer days
-   (never below two) when that is what it takes to fit. */
+   Strength when they share a movement. With your own order, whichever of Strength and Muscle comes first in it
+   is spread first, and the other goes on the days left. A section never appears twice on one day. With a time
+   limit, days that would run over cost more, and Ladder, the one without a fixed schedule, drops to fewer days
+   (never below two) when that is what it takes to fit, unless you put it first. */
 let autoNote=null;
 function autoWeek(I){
   const D=tg.days, B=tg.mins||0, cl=clash(I).length, mins={};
   ALL.forEach(m=>{ mins[m]=avgMins(m,I); });
   const n=m=> tg.secs.includes(m)? Math.min(D, want(m,I)) : 0;
+  const [top, low]= ahead('lift','str',tg.prio)? ['lift','str'] : ['str','lift'];
   const build=kCal=>{
     const days=Array.from({length:D},()=>[]), load=Array(D).fill(0);
     const over=(i,m)=> B? Math.max(0, load[i]+mins[m]-B) : 0;
     const place=(m, k, extra)=>{ if(!k) return;
       choose(k, D, sel=>spacing(sel,D)*3 + sel.reduce((c,i)=>c+days[i].length*10+over(i,m)*0.4+(extra? extra(i) : 0),0))
         .forEach(i=>{ days[i].push(m); load[i]+=mins[m]; }); };
-    place('str', n('str'));
-    // Muscle never shares a day with Strength, so it goes on the days without it
-    const free=days.filter(d=>!d.includes('str')).length;
-    place('lift', Math.min(n('lift'), free), i=> days[i].includes('str')? 1e6 : 0);
+    place(top, n(top));
+    // Muscle never shares a day with Strength, so the other one goes on the days without the first
+    const free=days.filter(d=>!d.includes(top)).length;
+    place(low, Math.min(n(low), free), i=> days[i].includes(top)? 1e6 : 0);
     // Ladder is on every Muscle day, then wherever else suits it
     const withLift=days.map((d,i)=>d.includes('lift')?i:-1).filter(i=>i>=0);
     place('cal', tg.secs.includes('cal')? Math.max(kCal, withLift.length) : 0, i=> (cl && days[i].includes('str')? 6 : 0) + (days[i].includes('lift')? -1e5 : 0));
     return {days, overflow: B? load.reduce((t,x)=>t+Math.max(0,x-B),0) : 0};
   };
-  const w=n('cal'); let best=build(w), k=w;
-  for(let c=w-1; c>=Math.min(w,2) && best.overflow>0; c--){ const r=build(c); if(r.overflow<best.overflow-5){ best=r; k=c; } }
+  const w=n('cal'), calFirst=!!tg.prio && orderParts(tg.secs, I)[0]==='cal'; let best=build(w), k=w;
+  for(let c=w-1; c>=Math.min(w,2) && best.overflow>0 && !calFirst; c--){ const r=build(c); if(r.overflow<best.overflow-5){ best=r; k=c; } }
   const kk=best.days.filter(d=>d.includes('cal')).length;
   autoNote= kk<w? {want:w, got:kk} : null;
   return best.days;
@@ -9871,12 +9876,17 @@ function avgMins(m, I){
   return calMins(i.picks);
 }
 function ladMuscles(x){ return x.prep || (x.kind==='hold' && !COUNTED_HOLDS.includes(gid(x)))? {p:[],s:[]} : H.muscles(x.key, gid(x)); }
-/* Balance and straight-arm skills first while you’re fresh, heavy lifting next, growth work last. */
-function orderParts(ms, I){
+/* The suggested order: balance and straight-arm skills first while you’re fresh, heavy lifting next, growth work last. */
+function autoOrder(ms, I){
   const skill=usable('cal',I.cal) && I.cal.picks.some(p=>p.skill);
   const rank=m=> m==='cal'? (skill?0:2) : m==='str'? 1 : 3;
   return ALL.filter(m=>ms.includes(m)).sort((a,b)=>rank(a)-rank(b));
 }
+/* A day runs in the order you put the sections in, or the suggested one until you do. */
+function orderParts(ms, I){ return tg.prio? tg.prio.filter(m=>ms.includes(m)) : autoOrder(ms, I); }
+/* Where a and b overlap, whether a keeps its work and b gives way. With your order, the one earlier in it keeps its work;
+   in the suggested order Strength keeps its work over both others, and Ladder support work makes way for Muscle. */
+function ahead(a, b, order){ return tg.prio? order.indexOf(a)<order.indexOf(b) : a==='str' || (a==='lift'&&b==='cal'); }
 /* ==================== FATIGUE ====================
    Hard sets from the last three days still weigh on a muscle: yesterday's count in full, the day before at
    half, three days back at a quarter (most of the soreness and lost performance from a hard session clears
@@ -10046,20 +10056,22 @@ function planDay(order, I, short, ctx){
     }
     if(m==='cal'){
       p.title= i.goals.length===1? esc(i.goals[0]) : plural(i.goals.length,'goal'); p.sub='Your rungs, goal work first';
-      const kept=[], dropped=[], tiredGoal=[];
+      const kept=[], dropped=[], tiredGoal=[], shared=[], sharedPat=new Set();
       i.picks.forEach(x=>{ const pat=LAD_PAT[gid(x)];
         if(!x.goal && !x.skill){
           let why='';
-          if(strOn && pats.has(pat)) why=`Strength already trains ${PAT_N[pat]}`;
-          else if(liftOn){ const hit=ladMuscles(x).p.filter(q=>liftPrim.has(q)); if(hit.length) why=`Muscle&rsquo;s ${esc(I.lift.next.name)} trains ${listText(hit.map(q=>esc(muscleName(q).toLowerCase())))}`; }
+          if(strOn && pats.has(pat) && ahead('str','cal',order)) why=`Strength already trains ${PAT_N[pat]}`;
+          else if(liftOn && ahead('lift','cal',order)){ const hit=ladMuscles(x).p.filter(q=>liftPrim.has(q)); if(hit.length) why=`Muscle&rsquo;s ${esc(I.lift.next.name)} trains ${listText(hit.map(q=>esc(muscleName(q).toLowerCase())))}`; }
           if(!why){ const hit=ladMuscles(x).p.filter(q=>tiredAll[q]); if(hit.length) why=`${listText(hit.map(q=>esc(muscleName(q).toLowerCase())))} still recovering`; }
           if(!why && ctx.carry && ctx.carry.ready && ctx.carry.ready.ease) why='low readiness today';
           if(why){ p.drop.push(x.id); dropped.push([x,why]); p.lines.push(`<span class="x">${esc(x.step)}</span>`); return; }
         }
-        if(strOn && pats.has(pat) && x.goal) p.notes.push(['warn', `${esc(x.step)} and Strength both train ${PAT_N[pat]} today. ${order.indexOf('cal')<order.indexOf('str')? 'Ladder goes first, so the heavy lift may feel harder than usual.' : 'It comes after the heavy lifting, so expect a rep or two fewer.'}`]);
+        // goal work, and support work when Ladder is ahead of Strength, stays even if Strength trains the same movement
+        if(strOn && pats.has(pat) && (x.goal || !x.skill)){ shared.push(x.step); sharedPat.add(pat); }
         if(x.goal && !x.skill){ const hit=ladMuscles(x).p.filter(q=>tiredAll[q]); if(hit.length) tiredGoal.push(x.step); }
         kept.push(x); p.lines.push(`${esc(x.step)} <span class="n">${esc(x.target)}</span>`);
         add(ladMuscles(x), x.sets, m); before.keys[x.key]={sec:'Ladder'}; });
+      if(shared.length) p.notes.push(['warn', `${shared.length===1? esc(shared[0])+' and Strength both train' : listText(shared.map(esc))+' train'} ${listText([...sharedPat].map(q=>PAT_N[q]))} today${shared.length===1? '' : ', and so does Strength'}. ${order.indexOf('cal')<order.indexOf('str')? 'Ladder goes first, so the heavy lift may feel harder than usual.' : (shared.length===1?'It comes':'They come')+' after the heavy lifting, so expect a rep or two fewer.'}`]);
       if(dropped.length) p.notes.push(['info', `Support work left out today: ${dropped.map(([x,why])=>esc(x.step)+' ('+why+')').join('; ')}. Your goal work stays.`]);
       if(tiredGoal.length) p.notes.push(['info', `${listText(tiredGoal.map(esc))} works muscles that are still recovering. Goal work stays; if the first set falls well short, stop there and come back fresher.`]);
       p.mins=calMins(kept);
@@ -10506,9 +10518,11 @@ function fitNotes(W, I, DM){
   }
   ['lift','str'].forEach(m=>{
     const i=I[m]; if(!tg.secs.includes(m)||!usable(m,i)) return; const c=cnt(m);
-    if(m==='lift' && tg.secs.includes('str') && c<i.perWeek) out.push(['warn', `Muscle&rsquo;s block has ${plural(i.perWeek,'day')} a week, but ${freeDays? 'only '+freeDays+' of your days '+(freeDays===1?'is':'are') : 'none of your days is'} free of Strength, so its weeks take longer than seven days. Plan ${freeDays? 'a '+freeDays+'-day block' : 'Muscle'} around Strength and Ladder instead${freeDays?'':', after adding a day'}.`,
+    // the one of Muscle and Strength that comes second in the week gets only the days the other leaves free
+    const o= m==='lift'? 'str' : 'lift', second= tg.secs.includes(o) && ahead(o,m,tg.prio);
+    if(m==='lift' && second && c<i.perWeek) out.push(['warn', `Muscle&rsquo;s block has ${plural(i.perWeek,'day')} a week, but ${freeDays? 'only '+freeDays+' of your days '+(freeDays===1?'is':'are') : 'none of your days is'} free of Strength, so its weeks take longer than seven days. Plan ${freeDays? 'a '+freeDays+'-day block' : 'Muscle'} around Strength and Ladder instead${freeDays?'':', after adding a day'}, or put Muscle ahead of Strength in the set-up.`,
       freeDays? {m:'lift', days:freeDays, label:'Plan it'} : null]);
-    else if(c<i.perWeek) out.push(['warn', `${SEC[m].n}&rsquo;s plan has ${plural(i.perWeek,'day')} a week and ${c? 'is on '+c+' of yours' : 'is on none of your days'}, so each of its weeks takes longer than seven days. That works, or plan ${SEC[m].n} with fewer days.`,
+    else if(c<i.perWeek) out.push(['warn', `${SEC[m].n}&rsquo;s plan has ${plural(i.perWeek,'day')} a week and ${c? 'is on '+c+' of yours' : 'is on none of your days'}${second? `, because ${SEC[o].n} comes first in your order and they keep to separate days` : ''}, so each of its weeks takes longer than seven days. That works, or plan ${SEC[m].n} with fewer days.`,
       {m, days:Math.max(2,c), label:'Change'}]);
     else if(c>i.perWeek) out.push(['info', `${SEC[m].n} is on ${c} days but its plan has ${i.perWeek}, so it moves through the plan a little faster.`]);
   });
@@ -10517,7 +10531,7 @@ function fitNotes(W, I, DM){
   for(let d=0; d<(D===7?D:D-1); d++){ const e=(d+1)%D; if(W[d].includes('str')&&W[e].includes('str')&&adjacent(D,d)){
     out.push(['info', `Strength is on back-to-back days (Day ${d+1} and Day ${e+1}, say ${WD[POS[D][d]]} and ${WD[POS[D][e]]}). ${W.filter(x=>x.includes('str')).length*2>D? 'With this many Strength days it can&rsquo;t be avoided; keep the second one a little lighter if you feel it.' : 'Heavy lifting goes better with a rest day between them; tap to move Strength to another day.'}`]); break; } }
   const cl=clash(I);
-  if(cl.length && W.some(d=>d.includes('str')&&d.includes('cal'))) out.push(['info', `Strength and Ladder both train ${listText(cl.map(p=>PAT_N[p]))}. On days with both, Ladder support work for it is left out and your goal work stays.`]);
+  if(cl.length && W.some(d=>d.includes('str')&&d.includes('cal'))) out.push(['info', `Strength and Ladder both train ${listText(cl.map(p=>PAT_N[p]))}. ${ahead('cal','str',tg.prio)? 'On days with both, Ladder goes first in your order and keeps its support work for it, so the heavy lifts may feel harder.' : 'On days with both, Ladder support work for it is left out and your goal work stays.'}`]);
   if(autoNote) out.push(['info', `Ladder is on ${autoNote.got} days instead of ${autoNote.want} so the week fits your ${tg.mins} minutes. Your goal work comes first on each of them.`]);
   if(tg.mins){
     const over=[]; W.forEach((d,k)=>{ if(DM[k]>tg.mins+5) over.push(k); });
@@ -10553,15 +10567,24 @@ function volCard(I){
   return `<section class="card"><div class="spread"><div class="h3">Hard sets per muscle</div><span class="chip">Last 7 days</span></div>
     <p class="hint" style="margin-top:6px">Every section counts toward the same totals: a bench press in Strength counts for chest just like one in Muscle. Muscle&rsquo;s Today uses these totals too.</p>${body}</section>`;
 }
-function rulesCard(){
+function rulesCard(I){
+  const mine=!!tg.prio, both=(a,b)=>tg.secs.includes(a)&&tg.secs.includes(b);
+  const first= ahead('lift','str',tg.prio)? 'lift' : 'str';
   const R=[
-    ['Skills first','Handstands, levers and planche go first on any day they are in. Balance and straight-arm work need you fresh.'],
-    ['Heavy lifting next','Strength comes before growth work. Strength improves most in whatever you train early; growth is about the same in any order.'],
-    ['Muscle last, and trimmed','Hard sets you already did today for a muscle come off Muscle&rsquo;s session, compounds first. An exercise you already did in Strength or Ladder is left out. Muscle shows what it took off and can put it back.'],
-    ['Muscle and Strength apart','Muscle never shares a day with Strength, and every Muscle day has Ladder with it. Strength and Ladder can share a day. With Strength or Ladder in the mix, Muscle can plan a block around them: it trains the muscles they leave out, so nothing gets hit while it’s still sore.'],
+    ...(mine? [
+      ['Your order',`Each day runs its parts in the order you set: ${orderParts(tg.secs, I).map(m=>SEC[m].n).join(', then ')}. The first part gets you at your freshest, so put first what matters most to you.`],
+      ['Earlier keeps its work','Where two parts of a day overlap, the earlier one keeps its work and the later one gives way. Muscle takes off hard sets a muscle already got earlier in the day, compounds first, and leaves out an exercise already done; it shows what it took off and can put it back. Ladder leaves out support work an earlier part already trains. Ladder goal work always stays, and so does Strength&rsquo;s plan.'],
+    ] : [
+      ['Skills first','Handstands, levers and planche go first on any day they are in. Balance and straight-arm work need you fresh.'],
+      ['Heavy lifting next','Strength comes before growth work. Strength improves most in whatever you train early; growth is about the same in any order.'],
+      ['Muscle last, and trimmed','Hard sets you already did today for a muscle come off Muscle&rsquo;s session, compounds first. An exercise you already did in Strength or Ladder is left out. Muscle shows what it took off and can put it back.'],
+    ]),
+    ['Muscle and Strength apart',`Muscle never shares a day with Strength, and every Muscle day has Ladder with it.${mine&&both('lift','str')? ` ${SEC[first].n}, earlier in your order, gets first pick of the days.` : ''} Strength and Ladder can share a day. With Strength or Ladder in the mix, Muscle can plan a block around them: it trains the muscles they leave out, so nothing gets hit while it’s still sore.`],
     ['Fatigue carries over','Hard sets from the last three days still count against a muscle: yesterday in full, then half, then a quarter. A muscle carrying about 6 or more is still recovering (your check-ins move that 6 to your own number, muscle by muscle) and gets one to three fewer Muscle sets and no Ladder support work. Goal work and Strength stay as planned, with a note.'],
     ['Your check-in shapes the day','Each day asks how you slept and feel, which muscles are sore, and whether a joint hurts. A low day, set against your own usual, takes a set off each muscle in Muscle and the support work out of Ladder; a very low day suggests rest. Soreness you report, or a sore joint, holds back the muscles involved. It is optional: skip it and the day runs on your training alone.'],
-    ['No movement twice','On days with Strength, Ladder support work for the same movement is left out. Goal work always stays, and the week keeps them on separate days when it can.'],
+    mine&&both('cal','str')&&ahead('cal','str',tg.prio)
+      ? ['Movement overlap','Ladder is ahead of Strength in your order, so on days with both its support work stays, even for a movement Strength also trains; a note says when the heavy lift may feel harder. The week keeps them on separate days when it can.']
+      : ['No movement twice','On days with Strength, Ladder support work for the same movement is left out. Goal work always stays, and the week keeps them on separate days when it can.'],
     ['One count','Hard sets from every section count toward the same weekly totals per muscle, so volume is never counted twice or missed.'],
     ['Days in order','The week is a rotation, not a calendar. Miss a day and it’s still next. Do a day&rsquo;s parts back to back or at different times of the day; the day stays open until midnight.'],
     ['Each section stays itself','Plans, progression, deloads and tests all stay in their own section. Together only decides the day and the order, and trims the overlap.'],
@@ -10575,15 +10598,32 @@ function statusLine(m, i){
   if(m==='str') return usable(m,i)? `${esc(i.name)} &middot; ${plural(i.perWeek,'day')} a week` : 'No strength plan yet. You can set one up afterwards.';
   return usable(m,i)? `${i.goals.length===1?'Goal':'Goals'}: ${esc(i.goals.join(', '))}` : 'No goals yet. You can pick them afterwards.';
 }
+/* The sections picked in the set-up, first to last: your order, or the suggested one. */
+function draftOrder(d, I){ return d.prio? d.prio.filter(m=>d.secs.includes(m)) : autoOrder(d.secs, I); }
+function prioField(d, I){
+  if(d.secs.length<2) return '';
+  const order=draftOrder(d, I), last=order.length-1;
+  const skill=d.secs.includes('cal') && usable('cal',I.cal) && I.cal.picks.some(p=>p.skill);
+  const hint= d.prio
+    ? `Each day runs in this order. Where two overlap, the earlier one keeps its work and the later one gives way: Muscle trims sets, Ladder leaves out support work. Ladder goal work and Strength&rsquo;s plan always stay.${d.secs.includes('lift')&&d.secs.includes('str')? ' The earlier of Muscle and Strength also gets first pick of the week&rsquo;s days.' : ''}${skill&&order[0]!=='cal'? ' Your Ladder goals include a balance or straight-arm skill, which goes best when you&rsquo;re fresh.' : ''}`
+    : 'Suggested: balance and straight-arm skills first while you&rsquo;re fresh, heavy lifting next, growth work last. Use the arrows to put first what matters most to you.';
+  return `<div class="field"><div class="spread"><label id="prio-l">What comes first</label><span class="chip">${d.prio?'Your order':'Suggested'}</span></div>
+    <ol class="prio" role="list" aria-labelledby="prio-l">${order.map((m,k)=>`<li class="prow"><span class="rn" aria-hidden="true">${k+1}</span><span class="pt2"><b>${SEC[m].n}</b></span>
+      <button class="mv" data-a="d-up" data-m="${m}" aria-label="Move ${SEC[m].n} earlier (now ${k+1} of ${last+1})" ${k?'':'disabled'}>${IC.up}</button>
+      <button class="mv" data-a="d-down" data-m="${m}" aria-label="Move ${SEC[m].n} later (now ${k+1} of ${last+1})" ${k<last?'':'disabled'}>${IC.down}</button></li>`).join('')}</ol>
+    <p class="hint" style="margin-top:2px">${hint}</p>
+    ${d.prio? `<button class="tog" data-a="d-prio-reset" style="margin-top:10px">${IC.undo} Back to the suggested order</button>` : ''}</div>`;
+}
 function viewSetup(){
   const d=draft, I=infos(ALL);
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tg.on?'Change the set-up':'Train more than one'}</div>
     <div class="h2">${tg.on?'What you run together':'Run them side by side'}</div>
-    <p class="lead">Pick two or all three. The app lays out your week, orders each day so the work that needs you fresh comes first, and makes sure the same muscle isn&rsquo;t trained twice in one day. Each section keeps its own plan and progress.</p>
+    <p class="lead">Pick two or all three, then choose which comes first. The app lays out your week, runs each day in that order, and trims the overlap between them. Each section keeps its own plan and progress.</p>
     <div class="field"><label>Sections</label>
       ${ALL.map(m=>`<button class="pick ${d.secs.includes(m)?'on':''}" data-a="d-sec" data-m="${m}" aria-pressed="${d.secs.includes(m)?'true':'false'}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
         <span class="pt2"><b>${SEC[m].n}</b><span>${statusLine(m,I[m])}</span></span></button>`).join('')}</div>
+    ${prioField(d, I)}
     <div class="field"><label>Days a week you can train</label><div class="pills">${[2,3,4,5,6,7].map(n=>`<button class="${d.days===n?'on':''}" data-a="d-days" data-v="${n}">${n}</button>`).join('')}</div></div>
     <div class="field"><label>Time for one session</label><div class="pills">${[[45,'45 min'],[60,'60 min'],[75,'75 min'],[90,'90 min'],[0,'No limit']].map(([v,l])=>`<button class="${d.mins===v?'on':''}" data-a="d-mins" data-v="${v}">${l}</button>`).join('')}</div></div>
     <div style="margin-top:20px"><button class="btn pri block" data-a="d-save" ${d.secs.length>=2?'':'disabled'}>${IC.arrow} ${tg.on?'Save':'Lay out my week'}</button></div>
@@ -10604,8 +10644,8 @@ function viewMain(){
     ${weekCard(I, W, DM)}
     ${volCard(I)}
     ${recoveryCard()}
-    ${rulesCard()}
-    <button class="btn ghost block" data-a="edit">${IC.sliders} Change sections, days or time</button>
+    ${rulesCard(I)}
+    <button class="btn ghost block" data-a="edit">${IC.sliders} Change sections, order, days or time</button>
   </div>`;
 }
 /* A drawing error shows what went wrong, with a retry, instead of taking the whole tab down. */
@@ -10618,10 +10658,10 @@ function render(){
 }
 function draw(){
   refreshRun(); strip();
-  if(!tg.on && !draft) draft={secs:tg.secs.slice(), days:tg.days, mins:tg.mins};
+  if(!tg.on && !draft) draft={secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice()};
   const y=window.scrollY;
   $('#view').innerHTML= MiloSecurity.html(draft? viewSetup() : viewMain());
-  $('#subtitle').innerHTML= MiloSecurity.html(tg.on&&!draft? `${tg.secs.map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Muscle, Strength and Ladder in one week');
+  $('#subtitle').innerHTML= MiloSecurity.html(tg.on&&!draft? `${(tg.prio? tg.prio.filter(m=>tg.secs.includes(m)) : tg.secs).map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Muscle, Strength and Ladder in one week');
   if(H.current()==='mix') window.scrollTo(0,y);
 }
 
@@ -10633,16 +10673,28 @@ __root.addEventListener('click', e=>{
     case 'd-sec': { const m=el.dataset.m, s=draft.secs; draft.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); break; }
     case 'd-days': draft.days=+el.dataset.v; render(); break;
     case 'd-mins': draft.mins=+el.dataset.v; render(); break;
+    case 'd-up': case 'd-down': {
+      // moves past the next picked section; one not picked keeps its place for when it is
+      const m=el.dataset.m, base=(draft.prio||autoOrder(ALL, infos(ALL))).slice(), vis=base.filter(x=>draft.secs.includes(x));
+      const i=vis.indexOf(m), j= a==='d-up'? i-1 : i+1; if(i<0||j<0||j>=vis.length) break;
+      const bi=base.indexOf(m), bj=base.indexOf(vis[j]); base[bi]=vis[j]; base[bj]=m;
+      draft.prio=base; render();
+      { const b=$(`[data-a="${a}"][data-m="${m}"]`); (b&&!b.disabled? b : $(`[data-a="${a==='d-up'?'d-down':'d-up'}"][data-m="${m}"]`)).focus(); }
+      break;
+    }
+    case 'd-prio-reset': draft.prio=null; render(); { const b=$('.mv:not([disabled])'); if(b) b.focus(); } break;
     case 'd-save': {
       if(draft.secs.length<2) break;
       const changed= draft.days!==tg.days || draft.secs.join()!==tg.secs.join();
-      tg.secs=draft.secs.slice(); tg.days=draft.days; tg.mins=draft.mins; tg.on=true;
+      tg.secs=draft.secs.slice(); tg.days=draft.days; tg.mins=draft.mins; tg.prio=draft.prio? draft.prio.slice() : null; tg.on=true;
+      // a day already running takes the new order for what is left of it
+      if(tg.run){ const ord=orderParts(tg.run.parts.map(p=>p.m), infos()); tg.run.parts.sort((x,y)=>ord.indexOf(x.m)-ord.indexOf(y.m)); }
       if(changed){ tg.custom=null; tg.next=(tg.next||0)%tg.days; }
       draft=null; save(); render(); window.scrollTo(0,0); toast('Your week is laid out'); break;
     }
     case 'd-cancel': draft=null; render(); break;
     case 'd-stop': tg.on=false; tg.run=null; draft=null; save(); render(); window.scrollTo(0,0); toast('Stopped. Each section carries on by itself.'); break;
-    case 'edit': draft={secs:tg.secs.slice(), days:tg.days, mins:tg.mins}; render(); window.scrollTo(0,0); break;
+    case 'edit': draft={secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice()}; render(); window.scrollTo(0,0); break;
     case 'start-day': startDay(+el.dataset.d); break;
     case 'part': startPart(k); break;
     case 'skip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='skip'; save(); render(); } break;

@@ -16,7 +16,7 @@ Milo is my workout tracker for muscle growth, strength and calisthenics. Use it 
 2. Choose **Muscle**, **Strength** or **Ladder** and set up a plan or goal.
 3. Start a session and tick off your sets as you train.
 
-Use **Together** to plan a week across the trainers. Each trainer also works on its own.
+Use **Together** to plan a week across the trainers and choose which one comes first each day. Each trainer also works on its own.
 
 On iPhone, open Milo in Safari and choose **Share → Add to Home Screen**. On Android, use your browser's **Install app** or **Add to Home screen** option. Load it once while connected, then use it offline.
 
@@ -27,7 +27,7 @@ On iPhone, open Milo in Safari and choose **Share → Add to Home Screen**. On A
 | **Muscle** | Hypertrophy blocks, hard sets per muscle, effort and recovery. |
 | **Strength** | Equipment-based plans, working weights, rep records and estimated maxes. |
 | **Ladder** | Calisthenics goals, exercise progressions and the mobility or balance they need. |
-| **Together** | A shared week, daily check-ins and training volume across the other trainers. |
+| **Together** | A shared week in the order you choose, daily check-ins and training volume across the other trainers. |
 
 Sessions can be resumed, edited or deleted. Exercise instructions and research references are available inside the app. See the [feature guide](docs/FEATURES.md) for the details and the limits of its training estimates.
 
