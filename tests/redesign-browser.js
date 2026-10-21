@@ -103,7 +103,16 @@
         check(view.children.length>0 && nav.getAttribute('data-route')===route && root.querySelector('#tabbar [aria-current="page"]')?.dataset.route===route,'Route renders and identifies the current page: '+module+'/'+route);
         check(light(doc),'Light theme survives render: '+module+'/'+route);
       }
-      if(module==='mix') check(!!root.querySelector('[data-a="d-save"]'),'Together setup retains its schedule workflow');
+      if(module==='mix'){
+        check(!!root.querySelector('[data-a="d-save"]'),'Together setup retains its schedule workflow');
+        const order=()=>[...root.querySelectorAll('.prow b')].map(b=>b.textContent).join(' > ');
+        root.querySelector('[data-a="d-sec"][data-m="lift"]').click(); root.querySelector('[data-a="d-sec"][data-m="str"]').click();
+        check(order()==='Strength > Muscle' && root.querySelector('[data-a="d-up"][data-m="str"]').disabled,'Together suggests an order for the picked sections');
+        root.querySelector('[data-a="d-up"][data-m="lift"]').click();
+        check(order()==='Muscle > Strength' && root.getElementById('prio-l').parentElement.textContent.includes('Your order'),'Together lets you choose which section comes first');
+        root.querySelector('[data-a="d-prio-reset"]').click();
+        check(order()==='Strength > Muscle' && root.getElementById('prio-l').parentElement.textContent.includes('Suggested'),'Together goes back to the suggested order');
+      }
     }
     await pause(200);
     check(localStorage.getItem('trainer.shell.theme')==='light','Light preference survives deferred trainer saves');

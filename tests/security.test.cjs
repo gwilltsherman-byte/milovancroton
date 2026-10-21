@@ -20,6 +20,7 @@ test('valid backups preserve text, version and records', () => {
   assert.doesNotThrow(()=>security.section({v:2, history:[], repeat:{name:'Next',ids:['pullup']}},'proladder.v1'));
   assert.doesNotThrow(()=>security.section({v:1, custom:[['lift'],['str']],days:2},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, custom:null, days:2},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, custom:null, prio:['cal','lift','str'], days:2},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, history:[], repeat:{name:'Next',items:[['squat',3]]}},'hyplog.v1'));
 });
 test('foreign storage, future versions, malformed sessions, injected identifiers and prototype keys are refused', () => {
