@@ -21,6 +21,7 @@ test('valid backups preserve text, version and records', () => {
   assert.doesNotThrow(()=>security.section({v:1, custom:[['lift'],['str']],days:2},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, custom:null, days:2},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, custom:null, prio:['cal','lift','str'], days:2},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, days:2, tune:{focus:{Arms:'more', Core:'skip'}, ex:{bi:'cable-curl'}, lift:{legs:'squat'}, off:{lats:true}}},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, custom:null, prio:['str','cal','lift'], days:2, kit:['bar','db'], exp:'advanced',
     plan:{v:1, at:1700000000000, week:2, weeks:5, kinds:[['str'],['lift','cal']], dose:{str:'build', cal:'moderate', lift:'maintain'},
       days:[{str:[{id:'squat', a:'legs', k:'load', key:'back-squat', heavy:true, sets:4}], lift:[], cal:null},
