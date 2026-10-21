@@ -445,3 +445,45 @@ test('custom goals can train branch-specific standards borrowed from their close
     assert.ok(plain(api.evaluate(`pathFor(${JSON.stringify(need.l)})`)).includes(need.r), `custom goal can train ${need.l} rung ${need.r}`);
   }
 });
+
+test('many goals take turns so every session stays within its caps, and every goal still comes round', () => {
+  const api = ladder(), state = api.getState();
+  const keys = ['pullup10', 'pushup20', 'dip10', 'pistol', 'frontlever', 'lsit', 'handstand', 'crow'];
+  state.goals = keys.map(k => api.evaluate(`makeGoal(${JSON.stringify(k)})`));
+  ['pull', 'pushh', 'dip', 'legs', 'frontlever', 'core', 'handstand', 'armbalance', 'row', 'pushv', 'hinge'].forEach(id => placed(api, id, 1));
+  const caps = plain(api.evaluate('({S:SESSION_CAP, G:GOAL_CAP, B:BALANCE_CAP})'));
+  const mains = plain(api.evaluate('planIds().mains'));
+  const balance = mains.filter(id => api.evaluate(`practiceOf(${JSON.stringify(id)})`) === 'balance');
+  const sessions = plain(api.evaluate('Array.from({length:8},(_,ahead)=>todayPlan(ahead))'));
+  sessions.forEach((plan, k) => {
+    const counted = plan.filter(x => x.id !== 'wrist' && x.role !== 'maintenance');
+    const goalWork = plan.filter(x => mains.includes(x.id));
+    assert.ok(counted.length <= caps.S, `session ${k} has ${counted.length} exercises`);
+    assert.ok(goalWork.filter(x => !balance.includes(x.id)).length <= caps.G, `session ${k} holds at most ${caps.G} strength goals`);
+    assert.ok(goalWork.filter(x => balance.includes(x.id)).length <= caps.B, `session ${k} holds at most ${caps.B} balance skills`);
+  });
+  const strength = mains.filter(id => !balance.includes(id));
+  const rounds = Math.ceil(strength.length / caps.G);
+  const seen = new Set(sessions.slice(0, rounds).flat().map(x => x.id));
+  assert.ok(strength.every(id => seen.has(id)), 'every strength goal is trained within one full turn of the rotation');
+  assert.ok(balance.every(id => sessions.every(plan => plan.some(x => x.id === id))), 'balance practice comes every session while it fits');
+});
+
+test('a goal that takes turns still alternates its target and volume days', () => {
+  const api = ladder(), state = api.getState();
+  state.goals = ['hspu', 'pullup10', 'pushup20', 'pistol', 'lsit'].map(k => api.evaluate(`makeGoal(${JSON.stringify(k)})`));
+  ['pull', 'pushh', 'legs', 'core'].forEach(id => placed(api, id, 3));
+  placed(api, 'pushv', api.evaluate('stepsOf("pushv").findIndex(s=>s.id==="elevated-pike-pushup")'));
+  assert.ok(api.evaluate('stepsOf("pushv")[curIdx("pushv")].volume'), 'the overhead pressing rung has a volume day');
+  const roles = plain(api.evaluate('Array.from({length:10},(_,ahead)=>todayPlan(ahead))')).flat().filter(x => x.id === 'pushv').map(x => x.role);
+  assert.ok(roles.length >= 4 && roles.length < 10, 'the pressing goal takes turns but comes round regularly: ' + roles.length);
+  assert.ok(roles.includes('goal') && roles.includes('volume'), 'both target and volume days still happen: ' + roles.join(','));
+});
+
+test('a couple of goals are all trained every session, as before', () => {
+  const api = ladder(), state = api.getState();
+  state.goals = ['pullup1', 'pushup20'].map(k => api.evaluate(`makeGoal(${JSON.stringify(k)})`));
+  placed(api, 'pull', 2); placed(api, 'pushh', 3);
+  const sessions = plain(api.evaluate('Array.from({length:4},(_,ahead)=>todayPlan(ahead))'));
+  assert.ok(sessions.every(plan => ['pull', 'pushh'].every(id => plan.some(x => x.id === id))));
+});
