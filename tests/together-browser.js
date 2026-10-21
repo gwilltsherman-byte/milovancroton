@@ -64,10 +64,13 @@
     const k0=rows()[0]; let pickEx=null;
     check(!!k0 && !root.querySelector('select'), 'each muscle’s exercise opens a library, not a dropdown');
     root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k0}"]`).click(); await pause(150);
-    check(root.textContent.includes('Exercise for') && root.querySelectorAll('[data-a="t-choose"]').length>1, 'the exercise library opens for the muscle');
-    { const ids=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean); pickEx=ids[ids.length-1]; }
-    root.querySelector(`[data-a="t-choose"][data-id="${pickEx}"]`).click(); await pause(150);
-    check(root.textContent.includes('Customize this block') && root.querySelector(`[data-a="t-pick"][data-k="${k0}"]`).textContent.includes('your pick'), 'choosing goes back to the block, with your pick shown');
+    check(root.textContent.includes('Exercises for') && root.querySelectorAll('[data-a="t-choose"]').length>1, 'the exercise library opens for the muscle');
+    // several picks for one muscle, which take turns on its days
+    const ids=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean), picks=[ids[ids.length-1], ids[0]]; pickEx=picks[0];
+    for(const id of picks){ root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(120); }
+    check(picks.every(id=>root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).getAttribute('aria-pressed')==='true') && root.querySelector('.tday'), 'you can pick more than one exercise, and each shows its days');
+    root.querySelector('[data-a="t-back"]').click(); await pause(150);
+    check(root.textContent.includes('Customize this block') && root.querySelector(`[data-a="t-pick"][data-k="${k0}"]`).textContent.includes('your 2 picks'), 'Done goes back to the block, with your picks shown');
     // making your own exercise, which joins Muscle's library
     const k1=rows().find(k=>k!==k0);
     if(k1){ root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k1}"]`).click(); await pause(150);
@@ -76,14 +79,17 @@
       root.querySelector('[data-a="t-mk"][data-f="comp"][data-v="0"]').click(); await pause(100);
       root.querySelector('[data-a="t-mk-save"]').click(); await pause(400);
       const mine=(JSON.parse(localStorage.getItem('hyplog.v1')||'{}').exercises||[]).find(e=>e.name==='Test Own Exercise');
-      check(mine && mine.custom && mine.primary.includes(k1) && !mine.comp, 'an exercise you make joins the Muscle library'); }
+      check(mine && mine.custom && mine.primary.includes(k1) && !mine.comp, 'an exercise you make joins the Muscle library');
+      check(root.querySelector(`[data-a="t-choose"][data-id="${mine.id}"]`).getAttribute('aria-pressed')==='true', 'and it is picked for the muscle, back in its list');
+      root.querySelector('[data-a="t-back"]').click(); await pause(150); }
     const lats=root.querySelector('[data-a="t-pick"][data-t="lift"][data-k="lats"]');
     if(lats){ lats.click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id="-"]').click(); await pause(150); }
     root.querySelector('[data-a="t-save"]').click(); await pause(300);
     P=saved().plan;
     check(P.goal.bi>before && weekOf(P,'bi')>=P.goal.bi-1, 'More for arms raises the biceps target, and the week meets it');
     check(!P.days.some(d=>d.lift.some(x=>x.mu==='abs'||x.mu==='obli')), 'Skip leaves core to the rest of the week');
-    check(P.days.flatMap(d=>d.lift).filter(x=>x.mu===k0).every(x=>x.exId===pickEx), 'the exercise you pick trains that muscle');
+    { const xs=P.days.flatMap(d=>d.lift).filter(x=>x.mu===k0).map(x=>x.exId), mine=saved().tune.ex[k0];
+      check(xs.length && xs.every(id=>mine.includes(id)) && xs[0]===mine[0] && new Set(xs).size===Math.min(mine.length, xs.length), 'your picks train that muscle, taking turns in the order you picked them'); }
     check(!lats || !P.days.some(d=>d.str.some(x=>x.a==='lats')), 'a strength area you leave out is left out');
     check(P.week===1 && root.textContent.includes('Customized:'), 'customizing keeps the week and shows what you changed');
     // a new block starts again at week 1
