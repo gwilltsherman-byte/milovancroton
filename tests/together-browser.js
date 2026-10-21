@@ -128,6 +128,18 @@
     { const hub=win.__hub, strip=doc.getElementById('tgstrip'), other=hub.current()!=='mix', shown=!strip.hidden;
       hub.go('mix'); await pause(250);
       check(other && shown && strip.hidden, 'the day strip shows on the trainer tabs, not over Together’s own page'); }
+    // ending the day with a part still going: you choose what happens to its session
+    root.querySelector('[data-a="end-day"]').click(); await pause(200);
+    check(root.querySelector('[data-how="save"]') && root.querySelector('[data-how="leave"]') && root.querySelector('[data-how="drop"]'), 'ending the day with a part still going offers to save it, leave it open or drop it');
+    root.querySelector('[data-a="end-day"][data-how="leave"]').click(); await pause(300);
+    check(!saved().run && saved().log.slice(-1)[0].parts.some(p=>p[1]==='left') && !root.querySelector('[data-a="end-day"]'), 'the day ends, and its End button goes with it');
+    check(!!JSON.parse(localStorage.getItem('strlog.v2')).active && root.textContent.includes('open'), 'the session left open is still there to finish, and the week says so');
+    // a new block, even mid-day
+    win.__hub.api('str').end(false); await pause(200); win.__hub.go('mix'); await pause(250);
+    root.querySelector('[data-a="start-day"]').click(); await pause(500); win.__hub.go('mix'); await pause(250);
+    check(!!saved().run, 'the next day starts');
+    root.querySelector('[data-a="t-new"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(300);
+    check(!saved().run && saved().plan.week===1 && saved().next===0, 'a new block starts mid-day: the day ends and the block begins at Day 1');
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;
