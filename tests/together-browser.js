@@ -30,6 +30,8 @@
     check(!root.querySelector('[data-a="d-save"]').disabled, 'one kind of training is enough to build a program');
     root.querySelector('[data-a="d-save"]').click(); await pause(300);
     check(tabs(doc)==='mix,str', 'the trainer you choose appears as a tab');
+    check(root.textContent.includes('Make this block yours') && !!root.querySelector('select[data-t="lift"][data-k="legs"]'), 'a new block opens for you to customize first');
+    root.querySelector('[data-a="t-save"]').click(); await pause(300);
     let P=saved().plan;
     check(P && P.dose.str==='build' && P.week===1 && P.weeks===5, 'Strength alone gets a building dose in a five-week block');
     const ex={}; P.days.forEach(d=>d.str.forEach(x=>{ (ex[x.id]||(ex[x.id]=[])).push(x.heavy); }));
@@ -46,6 +48,34 @@
     check(!cov.has('quad') && !cov.has('chest'), 'Muscle leaves muscles the heavy lifts already cover');
     check(P.days.every(d=>d.lift.every(x=>x.sets>=1&&x.sets<=4)), 'no muscle gets more than four Muscle sets in a day');
     check(root.textContent.includes('Your program') && root.textContent.includes('Strength · Build'), 'the program card shows each section’s dose');
+
+    // customizing a block: more for a muscle group, an exercise you pick, a lift left out
+    const setsOf=(P,mu)=>P.days.reduce((t,d)=>t+d.lift.filter(x=>x.mu===mu).reduce((a,x)=>a+x.sets,0),0);
+    const before=setsOf(P,'bi');
+    root.querySelector('[data-a="t-edit"]').click(); await pause(200);
+    check(root.textContent.includes('Customize this block'), 'Customize this block opens the block’s parts');
+    root.querySelector('[data-a="t-focus"][data-g="Arms"][data-v="more"]').click(); await pause(150);
+    root.querySelector('[data-a="t-focus"][data-g="Core"][data-v="skip"]').click(); await pause(150);
+    const sel=root.querySelector('select[data-t="ex"][data-k="bi"]'), pickEx=sel&&[...sel.options].map(o=>o.value).pop();
+    if(sel){ sel.value=pickEx; sel.dispatchEvent(new win.Event('change',{bubbles:true})); await pause(150); }
+    const lats=root.querySelector('select[data-t="lift"][data-k="lats"]'); if(lats){ lats.value='-'; lats.dispatchEvent(new win.Event('change',{bubbles:true})); await pause(150); }
+    root.querySelector('[data-a="t-save"]').click(); await pause(300);
+    P=saved().plan;
+    check(setsOf(P,'bi')>before, 'More for arms gives biceps more weekly sets');
+    check(!P.days.some(d=>d.lift.some(x=>x.mu==='abs'||x.mu==='obli')), 'Skip leaves core to the rest of the week');
+    check(!sel || P.days.flatMap(d=>d.lift).filter(x=>x.mu==='bi').every(x=>x.exId===pickEx), 'the exercise you pick trains that muscle');
+    check(!lats || !P.days.some(d=>d.str.some(x=>x.a==='lats')), 'a strength area you leave out is left out');
+    check(P.week===1 && root.textContent.includes('Customized:'), 'customizing keeps the week and shows what you changed');
+    // a new block starts again at week 1
+    const t=saved(); t.plan.week=3; localStorage.setItem('trainer.together', JSON.stringify(t));
+    ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+    root.querySelector('[data-a="t-edit"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(250);
+    check(saved().plan.week===3, 'changes mid-block keep you on the same week');
+    root.querySelector('[data-a="t-new"]').click(); await pause(150);
+    check(root.textContent.includes('New block'), 'Start a new block opens the new block to customize');
+    root.querySelector('[data-a="t-save"]').click(); await pause(250);
+    check(saved().plan.week===1 && saved().tune.focus.Arms==='more', 'a new block starts at week 1 and keeps your choices');
+    P=saved().plan;
 
     // starting a day uses Together’s own content and leaves the trainers’ own plans alone
     const ci=root.querySelector('[data-a="ci-skip"]'); if(ci){ ci.click(); await pause(150); }
