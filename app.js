@@ -10112,11 +10112,13 @@ function load(){
   return t;
 }
 function save(){ Safe.put(TG_KEY, JSON.stringify(tg)); }
-/* {focus:{group:'skip'|'less'|'more'}, ex:{muscle:exercise}, lift:{area:lift}, off:{area:true}}; Normal and the plan's own picks are left out. */
+/* {focus:{group:'skip'|'less'|'more'}, mu:{muscle:'skip'}, ex:{muscle:[exercises]}, lift:{area:lift}, off:{area:true}}; Normal and the plan's own picks are left out. */
 function cleanTune(T){
-  const o={focus:{}, ex:{}, lift:{}, off:{}}, rec=x=>x&&typeof x==='object'&&!Array.isArray(x)? x : {}, idOk=v=>typeof v==='string'&&/^[A-Za-z0-9_.:@/+| -]{1,200}$/.test(v);
+  const o={focus:{}, mu:{}, ex:{}, lift:{}, off:{}}, rec=x=>x&&typeof x==='object'&&!Array.isArray(x)? x : {}, idOk=v=>typeof v==='string'&&/^[A-Za-z0-9_.:@/+| -]{1,200}$/.test(v);
   if(!T||typeof T!=='object') return o;
   Object.entries(rec(T.focus)).forEach(([g,v])=>{ if(TUNE_GROUPS.includes(g) && ['skip','less','more'].includes(v)) o.focus[g]=v; });
+  // one muscle of a group left out, like traps in Back
+  Object.entries(rec(T.mu)).forEach(([m,v])=>{ if(LIFT_MUSCLES.includes(m) && v==='skip') o.mu[m]='skip'; });
   // a muscle's exercises: one or several, which take turns on its days in the order picked (one, from older saves)
   Object.entries(rec(T.ex)).forEach(([m,v])=>{ const ids=[...new Set((Array.isArray(v)? v : [v]).filter(idOk))].slice(0, PICKS_MAX); if(LIFT_MUSCLES.includes(m) && ids.length) o.ex[m]=ids; });
   Object.entries(rec(T.lift)).forEach(([a,v])=>{ if(STR_ORDER.includes(a) && idOk(v)) o.lift[a]=v; });
@@ -10253,8 +10255,10 @@ function buildPlan(T){
     covered=Object.assign({}, cov);
     const base=LIFT_TARGET[dose.lift][exp], keep=LIFT_TARGET.maintain[exp], lo=dose.lift==='maintain'? 1 : 2, T2=table(), cap=LIFT_CAP[dose.lift];
     // your focus for the muscle's group: more is half as much again, less is the keeping dose, skip leaves it to the rest
-    const targetOf=mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null, f=g&&T.focus[g];
+    const targetOf=mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null, f=(T.mu&&T.mu[mu])||(g&&T.focus[g]);
       return f==='skip'? 0 : f==='less'? Math.min(base, keep) : f==='more'? Math.round(base*1.5) : base; };
+    // muscles you left out, on their own or with their group: no exercise for another muscle aims at them if one doesn't have to
+    const dropped=new Set(LIFT_MUSCLES.filter(mu=>targetOf(mu)===0)), aims=(e,mu)=>e.p.filter(q=>q!==mu&&dropped.has(q)).length;
     LIFT_MUSCLES.forEach(mu=>{ goal[mu]=targetOf(mu); });
     // groups you want more of first, then the most needed, then the big muscles, whose compounds also help the small ones
     const order=LIFT_MUSCLES.map(mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null; return {mu, need:targetOf(mu)-(cov[mu]||0), more:T.focus[g]==='more'}; })
@@ -10277,8 +10281,9 @@ function buildPlan(T){
             // your picks take turns on its days, in the order you picked them
             const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[], k=turn[x.mu]||0, want=mine.length? mine[k%mine.length] : null;
             const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id));
-            const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
-              || (used[a.id]||0)-(used[b.id]||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
+            const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
+              // something you can load before bodyweight work, which is harder to progress, then variety across the days
+              || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
             if(!e) return;
             taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; turn[x.mu]=k+1;
             out[i].push(Object.assign({exId:e.id, mu:x.mu, sets:n, comp:e.comp}, x.more? {more:true} : {}));
@@ -11075,7 +11080,7 @@ function fitNotes(W, DM){
   // what Muscle leaves to the rest: one count of hard sets per muscle across the whole week
   if(tg.secs.includes('lift') && P.days.some(d=>d.lift.length)){
     const Tb=table(), f=(tg.tune||{}).focus||{}, grp=q=>Tb&&Tb.muscles[q]? Tb.muscles[q].g : null;
-    const trained=new Set(P.days.flatMap(d=>d.lift.map(x=>x.mu))), left=LIFT_MUSCLES.filter(q=>!trained.has(q) && !(P.noRoom||[]).includes(q) && f[grp(q)]!=='skip');
+    const trained=new Set(P.days.flatMap(d=>d.lift.map(x=>x.mu))), left=LIFT_MUSCLES.filter(q=>!trained.has(q) && !(P.noRoom||[]).includes(q) && f[grp(q)]!=='skip' && ((tg.tune||{}).mu||{})[q]!=='skip');
     if(left.length) out.push(['info', `Muscle has no exercises of its own for ${listText(left.map(q=>esc(muscleName(q).toLowerCase())))}: the rest of your training already gives ${left.length===1?'it':'them'} ${P.dose.lift==='maintain'? 'enough to keep' : 'their weekly sets'}, counting half a set where a muscle only helps, like triceps in a press. Every section counts toward the same total.`]);
   }
   for(let d=0; d<(D===7?D:D-1); d++){ const e=(d+1)%D; if(W[d].includes('str')&&W[e].includes('str')&&adjacent(D,d)){
@@ -11114,7 +11119,9 @@ function programCard(){
 function tuneLine(P){
   const T=tg.tune||{}, bits=[], f=T.focus||{}, by=v=>TUNE_GROUPS.filter(g=>f[g]===v);
   if(tg.secs.includes('lift')){ if(by('more').length) bits.push('more '+listText(by('more')).toLowerCase()); if(by('less').length) bits.push('less '+listText(by('less')).toLowerCase());
-    if(by('skip').length) bits.push('no Muscle work for '+listText(by('skip')).toLowerCase()); }
+    const Tb=table(), grpOf=k=>Tb&&Tb.muscles[k]? Tb.muscles[k].g : null;
+    const offM=LIFT_MUSCLES.filter(k=>(T.mu||{})[k]==='skip' && f[grpOf(k)]!=='skip').map(k=>muscleName(k).toLowerCase());
+    const none=by('skip').map(g=>g.toLowerCase()).concat(offM); if(none.length) bits.push('no Muscle work for '+listText(none)); }
   const ex=Object.keys(T.ex||{}); if(tg.secs.includes('lift')&&ex.length) bits.push(ex.length>3? 'your own exercises for '+ex.length+' muscles' : 'your own exercise for '+listText(ex.map(k=>muscleName(k).toLowerCase())));
   const off=STR_ORDER.filter(a=>T.off&&T.off[a]); if(tg.secs.includes('str')&&off.length) bits.push('Strength leaves out '+listText(off.map(a=>AREA_N[a].toLowerCase())));
   return bits.length? `<p class="hint" style="margin-top:6px">Customized: ${bits.join('; ')}.</p>` : '';
@@ -11256,18 +11263,24 @@ function viewTune(){
         ];
         let tight=0;
         const rows=TUNE_GROUPS.map(g=>{ const ms=LIFT_MUSCLES.filter(k=>Tb&&Tb.muscles[k]&&Tb.muscles[k].g===g), cur=T.focus[g]||'normal';
+          const outM=k=>cur==='skip'||(T.mu&&T.mu[k]==='skip'), offs=ms.filter(k=>cur!=='skip'&&outM(k));
           const here=ms.reduce((t,k)=>t+(sets[k]||0),0), all=ms.reduce((t,k)=>t+tot(k),0), full=ms.filter(k=>(P.noRoom||[]).includes(k));
           // below what the group is set to, when Muscle's days had no more room for it
-          const short=ms.filter(k=>(P.goal||{})[k]>0 && (full.includes(k) || tot(k)<P.goal[k]-1)); if(short.length) tight++;
-          const nums= all? (ms.length>1? ms.map(k=>`${esc(mName(k))} <b>${tot(k)}</b>`).join(' &middot; ') : `<b>${tot(ms[0])}</b>`)+' sets a week'+(here? '' : ', all from other exercises') : 'No work this block';
+          const short=ms.filter(k=>!outM(k) && (P.goal||{})[k]>0 && (full.includes(k) || tot(k)<P.goal[k]-1)); if(short.length) tight++;
+          // in a group of several, each muscle is a switch: on, or left out of Muscle
+          const chips= ms.length>1? `<div class="tmus" role="group" aria-label="${g}: muscles Muscle trains">${ms.map(k=>{ const off=outM(k);
+            return `<button class="tmu ${off?'off':''}" data-a="t-mu" data-k="${k}" aria-pressed="${!off}" ${cur==='skip'?'disabled':''} aria-label="${esc(mName(k))}, ${tot(k)} sets a week${off?', left out':''}">${off? '' : IC.check}<span>${esc(mName(k))}</span><b>${tot(k)}</b></button>`; }).join('')}</div>` : '';
+          const nums= ms.length>1? (all? 'Hard sets a week'+(here? '' : ', all from other exercises') : 'No work this block')
+            : all? `<b>${tot(ms[0])}</b> sets a week`+(here? '' : ', all from other exercises') : 'No work this block';
+          const offLine= offs.length? `. ${cap(esc(listText(offs.map(k=>mName(k).toLowerCase()))))} ${offs.length>1?'are':'is'} left out: no exercises aimed at ${offs.length>1?'them':'it'}, only what other work gives ${offs.length>1?'them':'it'}` : '';
           return `<div class="trow tgrp"><div class="tn"><b>${g}</b></div>
             <div class="seg2" role="group" aria-label="${g}">${FOCUS.map(([v,l])=>`<button class="${cur===v?'on':''}" data-a="t-focus" data-g="${g}" data-v="${v}" aria-pressed="${cur===v}">${l}</button>`).join('')}</div>
-            <p class="tnums">${nums}${short.length? `. Short of ${P.goal[short[0]]}${ms.length>1? ' for '+esc(listText(short.map(k=>mName(k).toLowerCase()))) : ''}` : ''}</p></div>`; }).join('');
+            ${chips}<p class="tnums">${nums}${offLine}${short.length? `. Short of ${P.goal[short[0]]}${ms.length>1? ' for '+esc(listText(short.map(k=>mName(k).toLowerCase()))) : ''}` : ''}</p></div>`; }).join('');
         const nd=P.kinds.filter(d=>d.includes('lift')).length;
         const ex=LIFT_MUSCLES.filter(k=>sets[k]).map(k=>{ const mine=(T.ex[k]||[]).filter(id=>cat.some(e=>e.id===id&&e.p.includes(k))).length;
           const names=[...new Set(P.days.flatMap(d=>d.lift).filter(x=>x.mu===k).map(x=>(cat.find(e=>e.id===x.exId)||{}).name).filter(Boolean))];
           return row('ex', k, esc(mName(k)), plural(sets[k],'set')+' a week'+(mine>1? ' &middot; your '+mine+' picks' : mine? ' &middot; your pick' : ''), esc(names.join(', '))); }).join('');
-        return `<p class="hint" style="margin-top:0">How much Muscle gives each muscle group. The numbers are hard sets a week for each muscle (sets taken close to failure) across your whole week. A set counts in full for the muscles an exercise mainly works and half for the ones that help, like biceps in a row, so ${rest? rest+' and your other exercises all count, and Muscle tops up the rest' : 'one exercise counts toward several muscles'}.</p>
+        return `<p class="hint" style="margin-top:0">How much Muscle gives each muscle group; tap a muscle in a group to leave just that one out. The numbers are hard sets a week for each muscle (sets taken close to failure) across your whole week. A set counts in full for the muscles an exercise mainly works and half for the ones that help, like biceps in a row, so ${rest? rest+' and your other exercises all count, and Muscle tops up the rest' : 'one exercise counts toward several muscles'}.</p>
           <dl class="tkey">${key.map(([t,d])=>`<div><dt>${t}</dt><dd>${d}</dd></div>`).join('')}</dl>
           ${tight? `<p class="tnote">${IC.info}<span>Your ${plural(nd,'Muscle day')}${tg.mins? ' and time limit' : ''} can’t fit every target, so some muscles get less, marked below. More training days${tg.mins? ' or time' : ''} make room, or set a group you care less about to Less.</span></p>` : ''}
           <div class="tlist">${rows}</div>
@@ -11405,6 +11418,8 @@ __root.addEventListener('click', e=>{
     case 'd-exp': draft.exp=el.dataset.v; render(); break;
     case 't-new': tune={T:cleanTune(tg.tune), fresh:true}; render(); window.scrollTo(0,0); break;
     case 't-edit': tune={T:cleanTune(tg.tune), fresh:false}; render(); window.scrollTo(0,0); break;
+    case 't-mu': { const k=el.dataset.k, M=tune.T.mu||(tune.T.mu={}); if(M[k]) delete M[k]; else M[k]='skip'; render();
+      { const b=$(`[data-a="t-mu"][data-k="${k}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 't-focus': { const g=el.dataset.g, v=el.dataset.v; if(v==='normal') delete tune.T.focus[g]; else tune.T.focus[g]=v; render();
       { const b=$(`[data-a="t-focus"][data-g="${g}"][data-v="${v}"]`); if(b) b.focus(); } break; }
     case 't-save': { const fresh=tune.fresh;
