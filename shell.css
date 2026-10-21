@@ -32,6 +32,7 @@ button,a,input,textarea{touch-action:manipulation}
 .seg:hover:not(.on){background:#34434d;color:#fff}
 .seg:focus-visible{outline-color:var(--shell-selected);outline-offset:3px}
 .seg:active{transform:none}
+.seg[hidden]{display:none!important}
 .sidebar-foot{margin-top:auto;padding:24px 12px 0}
 .sidebar-foot p{font-size:12px;line-height:1.65;color:#bcc7ce;margin:16px 0 0}
 .sidebar-foot button{display:flex;align-items:center;gap:8px;border:0;padding:10px 0;background:none;color:#f4f3ef;font:500 13px "Public Sans",sans-serif;text-align:left;cursor:pointer}

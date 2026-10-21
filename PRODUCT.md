@@ -16,7 +16,7 @@ Plan training, record real sets, resume sessions and understand progress. Succes
 
 ## Operating Context
 
-Muscle manages hypertrophy blocks, volume and recovery. Strength builds equipment-based plans and tracks working weights. Ladder maps goals to exercise progressions and readiness. Together combines their weeks and check-ins.
+Together is where the app opens: it builds one program from the kinds of training a person picks and how they rank them (rank sets each one's dose), reading only data from the trainers, and runs the daily check-in. Muscle, Strength and Ladder appear as tabs once chosen. Each keeps the record of its kind of training (Muscle: volume per muscle and recovery; Strength: lifts, estimated maxes and working weights; Ladder: goals, progressions and tests) and can still run a plan of its own for training that alone.
 
 ## Capabilities and Constraints
 

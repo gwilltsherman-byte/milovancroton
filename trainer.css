@@ -172,6 +172,11 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .day-item.trained {background:var(--good); color:var(--on-good)}
 .day-item.trained :is(.day-name,.day-mark) {color:var(--on-good)}
 .day-item.today,.day-item.is-today {outline:1px solid var(--border-2); outline-offset:-1px}
+.tg-role {grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:14px; padding:14px 18px}
+.tg-role p {margin:0; font-size:13px; line-height:1.55; color:var(--ink-2)}
+.tg-role p b {color:var(--ink)}
+.tg-role button {flex:none; min-height:36px; color:var(--accent-ink); font-size:12px; font-weight:650; white-space:nowrap}
+@media(max-width:560px) { .tg-role {flex-direction:column; align-items:flex-start; gap:8px} }
 .training-week-note {margin:15px 0 0; color:var(--muted); font-size:12px; line-height:1.5}
 
 /* Programs and goal ladders use rows and clear, meaningful progression. */

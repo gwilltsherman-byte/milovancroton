@@ -21,6 +21,10 @@ test('valid backups preserve text, version and records', () => {
   assert.doesNotThrow(()=>security.section({v:1, custom:[['lift'],['str']],days:2},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, custom:null, days:2},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, custom:null, prio:['cal','lift','str'], days:2},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, custom:null, prio:['str','cal','lift'], days:2, kit:['bar','db'], exp:'advanced',
+    plan:{v:1, at:1700000000000, week:2, weeks:5, kinds:[['str'],['lift','cal']], dose:{str:'build', cal:'moderate', lift:'maintain'},
+      days:[{str:[{id:'squat', a:'legs', k:'load', key:'back-squat', heavy:true, sets:4}], lift:[], cal:null},
+        {str:[], lift:[{exId:'cable-lateral', mu:'sdelt', sets:2, comp:false}], cal:{dose:'moderate'}}]}},'trainer.together'));
   assert.doesNotThrow(()=>security.section({v:1, history:[], repeat:{name:'Next',items:[['squat',3]]}},'hyplog.v1'));
 });
 test('foreign storage, future versions, malformed sessions, injected identifiers and prototype keys are refused', () => {
