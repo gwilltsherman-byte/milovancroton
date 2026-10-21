@@ -95,6 +95,23 @@
     check(root.textContent.includes('New block'), 'Start a new block opens the new block to customize');
     root.querySelector('[data-a="t-save"]').click(); await pause(250);
     check(saved().plan.week===1 && saved().tune.focus.Arms==='more', 'a new block starts at week 1 and keeps your choices');
+    check(saved().next===0 && saved().roundAt>0 && !root.querySelector('.day.fin') && !root.querySelector('.dchip.skipped'), 'a new block starts on a fresh week at Day 1, with nothing marked done or skipped');
+
+    // skipping a day, and taking it back
+    { const c=root.querySelector('[data-a="ci-skip"]'); if(c){ c.click(); await pause(150); } }
+    root.querySelector('[data-a="skip-day"]').click(); await pause(200);
+    check(saved().next>0 && saved().log.slice(-1)[0].skipped && root.querySelector('.dchip.skipped'), 'Skip this day marks it skipped and moves on');
+    root.querySelector('.undoline').click(); await pause(200);
+    check(saved().next===0 && !saved().log.some(e=>e.skipped), 'Undo puts the skipped day back');
+    // the block's weeks: skip ahead, go back, start one again, and undo
+    root.querySelector('[data-a="w-next"]').click(); await pause(200);
+    check(saved().plan.week===2 && saved().next===0, 'skipping ahead moves the block on a week, from Day 1');
+    root.querySelector('[data-a="w-prev"]').click(); await pause(200);
+    check(saved().plan.week===1, 'you can go back a week');
+    root.querySelector('.undoline').click(); await pause(200);
+    check(saved().plan.week===2, 'Undo takes a week change back');
+    root.querySelector('[data-a="w-again"]').click(); await pause(200);
+    check(saved().plan.week===2 && saved().next===0, 'a week can be started again from Day 1');
     P=saved().plan;
 
     // starting a day uses Together’s own content and leaves the trainers’ own plans alone
@@ -108,6 +125,9 @@
     check(st.active.entries.every(e=>e.sc && (e.sc.t==='rpe'||e.sc.t==='dp'||e.sc.t==='var')), 'each lift carries Together’s prescription');
     check(!st.program, 'Strength has no program of its own made for it');
     check(saved().run && saved().run.parts[0].m==='str', 'the day runs in your order, Strength first');
+    { const hub=win.__hub, strip=doc.getElementById('tgstrip'), other=hub.current()!=='mix', shown=!strip.hidden;
+      hub.go('mix'); await pause(250);
+      check(other && shown && strip.hidden, 'the day strip shows on the trainer tabs, not over Together’s own page'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;

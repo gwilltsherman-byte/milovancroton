@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-UhSqOoWoYFjciLT+jk0iCUNiqzfA8Tqmo9IJbaC1J30='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-LYzHjkbWq/NlGZCcHkol4yQkvlXxr3NSP+jZ1Nk+WOo='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -1917,6 +1917,14 @@ svg{display:block}
 .btn:focus-visible,.tog:focus-visible,.pick:focus-visible,.dchip:focus-visible,.pills button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 .row2{display:flex; gap:8px; margin-top:8px}
 .row2>*{flex:1}
+.row3{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px}
+.row3>*{flex:1 1 96px; justify-content:center; text-align:center}
+.row3 .tog[disabled]{opacity:.45; cursor:default}
+.undoline{display:flex; align-items:center; gap:8px; width:100%; min-height:44px; padding:8px 14px; border-radius:12px; border:1px dashed var(--border-2);
+  background:transparent; color:var(--ink-2); font:inherit; font-size:13px; font-weight:700; text-align:left; cursor:pointer}
+.undoline svg{width:16px; height:16px; flex:none}
+.undoline span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.undoline:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 .tog{display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:13px; font-weight:700; padding:9px 12px; border-radius:11px;
   border:1px solid var(--border); background:transparent; color:var(--ink-2); cursor:pointer}
 .tog svg{width:15px; height:15px}
@@ -2098,6 +2106,10 @@ details.rules[open] summary svg{transform:rotate(90deg)}
   background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:12px; padding:11px 16px;
   font-size:13.5px; font-weight:600; line-height:1.4; box-shadow:0 10px 30px rgba(0,0,0,.28)}
 .toast.on{opacity:1; transform:translate(-50%,0)}
+.toast.act{pointer-events:auto; display:flex; align-items:center; gap:12px}
+.toast .tundo{flex:none; display:inline-flex; align-items:center; gap:5px; color:inherit; font:inherit; font-weight:800; padding:6px 8px; margin:-6px -8px -6px 0;
+  background:none; border:0; border-radius:8px; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+.toast .tundo svg{width:15px; height:15px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 /* iPhones zoom the page when a field smaller than 16px is focused. Pinch zoom is allowed now, so keep fields at 16px there. */
 /* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays.
@@ -2130,7 +2142,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=aaeb279ed49117e8c549" integrity="sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=5214aa3a85a86058dc88" integrity="sha256-UhSqOoWoYFjciLT+jk0iCUNiqzfA8Tqmo9IJbaC1J30=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=2d8cc78e46d6abf36519" integrity="sha256-LYzHjkbWq/NlGZCcHkol4yQkvlXxr3NSP+jZ1Nk+WOo=" crossorigin="anonymous"></script>
 </body>
 </html>
 

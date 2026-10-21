@@ -9888,13 +9888,16 @@ const r5=n=>Math.max(5,Math.round(n/5)*5);
 const plural=(n,w)=>n+' '+w+(n===1?'':'s');
 function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
 const cap=t=>t? t.charAt(0).toUpperCase()+t.slice(1) : t;
-function toast(m){ const t=$('#toast'); t.innerHTML=MiloSecurity.html(m); t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),3200); }
+function toast(m, canUndo){ const t=$('#toast'), act=!!canUndo&&undos.length>0;
+  t.innerHTML=MiloSecurity.html(act? `<span>${m}</span><button class="tundo" data-a="undo">${IC.undo} Undo</button>` : m);
+  t.classList.add('on'); t.classList.toggle('act', act); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on','act'), act? 6000 : 3200); }
 
 /* ==================== STATE ==================== */
-let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null;
+let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null, undos=[];
 function load(){
   let t=null, raw=null; try{ raw=localStorage.getItem(TG_KEY); t=raw? MiloSecurity.parseSection(raw, TG_KEY) : null; }catch(e){ Safe.rescue(TG_KEY, raw, e); }
-  t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, prio:null, kit:null, exp:'intermediate', tune:null, plan:null, next:0, run:null, short:false, log:[], checkins:[]}, t&&typeof t==='object'? t : {});
+  t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, prio:null, kit:null, exp:'intermediate', tune:null, plan:null, next:0, run:null, short:false, log:[], checkins:[], roundAt:0}, t&&typeof t==='object'? t : {});
+  if(typeof t.roundAt!=='number' || !(t.roundAt>=0)) t.roundAt=0;
   // check-ins: one a day, each with a day and, unless skipped, plain numbers in range
   const num=(v,a,b)=> typeof v==='number' && v>=a && v<=b;
   t.checkins=(Array.isArray(t.checkins)? t.checkins : []).filter(c=>c && typeof c==='object' && typeof c.day==='number').map(c=>{
@@ -10165,7 +10168,8 @@ function dayInfo(d, ahead){
    going down. {day: log entry} */
 function roundLog(D){
   const L=tg.log||[], out={}; let prev=Infinity;
-  for(let i=L.length-1;i>=0;i--){ const d=L[i].day; if(d>=prev||d>=D) break; out[d]=Object.assign({prevDate: i>0? L[i-1].date : 0}, L[i]); prev=d; }
+  // a new block, or a week started again or skipped, begins a fresh time round at Day 1
+  for(let i=L.length-1;i>=0;i--){ const d=L[i].day; if(d>=prev||d>=D||L[i].date<=(tg.roundAt||0)) break; out[d]=Object.assign({prevDate: i>0? L[i-1].date : 0}, L[i]); prev=d; }
   return out;
 }
 /* Which sections of a day are finished, and the session each one left. */
@@ -10173,7 +10177,7 @@ function doneParts(d, D){
   const out={};
   if(tg.run && tg.run.day===d) tg.run.parts.forEach(p=>{ if((p.st==='done'||p.st==='ended')&&p.sid) out[p.m]={sid:p.sid}; });
   else { const e=roundLog(D)[d];
-    if(e){
+    if(e && !e.skipped){
       // the day's time window: from when it started (older entries: from the day before it) to when it closed
       const from=e.start||e.prevDate||0, to=e.date+1;
       e.parts.forEach(([pm,st,sid])=>{
@@ -10444,7 +10448,7 @@ function startDay(d){
   const pats= order.includes('str')? I.str.next.slots.map(x=>AREA_PAT[x.area]) : [];
   const P=planDay(order, I, tg.short, {pats, carry:carryOver()});
   tg.run={day:d, date:startOfToday(), at:Date.now(), short:!!tg.short, pats, week:plan().week, parts:order.map(m=>({m, st:'todo', sid:null, drop:(P.parts.find(p=>p.m===m)||{}).drop||[]}))};
-  pickOpen=false; save(); startPart(0);
+  pickOpen=false; undos=[]; save(); startPart(0);
 }
 /* What Muscle should take off: hard sets per muscle already logged today in Strength and Ladder, and any
    exercise already done there. Worked out when Muscle starts, from what was actually logged. */
@@ -10520,14 +10524,30 @@ function finishRun(quiet){
   tg.run=null;
   if(did){
     tg.log=(tg.log||[]).concat([{date:Date.now(), start:run.at||run.date, day:run.day, parts:run.parts.map(p=>[p.m,p.st,p.sid])}]).slice(-60);
-    const W=weekOf(); tg.next=(run.day+1)%W.length;
-    // round the week once more: the block moves on a week, and after its lighter week Together builds the next block
-    const n=nextIdx(W), P=plan(); let moved='';
-    if(n>=0 && n<=run.day){ if(P.week>=P.weeks){ tg.plan=null; moved=' That was the lighter week: your next block is built from your latest numbers.'; }
-      else { P.week++; moved=` On to week ${P.week} of ${P.weeks}${P.week>=P.weeks? ', the lighter one' : ''}.`; } }
+    const {n, moved}=moveOn(run.day); undos=[];
     save();
     if(!quiet) toast(`Day ${run.day+1} done.${n>=0? ' Next up: Day '+(n+1)+'.' : ''}${moved}`);
   } else { save(); if(!quiet) toast(`Day ${run.day+1} stopped. It’s still next up.`); }
+}
+
+/* After day d, finished or skipped: the next day in order, and once the week comes round, the block's next week
+   (after its lighter week, Together builds the next block). */
+function moveOn(d){
+  const W=weekOf(); tg.next=(d+1)%W.length;
+  const n=nextIdx(W), P=plan(); let moved='';
+  if(n>=0 && n<=d){ if(P.week>=P.weeks){ tg.plan=null; moved=' That was the lighter week: your next block is built from your latest numbers.'; }
+    else { P.week++; moved=` On to week ${P.week} of ${P.weeks}${P.week>=P.weeks? ', the lighter one' : ''}.`; } }
+  return {n, moved};
+}
+/* Undo for what you change in Together: skipping, the days, the week, the block, the set-up. Each keeps how
+   Together stood before it, for this visit; starting or finishing a day clears them, as sessions are then involved. */
+function remember(label){ undos.push({label, snap:JSON.stringify(tg)}); if(undos.length>12) undos.shift(); }
+function undoLast(){
+  const u=undos.pop(); if(!u){ toast('Nothing left to undo: a day was started or finished since.'); return; }
+  let t; try{ t=JSON.parse(u.snap); }catch(e){ return; }
+  Object.keys(tg).forEach(k=>{ delete tg[k]; }); Object.assign(tg, t);
+  draft=null; tune=null; peekDay=null; pickOpen=false; weekEdit=false;
+  save(); H.changed('mix'); render(); toast(`Undone: ${esc(u.label)}.`);
 }
 
 /* ==================== STRIP ==================== */
@@ -10535,7 +10555,8 @@ function finishRun(quiet){
 const stripEl=document.getElementById('tgstrip');
 function strip(){
   if(!stripEl) return;
-  const run=tg.on&&tg.run;
+  // Together's own page shows the day at the top, so the strip is for the other tabs
+  const run=tg.on&&tg.run&&H.current()!=='mix'&&tg.run;
   if(!run){ if(!stripEl.hidden){ stripEl.hidden=true; stripEl.innerHTML=MiloSecurity.html(''); } stripSpace(); return; }
   const cur=run.parts.find(p=>p.st==='run'), nxt=run.parts.findIndex(p=>p.st==='todo'), here=H.current();
   let btn='';
@@ -10749,6 +10770,7 @@ function heroNext(W){
     <div class="row2"><button class="tog ${tg.short?'on':''}" data-a="short" aria-pressed="${tg.short?'true':'false'}">${IC.clock} Short on time</button>
       <button class="tog ${pickOpen?'on':''}" data-a="pickday" aria-expanded="${pickOpen?'true':'false'}">Another day</button></div>
     ${pickOpen? `<div class="pills" style="margin-top:10px">${W.map((x,i)=>`<button class="${i===d?'on':''}" data-a="setnext" data-d="${i}" ${x.length?'':'disabled'}>Day ${i+1}</button>`).join('')}</div>` : ''}
+    <button class="btn ghost block" data-a="skip-day" data-d="${d}" style="margin-top:8px">${IC.skip} Skip this day</button>
   </section>`;
 }
 function heroRun(){
@@ -10781,13 +10803,13 @@ function upcomingK(W, d){
 }
 /* A day already closed this time round: what was done and what was skipped, in the day's order. */
 function closedHtml(W, d){
-  const I=dayInfo(d), fin=doneParts(d, W.length), order=orderParts(W[d].concat(ALL.filter(m=>fin[m]&&!W[d].includes(m)))), st={};
+  const e=roundLog(W.length)[d], I=dayInfo(d), fin=doneParts(d, W.length), order=orderParts(ALL.filter(m=>fin[m]||(e? e.parts.some(p=>p[0]===m) : W[d].includes(m)))), st={};
   order.forEach(m=>{ st[m]= fin[m]? 'done' : 'skip'; });
   const P=planDay(order, I, tg.short, {st}), skipped=order.filter(m=>!fin[m]);
   return `<div class="peek">
     <div class="spread"><span class="eyebrow">Day ${d+1} &middot; this time round</span></div>
     <div class="parts">${P.parts.map((p,k)=>partRow(p,k,st[p.m],d)).join('')}</div>
-    <p class="hint" style="margin-top:4px">${listText(skipped.map(m=>SEC[m].n))} ${skipped.length===1?'was':'were'} skipped when the day ended, so nothing was lost: ${skipped.length===1?'its':'their'} next session waits for ${skipped.length===1?'its':'their'} next day in the week. To do it now after all, make this the next day.</p>
+    <p class="hint" style="margin-top:4px">${e&&e.skipped? 'You skipped this day.' : `${listText(skipped.map(m=>SEC[m].n))} ${skipped.length===1?'was':'were'} skipped when the day ended.`} Nothing was lost: each section’s next session waits for its next day in the week. To do it now after all, make this the next day.</p>
     <div class="row2">${tg.run? '' : `<button class="btn sm" data-a="setnext" data-d="${d}">Make it the next day</button>`}<button class="btn sm ghost" data-a="peek" data-d="${d}">Close</button></div>
   </div>`;
 }
@@ -10807,22 +10829,23 @@ function weekCard(W, DM){
   const D=W.length, n=tg.run? tg.run.day : nextIdx(W), K=plan().kinds;
   const rows=W.map((d,i)=>{
     const t=DM[i];
-    const fin=doneParts(i, D), closed=!!roundLog(D)[i] && !(tg.run&&tg.run.day===i) && i!==n, all=d.length && (closed || d.every(m=>fin[m]));
+    const e=roundLog(D)[i], fin=doneParts(i, D), closed=!!e && !(tg.run&&tg.run.day===i) && i!==n, all=closed || (d.length && d.every(m=>fin[m]));
+    const had=closed? ALL.filter(m=>fin[m]||e.parts.some(p=>p[0]===m)) : ALL.filter(m=>d.includes(m)||fin[m]);
     const chips= weekEdit
       ? tg.secs.map(m=>`<button class="dchip ${K[i].includes(m)?'on':''}" data-a="toggle" data-d="${i}" data-m="${m}" aria-pressed="${K[i].includes(m)?'true':'false'}"><i style="background:${SEC[m].c}"></i>${SEC[m].n}</button>`).join('')
-      : ALL.filter(m=>d.includes(m)||fin[m]).map(m=> fin[m]? `<button class="dchip on done" data-a="open-done" data-d="${i}" data-m="${m}" aria-label="Open the ${SEC[m].n} session">${IC.check}${SEC[m].n}</button>`
+      : had.map(m=> fin[m]? `<button class="dchip on done" data-a="open-done" data-d="${i}" data-m="${m}" aria-label="Open the ${SEC[m].n} session">${IC.check}${SEC[m].n}</button>`
           : closed? `<button class="dchip on skipped ${peekDay===i?'peeking':''}" data-a="peek" data-d="${i}" aria-label="${SEC[m].n} was skipped on Day ${i+1}"><i style="background:${SEC[m].c}"></i><span>${SEC[m].n}</span></button>`
           : tg.run&&tg.run.day===i? `<span class="dchip on"><i style="background:${SEC[m].c}"></i>${SEC[m].n}</span>`
           : `<button class="dchip on ${peekDay===i?'peeking':''}" data-a="peek" data-d="${i}" aria-expanded="${peekDay===i?'true':'false'}" aria-label="${SEC[m].n}: see what Day ${i+1} has planned"><i style="background:${SEC[m].c}"></i>${SEC[m].n}</button>`).join('');
-    return `<div class="day ${i===n?'next':''} ${all&&i!==n?'fin':''}"><div class="dn"><b>Day ${i+1}</b><span>${i===n? (tg.run?'today':'next up') : all? (closed&&!d.every(m=>fin[m])? 'done, part skipped' : 'done') : 'maybe '+WD[POS[D][i]]}</span></div>
+    return `<div class="day ${i===n?'next':''} ${all&&i!==n?'fin':''}"><div class="dn"><b>Day ${i+1}</b><span>${i===n? (tg.run?'today':'next up') : all? (closed&&e.skipped? 'skipped' : closed&&!had.every(m=>fin[m])? 'done, part skipped' : 'done') : 'maybe '+WD[POS[D][i]]}</span></div>
       <div class="dchips">${chips}</div>
-      <div class="dmin">${d.length? (t? '~'+r5(t)+' min' : '') : 'Rest'}</div></div>${!weekEdit&&peekDay===i? peekHtml(W, i) : ''}`;
+      <div class="dmin">${closed? '' : d.length? (t? '~'+r5(t)+' min' : '') : 'Rest'}</div></div>${!weekEdit&&peekDay===i? peekHtml(W, i) : ''}`;
   }).join('');
   return `<section class="card">
     <div class="spread"><div class="h3">Your week</div><div style="display:flex;gap:6px;align-items:center"><span class="chip">${tg.custom?'Edited':'Suggested'}</span>
       <button class="tog ${weekEdit?'on':''}" data-a="week-edit" style="padding:6px 10px">${weekEdit?IC.check+' Done':'Change days'}</button></div></div>
     <div style="margin-top:8px">${rows}</div>
-    <p class="hint">${weekEdit? 'Tap a section to put it on a day or take it off.' : 'A tick means that part is done this time round the week: tap it to see the session, or change it. Tap a day still to come to see what it has planned. Days go in order, not by date, so rest whenever you need to and a missed day waits for you.'}</p>
+    <p class="hint">${weekEdit? 'Tap a section to put it on a day or take it off.' : 'A tick means that part is done this time round the week: tap it to see the session, or change it. A crossed-out part was skipped. Tap a day still to come to see what it has planned. Days go in order, not by date, so rest whenever you need to and a missed day waits for you.'}</p>
     ${tg.custom&&weekEdit? `<button class="btn sm ghost" data-a="reset-week" style="margin-top:8px">${IC.undo} Back to the suggested week</button>` : ''}
     ${fitNotes(W, DM).map(note).join('')}
   </section>`;
@@ -10863,7 +10886,12 @@ function programCard(){
       <div class="ph"><b>${SEC[m].n} &middot; ${DOSE_N[P.dose[m]]}</b><span>${daysOn(m)}</span></div><div class="pt">${cap(what[P.dose[m]])}: ${line[m]}.</div></div></div>`).join('')}</div>
     <p class="hint">${dl? 'This is the lighter week: fewer sets at an easier effort, so the next block starts fresh.' : 'Effort climbs each week, then a lighter week. After it, Together builds the next block from your new numbers.'} Built from your order, ${plural(tg.days,'day')} and ${tg.mins? tg.mins+' minutes' : 'no time limit'}.</p>
     ${tuneLine(P)}
-    <div class="row2" style="margin-top:12px"><button class="btn sm" data-a="t-edit">${IC.sliders} Customize this block</button><button class="btn sm ghost" data-a="t-new">${IC.play} Start a new block</button></div></section>`;
+    <div class="row2" style="margin-top:12px"><button class="btn sm" data-a="t-edit">${IC.sliders} Customize this block</button><button class="btn sm ghost" data-a="t-new">${IC.play} Start a new block</button></div>
+    ${tg.run? '' : `<div class="grp" style="margin-top:16px">Week ${wk} of ${P.weeks}</div>
+    <div class="row3"><button class="tog" data-a="w-prev" ${wk<=1?'disabled':''} aria-label="Back to week ${Math.max(1,wk-1)}">${IC.back} Week ${Math.max(1,wk-1)}</button>
+      <button class="tog" data-a="w-again" aria-label="Start week ${wk} again">${IC.undo} Restart</button>
+      <button class="tog" data-a="w-next" aria-label="${dl? 'Skip to a new block' : 'Skip to week '+(wk+1)}">${dl? 'New block' : 'Week '+(wk+1)} ${IC.chev}</button></div>
+    <p class="hint">Missed some days? Starting the week again usually beats skipping ahead: a week or two off costs little muscle or strength, and each week asks a little more than the last.</p>`}</section>`;
 }
 /* What you changed for this block, in a line. */
 function tuneLine(P){
@@ -11094,7 +11122,9 @@ function pickTop(){ window.scrollTo(0,0); const b=$('[data-a="t-back"],[data-a="
 function viewMain(){
   const W=weekOf(), DM=dayMins(W), n=nextIdx(W);
   const missing=tg.secs.filter(m=> m==='cal'? !((infoOf('cal')||{}).ready) : m==='str'? !strLifts().length : false);
+  const u=undos[undos.length-1];
   return `<div class="stack">
+    ${u? `<button class="undoline" data-a="undo">${IC.undo}<span>Undo: ${esc(u.label)}</span></button>` : ''}
     ${ciCard()}
     ${tg.run? heroRun() : heroNext(W)}
     ${missing.map(m=>`<section class="card"><div class="spread" style="align-items:flex-start"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n}</div>
@@ -11137,12 +11167,18 @@ __root.addEventListener('click', e=>{
     case 'd-kit': { const v=el.dataset.v, cur=draft.kit? draft.kit : KIT.map(k=>k[0]);
       draft.kit= cur.includes(v)? cur.filter(x=>x!==v) : KIT.map(k=>k[0]).filter(x=>cur.includes(x)||x===v); render(); break; }
     case 'd-exp': draft.exp=el.dataset.v; render(); break;
-    case 't-new': tune={T:cleanTune(tg.tune), fresh:true}; render(); window.scrollTo(0,0); break;
+    case 't-new': if(tg.run){ toast('Finish or end today’s day first. A new block starts on a fresh week.'); break; }
+      tune={T:cleanTune(tg.tune), fresh:true}; render(); window.scrollTo(0,0); break;
     case 't-edit': tune={T:cleanTune(tg.tune), fresh:false}; render(); window.scrollTo(0,0); break;
     case 't-focus': { const g=el.dataset.g, v=el.dataset.v; if(v==='normal') delete tune.T.focus[g]; else tune.T.focus[g]=v; render();
       { const b=$(`[data-a="t-focus"][data-g="${g}"][data-v="${v}"]`); if(b) b.focus(); } break; }
-    case 't-save': { const fresh=tune.fresh; tg.tune=cleanTune(tune.T); if(fresh) tg.plan=null; tune=null; save(); render(); window.scrollTo(0,0);
-      toast(fresh? `Your new block starts: week 1 of ${BLOCK}.` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`); break; }
+    case 't-save': { const fresh=tune.fresh;
+      if(!tune.setup) remember(fresh? 'a new block started' : 'changes to this block');
+      tg.tune=cleanTune(tune.T);
+      // a new block starts on a fresh week, at Day 1
+      if(fresh && !tg.run){ tg.plan=null; tg.roundAt=Date.now(); tg.next=0; peekDay=null; }
+      tune=null; save(); render(); window.scrollTo(0,0);
+      toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, !tune&&undos.length>0); break; }
     case 't-cancel': tune=null; render(); window.scrollTo(0,0); break;
     case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, y:window.scrollY}; render(); pickTop(); break;
     case 't-back': closePick(); break;
@@ -11179,6 +11215,7 @@ __root.addEventListener('click', e=>{
     case 'd-save': {
       if(!draft.secs.length) break;
       const changed= draft.days!==tg.days || draft.secs.join()!==tg.secs.join(), was=tg.on&&tg.plan? baseSig() : null;
+      if(tg.on) remember('changes to the set-up');
       tg.secs=draft.secs.slice(); tg.days=draft.days; tg.mins=draft.mins; tg.prio=(draft.prio||autoOrder(ALL, skillGoal())).slice(); tg.on=true;
       tg.kit= draft.kit&&draft.kit.length<KIT.length? draft.kit.slice() : null; tg.exp=draft.exp||'intermediate';
       // a day already running takes the new order for what is left of it
@@ -11189,24 +11226,40 @@ __root.addEventListener('click', e=>{
       save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(tune? 'Your week is built. Customize this block, then start it.' : 'Saved'); break;
     }
     case 'd-cancel': draft=null; render(); break;
-    case 'd-stop': tg.on=false; tg.run=null; draft=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Stopped. Each trainer carries on by itself.'); break;
+    case 'd-stop': remember('Together stopped'); tg.on=false; tg.run=null; draft=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Stopped. Each trainer carries on by itself.', true); break;
     case 'edit': draft=newDraft(); render(); window.scrollTo(0,0); break;
     case 'start-day': startDay(+el.dataset.d); break;
     case 'part': startPart(k); break;
-    case 'skip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='skip'; save(); render(); } break;
+    case 'skip': if(tg.run&&tg.run.parts[k]){ remember(SEC[tg.run.parts[k].m].n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(SEC[tg.run.parts[k].m].n+' skipped.', true); } break;
     case 'unskip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='todo'; save(); render(); } break;
-    case 'end-day': if(tg.run){ tg.run.parts.forEach(p=>{ if(p.st==='todo') p.st='skip'; }); save(); render(); } break;
+    case 'end-day': if(tg.run){ remember('Day '+(tg.run.day+1)+' ended early'); tg.run.parts.forEach(p=>{ if(p.st==='todo') p.st='skip'; }); save(); render(); } break;
+    case 'skip-day': { const W=weekOf(), d=+el.dataset.d; if(tg.run||!W[d]||!W[d].length) break;
+      remember('Day '+(d+1)+' skipped');
+      // the day goes down as skipped, with nothing done: each section's next session waits for its next day
+      const now=Date.now(); tg.log=(tg.log||[]).concat([{date:now, start:now, day:d, skipped:true, parts:W[d].map(m=>[m,'skip',null])}]).slice(-60);
+      const {n, moved}=moveOn(d); pickOpen=false; peekDay=null; save(); render(); window.scrollTo(0,0);
+      toast(`Day ${d+1} skipped.${n>=0? ' Next up: Day '+(n+1)+'.' : ''}${moved}`, true); break; }
+    case 'w-prev': case 'w-again': case 'w-next': {
+      if(tg.run){ toast('Finish or end today’s day first.'); break; }
+      const P=plan(), wk=P.week, last=wk>=P.weeks;
+      remember(a==='w-again'? `week ${wk} started again` : a==='w-prev'? `back to week ${wk-1}` : last? 'skipped to a new block' : `skipped to week ${wk+1}`);
+      if(a==='w-prev') P.week=Math.max(1, wk-1); else if(a==='w-next'){ if(last) tg.plan=null; else P.week=wk+1; }
+      // either way the week starts fresh, at Day 1
+      tg.roundAt=Date.now(); tg.next=0; peekDay=null; pickOpen=false; save(); render(); window.scrollTo(0,0);
+      toast(a==='w-next'&&last? `A new block starts: week 1 of ${BLOCK}, Day 1.` : `Week ${plan().week} of ${BLOCK} starts at Day 1.`, true); break; }
+    case 'undo': undoLast(); break;
     case 'open': { const api=H.api(el.dataset.m); if(api) api.open(); H.away(el.dataset.m,'run'); break; }
     case 'short': tg.short=!tg.short; save(); render(); break;
     case 'pickday': pickOpen=!pickOpen; render(); break;
-    case 'setnext': tg.next=+el.dataset.d; pickOpen=false; peekDay=null; save(); render(); window.scrollTo(0,0); break;
+    case 'setnext': remember('the next day changed'); tg.next=+el.dataset.d; pickOpen=false; peekDay=null; save(); render(); window.scrollTo(0,0); toast(`Day ${tg.next+1} is next up.`, true); break;
     case 'toggle': {
       // which sections go on which days; Together refills the days to match, in the same block week
       const d=+el.dataset.d, m=el.dataset.m, W=plan().kinds.map(x=>x.filter(y=>tg.secs.includes(y)));
+      remember(`${SEC[m].n} ${W[d].includes(m)? 'taken off' : 'put on'} Day ${d+1}`);
       W[d]= W[d].includes(m)? W[d].filter(x=>x!==m) : ALL.filter(x=>W[d].includes(x)||x===m);
       tg.custom=W; save(); render(); break;
     }
-    case 'reset-week': tg.custom=null; save(); render(); break;
+    case 'reset-week': remember('back to the suggested week'); tg.custom=null; save(); render(); toast('Back to the suggested week.', true); break;
     case 'retry': render(); break;
     case 'ci-w': { const f=el.dataset.f, v=+el.dataset.v; ciDraft.w[f]= ciDraft.w[f]===v? undefined : v;
       el.parentElement.querySelectorAll('button').forEach(b=>{ const on=ciDraft.w[f]===+b.dataset.v; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); });
