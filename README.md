@@ -13,10 +13,10 @@ Milo is my workout tracker for muscle growth, strength and calisthenics. Use it 
 ## Start a workout
 
 1. [Open Milo](https://gwilltsherman-byte.github.io/milovancroton/) on your phone or computer.
-2. Choose **Muscle**, **Strength** or **Ladder** and set up a plan or goal.
-3. Start a session and tick off your sets as you train.
+2. In **Together**, pick what you train (**Muscle**, **Strength**, **Ladder** or any mix), rank it, and set your days and time. Together builds your week, and the trainers you picked appear as tabs.
+3. Start the day and tick off your sets as you train.
 
-Use **Together** to plan a week across the trainers and choose which one comes first each day. Each trainer also works on its own.
+Each trainer also keeps its own history, records and exercise instructions, and can run a plan of its own if you want to train just that.
 
 On iPhone, open Milo in Safari and choose **Share → Add to Home Screen**. On Android, use your browser's **Install app** or **Add to Home screen** option. Load it once while connected, then use it offline.
 
@@ -27,7 +27,7 @@ On iPhone, open Milo in Safari and choose **Share → Add to Home Screen**. On A
 | **Muscle** | Hypertrophy blocks, hard sets per muscle, effort and recovery. |
 | **Strength** | Equipment-based plans, working weights, rep records and estimated maxes. |
 | **Ladder** | Calisthenics goals, exercise progressions and the mobility or balance they need. |
-| **Together** | A shared week in the order you choose, daily check-ins and training volume across the other trainers. |
+| **Together** | Where the app opens: one program built from what you train and how you rank it, with daily check-ins and training volume across the trainers. |
 
 Sessions can be resumed, edited or deleted. Exercise instructions and research references are available inside the app. See the [feature guide](docs/FEATURES.md) for the details and the limits of its training estimates.
 
@@ -82,8 +82,8 @@ node tools/update-integrity.cjs --check
 node --test tests/*.test.cjs
 ```
 
-Serve the repository and open `tests/browser.html`, `tests/ladder-browser.html` and
-`tests/redesign-browser.html` sequentially on a separate local origin for browser regression checks.
+Serve the repository and open `tests/browser.html`, `tests/ladder-browser.html`,
+`tests/redesign-browser.html` and `tests/together-browser.html` sequentially on a separate local origin for browser regression checks.
 The integrity tool also changes the offline cache whenever app assets change. After an app
 update, reload once to use the new offline cache. See [SECURITY.md](SECURITY.md)
 for security reporting and backup guidance. Bundled font licenses are in `assets/fonts/`.
