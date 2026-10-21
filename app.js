@@ -4955,6 +4955,7 @@ const I={
   back: sv('<path d="M19 12H5M11 18l-6-6 6-6"/>'),
   up: sv('<path d="M12 19V5M6 11l6-6 6 6"/>'),
   down: sv('<path d="M12 5v14M6 13l6 6 6-6"/>'),
+  chev: sv('<path d="M6 9l6 6 6-6"/>'),
   dots: sv('<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>'),
   info: sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
   trophy: sv('<path d="M8 4h8v5a4 4 0 0 1-8 0Z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3"/><path d="M12 13v4M9 20h6"/>'),
@@ -6877,13 +6878,17 @@ function takeBack(){
 function resumable(id){ const t=tb.get(); return !!(t && (t.kind==='finish'||t.kind==='end') && t.id===id); }
 
 /* ==================== VIEWS: TODAY ==================== */
+/* Where you are on a goal, in one line. */
+function goalNow(g){
+  const cur=curIdx(g.l), gst=stepsOf(g.l)[g.r];
+  return !state.placed[g.l]?'Not placed yet':cur===g.r?`On the goal movement &middot; verified best <b>${verifiedBestFor(g.l,g.r)}${unitS(gst)}</b> of ${g.std}${unitS(gst)}`:`Now: <b>${esc(curStep(g.l).n)}</b> &middot; step ${Math.max(0,rungRank(g.l,cur,g))+1} of ${rungRank(g.l,g.r,g)+1}`;
+}
 function goalCard(g){
-  const cur=curIdx(g.l), pct=Math.round(goalProgress(g)*100), st=curStep(g.l), gst=stepsOf(g.l)[g.r];
-  const placed=state.placed[g.l];
-  return `<button class="goal-card" data-act="go-goals">
+  const pct=Math.round(goalProgress(g)*100);
+  return `<button class="goal-card" data-act="go-goals" data-id="${esc(g.id)}">
     <div class="spread"><div class="gt">${esc(g.n)}</div><span class="chip brass">${pct}%</span></div>
     <div class="gbar"><i style="width:${Math.max(3,pct)}%"></i></div>
-    <div class="gs">${!placed?'Not placed yet':cur===g.r?`On the goal movement &middot; verified best <b>${verifiedBestFor(g.l,g.r)}${unitS(gst)}</b> of ${g.std}${unitS(gst)}`:`Now: <b>${esc(st.n)}</b> &middot; step ${Math.max(0,rungRank(g.l,cur,g))+1} of ${rungRank(g.l,g.r,g)+1}`}</div>
+    <div class="gs">${goalNow(g)}</div>
     ${needsText(g)?`<div class="gs" style="margin-top:2px">What else it takes: ${needsText(g)}</div>`:''}</button>`;
 }
 function testsDue(){ const ids=[...new Set(activeGoals().map(g=>g.l))].filter(id=>state.placed[id]);
@@ -6937,19 +6942,23 @@ function viewToday(){
 }
 
 /* ==================== VIEWS: GOALS ==================== */
+/* Goal cards fold to their summary so a few goals fit on a screen. A goal you open or close stays that way for this
+   visit; otherwise a lone goal, or one not placed yet, starts open and the rest start folded. */
+const goalOpen={};
+function goalIsOpen(g, n){ return g.id in goalOpen? goalOpen[g.id] : n===1 || !state.placed[g.l]; }
 function viewGoals(){
   const goals=activeGoals(), done=state.goals.filter(g=>g.achieved);
   if(!goals.length && !done.length) return `<div class="empty"><div class="ei">${I.target}</div><h3>No goals yet</h3>
     <p>Pick the skills you want to achieve. The app places you on each ladder and builds the path.</p>
     <button class="btn primary block" data-act="goal-add" style="max-width:300px;margin:0 auto">${I.target} Choose my goals</button></div>`;
   return `<button class="btn primary block" data-act="goal-add" style="margin-bottom:14px">${I.plus} Add a goal</button>
-    ${goals.map(goalFull).join('')}
+    ${goals.map(g=>goalFull(g, goalIsOpen(g, goals.length))).join('')}
     ${done.length?`<div class="card pad"><div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Achieved</span></div>
       ${done.slice().reverse().map(g=>`<div class="lrow"><div class="li" style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)">${I.check}</div>
         <div class="lb"><div class="a">${esc(g.n)}</div><div class="b">${fmtDate(g.achieved)}</div></div></div>`).join('')}</div>`:''}
     <div style="margin-top:14px">${evChip('goals','Why goals and tests')}</div>`;
 }
-function goalFull(g){
+function goalFull(g, open){
   const L=LADDERS[g.l], cur=curIdx(g.l), placed=state.placed[g.l], pct=Math.round(goalProgress(g)*100), lt=lastTestFor(g.l);
   const route=pathFor(g.l,g),path=route.slice(0,route.indexOf(g.r)+1).map((i,k)=>{const st=stepsOf(g.l)[i],proven=currentProof(g.l,i).ready;
     const cls=!placed?'locked':i===cur?'current':proven?'cleared':'locked',isGoal=i===g.r,best=verifiedBestFor(g.l,i);
@@ -6967,11 +6976,15 @@ function goalFull(g){
     ${ns.map(needRow).join('')}
     ${ok<ns.length&&placed?`<button class="btn ghost block" data-act="need-place" data-id="${esc(g.id)}" style="margin-top:8px">${I.check} Can already do some? Tick them</button>`:''}
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">${(N.ev||[]).filter(k=>EVIDENCE[k]).map(k=>evChip(k,EVIDENCE[k].t)).join('')}</div>` : '';
-  return `<div class="card pad" style="margin-bottom:14px">
-    <div class="spread"><div style="min-width:0"><div class="eyebrow">${L.n}</div><div class="gt" style="margin-top:3px">${esc(g.n)}</div></div>
+  return `<div class="card pad goal-full ${open?'open':''}" data-id="${esc(g.id)}" style="margin-bottom:14px">
+    <div class="spread" style="align-items:flex-start">
+      <button class="goal-head" data-act="goal-toggle" data-id="${esc(g.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gd-${esc(g.id)}">
+        <div class="eyebrow">${L.n}</div><div class="gt" style="margin-top:3px">${esc(g.n)}<span class="gchev">${I.chev}</span></div>
+        <div class="gbar"><i style="width:${Math.max(3,pct)}%"></i></div>
+        <div class="gs">${pct}% of the way &middot; ${lt?'last tested '+relDay(lt.date):'not tested yet'}</div>
+        <div class="gs">${goalNow(g)}${needsText(g)?' &middot; what else it takes: '+needsText(g):''}</div></button>
       <button class="setmenu" data-act="goal-menu" data-id="${esc(g.id)}" aria-label="Goal options">${I.dots}</button></div>
-    <div class="gbar"><i style="width:${Math.max(3,pct)}%"></i></div>
-    <div class="gs">${pct}% of the way &middot; ${lt?'last tested '+relDay(lt.date):'not tested yet'}</div>
+    <div class="goal-body" id="gd-${esc(g.id)}" ${open?'':'hidden'}>
     ${placed?'':`<div class="banner info" style="margin:12px 0 0">${I.info}<span>Tell the app where you are to unlock the plan.</span></div>`}
     <div class="ladder" style="margin-top:12px">${path}</div>
     ${sup?`<div class="section-label" style="margin:14px 3px 2px">Trains alongside <span class="ln"></span></div>${sup}`:''}
@@ -6979,7 +6992,7 @@ function goalFull(g){
     <div class="grid2" style="margin-top:12px">
       ${placed?`<button class="btn ghost block" data-act="test-go" data-ids="${g.l}">${I.test} Test me</button>`:`<button class="btn primary block" data-act="place" data-id="${esc(g.id)}">${I.target} Place me</button>`}
       <button class="btn ghost block" data-act="ladder" data-id="${g.l}">${I.ladder} Whole ladder</button></div>
-  </div>`;
+  </div></div>`;
 }
 
 /* One thing a goal takes: its standard, and where you are with it. Tap for how to do it. */
@@ -7436,7 +7449,11 @@ __root.addEventListener('click', e=>{
   const A=state.active;
   switch(act){
     case 'nav': state.route=el.dataset.route; save(); render(); window.scrollTo(0,0); break;
-    case 'go-goals': closeModal(); state.route='goals'; save(); render(); window.scrollTo(0,0); break;
+    case 'go-goals': { const id=el.dataset.id; closeModal(); state.route='goals'; if(id) goalOpen[id]=true; save(); render();
+      const card=id&&[...$('#view').querySelectorAll('.goal-full')].find(c=>c.dataset.id===id);
+      if(card) card.scrollIntoView({block:'start'}); else window.scrollTo(0,0); break; }
+    case 'goal-toggle': { const card=el.closest('.goal-full'), open=!card.classList.contains('open');
+      goalOpen[el.dataset.id]=open; card.classList.toggle('open',open); el.setAttribute('aria-expanded',String(open)); card.querySelector('.goal-body').hidden=!open; break; }
     case 'close-modal': closeModal(); break;
     case 'settings': openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;

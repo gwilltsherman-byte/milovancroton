@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-Nx4DQF0UIh5nNkAhDoV9WX/0GvxoU3d4QYv0LaVH9RI='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-FOtou1t1juqeCupppEZCH8eZJ7AZEsKg4F0dZgyaP+k='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -1185,6 +1185,12 @@ svg{width:18px; height:18px; flex:none}
 .gbar i{display:block; height:100%; background:var(--grad-brass); border-radius:99px}
 .gs{font-size:12.5px; color:var(--muted); line-height:1.45}
 .gs b{color:var(--ink)}
+.goal-full{scroll-margin-top:calc(var(--shell-top, 112px) + 12px)}
+.goal-head{display:block; flex:1; min-width:0; text-align:left; padding:0; font-size:inherit; border-radius:var(--r-sm)}
+.goal-head:focus-visible{outline:2px solid var(--brass); outline-offset:4px}
+.gchev{display:inline-grid; place-items:center; width:22px; height:22px; margin-left:6px; vertical-align:-3px; color:var(--muted)}
+.gchev svg{width:18px; height:18px; transition:transform .2s}
+.goal-full.open .gchev svg{transform:rotate(180deg)}
 .rung.goal .dot{border-color:var(--brass); color:var(--brass-ink)}
 .rung.goal.cleared .dot{color:#fff}
 .rung .side svg{width:15px; height:15px}
@@ -2066,7 +2072,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=aaeb279ed49117e8c549" integrity="sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=371e03405d14221e6736" integrity="sha256-Nx4DQF0UIh5nNkAhDoV9WX/0GvxoU3d4QYv0LaVH9RI=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=14eb68bb5b758eea9e0a" integrity="sha256-FOtou1t1juqeCupppEZCH8eZJ7AZEsKg4F0dZgyaP+k=" crossorigin="anonymous"></script>
 </body>
 </html>
 
