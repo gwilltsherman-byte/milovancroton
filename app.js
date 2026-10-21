@@ -9859,6 +9859,7 @@ const LIFT_CAP={build:6, moderate:5, maintain:4};   // Muscle exercises in one d
    as much weekly work again (more sets grow more, with diminishing returns); Less is the dose that keeps what you have. */
 const TUNE_GROUPS=['Chest','Back','Shoulders','Arms','Legs','Core'];
 const FOCUS=[['skip','Skip'],['less','Less'],['normal','Normal'],['more','More']];
+const PICKS_MAX=6;   // exercises you can pick for one muscle
 
 /* A suggested weekday for each training day; spacing and back-to-back checks use these real gaps. */
 const WD=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -9934,7 +9935,8 @@ function cleanTune(T){
   const o={focus:{}, ex:{}, lift:{}, off:{}}, rec=x=>x&&typeof x==='object'&&!Array.isArray(x)? x : {}, idOk=v=>typeof v==='string'&&/^[A-Za-z0-9_.:@/+| -]{1,200}$/.test(v);
   if(!T||typeof T!=='object') return o;
   Object.entries(rec(T.focus)).forEach(([g,v])=>{ if(TUNE_GROUPS.includes(g) && ['skip','less','more'].includes(v)) o.focus[g]=v; });
-  Object.entries(rec(T.ex)).forEach(([m,v])=>{ if(LIFT_MUSCLES.includes(m) && idOk(v)) o.ex[m]=v; });
+  // a muscle's exercises: one or several, which take turns on its days in the order picked (one, from older saves)
+  Object.entries(rec(T.ex)).forEach(([m,v])=>{ const ids=[...new Set((Array.isArray(v)? v : [v]).filter(idOk))].slice(0, PICKS_MAX); if(LIFT_MUSCLES.includes(m) && ids.length) o.ex[m]=ids; });
   Object.entries(rec(T.lift)).forEach(([a,v])=>{ if(STR_ORDER.includes(a) && idOk(v)) o.lift[a]=v; });
   Object.entries(rec(T.off)).forEach(([a,v])=>{ if(STR_ORDER.includes(a) && v===true) o.off[a]=true; });
   return o;
@@ -10079,7 +10081,7 @@ function buildPlan(T){
     const natural=need=> dose.lift==='maintain'? 1 : Math.max(Math.min(2, ld.length), Math.min(ld.length, Math.ceil(need/4)));
     // one go at the week: each muscle in turn gets what it still needs after the exercises before it
     const run=(freqOf, room)=>{
-      const C=Object.assign({}, cov), hit=dayHit.map(s=>new Set(s)), taken=days.map(()=>new Set()), used={}, out=days.map(()=>[]), at={}, skipped=[], lim=room===Infinity? Infinity : cap;
+      const C=Object.assign({}, cov), hit=dayHit.map(s=>new Set(s)), taken=days.map(()=>new Set()), used={}, out=days.map(()=>[]), at={}, skipped=[], lim=room===Infinity? Infinity : cap, turn={};
       let left=room;
       order.forEach(x=>{
         const need=targetOf(x.mu)-(C[x.mu]||0); at[x.mu]=need; if(need<lo) return;
@@ -10090,12 +10092,13 @@ function buildPlan(T){
           .forEach(j=>{ const i=ld[j]; if(out[i].length>=lim) return;
             // with heavy lifting that day, or a muscle the week already works, isolation adds the least to what's tired;
             // otherwise a big muscle gets a compound. An exercise you picked comes first, even if it needs equipment you didn't choose
-            const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i];
-            const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || e.id===T.ex[x.mu]);
-            const e=cat.filter(fits).sort((a,b)=> ((b.id===T.ex[x.mu])-(a.id===T.ex[x.mu])) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
+            // your picks take turns on its days, in the order you picked them
+            const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[], k=turn[x.mu]||0, want=mine.length? mine[k%mine.length] : null;
+            const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id));
+            const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
               || (used[a.id]||0)-(used[b.id]||0) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
             if(!e) return;
-            taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++;
+            taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; turn[x.mu]=k+1;
             out[i].push(Object.assign({exId:e.id, mu:x.mu, sets:n, comp:e.comp}, x.more? {more:true} : {}));
             hit[i].add(x.mu); e.p.forEach(q=>{ if(q!==x.mu){ C[q]=(C[q]||0)+n; hit[i].add(q); } }); e.s.forEach(q=>{ C[q]=(C[q]||0)+n*0.5; }); });
         left-=got; if(!got) skipped.push(x.mu);
@@ -10985,6 +10988,12 @@ const PROGRAM_SOURCES=[
   ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
   ['Simão et al. 2012, Exercise order in resistance training','Sports Med','Exercise order in resistance training Simao 2012'],
 ];
+/* Why a few exercises for a muscle, kept for the block. */
+const PICK_SOURCES=[
+  ['Fonseca et al. 2014, Varied exercises and even growth','J Strength Cond Res','Changes in exercises are more effective than in loading schemes to improve muscle strength'],
+  ['Baz-Valle et al. 2019, Random exercise variation in trained men','PLoS One','The effects of exercise variation in muscle thickness, maximal strength and motivation in resistance trained men'],
+  ['Kassiano et al. 2022, Does varying exercises help?','J Strength Cond Res','Does Varying Resistance Exercises Promote Superior Muscle Hypertrophy and Strength Gains? A Systematic Review'],
+];
 /* What More and Less rest on, in Customize this block. */
 const FOCUS_SOURCES=[
   ['Schoenfeld et al. 2017, Weekly sets and muscle growth','J Sports Sci','Dose-response relationship between weekly resistance training volume and increases in muscle mass'],
@@ -11073,9 +11082,9 @@ function viewTune(){
             <div class="seg2" role="group" aria-label="${g}">${FOCUS.map(([v,l])=>`<button class="${cur===v?'on':''}" data-a="t-focus" data-g="${g}" data-v="${v}" aria-pressed="${cur===v}">${l}</button>`).join('')}</div>
             <p class="tnums">${nums}${short.length? `. Short of ${P.goal[short[0]]}${ms.length>1? ' for '+esc(listText(short.map(k=>mName(k).toLowerCase()))) : ''}` : ''}</p></div>`; }).join('');
         const nd=P.kinds.filter(d=>d.includes('lift')).length;
-        const ex=LIFT_MUSCLES.filter(k=>sets[k]).map(k=>{ const mine=T.ex[k]&&cat.some(e=>e.id===T.ex[k]&&e.p.includes(k));
+        const ex=LIFT_MUSCLES.filter(k=>sets[k]).map(k=>{ const mine=(T.ex[k]||[]).filter(id=>cat.some(e=>e.id===id&&e.p.includes(k))).length;
           const names=[...new Set(P.days.flatMap(d=>d.lift).filter(x=>x.mu===k).map(x=>(cat.find(e=>e.id===x.exId)||{}).name).filter(Boolean))];
-          return row('ex', k, esc(mName(k)), plural(sets[k],'set')+' a week'+(mine? ' &middot; your pick' : ''), esc(names.join(', '))); }).join('');
+          return row('ex', k, esc(mName(k)), plural(sets[k],'set')+' a week'+(mine>1? ' &middot; your '+mine+' picks' : mine? ' &middot; your pick' : ''), esc(names.join(', '))); }).join('');
         return `<p class="hint" style="margin-top:0">How much Muscle gives each muscle group. The numbers are hard sets a week for each muscle (sets taken close to failure) across your whole week. A set counts in full for the muscles an exercise mainly works and half for the ones that help, like biceps in a row, so ${rest? rest+' and your other exercises all count, and Muscle tops up the rest' : 'one exercise counts toward several muscles'}.</p>
           <dl class="tkey">${key.map(([t,d])=>`<div><dt>${t}</dt><dd>${d}</dd></div>`).join('')}</dl>
           ${tight? `<p class="tnote">${IC.info}<span>Your ${plural(nd,'Muscle day')}${tg.mins? ' and time limit' : ''} can’t fit every target, so some muscles get less, marked below. More training days${tg.mins? ' or time' : ''} make room, or set a group you care less about to Less.</span></p>` : ''}
@@ -11103,17 +11112,26 @@ function viewTune(){
 /* The library, opened from a row in Customize this block: every exercise that works the muscle, or the lifts for a
    strength area, and a form to make your own exercise, which joins Muscle's library. */
 const pickItem=(id, name, sub, on)=>`<button class="tpick topt${on?' on':''}" data-a="t-choose" data-id="${esc(id)}" aria-pressed="${on}"><span class="tn"><b>${name}</b>${sub? `<span>${sub}</span>` : ''}</span>${on? IC.check : ''}</button>`;
+/* Which of this week's days use each exercise for a muscle, in the block as you have it now. */
+function daysFor(mu){
+  const P=buildPlan(tune.T), by={}; let n=0;
+  P.days.forEach((d,i)=>{ const xs=d.lift.filter(x=>x.mu===mu); if(xs.length) n++; xs.forEach(x=>{ (by[x.exId]||(by[x.exId]=[])).push(i+1); }); });
+  return {by, n};
+}
+const dayWords=ds=> ds.length>1? 'Days '+listText(ds.map(String)) : 'Day '+ds[0];
 function pickList(){
   const K=tune.pick, mu=K.k, T=tune.T, L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], eq=kitEq(), q=(K.q||'').trim().toLowerCase();
-  const all=cat.filter(e=>e.p.includes(mu)), cur=T.ex[mu]&&all.some(e=>e.id===T.ex[mu])? T.ex[mu] : '';
+  const all=cat.filter(e=>e.p.includes(mu)), mine=(T.ex[mu]||[]).filter(id=>all.some(e=>e.id===id)), D=daysFor(mu);
   const match=e=>!q || e.name.toLowerCase().includes(q) || e.equipment.toLowerCase().includes(q);
-  const sub=e=>{ const also=e.p.filter(x=>x!==mu).map(x=>muscleName(x).toLowerCase());
-    return [e.comp? 'Compound' : 'Isolation', esc(e.equipment)].concat(also.length? ['also '+esc(listText(also))] : [], e.custom? ['Yours'] : []).join(' &middot; '); };
+  // what it is, and the days it lands on this week: yours, or Together's while you let it pick
+  const sub=e=>{ const also=e.p.filter(x=>x!==mu).map(x=>muscleName(x).toLowerCase()), on=D.by[e.id], k=mine.indexOf(e.id);
+    const when= on? `<em class="tday">${k>=0&&mine.length>1? 'Pick '+(k+1)+': ' : ''}${dayWords(on)}</em>` : k>=0? `<em class="tday off">Pick ${k+1}: no day left for it, ${esc(muscleName(mu).toLowerCase())} has ${plural(D.n,'day')}</em>` : '';
+    return (when? when+' &middot; ' : '')+[e.comp? 'Compound' : 'Isolation', esc(e.equipment)].concat(also.length? ['also '+esc(listText(also))] : [], e.custom? ['Yours'] : []).join(' &middot; '); };
   const ord=(a,b)=>(b.custom-a.custom) || a.name.localeCompare(b.name);
   const inKit=all.filter(e=>eq.includes(e.equipment)&&match(e)).sort(ord), out=all.filter(e=>!eq.includes(e.equipment)&&match(e)).sort(ord);
-  return (q? '' : pickItem('', 'Let Together pick', 'It picks for each day: isolation work when the day already has heavy lifting or the muscle is worked elsewhere that week, otherwise a compound for a big muscle.', !cur))
-    + (inKit.length? `<div class="grp">In your kit</div>`+inKit.map(e=>pickItem(e.id, esc(e.name), sub(e), e.id===cur)).join('') : '')
-    + (out.length? `<div class="grp">Needs equipment you didn’t choose</div>`+out.map(e=>pickItem(e.id, esc(e.name), sub(e), e.id===cur)).join('') : '')
+  return (q? '' : pickItem('', 'Let Together pick', 'It picks for each day and varies them: isolation work when the day already has heavy lifting or the muscle is worked elsewhere that week, otherwise a compound for a big muscle.', !mine.length))
+    + (inKit.length? `<div class="grp">In your kit</div>`+inKit.map(e=>pickItem(e.id, esc(e.name), sub(e), mine.includes(e.id))).join('') : '')
+    + (out.length? `<div class="grp">Needs equipment you didn’t choose</div>`+out.map(e=>pickItem(e.id, esc(e.name), sub(e), mine.includes(e.id))).join('') : '')
     + (q&&!inKit.length&&!out.length? `<p class="hint">Nothing that works ${esc(muscleName(mu).toLowerCase())} matches “${esc(K.q.trim())}”. Make it below.</p>` : '');
 }
 function viewPick(){
@@ -11139,10 +11157,14 @@ function viewPick(){
       <button class="btn pri block" data-a="t-mk-save" style="margin-top:18px">${IC.check} ${M.primary.includes(mu)? 'Save and use for '+mn : 'Save to your library'}</button>
     </section></div>`;
   }
-  return `<div class="stack"><section class="card">${head('Exercise for '+mn, `Every exercise in your library that works ${mn} as a main muscle, so each set counts in full toward its weekly sets. Your pick is used every day ${mn} is trained this block.`)}
+  const n=daysFor(mu).n;
+  return `<div class="stack"><section class="card">${head('Exercises for '+mn, `Every exercise in your library that works ${mn} as a main muscle, so each set counts in full. ${cap(mn)} is trained on ${plural(n,'day')} a week. Pick one for ${n>1? 'all of them' : 'it'}, or several to take turns on ${n>1? 'those days' : 'it'} in the order you pick them.`)}
+    <p class="hint" style="margin-top:8px">Two or three exercises for a muscle can grow it more evenly than one, as each loads it a little differently. Keep them for the block: changing exercises at random every session tends to slow progress.</p>
     <label class="tsearch">${IC.search}<input id="tq" type="search" placeholder="Search by name or equipment" value="${esc(K.q||'')}" autocomplete="off" aria-label="Search exercises"></label>
     <div class="tlist" id="tlist">${pickList()}</div>
-    <button class="btn block" data-a="t-make" style="margin-top:16px">${IC.plus} Make your own exercise</button>
+    <button class="btn pri block" data-a="t-back" style="margin-top:16px">${IC.check} Done</button>
+    <button class="btn block" data-a="t-make" style="margin-top:8px">${IC.plus} Make your own exercise</button>
+    ${basedOn('What this is based on', ['Using a few exercises for a muscle, chosen and kept on purpose, can spread growth more evenly along it, as different exercises load different regions. Rotating exercises at random every session did no better in trained lifters and may slow the gains that come from getting better at an exercise.'], PICK_SOURCES)}
   </section></div>`;
 }
 /* Back from the library to the row you opened it from. */
@@ -11215,8 +11237,14 @@ __root.addEventListener('click', e=>{
     case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, y:window.scrollY}; render(); pickTop(); break;
     case 't-back': closePick(); break;
     case 't-choose': { const K=tune.pick, v=el.dataset.id, T=tune.T;
-      if(K.t==='ex'){ if(v) T.ex[K.k]=v; else delete T.ex[K.k]; }
-      else if(v==='-'){ T.off[K.k]=true; delete T.lift[K.k]; } else { delete T.off[K.k]; T.lift[K.k]=v; }
+      if(K.t==='ex'){
+        // a muscle's exercises: tap to add or take one off; they take turns in the order picked
+        const cur=(T.ex[K.k]||[]).slice(), i=cur.indexOf(v);
+        if(!v) cur.length=0; else if(i>=0) cur.splice(i,1); else if(cur.length>=PICKS_MAX){ toast(`${PICKS_MAX} is the most for one muscle. Take one off first.`); break; } else cur.push(v);
+        if(cur.length) T.ex[K.k]=cur; else delete T.ex[K.k];
+        const l=$('#tlist'); if(l) l.innerHTML=MiloSecurity.html(pickList());
+        { const b=$(`[data-a="t-choose"][data-id="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
+      if(v==='-'){ T.off[K.k]=true; delete T.lift[K.k]; } else { delete T.off[K.k]; T.lift[K.k]=v; }
       closePick(); break; }
     case 't-make': { const K=tune.pick, eq=kitEq(); K.make={name:(K.q||'').trim(), equipment:eq[0], comp:BIG.includes(K.k), primary:[K.k], secondary:[]}; render(); pickTop(); break; }
     case 't-mk-cancel': tune.pick.make=null; render(); pickTop(); break;
@@ -11231,7 +11259,8 @@ __root.addEventListener('click', e=>{
       if(!M.primary.length){ toast('Pick at least one main muscle'); break; }
       const id=L&&L.addCustom? L.addCustom({name, equipment:M.equipment, comp:M.comp, primary:M.primary, secondary:M.secondary}) : null;
       if(!id){ toast('That exercise couldn’t be saved'); break; }
-      if(M.primary.includes(K.k)){ tune.T.ex[K.k]=id; closePick(); toast(`${esc(name)} is in your library and picked for ${esc(muscleName(K.k).toLowerCase())}.`); }
+      if(M.primary.includes(K.k)){ const cur=tune.T.ex[K.k]||[]; if(cur.length<PICKS_MAX) tune.T.ex[K.k]=cur.concat(id);
+        K.make=null; K.q=''; render(); pickTop(); toast(`${esc(name)} is in your library and picked for ${esc(muscleName(K.k).toLowerCase())}.`); }
       else { K.make=null; K.q=''; render(); pickTop(); toast(`${esc(name)} is in your library. It doesn’t work ${esc(muscleName(K.k).toLowerCase())} as a main muscle, so it isn’t picked here.`); }
       break; }
     case 'd-up': case 'd-down': {
