@@ -30,7 +30,7 @@
     check(!root.querySelector('[data-a="d-save"]').disabled, 'one kind of training is enough to build a program');
     root.querySelector('[data-a="d-save"]').click(); await pause(300);
     check(tabs(doc)==='mix,str', 'the trainer you choose appears as a tab');
-    check(root.textContent.includes('Make this block yours') && !!root.querySelector('select[data-t="lift"][data-k="legs"]'), 'a new block opens for you to customize first');
+    check(root.textContent.includes('Make this block yours') && !!root.querySelector('[data-a="t-pick"][data-t="lift"][data-k="legs"]'), 'a new block opens for you to customize first');
     root.querySelector('[data-a="t-save"]').click(); await pause(300);
     let P=saved().plan;
     check(P && P.dose.str==='build' && P.week===1 && P.weeks===5, 'Strength alone gets a building dose in a five-week block');
@@ -51,19 +51,39 @@
 
     // customizing a block: more for a muscle group, an exercise you pick, a lift left out
     const setsOf=(P,mu)=>P.days.reduce((t,d)=>t+d.lift.filter(x=>x.mu===mu).reduce((a,x)=>a+x.sets,0),0);
-    const before=setsOf(P,'bi');
+    // a muscle's weekly sets: its own Muscle sets plus everything else, in full where it is a main muscle and half where it helps
+    const weekOf=(P,mu)=>Math.round(setsOf(P,mu)+((P.cov||{})[mu]||0));
+    const before=P.goal.bi;
     root.querySelector('[data-a="t-edit"]').click(); await pause(200);
     check(root.textContent.includes('Customize this block'), 'Customize this block opens the block’s parts');
     root.querySelector('[data-a="t-focus"][data-g="Arms"][data-v="more"]').click(); await pause(150);
     root.querySelector('[data-a="t-focus"][data-g="Core"][data-v="skip"]').click(); await pause(150);
-    const sel=root.querySelector('select[data-t="ex"][data-k="bi"]'), pickEx=sel&&[...sel.options].map(o=>o.value).pop();
-    if(sel){ sel.value=pickEx; sel.dispatchEvent(new win.Event('change',{bubbles:true})); await pause(150); }
-    const lats=root.querySelector('select[data-t="lift"][data-k="lats"]'); if(lats){ lats.value='-'; lats.dispatchEvent(new win.Event('change',{bubbles:true})); await pause(150); }
+    check(root.textContent.includes('sets a week for each muscle, instead of') && root.querySelector('.tnums'), 'More, Normal, Less and Skip say what they mean in sets, and each group shows its weekly sets');
+    // the exercise library for a muscle: every exercise that works it, and nothing that reopens after you choose
+    const rows=()=>[...root.querySelectorAll('[data-a="t-pick"][data-t="ex"]')].map(b=>b.dataset.k);
+    const k0=rows()[0]; let pickEx=null;
+    check(!!k0 && !root.querySelector('select'), 'each muscle’s exercise opens a library, not a dropdown');
+    root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k0}"]`).click(); await pause(150);
+    check(root.textContent.includes('Exercise for') && root.querySelectorAll('[data-a="t-choose"]').length>1, 'the exercise library opens for the muscle');
+    { const ids=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean); pickEx=ids[ids.length-1]; }
+    root.querySelector(`[data-a="t-choose"][data-id="${pickEx}"]`).click(); await pause(150);
+    check(root.textContent.includes('Customize this block') && root.querySelector(`[data-a="t-pick"][data-k="${k0}"]`).textContent.includes('your pick'), 'choosing goes back to the block, with your pick shown');
+    // making your own exercise, which joins Muscle's library
+    const k1=rows().find(k=>k!==k0);
+    if(k1){ root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k1}"]`).click(); await pause(150);
+      root.querySelector('[data-a="t-make"]').click(); await pause(150);
+      const nm=root.getElementById('tmk-name'); nm.value='Test Own Exercise'; nm.dispatchEvent(new win.Event('input',{bubbles:true}));
+      root.querySelector('[data-a="t-mk"][data-f="comp"][data-v="0"]').click(); await pause(100);
+      root.querySelector('[data-a="t-mk-save"]').click(); await pause(400);
+      const mine=(JSON.parse(localStorage.getItem('hyplog.v1')||'{}').exercises||[]).find(e=>e.name==='Test Own Exercise');
+      check(mine && mine.custom && mine.primary.includes(k1) && !mine.comp, 'an exercise you make joins the Muscle library'); }
+    const lats=root.querySelector('[data-a="t-pick"][data-t="lift"][data-k="lats"]');
+    if(lats){ lats.click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id="-"]').click(); await pause(150); }
     root.querySelector('[data-a="t-save"]').click(); await pause(300);
     P=saved().plan;
-    check(setsOf(P,'bi')>before, 'More for arms gives biceps more weekly sets');
+    check(P.goal.bi>before && weekOf(P,'bi')>=P.goal.bi-1, 'More for arms raises the biceps target, and the week meets it');
     check(!P.days.some(d=>d.lift.some(x=>x.mu==='abs'||x.mu==='obli')), 'Skip leaves core to the rest of the week');
-    check(!sel || P.days.flatMap(d=>d.lift).filter(x=>x.mu==='bi').every(x=>x.exId===pickEx), 'the exercise you pick trains that muscle');
+    check(P.days.flatMap(d=>d.lift).filter(x=>x.mu===k0).every(x=>x.exId===pickEx), 'the exercise you pick trains that muscle');
     check(!lats || !P.days.some(d=>d.str.some(x=>x.a==='lats')), 'a strength area you leave out is left out');
     check(P.week===1 && root.textContent.includes('Customized:'), 'customizing keeps the week and shows what you changed');
     // a new block starts again at week 1

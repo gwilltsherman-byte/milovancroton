@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-gEcgVIJQPLRoxDUCYiQTBvWSwXHrx4x6X/8I6l1UUrM='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-UhSqOoWoYFjciLT+jk0iCUNiqzfA8Tqmo9IJbaC1J30='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -2011,19 +2011,45 @@ span.dchip{cursor:default}
 /* customize this block */
 .tpart{margin-top:22px; padding-top:18px; border-top:1px solid var(--border)}
 .tpart .h3+.chip, .tpart .spread{margin-bottom:8px}
-.trow{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--border)}
-.trow:first-of-type{border-top:none}
+.tpart>.hint{margin-bottom:14px}
+.tkey{margin:0 0 16px; padding:4px 14px; border-radius:14px; background:var(--well); border:1px solid var(--border)}
+.tkey div{display:grid; grid-template-columns:62px minmax(0,1fr); gap:10px; padding:10px 0}
+.tkey div+div{border-top:1px solid var(--border)}
+.tkey dt{font-size:13px; font-weight:800; color:var(--ink)}
+.tkey dd{margin:0; font-size:12.5px; line-height:1.55; color:var(--ink-2)}
+.tkey dd b{display:block; margin-bottom:2px; font-size:13px; font-weight:700; color:var(--ink)}
+.trow{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-top:1px solid var(--border)}
+.tgrp{flex-wrap:wrap; row-gap:8px}
+.tnums{flex-basis:100%; margin:0; font-size:12.5px; line-height:1.5; color:var(--muted)}
+.tnums b{color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums}
 .tn{min-width:0; flex:1; display:block}
 .tn b{display:block; font-size:14px}
-.tn span{display:block; font-size:12px; color:var(--muted); margin-top:2px}
+.tn span{display:block; font-size:12px; line-height:1.45; color:var(--muted); margin-top:2px}
 .seg2{display:flex; flex:none; border:1px solid var(--border); border-radius:10px; overflow:hidden}
 .seg2 button{min-width:52px; min-height:40px; padding:0 8px; border:0; border-left:1px solid var(--border); background:var(--surface); font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer}
 .seg2 button:first-child{border-left:0}
 .seg2 button.on{background:var(--btn); color:var(--btn-ink)}
 .seg2 button:focus-visible{outline:2px solid var(--gold); outline-offset:-2px}
-.tsel{flex:none; max-width:56%; min-height:40px; padding:0 10px; border-radius:10px; border:1px solid var(--border-2); background:var(--surface); color:var(--ink); font-family:inherit; font-size:13px; font-weight:600}
-.tsel:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
-@media(max-width:420px){ .trow{flex-wrap:wrap} .seg2{width:100%} .seg2 button{flex:1} .tsel{max-width:100%; width:100%} }
+.tpick{width:100%; min-height:56px; margin:0; background:none; border:0; border-top:1px solid var(--border); border-radius:0; text-align:left; color:inherit; font:inherit; cursor:pointer;
+  display:flex; align-items:center; gap:12px; padding:12px 0}
+.tpick>svg{width:16px; height:16px; flex:none; color:var(--muted)}
+.tpick:focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:6px}
+.tval{flex:0 1 auto; max-width:48%; font-size:13.5px; font-weight:650; line-height:1.35; text-align:right; color:var(--ink)}
+.topt.on>svg{color:var(--btn)}
+.topt.on .tn b{color:var(--ink)}
+@media(hover:hover){ .tpick:hover .tn b{text-decoration:underline} }
+.tlist>.grp:first-child{margin-top:4px}
+.tnote{display:flex; gap:9px; align-items:flex-start; margin:0 0 14px; padding:11px 12px; border-radius:12px; background:var(--warn-soft); color:var(--ink); font-size:12.5px; line-height:1.5}
+.tnote svg{width:16px; height:16px; flex:none; margin-top:1px; color:var(--warn)}
+.tback{margin-left:-6px}
+.tback svg{width:16px; height:16px}
+.tsearch{display:flex; align-items:center; gap:8px; margin:16px 0 4px; padding:0 12px; min-height:46px; border-radius:12px; border:1px solid var(--border-2); background:var(--surface)}
+.tsearch svg{width:17px; height:17px; flex:none; color:var(--muted)}
+.tsearch input{flex:1; min-width:0; border:0; background:none; color:var(--ink); font-family:inherit; font-size:16px; outline:none}
+.tsearch:focus-within{outline:2px solid var(--gold); outline-offset:2px}
+.tinput{width:100%; min-height:46px; padding:0 12px; border-radius:12px; border:1px solid var(--border-2); background:var(--surface); color:var(--ink); font-family:inherit; font-size:16px}
+.tinput:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+@media(max-width:420px){ .trow:not(.tpick){flex-wrap:wrap} .seg2{width:100%} .seg2 button{flex:1} .tkey div{grid-template-columns:54px minmax(0,1fr)} }
 /* what a card is based on: reasoning, then sources */
 details.based{margin-top:14px; border-top:1px solid var(--border)}
 details.based summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px; min-height:48px; font-size:14px; font-weight:700; color:var(--ink)}
@@ -2054,6 +2080,7 @@ details.based p{font-size:13.5px; line-height:1.65; color:var(--ink-2); margin:2
 .legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:12px; color:var(--muted)}
 .legend span{display:inline-flex; align-items:center; gap:5px}
 .legend i{width:8px; height:8px; border-radius:99px}
+.vbar i.help, .legend i.help{background:var(--muted); opacity:.45}
 
 /* rules */
 details.rules summary{cursor:pointer; list-style:none; display:flex; align-items:center; justify-content:space-between; gap:10px}
@@ -2103,7 +2130,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=aaeb279ed49117e8c549" integrity="sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=8047205482503cb468c4" integrity="sha256-gEcgVIJQPLRoxDUCYiQTBvWSwXHrx4x6X/8I6l1UUrM=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=5214aa3a85a86058dc88" integrity="sha256-UhSqOoWoYFjciLT+jk0iCUNiqzfA8Tqmo9IJbaC1J30=" crossorigin="anonymous"></script>
 </body>
 </html>
 
