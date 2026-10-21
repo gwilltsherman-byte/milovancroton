@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-MpQ0IE1LsBYHOGY/ULI8LGSO5XzoSzp8U1q4uFIzcag='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-UtafoDR2rV2IVaAG2vUCWE4SEYzdR4ot1B0lQoGDNOQ='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -142,20 +142,20 @@ body{background:#0A0D12; overflow-x:hidden;
 </header>
 <aside class="sidebar" aria-label="Training sections">
   <div class="sw" role="tablist" aria-label="Choose a trainer">
+    <button class="seg" id="tab-mix" data-m="mix" role="tab" aria-controls="m-mix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4v6a7 7 0 0 0 7 7m7-13v6a7 7 0 0 1-7 7v4M9 7l3-3 3 3M12 4v13"/></svg><span>Together<small>Your whole week</small></span></button>
     <button class="seg" id="tab-lift" data-m="lift" role="tab" aria-controls="m-lift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg><span>Muscle<small>Build muscle</small></span></button>
     <button class="seg" id="tab-str" data-m="str" role="tab" aria-controls="m-str"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17 10 11l4 3 6-9M14 5h6v6M4 21h16"/></svg><span>Strength<small>Move more weight</small></span></button>
     <button class="seg" id="tab-cal" data-m="cal" role="tab" aria-controls="m-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 3v18M17 3v18M7 6h10M7 12h10M7 18h10"/></svg><span>Ladder<small>Earn your next skill</small></span></button>
-    <button class="seg" id="tab-mix" data-m="mix" role="tab" aria-controls="m-mix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4v6a7 7 0 0 0 7 7m7-13v6a7 7 0 0 1-7 7v4M9 7l3-3 3 3M12 4v13"/></svg><span>Together<small>Balance your week</small></span></button>
   </div>
   <div class="sidebar-foot"><button id="guide-open" data-open-guide><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>How Milo works</button><p>Your training stays<br>on this device.<br>No account needed.</p></div>
 </aside>
 <div class="tgstrip" id="tgstrip" hidden></div>
 <dialog class="bk" id="guide" aria-labelledby="guide-title">
   <h2 id="guide-title">Make the next session count.</h2>
-  <p>Milo brings your plans, workouts and progress together. Choose a trainer to get started.</p>
-  <div class="guide-step"><b>1</b><div><h3>Find your starting point</h3><p>Build a block in Muscle, set up your equipment in Strength, or choose a skill in Ladder.</p></div></div>
+  <p>Milo brings your plans, workouts and progress together. Start in Together.</p>
+  <div class="guide-step"><b>1</b><div><h3>Choose what you train</h3><p>In Together, pick muscle, strength, calisthenics skills or any mix, and rank them. Together builds your week from that, and the trainers you chose appear as tabs.</p></div></div>
   <div class="guide-step"><b>2</b><div><h3>Train. Log. Repeat.</h3><p>Record the sets you actually complete. Your session saves as you go, so you can come back to it.</p></div></div>
-  <div class="guide-step"><b>3</b><div><h3>See what changes</h3><p>Review your history and progress. Use Together when you want a shared week across trainers.</p></div></div>
+  <div class="guide-step"><b>3</b><div><h3>Go deeper in each trainer</h3><p>Each trainer keeps your history, records, exercise instructions and progress for its kind of training, and can run a plan of its own if you want to train just that.</p></div></div>
   <p>Works offline after the first load. Your data stays in this browser; use Backup before moving devices or clearing browser data. Units and training preferences are in each trainer’s Settings.</p>
   <button class="b pri" id="guide-done" style="width:100%">Got it</button>
 </dialog>
@@ -2072,7 +2072,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=aaeb279ed49117e8c549" integrity="sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=329434204d4bb0160738" integrity="sha256-MpQ0IE1LsBYHOGY/ULI8LGSO5XzoSzp8U1q4uFIzcag=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=52d69fa03476ad5d8855" integrity="sha256-UtafoDR2rV2IVaAG2vUCWE4SEYzdR4ot1B0lQoGDNOQ=" crossorigin="anonymous"></script>
 </body>
 </html>
 

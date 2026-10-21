@@ -10814,7 +10814,7 @@ render();
 
 /* ==================== SHELL ==================== */
 (function(){
-  const MODS=['lift','str','cal','mix'];
+  const MODS=['mix','lift','str','cal'];
   const KEYS={lift:'hyplog.v1', str:'strlog.v2', cal:'proladder.v1'};
   const SK='trainer.shell';
   const roots={}, inited={};
@@ -10967,8 +10967,25 @@ render();
     }catch(e){} });
   };
 
+  /* ---- Which tabs show ----
+     Together comes first and is always there. A trainer's tab shows once you choose it in Together. Until Together
+     is set up, a trainer you already have training saved in shows too, so nothing you made goes missing. The open
+     one always shows: a link or a running session can open any of them. */
+  const trained={};
+  function hasTraining(m){
+    if(trained[m]==null){ trained[m]=false;
+      try{ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null');
+        trained[m]=!!o && ((o.history||[]).length>0 || !!o.active || (m==='lift'? (o.mesos||[]).length>0 : m==='str'? !!o.program : (o.goals||[]).length>0)); }catch(e){} }
+    return trained[m];
+  }
+  function chosenMods(){ try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); return t&&t.on&&Array.isArray(t.secs)? t.secs : null; }catch(e){ return null; } }
+  function visibleMods(){ const c=chosenMods(); return MODS.filter(m=> m==='mix' || m===active || (c? c.includes(m) : hasTraining(m))); }
+  function paintTabs(){ const v=visibleMods(); document.querySelectorAll('.seg').forEach(b=>{ b.hidden=!v.includes(b.dataset.m); }); }
+  /* A section with a session still going, from its saved state. */
+  function runningIn(m){ try{ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null'); return !!(o&&o.active); }catch(e){ return false; } }
+
   function show(m){
-    if(!MODS.includes(m)) m='lift';
+    if(!MODS.includes(m)) m='mix';
     if(back && m!==back.m) back=null;   // going anywhere else yourself cancels the way back
     active=m;
     MODS.forEach(x=>{ hostOf(x).hidden=(x!==m); });
@@ -10976,7 +10993,7 @@ render();
       const on=b.dataset.m===m; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1;
     });
     ensureInit(m);
-    paintBg();
+    paintBg(); paintTabs();
     try{ localStorage.setItem(SK+'.mod',m); }catch(e){}
     window.scrollTo(0,0);
     hubChanged('show');
@@ -11002,7 +11019,8 @@ render();
   const apis={}, listeners=[];
   function hasData(m){ if(inited[m]) return true; try{ return !!(KEYS[m]&&localStorage.getItem(KEYS[m])); }catch(e){ return false; } }
   function hubApi(m){ ensureInit(m); return apis[m]||null; }
-  function hubChanged(m){ listeners.slice().forEach(f=>{ try{ f(m); }catch(e){ console.error(e); } }); checkBack(m,'changed'); syncWake(); }
+  function hubChanged(m){ if(KEYS[m]) trained[m]=null; if(m==='mix'||KEYS[m]) paintTabs();
+    listeners.slice().forEach(f=>{ try{ f(m); }catch(e){ console.error(e); } }); checkBack(m,'changed'); syncWake(); }
   /* ---- The screen stays on while a session is running ----
      Between sets the phone would lock and every set would start with unlocking it. The screen is held from the
      first set until Finish, and not for more than four hours, so a session left open doesn't flatten the battery.
@@ -11129,14 +11147,14 @@ render();
   stampTheme();
 
   document.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>show(b.dataset.m)));
-  /* Arrow keys, Home and End move between the four tabs (only the open one is in the tab order). */
+  /* Arrow keys, Home and End move between the tabs that show (only the open one is in the tab order). */
   document.querySelector('.sw').addEventListener('keydown',e=>{
     if(e.ctrlKey||e.metaKey||e.altKey) return;
-    const i=MODS.indexOf(active); let j=-1;
-    if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%MODS.length; else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i+MODS.length-1)%MODS.length;
-    else if(e.key==='Home') j=0; else if(e.key==='End') j=MODS.length-1;
+    const V=visibleMods(), i=V.indexOf(active); let j=-1;
+    if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%V.length; else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i+V.length-1)%V.length;
+    else if(e.key==='Home') j=0; else if(e.key==='End') j=V.length-1;
     if(j<0) return;
-    e.preventDefault(); show(MODS[j]); document.querySelector('.seg[data-m="'+MODS[j]+'"]').focus();
+    e.preventDefault(); show(V[j]); document.querySelector('.seg[data-m="'+V[j]+'"]').focus();
   });
 
   document.getElementById('shell-date').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
@@ -11147,8 +11165,9 @@ render();
   });
   document.querySelectorAll('[data-open-guide]').forEach(b=>b.addEventListener('click',()=>document.getElementById('guide').showModal()));
   document.getElementById('guide-done').addEventListener('click',()=>document.getElementById('guide').close());
-  let start='lift';
-  try{ start=localStorage.getItem(SK+'.mod')||'lift'; }catch(e){}
+  // Together is home; a trainer with a session still going opens instead, so you land back in it
+  let start='mix';
+  try{ const last=localStorage.getItem(SK+'.mod'); if(KEYS[last] && runningIn(last)) start=last; }catch(e){}
   // a home-screen shortcut or a link: index.html?m=str opens that section
   try{ const q=new URLSearchParams(location.search).get('m');
     if(MODS.includes(q)){ start=q; history.replaceState(history.state,'',location.pathname+location.hash); } }catch(e){}
