@@ -5,7 +5,7 @@
   frame.title = 'Ladder test session'; frame.style.cssText = 'width:390px;height:720px;border:1px solid #777';
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   function check(ok, message) { if (!ok) throw new Error(message); results.push('PASS ' + message); }
-  async function loadFrame() {
+  async function loadFrame(ready = '[data-act="toggle-done"]') {
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('App loading timed out')), 10000);
       frame.onload = () => { clearTimeout(timeout); resolve(); };
@@ -14,10 +14,10 @@
     });
     for (let i = 0; i < 100; i++) {
       const root = frame.contentDocument.getElementById('m-cal')?.shadowRoot;
-      if (root?.querySelector('[data-act="toggle-done"]')) return root;
+      if (root?.querySelector(ready)) return root;
       await pause(50);
     }
-    throw new Error('Ladder session did not render');
+    throw new Error('Ladder did not render ' + ready);
   }
   try {
     localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'train',
@@ -51,6 +51,17 @@
     const controls = [...root.querySelectorAll('input,button')];
     check(controls.every(el => !el.matches('button') || el.getAttribute('aria-label') || el.textContent.trim()), 'session controls have accessible names');
     check(doc.documentElement.scrollWidth <= 420 || root.querySelector('#view').scrollWidth <= 420, 'session fits the narrow viewport');
+    localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'goals', settings:{sound:false, vibrate:false, rest:0},
+      rung:{pull:2, pushh:3}, placed:{pull:true, pushh:true}, history:[], tests:[], active:null,
+      goals:[{id:'goal-a', key:'pullup1', n:'First strict pull-up', l:'pull', r:4, std:1, sup:[], added:1, achieved:null},
+        {id:'goal-b', key:'pushup20', n:'20 strict push-ups', l:'pushh', r:3, std:20, sup:[], added:1, achieved:null}]}));
+    root = await loadFrame('.goal-full');
+    const heads = () => [...root.querySelectorAll('.goal-head')], bodies = () => [...root.querySelectorAll('.goal-body')];
+    check(heads().length === 2 && heads().every(h => h.getAttribute('aria-expanded') === 'false') && bodies().every(b => b.hidden), 'several goals start folded to their summaries');
+    heads()[1].click();
+    check(heads()[1].getAttribute('aria-expanded') === 'true' && !bodies()[1].hidden && bodies()[0].hidden && !!bodies()[1].querySelector('.rung'), 'tapping a goal shows its ladder');
+    root.querySelector('#tabbar [data-route="today"]').click(); root.querySelector('#tabbar [data-route="goals"]').click();
+    check(heads()[1].getAttribute('aria-expanded') === 'true' && heads()[0].getAttribute('aria-expanded') === 'false', 'an opened goal stays open after switching tabs');
     result.textContent = results.join('\n') + '\nALL TESTS PASSED';
   } catch (error) {
     result.textContent = results.join('\n') + '\nFAIL ' + error.stack;
