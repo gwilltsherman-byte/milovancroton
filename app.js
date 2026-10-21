@@ -4953,6 +4953,8 @@ if(window.__hub) window.__hub.reg('lift', {
   sheetOpen:()=>modalOn, running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   info:hubInfo, work:hubWork, start:hubStart, setup:hubSetup, upcoming:hubUpcoming, catalog:hubCatalog, startWith:hubStartWith,
   equipment:()=>CUSTOM_EQUIP.slice(),
+  // Together ends a day's open session: keep:true saves the sets you logged, false drops it (Take back still works)
+  end(keep){ if(!state.active) return false; endOpt={keep:!!keep, repeat:false}; endSession(); return true; },
   addCustom(d){ const e=addCustomEx(d||{}); if(e&&state.route==='library') render(); return e? e.id : null; },
   open(){ state.route=state.active?'train':'plan'; render(); window.scrollTo(0,0); },
   exMuscles(id){ const e=exById(id); return e? {p:e.primary.slice(), s:e.secondary.slice()} : null; },
@@ -7840,6 +7842,8 @@ function hubInfo(){
 }
 if(window.__hub) window.__hub.reg('cal', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
+  // Together ends a day's open session: keep:true saves the sets you logged, false drops it (Take back still works)
+  end(keep){ if(!state.active) return false; endOpt={keep:!!keep, repeat:false}; endSession(); return true; },
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
   info:hubInfo, work:hubWork, upcoming:k=>hubPicks(k),
@@ -9788,6 +9792,8 @@ function hubStartWith(spec){
 }
 if(window.__hub) window.__hub.reg('str', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
+  // Together ends a day's open session: keep:true saves the sets you logged, false drops it (Take back still works)
+  end(keep){ if(!state.active) return false; endOpt={keep:!!keep, repeat:false}; endSession(); return true; },
   pick:hubPick, options:hubOptions, lift:hubLift, preview:hubPreview, startWith:hubStartWith,
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
@@ -9893,7 +9899,7 @@ function toast(m, canUndo){ const t=$('#toast'), act=!!canUndo&&undos.length>0;
   t.classList.add('on'); t.classList.toggle('act', act); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on','act'), act? 6000 : 3200); }
 
 /* ==================== STATE ==================== */
-let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null, undos=[];
+let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null, undos=[], endAsk=false;
 function load(){
   let t=null, raw=null; try{ raw=localStorage.getItem(TG_KEY); t=raw? MiloSecurity.parseSection(raw, TG_KEY) : null; }catch(e){ Safe.rescue(TG_KEY, raw, e); }
   t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, prio:null, kit:null, exp:'intermediate', tune:null, plan:null, next:0, run:null, short:false, log:[], checkins:[], roundAt:0}, t&&typeof t==='object'? t : {});
@@ -10178,10 +10184,13 @@ function doneParts(d, D){
   if(tg.run && tg.run.day===d) tg.run.parts.forEach(p=>{ if((p.st==='done'||p.st==='ended')&&p.sid) out[p.m]={sid:p.sid}; });
   else { const e=roundLog(D)[d];
     if(e && !e.skipped){
+      // a part left open when the day ended counts once its section's session is saved
+      e.parts.forEach(([pm,st,sid])=>{ if(st==='left'&&sid){ const api=H.api(pm), r=api&&api.rec? api.rec(sid) : null; if(r) out[pm]={sid}; } });
       // the day's time window: from when it started (older entries: from the day before it) to when it closed
       const from=e.start||e.prevDate||0, to=e.date+1;
       e.parts.forEach(([pm,st,sid])=>{
         if((st==='done'||st==='ended') && sid){ out[pm]={sid}; return; }
+        if(st==='left') return;
         // older entries have no session id, and a section can be trained from its own tab: use its latest session in the window
         const api=H.api(pm), r=api&&api.recsIn? api.recsIn(from, to) : [];
         if(r.length) out[pm]={sid:r[r.length-1].id};
@@ -10488,7 +10497,7 @@ function startPart(k){
    part running again, and it is next up again. */
 function reopenRun(){
   const L=tg.log||[], last=L[L.length-1]; if(!last||(last.start||last.date)<startOfToday()) return false;
-  const back=last.parts.some(([m,st,sid])=>{ if(!sid||st==='skip') return false; const i=infoOf(m); return !!(i&&i.busy&&i.activeId===sid); });
+  const back=last.parts.some(([m,st,sid])=>{ if(!sid||st==='skip'||st==='left') return false; const i=infoOf(m); return !!(i&&i.busy&&i.activeId===sid); });
   if(!back) return false;
   tg.run={day:last.day, date:startOfToday(), at:last.start||last.date, short:!!tg.short, pats:[], parts:last.parts.map(([m,st,sid])=>({m, st, sid, drop:[]}))};
   tg.log=L.slice(0,-1); tg.next=last.day; save(); return true;
@@ -10500,7 +10509,7 @@ function refreshRun(){
   const run=tg.on&&tg.run; if(!run) return false;
   let ch=false;
   run.parts.forEach(p=>{
-    if(!p.sid||p.st==='skip') return;
+    if(!p.sid||p.st==='skip'||p.st==='left') return;
     const api=H.api(p.m); if(!api) return;
     const i=api.info(), st= i.busy&&i.activeId===p.sid? 'run' : (api.rec&&api.rec(p.sid)) || 'todo';
     if(st==='todo') p.sid=null;
@@ -10520,16 +10529,23 @@ function refreshRun(){
 }
 function finishRun(quiet){
   const run=tg.run; if(!run) return;
-  const did=run.parts.some(p=>p.st==='done'||p.st==='ended');
-  tg.run=null;
+  const did=run.parts.some(p=>p.st==='done'||p.st==='ended'||p.st==='left');
+  tg.run=null; endAsk=false;
   if(did){
     tg.log=(tg.log||[]).concat([{date:Date.now(), start:run.at||run.date, day:run.day, parts:run.parts.map(p=>[p.m,p.st,p.sid])}]).slice(-60);
-    const {n, moved}=moveOn(run.day); undos=[];
+    const {n, moved}=moveOn(run.day), open=run.parts.filter(p=>p.st==='left').map(p=>SEC[p.m].n);
     save();
-    if(!quiet) toast(`Day ${run.day+1} done.${n>=0? ' Next up: Day '+(n+1)+'.' : ''}${moved}`);
-  } else { save(); if(!quiet) toast(`Day ${run.day+1} stopped. It’s still next up.`); }
+    if(!quiet) toast(`Day ${run.day+1} done.${open.length? ' '+listText(open)+' is still open there: finishing it counts for this day.' : ''}${n>=0? ' Next up: Day '+(n+1)+'.' : ''}${moved}`, true);
+  } else { save(); if(!quiet) toast(`Day ${run.day+1} stopped with nothing done, so it’s still next up.`, true); }
 }
 
+/* Ends today's day now, for a new block or a week moved: what isn't started is skipped, and a part still going
+   stays open in its section, where finishing it still counts for the day. */
+function closeRun(){
+  const run=tg.run; if(!run) return;
+  run.parts.forEach(p=>{ if(p.st==='todo') p.st='skip'; else if(p.st==='run') p.st='left'; });
+  finishRun(true);
+}
 /* After day d, finished or skipped: the next day in order, and once the week comes round, the block's next week
    (after its lighter week, Together builds the next block). */
 function moveOn(d){
@@ -10785,8 +10801,18 @@ function heroRun(){
     <div class="spread"><span class="eyebrow">Today &middot; Day ${run.day+1}</span><span class="chip gold">${left? plural(left,'part')+' to go' : 'All done'}</span></div>
     <div class="h2">${order.map(m=>SEC[m].n).join(' + ')}</div>
     <div class="parts">${P.parts.map((p,k)=>partRow(p,k,run.parts[k].st)).join('')}</div>
-    <button class="btn ghost block" data-a="end-day" style="margin-top:12px">${IC.flag} End the day here</button>
+    ${endAsk? endChoices(run) : `<button class="btn ghost block" data-a="end-day" style="margin-top:12px">${IC.flag} End the day here</button>`}
   </section>`;
+}
+/* Ending a day with a part still going: what happens to that session is yours to say. */
+function endChoices(run){
+  const go=run.parts.filter(p=>p.st==='run').map(p=>SEC[p.m].n), n=listText(go), left=run.parts.filter(p=>p.st==='todo').map(p=>SEC[p.m].n);
+  return `<div class="endask"><p><b>${n} is still going.</b> The day ends either way${left.length? ', and '+listText(left)+' is skipped' : ''}.</p>
+    <button class="btn pri block" data-a="end-day" data-how="save">${IC.check} End ${n}, keep its sets</button>
+    <button class="btn block" data-a="end-day" data-how="leave">Leave ${n} open for later</button>
+    <button class="btn ghost block danger" data-a="end-day" data-how="drop">${IC.x} End ${n} without saving</button>
+    <button class="btn ghost block" data-a="end-cancel">Keep going</button>
+    <p class="hint">Left open, it still counts for this day once you finish it in ${n}. Ending without saving can be taken back in ${n}.</p></div>`;
 }
 function dayMins(W){ return W.map((d,i)=> d.length? planDay(orderParts(d), dayInfo(i), tg.short).mins : 0); }
 /* For a day still to come: how many sessions of each section come before it, counting from the next day
@@ -10801,15 +10827,20 @@ function upcomingK(W, d){
   }
   return null;
 }
+/* A part of a closed day left open when it ended, whose session is still going in its section. */
+function stillOpen(e, m){
+  const x=e&&e.parts.find(p=>p[0]===m&&p[1]==='left'&&p[2]); if(!x) return false;
+  const i=infoOf(m); return !!(i&&i.busy&&i.activeId===x[2]);
+}
 /* A day already closed this time round: what was done and what was skipped, in the day's order. */
 function closedHtml(W, d){
   const e=roundLog(W.length)[d], I=dayInfo(d), fin=doneParts(d, W.length), order=orderParts(ALL.filter(m=>fin[m]||(e? e.parts.some(p=>p[0]===m) : W[d].includes(m)))), st={};
-  order.forEach(m=>{ st[m]= fin[m]? 'done' : 'skip'; });
-  const P=planDay(order, I, tg.short, {st}), skipped=order.filter(m=>!fin[m]);
+  order.forEach(m=>{ st[m]= fin[m]? 'done' : stillOpen(e,m)? 'run' : 'skip'; });
+  const P=planDay(order, I, tg.short, {st}), skipped=order.filter(m=>st[m]==='skip');
   return `<div class="peek">
     <div class="spread"><span class="eyebrow">Day ${d+1} &middot; this time round</span></div>
     <div class="parts">${P.parts.map((p,k)=>partRow(p,k,st[p.m],d)).join('')}</div>
-    <p class="hint" style="margin-top:4px">${e&&e.skipped? 'You skipped this day.' : `${listText(skipped.map(m=>SEC[m].n))} ${skipped.length===1?'was':'were'} skipped when the day ended.`} Nothing was lost: each section’s next session waits for its next day in the week. To do it now after all, make this the next day.</p>
+    <p class="hint" style="margin-top:4px">${e&&e.skipped? 'You skipped this day.' : skipped.length? `${listText(skipped.map(m=>SEC[m].n))} ${skipped.length===1?'was':'were'} skipped when the day ended.` : 'The day ended with a part still open.'} Nothing was lost: each section’s next session waits for its next day in the week. To do it now after all, make this the next day.</p>
     <div class="row2">${tg.run? '' : `<button class="btn sm" data-a="setnext" data-d="${d}">Make it the next day</button>`}<button class="btn sm ghost" data-a="peek" data-d="${d}">Close</button></div>
   </div>`;
 }
@@ -10834,10 +10865,11 @@ function weekCard(W, DM){
     const chips= weekEdit
       ? tg.secs.map(m=>`<button class="dchip ${K[i].includes(m)?'on':''}" data-a="toggle" data-d="${i}" data-m="${m}" aria-pressed="${K[i].includes(m)?'true':'false'}"><i style="background:${SEC[m].c}"></i>${SEC[m].n}</button>`).join('')
       : had.map(m=> fin[m]? `<button class="dchip on done" data-a="open-done" data-d="${i}" data-m="${m}" aria-label="Open the ${SEC[m].n} session">${IC.check}${SEC[m].n}</button>`
+          : closed&&stillOpen(e,m)? `<button class="dchip on" data-a="open" data-m="${m}" aria-label="${SEC[m].n} is still open: go to it"><i style="background:${SEC[m].c}"></i>${SEC[m].n} &middot; open</button>`
           : closed? `<button class="dchip on skipped ${peekDay===i?'peeking':''}" data-a="peek" data-d="${i}" aria-label="${SEC[m].n} was skipped on Day ${i+1}"><i style="background:${SEC[m].c}"></i><span>${SEC[m].n}</span></button>`
           : tg.run&&tg.run.day===i? `<span class="dchip on"><i style="background:${SEC[m].c}"></i>${SEC[m].n}</span>`
           : `<button class="dchip on ${peekDay===i?'peeking':''}" data-a="peek" data-d="${i}" aria-expanded="${peekDay===i?'true':'false'}" aria-label="${SEC[m].n}: see what Day ${i+1} has planned"><i style="background:${SEC[m].c}"></i>${SEC[m].n}</button>`).join('');
-    return `<div class="day ${i===n?'next':''} ${all&&i!==n?'fin':''}"><div class="dn"><b>Day ${i+1}</b><span>${i===n? (tg.run?'today':'next up') : all? (closed&&e.skipped? 'skipped' : closed&&!had.every(m=>fin[m])? 'done, part skipped' : 'done') : 'maybe '+WD[POS[D][i]]}</span></div>
+    return `<div class="day ${i===n?'next':''} ${all&&i!==n?'fin':''}"><div class="dn"><b>Day ${i+1}</b><span>${i===n? (tg.run?'today':'next up') : all? (closed&&e.skipped? 'skipped' : closed&&had.some(m=>!fin[m]&&stillOpen(e,m))? 'done, part still open' : closed&&!had.every(m=>fin[m])? 'done, part skipped' : 'done') : 'maybe '+WD[POS[D][i]]}</span></div>
       <div class="dchips">${chips}</div>
       <div class="dmin">${closed? '' : d.length? (t? '~'+r5(t)+' min' : '') : 'Rest'}</div></div>${!weekEdit&&peekDay===i? peekHtml(W, i) : ''}`;
   }).join('');
@@ -10887,11 +10919,11 @@ function programCard(){
     <p class="hint">${dl? 'This is the lighter week: fewer sets at an easier effort, so the next block starts fresh.' : 'Effort climbs each week, then a lighter week. After it, Together builds the next block from your new numbers.'} Built from your order, ${plural(tg.days,'day')} and ${tg.mins? tg.mins+' minutes' : 'no time limit'}.</p>
     ${tuneLine(P)}
     <div class="row2" style="margin-top:12px"><button class="btn sm" data-a="t-edit">${IC.sliders} Customize this block</button><button class="btn sm ghost" data-a="t-new">${IC.play} Start a new block</button></div>
-    ${tg.run? '' : `<div class="grp" style="margin-top:16px">Week ${wk} of ${P.weeks}</div>
+    ${`<div class="grp" style="margin-top:16px">Week ${wk} of ${P.weeks}</div>
     <div class="row3"><button class="tog" data-a="w-prev" ${wk<=1?'disabled':''} aria-label="Back to week ${Math.max(1,wk-1)}">${IC.back} Week ${Math.max(1,wk-1)}</button>
       <button class="tog" data-a="w-again" aria-label="Start week ${wk} again">${IC.undo} Restart</button>
       <button class="tog" data-a="w-next" aria-label="${dl? 'Skip to a new block' : 'Skip to week '+(wk+1)}">${dl? 'New block' : 'Week '+(wk+1)} ${IC.chev}</button></div>
-    <p class="hint">Missed some days? Starting the week again usually beats skipping ahead: a week or two off costs little muscle or strength, and each week asks a little more than the last.</p>`}</section>`;
+    <p class="hint">Missed some days? Starting the week again usually beats skipping ahead: a week or two off costs little muscle or strength, and each week asks a little more than the last.${tg.run? ' Moving the week ends today’s day first.' : ''}</p>`}</section>`;
 }
 /* What you changed for this block, in a line. */
 function tuneLine(P){
@@ -11167,18 +11199,18 @@ __root.addEventListener('click', e=>{
     case 'd-kit': { const v=el.dataset.v, cur=draft.kit? draft.kit : KIT.map(k=>k[0]);
       draft.kit= cur.includes(v)? cur.filter(x=>x!==v) : KIT.map(k=>k[0]).filter(x=>cur.includes(x)||x===v); render(); break; }
     case 'd-exp': draft.exp=el.dataset.v; render(); break;
-    case 't-new': if(tg.run){ toast('Finish or end today’s day first. A new block starts on a fresh week.'); break; }
-      tune={T:cleanTune(tg.tune), fresh:true}; render(); window.scrollTo(0,0); break;
+    case 't-new': tune={T:cleanTune(tg.tune), fresh:true}; render(); window.scrollTo(0,0); break;
     case 't-edit': tune={T:cleanTune(tg.tune), fresh:false}; render(); window.scrollTo(0,0); break;
     case 't-focus': { const g=el.dataset.g, v=el.dataset.v; if(v==='normal') delete tune.T.focus[g]; else tune.T.focus[g]=v; render();
       { const b=$(`[data-a="t-focus"][data-g="${g}"][data-v="${v}"]`); if(b) b.focus(); } break; }
     case 't-save': { const fresh=tune.fresh;
       if(!tune.setup) remember(fresh? 'a new block started' : 'changes to this block');
       tg.tune=cleanTune(tune.T);
-      // a new block starts on a fresh week, at Day 1
-      if(fresh && !tg.run){ tg.plan=null; tg.roundAt=Date.now(); tg.next=0; peekDay=null; }
+      // a new block starts on a fresh week, at Day 1; a day still running ends here, any session in it left open
+      const open= fresh&&tg.run? tg.run.parts.filter(p=>p.st==='run').map(p=>SEC[p.m].n) : [];
+      if(fresh){ closeRun(); tg.plan=null; tg.roundAt=Date.now(); tg.next=0; peekDay=null; }
       tune=null; save(); render(); window.scrollTo(0,0);
-      toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, !tune&&undos.length>0); break; }
+      toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.${open.length? ' '+listText(open)+' is still open: finish or end it there.' : ''}` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, true); break; }
     case 't-cancel': tune=null; render(); window.scrollTo(0,0); break;
     case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, y:window.scrollY}; render(); pickTop(); break;
     case 't-back': closePick(); break;
@@ -11232,7 +11264,16 @@ __root.addEventListener('click', e=>{
     case 'part': startPart(k); break;
     case 'skip': if(tg.run&&tg.run.parts[k]){ remember(SEC[tg.run.parts[k].m].n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(SEC[tg.run.parts[k].m].n+' skipped.', true); } break;
     case 'unskip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='todo'; save(); render(); } break;
-    case 'end-day': if(tg.run){ remember('Day '+(tg.run.day+1)+' ended early'); tg.run.parts.forEach(p=>{ if(p.st==='todo') p.st='skip'; }); save(); render(); } break;
+    case 'end-day': { if(!tg.run) break;
+      const how=el.dataset.how, going=tg.run.parts.filter(p=>p.st==='run');
+      // with a part still going, you choose what happens to its session first
+      if(going.length && !how){ endAsk=true; render(); break; }
+      remember('Day '+(tg.run.day+1)+' ended early'); endAsk=false;
+      if(how==='save'||how==='drop') going.forEach(p=>{ const api=H.api(p.m); if(api&&api.end) api.end(how==='save'); });
+      refreshRun();
+      if(tg.run){ tg.run.parts.forEach(p=>{ if(p.st==='todo') p.st='skip'; else if(p.st==='run') p.st='left'; }); save(); }
+      render(); window.scrollTo(0,0); break; }
+    case 'end-cancel': endAsk=false; render(); break;
     case 'skip-day': { const W=weekOf(), d=+el.dataset.d; if(tg.run||!W[d]||!W[d].length) break;
       remember('Day '+(d+1)+' skipped');
       // the day goes down as skipped, with nothing done: each section's next session waits for its next day
@@ -11240,10 +11281,12 @@ __root.addEventListener('click', e=>{
       const {n, moved}=moveOn(d); pickOpen=false; peekDay=null; save(); render(); window.scrollTo(0,0);
       toast(`Day ${d+1} skipped.${n>=0? ' Next up: Day '+(n+1)+'.' : ''}${moved}`, true); break; }
     case 'w-prev': case 'w-again': case 'w-next': {
-      if(tg.run){ toast('Finish or end today’s day first.'); break; }
-      const P=plan(), wk=P.week, last=wk>=P.weeks;
+      const wk=plan().week, last=wk>=plan().weeks;
       remember(a==='w-again'? `week ${wk} started again` : a==='w-prev'? `back to week ${wk-1}` : last? 'skipped to a new block' : `skipped to week ${wk+1}`);
-      if(a==='w-prev') P.week=Math.max(1, wk-1); else if(a==='w-next'){ if(last) tg.plan=null; else P.week=wk+1; }
+      // a day still running ends here, any session in it left open to finish
+      closeRun();
+      const P=plan();
+      if(a==='w-prev') P.week=Math.max(1, wk-1); else if(a==='w-next'){ if(last) tg.plan=null; else P.week=wk+1; } else P.week=wk;
       // either way the week starts fresh, at Day 1
       tg.roundAt=Date.now(); tg.next=0; peekDay=null; pickOpen=false; save(); render(); window.scrollTo(0,0);
       toast(a==='w-next'&&last? `A new block starts: week 1 of ${BLOCK}, Day 1.` : `Week ${plan().week} of ${BLOCK} starts at Day 1.`, true); break; }
