@@ -1082,6 +1082,103 @@ window.HOWTO = {
   'hop-stick':{ set:'Stand on one leg, hands on hips, with 1 m of clear space in front.',
     steps:['Hop forward 30 to 50 cm on the same leg.','Land on the ball of the foot, rolling to the whole foot, knee bent and over the second toe, hips level.','Freeze for two seconds. All reps, then switch legs.'],
     avoid:['The knee caving in on landing.','The free-side hip dropping.'] },
+  /* More choices in the Muscle library */
+  'pendlay-row':{set:'Bar on the floor over the middle of your feet. Hinge until your torso is close to level with the floor, back flat, knees bent.',
+    steps:['Grip just outside shoulder width and brace.','Row the bar from the floor to the lower chest in one quick pull.','Lower it back to the floor and reset before the next rep.'],avoid:['Lifting the chest to meet the bar.','Rounding the back to reach the floor.']},
+  'tbar-row':{set:'Straddle a landmine or T-bar with the loaded end in front of you. Hinge to about 45 degrees, back flat, both hands on the handle.',
+    steps:['Brace and pull the handle to your upper stomach.','Drive the elbows back and squeeze the shoulder blades together.','Lower until the arms are straight without letting the back round.'],avoid:['Standing up as you pull.','Jerking the weight up with the hips.']},
+  'meadows-row':{set:'Stand side-on to a landmine, the end of the bar by your front foot. Stagger the feet, hinge, and take an overhand grip on the bar end, the other forearm on your front knee.',
+    steps:['Row the bar up and back until the elbow passes the torso.','Pause and squeeze.','Lower to a full stretch.'],avoid:['Twisting the torso to lift it.','Jerking it off the floor.']},
+  'rack-pull':{set:'Bar in a rack or on blocks at about knee height. Feet hip width, shins close to the bar.',
+    steps:['Hinge, grip just outside the knees and take the slack out of the bar with the back flat.','Drive the hips forward and stand tall, shoulders back.','Lower under control to the pins.'],avoid:['Leaning back at the top.','Bouncing the bar off the pins.']},
+  'incline-db-row':{set:'Set a bench to about 30 degrees and lie chest down, a dumbbell in each hand, arms hanging straight.',
+    steps:['Keep the chest on the pad.','Row both dumbbells until the elbows are just past the torso.','Lower to a full stretch.'],avoid:['Lifting the chest off the pad.','Shrugging the shoulders up to the ears.']},
+  'machine-high-row':{set:'Sit facing the pad with the chest against it, reaching up and forward to the handles.',
+    steps:['Pull the handles down and back toward your chest, elbows driving down.','Squeeze the shoulder blades back and down.','Return slowly until the arms are long.'],avoid:['Leaning back to move the weight.','Cutting the stretch short.']},
+  'wide-cable-row':{set:'Sit at a cable row with a wide bar, feet on the platform, knees soft, arms straight.',
+    steps:['Sit tall and pull the bar to the lower chest with the elbows flared out from the body.','Squeeze the shoulder blades together at the end.','Reach forward to straight arms.'],avoid:['Rocking the torso to move the weight.','Shrugging as you pull.']},
+  'prone-y-raise':{set:'Lie chest down on a bench set to about 30 degrees, a light dumbbell in each hand, thumbs up.',
+    steps:['Raise the arms up and out in a Y, in line with the ears.','Keep the shoulders down, away from the ears.','Lower slowly.'],avoid:['A weight heavy enough that you shrug.','Arching up off the bench.']},
+  'close-grip-pulldown':{set:'At a pulldown with a close neutral-grip handle, thighs under the pads, arms straight.',
+    steps:['Lean back slightly and pull the handle to the upper chest.','Drive the elbows down to your sides.','Return to straight arms with control.'],avoid:['Swinging the torso.','Stopping short of the stretch.']},
+  'single-arm-pulldown':{set:'Kneel or sit under a high cable with a single handle, the arm reaching up.',
+    steps:['Pull the elbow down to your side.','Keep the torso still.','Let the arm rise to a full stretch.'],avoid:['Leaning sideways to move the weight.','Short reps.']},
+  'straight-arm-pulldown':{set:'Stand facing a high cable with a bar or rope, arms straight in front at about head height, hips slightly hinged.',
+    steps:['Keep the elbows softly locked and sweep the bar down to the thighs.','Squeeze the lats at the bottom.','Let the arms rise back up with control.'],avoid:['Bending the elbows so it turns into a pushdown.','Rocking the body.']},
+  'db-pullover':{set:'Lie on a bench holding one dumbbell over the chest with both hands, elbows slightly bent.',
+    steps:['Lower the dumbbell back over your head in an arc until you feel a stretch in the lats and chest.','Keep the elbow bend fixed.','Pull it back over the chest.'],avoid:['Lowering further than your shoulders allow.','Bending and straightening the elbows.']},
+  'incline-bench':{set:'Bench at about 30 degrees. Lie back with the eyes under the bar, feet flat, shoulder blades pulled back.',
+    steps:['Grip a little wider than shoulder width and unrack.','Lower the bar to the upper chest.','Press up and slightly back.'],avoid:['A bench so steep it becomes a shoulder press.','Bouncing the bar off the chest.']},
+  'incline-machine-press':{set:'Sit at an incline press with the handles at upper-chest height, back against the pad.',
+    steps:['Press the handles up and forward to straight arms.','Keep the shoulder blades back.','Return slowly to a deep stretch.'],avoid:['Letting the shoulders roll forward.','Half reps.']},
+  'db-fly':{set:'Lie on a flat bench, dumbbells over the chest, palms facing, elbows slightly bent.',
+    steps:['Lower the arms out to the sides in a wide arc to a deep stretch.','Keep the elbow bend fixed.','Bring them back together over the chest.'],avoid:['Lowering further than your shoulders allow.','Turning it into a press.']},
+  'low-cable-fly':{set:'Stand between two low cables, a handle in each hand, one foot a step forward.',
+    steps:['Sweep the hands up and together to about chin height, elbows soft.','Squeeze the chest.','Lower slowly out to the sides.'],avoid:['Bending the elbows into a press.','Leaning far forward.']},
+  'arnold-press':{set:'Sit tall with dumbbells at shoulder height, palms facing you.',
+    steps:['Press up while turning the palms to face forward.','Finish overhead with the arms straight.','Reverse the turn as you lower.'],avoid:['Arching the lower back.','Bouncing out of the bottom.']},
+  'landmine-press':{set:'Stand or half-kneel facing a landmine, the end of the bar at shoulder height in one hand.',
+    steps:['Brace and press the bar up and forward until the arm is straight.','Let the shoulder blade move with the arm.','Lower to the shoulder.'],avoid:['Leaning back to finish.','Flaring the elbow out wide.']},
+  'front-raise':{set:'Stand with a dumbbell in each hand in front of the thighs.',
+    steps:['Raise the arms forward to shoulder height, elbows soft.','Pause briefly.','Lower slowly.'],avoid:['Swinging the weights up.','Shrugging as the arms rise.']},
+  'lean-away-lateral':{set:'Hold a post or rack with one hand and lean away from it, a dumbbell in the other hand by your side.',
+    steps:['Raise the dumbbell out to the side to about shoulder height, elbow soft.','Lead with the elbow.','Lower slowly to your side.'],avoid:['Swinging.','Shrugging the shoulder up.']},
+  'lying-lateral':{set:'Lie on your side on a bench set to about 30 degrees, a light dumbbell in the top hand.',
+    steps:['Raise the arm out to the side until it points almost straight up.','Keep the elbow soft.','Lower slowly to the front of the thigh.'],avoid:['Rolling the torso back.','Rushing the lowering.']},
+  'cable-y-raise':{set:'Stand between two low cables, crossing the handles so each hand holds the opposite cable.',
+    steps:['Raise the arms up and out in a Y, thumbs up, to about head height.','Keep the shoulders down.','Lower slowly.'],avoid:['A weight heavy enough that you shrug.','Leaning back.']},
+  'cable-upright-row':{set:'Stand facing a low cable with a straight bar or rope, hands shoulder width or wider.',
+    steps:['Pull the bar up close to the body, leading with the elbows, until the elbows reach about shoulder height.','Pause.','Lower under control.'],avoid:['A narrow grip with the elbows far above the shoulders, which pinches for many people.','Leaning back.']},
+  'cable-reverse-fly':{set:'Stand between two cables set at about shoulder height, each hand holding the opposite handle, arms crossed in front.',
+    steps:['Sweep the arms out and back in a wide arc, elbows soft.','Squeeze the backs of the shoulders.','Return slowly to crossed arms.'],avoid:['Bending the elbows so it becomes a row.','Leaning back.']},
+  'rear-delt-row':{set:'Lie chest down on an incline bench, or hinge with one hand on a bench, a dumbbell hanging from the working arm.',
+    steps:['Row with the elbow flared out to the side, toward the upper chest.','Squeeze the back of the shoulder.','Lower to a full stretch.'],avoid:['Tucking the elbow in, which turns it into a back row.','Shrugging.']},
+  'ez-curl':{set:'Stand holding an EZ bar on its angled grips, arms straight.',
+    steps:['Curl the bar up, elbows fixed at your sides.','Squeeze at the top.','Lower to straight arms.'],avoid:['Swinging the hips.','Letting the elbows drift forward.']},
+  'spider-curl':{set:'Lie chest down on an incline bench, arms hanging straight down with a dumbbell in each hand.',
+    steps:['Curl up without moving the upper arms.','Squeeze at the top.','Lower to straight arms.'],avoid:['Lifting the chest off the bench.','Half reps.']},
+  'concentration-curl':{set:'Sit on a bench, lean forward and brace the back of one upper arm against the inner thigh, the dumbbell hanging.',
+    steps:['Curl the dumbbell toward the shoulder.','Squeeze at the top.','Lower to a straight arm.'],avoid:['Pushing the arm up with the leg.','Short reps.']},
+  'bayesian-curl':{set:'Stand facing away from a low cable, a handle in one hand, the arm drawn slightly behind the body.',
+    steps:['Keep the upper arm behind you and curl the handle up.','Squeeze at the top.','Lower to a full stretch.'],avoid:['Letting the elbow swing forward.','Leaning forward to cheat.']},
+  'machine-curl':{set:'Sit at a curl machine, upper arms flat on the pad, elbows lined up with the pivot.',
+    steps:['Curl the handles up.','Squeeze at the top.','Lower to straight arms.'],avoid:['Lifting the elbows off the pad.','Bouncing out of the bottom.']},
+  'machine-dip':{set:'Sit at the dip machine, handles at your sides, back against the pad.',
+    steps:['Press the handles down until the arms are straight.','Keep the shoulders down.','Let them rise until the elbows are at about 90 degrees.'],avoid:['Shrugging as the handles rise.','Rushing the lowering.']},
+  'db-kickback':{set:'Hinge forward with one hand on a bench, the working upper arm along your side and level with the floor, dumbbell hanging.',
+    steps:['Straighten the elbow to push the dumbbell back.','Pause with the arm straight.','Lower to about 90 degrees.'],avoid:['Swinging the upper arm.','Letting the elbow drop.']},
+  'smith-squat':{set:'Bar of a Smith machine across the upper back, feet shoulder width and slightly forward of the bar.',
+    steps:['Unlock the bar and brace.','Sit down until the thighs are at least level with the floor.','Drive back up.'],avoid:['Knees caving in.','Heels lifting.']},
+  'db-step-up':{set:'Stand facing a box at about knee height, a dumbbell in each hand.',
+    steps:['Step one whole foot onto the box.','Drive through that foot to stand on the box, the back leg helping as little as you can.','Step back down under control.'],avoid:['Pushing off with the back foot.','A box so high the hips tip.']},
+  'good-morning':{set:'Bar across the upper back as for a squat, feet hip width, knees soft.',
+    steps:['Brace and hinge at the hips, pushing them back, back flat.','Lower until the torso is near level with the floor or you feel a strong hamstring stretch.','Drive the hips forward to stand.'],avoid:['Rounding the back.','Bending the knees so it turns into a squat.']},
+  'cable-pull-through':{set:'Face away from a low cable with a rope between the legs, step forward, feet a little wider than the hips.',
+    steps:['Hinge, letting the rope pull the hands back between the legs, back flat.','Drive the hips forward to stand tall.','Squeeze the glutes at the top.'],avoid:['Pulling with the arms.','Leaning back at the top.']},
+  'glute-ham-raise':{set:'Feet locked in a glute-ham bench, knees on the pad just behind the pivot, body upright.',
+    steps:['Lower the body forward under control, hips straight.','Go as far as you can control.','Pull back up with the hamstrings.'],avoid:['Bending at the hips to make it easier.','Dropping fast.']},
+  'cable-glute-kickback':{set:'Ankle strap on a low cable, facing the machine, hands on the frame, a slight hinge.',
+    steps:['Kick the strapped leg back and up, knee soft.','Squeeze the glute at the top.','Return slowly.'],avoid:['Arching the lower back to go higher.','Swinging the leg.']},
+  'leg-press-calf':{set:'Sit in a leg press with the balls of the feet on the bottom edge of the platform, knees straight but not locked.',
+    steps:['Let the heels drop to a full stretch.','Push through the balls of the feet as far as you can.','Pause, then lower over two seconds.'],avoid:['Bending the knees.','Bouncing.']},
+  'machine-crunch':{set:'Sit at an ab crunch machine, feet hooked, hands on the handles or pads.',
+    steps:['Curl the ribs toward the hips.','Squeeze the abs at the bottom.','Return slowly.'],avoid:['Pulling with the arms.','Using momentum.']},
+  'crunch':{set:'Lie on your back, knees bent, feet flat, fingertips at the temples.',
+    steps:['Curl the head and shoulders up, bringing the ribs toward the hips.','Pause.','Lower slowly.'],avoid:['Pulling on the neck.','Sitting all the way up with the hips.']},
+  'cable-woodchop':{set:'Stand side-on to a high cable, both hands on the handle, feet wide.',
+    steps:['Pull the handle down and across the body to the opposite hip, turning through the torso.','Pivot the back foot.','Return slowly.'],avoid:['Pulling with the arms only.','Twisting hard through the lower back.']},
+  'pallof-press':{set:'Stand side-on to a cable at chest height, both hands holding the handle at the chest, feet hip width.',
+    steps:['Press the handle straight out in front.','Hold, resisting the pull to turn.','Bring it back to the chest.'],avoid:['Letting the torso rotate.','Standing so close there is no tension.']},
+  'db-side-bend':{set:'Stand tall with a dumbbell in one hand by your side.',
+    steps:['Bend sideways toward the dumbbell.','Come back up using the opposite side.','Finish the reps, then switch sides.'],avoid:['Leaning forward or back.','Swinging.']},
+  'barbell-shrug':{set:'Stand holding a bar in front of the thighs, hands shoulder width.',
+    steps:['Lift the shoulders straight up toward the ears.','Pause at the top.','Lower to a full stretch.'],avoid:['Rolling the shoulders.','Bending the elbows.']},
+  'cable-shrug':{set:'Stand facing a low cable holding a bar, or between two cables with a handle in each hand, arms straight.',
+    steps:['Shrug the shoulders straight up.','Pause.','Lower to a full stretch.'],avoid:['Rolling the shoulders.','Bending the elbows.']},
+  'farmers-carry':{set:'A heavy dumbbell in each hand by your sides, standing tall.',
+    steps:['Brace and walk with short, steady steps.','Keep the shoulders level and back.','Carry for a set distance or time, then set the weights down with a flat back.'],avoid:['Leaning to one side.','Letting the shoulders slump forward.']},
+  'reverse-curl':{set:'Stand holding a bar with an overhand grip, arms straight.',
+    steps:['Curl the bar up, elbows at your sides, wrists straight.','Pause.','Lower slowly.'],avoid:['Letting the wrists bend back.','Swinging.']},
 };
 
 ;
@@ -1349,7 +1446,7 @@ const MUSCLES = {
 };
 const GROUPS = ['Chest','Back','Shoulders','Arms','Legs','Core','Neck'];
 
-// [id, name, equip, primary[], secondary[], compound?]
+// [id, name, equip, primary[], secondary[], compound?, alternative?]
 const RAW_EX = [
   ['barbell-bench','Barbell Bench Press','Barbell',['chest'],['fdelt','tri'],1],
   ['db-bench','Dumbbell Bench Press','Dumbbell',['chest'],['fdelt','tri'],1],
@@ -1416,12 +1513,89 @@ const RAW_EX = [
   ['pistol-squat','Pistol Squat','Bodyweight',['quad','glute'],['ham'],1],
   ['single-leg-rdl','Single-Leg Dumbbell RDL','Dumbbell',['ham','glute'],['lback'],1],
   ['nordic-curl','Nordic Hamstring Curl','Bodyweight',['ham'],['glute'],1],
+  // more choices for each muscle (the last 1 marks an alternative: Muscle's own plans pick the classics first)
+  ['pendlay-row','Pendlay Row','Barbell',['uback','lat'],['bi','rdelt','lback'],1,1],
+  ['tbar-row','T-Bar Row','Barbell',['uback','lat'],['bi','rdelt','lback'],1,1],
+  ['meadows-row','Meadows Row','Barbell',['lat','uback'],['bi','rdelt'],1,1],
+  ['rack-pull','Rack Pull','Barbell',['uback','trap','glute'],['ham','lback','fore'],1,1],
+  ['incline-db-row','Chest-Supported Dumbbell Row','Dumbbell',['uback','lat'],['bi','rdelt'],1,1],
+  ['machine-high-row','Machine High Row','Machine',['lat','uback'],['rdelt','bi'],1,1],
+  ['wide-cable-row','Wide-Grip Cable Row','Cable',['uback','rdelt'],['lat','bi','trap'],1,1],
+  ['inverted-row','Inverted Row','Bodyweight',['uback','lat'],['bi','rdelt'],1,1],
+  ['feet-elevated-row','Feet-Elevated Inverted Row','Bodyweight',['uback','lat'],['bi','rdelt'],1,1],
+  ['prone-y-raise','Prone Y-Raise','Dumbbell',['uback'],['rdelt','sdelt'],0,1],
+  ['close-grip-pulldown','Close-Grip Lat Pulldown','Cable',['lat'],['bi','uback'],1,1],
+  ['single-arm-pulldown','Single-Arm Cable Pulldown','Cable',['lat'],['bi'],1,1],
+  ['straight-arm-pulldown','Straight-Arm Pulldown','Cable',['lat'],[],0,1],
+  ['db-pullover','Dumbbell Pullover','Dumbbell',['lat','chest'],['tri'],0,1],
+  ['wide-pullup','Wide-Grip Pull-Up','Bodyweight',['lat'],['uback','bi'],1,1],
+  ['incline-bench','Incline Barbell Bench Press','Barbell',['chest','fdelt'],['tri'],1,1],
+  ['incline-machine-press','Incline Machine Press','Machine',['chest','fdelt'],['tri'],1,1],
+  ['db-fly','Dumbbell Fly','Dumbbell',['chest'],['fdelt'],0,1],
+  ['low-cable-fly','Low-to-High Cable Fly','Cable',['chest'],['fdelt'],0,1],
+  ['arnold-press','Arnold Press','Dumbbell',['fdelt'],['sdelt','tri'],1,1],
+  ['machine-shoulder-press','Machine Shoulder Press','Machine',['fdelt'],['sdelt','tri'],1,1],
+  ['landmine-press','Landmine Press','Barbell',['fdelt','chest'],['tri','sdelt'],1,1],
+  ['push-press','Push Press','Barbell',['fdelt'],['tri','sdelt','quad'],1,1],
+  ['pike-pushup','Pike Push-Up','Bodyweight',['fdelt'],['tri','sdelt'],1,1],
+  ['front-raise','Dumbbell Front Raise','Dumbbell',['fdelt'],[],0,1],
+  ['lean-away-lateral','Lean-Away Lateral Raise','Dumbbell',['sdelt'],[],0,1],
+  ['lying-lateral','Side-Lying Lateral Raise','Dumbbell',['sdelt'],[],0,1],
+  ['cable-y-raise','Cable Y-Raise','Cable',['sdelt'],['uback'],0,1],
+  ['cable-upright-row','Cable Upright Row','Cable',['sdelt','trap'],['fdelt','bi'],1,1],
+  ['cable-reverse-fly','Cable Reverse Fly','Cable',['rdelt'],['uback'],0,1],
+  ['rear-delt-row','Rear-Delt Dumbbell Row','Dumbbell',['rdelt','uback'],['bi'],1,1],
+  ['ez-curl','EZ-Bar Curl','Barbell',['bi'],['fore'],0,1],
+  ['spider-curl','Spider Curl','Dumbbell',['bi'],[],0,1],
+  ['concentration-curl','Concentration Curl','Dumbbell',['bi'],[],0,1],
+  ['bayesian-curl','Behind-the-Body Cable Curl','Cable',['bi'],[],0,1],
+  ['machine-curl','Machine Curl','Machine',['bi'],[],0,1],
+  ['bw-curl','Bodyweight Curl','Bodyweight',['bi'],['fore'],0,1],
+  ['machine-dip','Seated Dip Machine','Machine',['tri'],['chest','fdelt'],1,1],
+  ['db-kickback','Dumbbell Kickback','Dumbbell',['tri'],[],0,1],
+  ['diamond-pushup','Diamond Push-Up','Bodyweight',['tri'],['chest','fdelt'],1,1],
+  ['bw-tricep-ext-high','Bodyweight Triceps Extension','Bodyweight',['tri'],[],0,1],
+  ['smith-squat','Smith Machine Squat','Machine',['quad','glute'],['ham'],1,1],
+  ['db-step-up','Dumbbell Step-Up','Dumbbell',['quad','glute'],['ham'],1,1],
+  ['split-squat','Split Squat','Bodyweight',['quad','glute'],['ham'],1,1],
+  ['reverse-lunge','Reverse Lunge','Bodyweight',['quad','glute'],['ham'],1,1],
+  ['sissy-squat','Sissy Squat','Bodyweight',['quad'],[],0,1],
+  ['good-morning','Good Morning','Barbell',['ham','glute'],['lback'],1,1],
+  ['sumo-deadlift','Sumo Deadlift','Barbell',['glute','quad'],['ham','lback','uback','trap'],1,1],
+  ['db-rdl','Dumbbell Romanian Deadlift','Dumbbell',['ham','glute'],['lback'],1,1],
+  ['cable-pull-through','Cable Pull-Through','Cable',['glute','ham'],['lback'],0,1],
+  ['glute-ham-raise','Glute-Ham Raise','Machine',['ham'],['glute','calf'],0,1],
+  ['sliding-hamstring-curl','Sliding Leg Curl','Bodyweight',['ham'],['glute'],0,1],
+  ['glute-bridge','Glute Bridge','Bodyweight',['glute'],['ham'],0,1],
+  ['single-leg-glute-bridge','Single-Leg Glute Bridge','Bodyweight',['glute'],['ham'],0,1],
+  ['cable-glute-kickback','Cable Glute Kickback','Cable',['glute'],['ham'],0,1],
+  ['leg-press-calf','Leg Press Calf Raise','Machine',['calf'],[],0,1],
+  ['weighted-calf-raise','Single-Leg Dumbbell Calf Raise','Dumbbell',['calf'],[],0,1],
+  ['single-leg-calf-raise','Single-Leg Calf Raise','Bodyweight',['calf'],[],0,1],
+  ['bw-calf-raise','Bodyweight Calf Raise','Bodyweight',['calf'],[],0,1],
+  ['machine-crunch','Machine Crunch','Machine',['abs'],[],0,1],
+  ['crunch','Crunch','Bodyweight',['abs'],[],0,1],
+  ['reverse-crunch','Reverse Crunch','Bodyweight',['abs'],['obli'],0,1],
+  ['hanging-knee-raise','Hanging Knee Raise','Bodyweight',['abs'],['obli','fore'],0,1],
+  ['toes-to-bar','Toes-to-Bar','Bodyweight',['abs'],['lat','fore'],0,1],
+  ['lying-leg-raise','Lying Leg Raise','Bodyweight',['abs'],[],0,1],
+  ['kneeling-rollout','Ab Wheel Rollout','Bodyweight',['abs'],['lat'],0,1],
+  ['dead-bug','Dead Bug','Bodyweight',['abs'],['obli'],0,1],
+  ['cable-woodchop','Cable Woodchop','Cable',['obli'],['abs'],0,1],
+  ['pallof-press','Pallof Press','Cable',['obli'],['abs'],0,1],
+  ['db-side-bend','Dumbbell Side Bend','Dumbbell',['obli'],[],0,1],
+  ['side-plank','Side Plank','Bodyweight',['obli'],['abs','glute'],0,1],
+  ['barbell-shrug','Barbell Shrug','Barbell',['trap'],['fore'],0,1],
+  ['cable-shrug','Cable Shrug','Cable',['trap'],[],0,1],
+  ['farmers-carry','Farmer\'s Carry','Dumbbell',['fore','trap'],['obli','abs','glute'],1,1],
+  ['reverse-curl','Reverse Curl','Barbell',['fore'],['bi'],0,1],
+  ['dead-hang','Dead Hang','Bodyweight',['fore'],['lat'],0,1],
 ];
 function buildSeed(){
   return RAW_EX.map(r=>{
     const comp = r[5]===1;
     return {id:r[0], name:r[1], equipment:r[2], primary:r[3], secondary:r[4], comp,
-      custom:false,
+      custom:false, alt:r[6]===1,
       def:{repLow:comp?6:10, repHigh:comp?10:15, rir:comp?2:1, rest:comp?180:90}};
   });
 }
@@ -2846,10 +3020,14 @@ function emphasisMuscles(list){
   (Array.isArray(list)?list:[list]).forEach(e=>{ (map[e]||[]).forEach(m=>set.add(m)); });
   return [...set];
 }
+/* The classics first; the library's alternatives only when no classic fits. */
 function pickEx(muscle, comp, used, equip){
-  let c=state.exercises.filter(e=> e.primary.includes(muscle) && e.comp===!!comp && equip.includes(e.equipment));
-  if(!c.length) c=state.exercises.filter(e=> e.primary.includes(muscle) && equip.includes(e.equipment));
-  if(!c.length) c=state.exercises.filter(e=> e.primary.includes(muscle));
+  return pickFrom(state.exercises.filter(e=>!e.alt), muscle, comp, used, equip) || pickFrom(state.exercises.filter(e=>e.alt), muscle, comp, used, equip);
+}
+function pickFrom(xs, muscle, comp, used, equip){
+  let c=xs.filter(e=> e.primary.includes(muscle) && e.comp===!!comp && equip.includes(e.equipment));
+  if(!c.length) c=xs.filter(e=> e.primary.includes(muscle) && equip.includes(e.equipment));
+  if(!c.length) c=xs.filter(e=> e.primary.includes(muscle));
   if(!c.length) return null;
   const pref = comp? {Barbell:0,Dumbbell:1,Machine:2,Cable:3,Bodyweight:4} : {Cable:0,Machine:1,Dumbbell:2,Bodyweight:3,Barbell:4};
   c.sort((a,b)=> (used[a.id]||0)-(used[b.id]||0) || (pref[a.equipment]??9)-(pref[b.equipment]??9) || a.name.localeCompare(b.name));
@@ -2900,10 +3078,14 @@ function gapPlan(){
   return {cov:C.total, direct:dir, targets, covered, avoid:new Set(covered)};
 }
 function pickGapEx(muscle, used, equip, avoid, taken){
+  // the classics first; the library's alternatives only when no classic fits
+  return pickGapFrom(state.exercises.filter(e=>!e.alt), muscle, used, equip, avoid, taken) || pickGapFrom(state.exercises.filter(e=>e.alt), muscle, used, equip, avoid, taken);
+}
+function pickGapFrom(xs, muscle, used, equip, avoid, taken){
   const fits=e=>e.primary.includes(muscle) && !taken.has(e.id);
-  let c=state.exercises.filter(e=>fits(e) && equip.includes(e.equipment) && !e.primary.some(p=>p!==muscle&&avoid.has(p)));
-  if(!c.length) c=state.exercises.filter(e=>fits(e) && equip.includes(e.equipment));
-  if(!c.length) c=state.exercises.filter(fits);
+  let c=xs.filter(e=>fits(e) && equip.includes(e.equipment) && !e.primary.some(p=>p!==muscle&&avoid.has(p)));
+  if(!c.length) c=xs.filter(e=>fits(e) && equip.includes(e.equipment));
+  if(!c.length) c=xs.filter(fits);
   if(!c.length) return null;
   const pref={Cable:0,Machine:1,Dumbbell:2,Bodyweight:3,Barbell:4}, hits=e=>e.secondary.filter(x=>avoid.has(x)).length;
   c.sort((a,b)=> (a.comp-b.comp) || hits(a)-hits(b) || (used[a.id]||0)-(used[b.id]||0) || (pref[a.equipment]??9)-(pref[b.equipment]??9) || a.name.localeCompare(b.name));
@@ -4932,7 +5114,7 @@ function hubStart(tg){
 }
 /* Exercises Together can build a day from, with what each trains and its rep range. */
 function hubCatalog(){ return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp,
-  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom})); }
+  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt})); }
 /* A day Together built: [{exId, sets}] at one effort, loads from your last sets of each exercise. tg trims it as for a block day. */
 function hubStartWith(spec, tg){
   if(state.active) return null;
@@ -10096,7 +10278,7 @@ function buildPlan(T){
             const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[], k=turn[x.mu]||0, want=mine.length? mine[k%mine.length] : null;
             const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id));
             const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
-              || (used[a.id]||0)-(used[b.id]||0) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
+              || (used[a.id]||0)-(used[b.id]||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
             if(!e) return;
             taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; turn[x.mu]=k+1;
             out[i].push(Object.assign({exId:e.id, mu:x.mu, sets:n, comp:e.comp}, x.more? {more:true} : {}));
