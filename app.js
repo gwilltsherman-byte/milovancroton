@@ -5858,6 +5858,14 @@ const EVIDENCE={
     a:'Two or three challenging strength sessions per movement each week is a practical starting point. Brief balance practice can be more frequent. Planche and lever work still impose substantial strength loads, so allow recovery between hard sessions.',
     src:[['Schoenfeld et al. 2019, Training frequency and hypertrophy','Sports Med',PM+'How+many+times+per+week+should+a+muscle+be+trained+systematic+review'],
          ['Pelland et al. 2026, Volume and frequency dose-response','Sports Med',PM+'resistance+training+frequency+dose-response+hypertrophy']] },
+  session:{ t:'How much fits in one session', c:'mod', g:'Practice',
+    s:'Progress comes from the hard sets you do each week. With weekly volume matched, spreading them over more or fewer days changes little, but a long session costs the quality of its later sets: exercises done late in a session get fewer reps, and in calisthenics form is the first thing to go. Balance skills are motor skills, and short practice spread over many days tends to beat long blocks of it. Qualities you already have keep with far less work than it took to build them: in studies, as little as one hard set per exercise once a week, as long as the effort stays high. The caps here (three goals&rsquo; strength work, two balance skills and seven exercises a session) are coaching defaults, not numbers from a trial.',
+    a:'With many goals they take turns, so each session stays short and every set stays clean. Each goal still comes round regularly; it moves a little more slowly than it would alone, because its weekly sets are shared. To push one goal faster, train fewer goals at once or add a training day.',
+    src:[['Schoenfeld et al. 2019, Training frequency and hypertrophy','Sports Med',PM+'How+many+times+per+week+should+a+muscle+be+trained+systematic+review'],
+         ['Pelland et al. 2026, Volume and frequency dose-response','Sports Med',PM+'resistance+training+frequency+dose-response+hypertrophy'],
+         ['Simão et al. 2012, Exercise order in resistance training','Sports Med',PM+'Exercise+order+in+resistance+training+Simao+2012'],
+         ['Lee &amp; Genovese 1988, Distribution of practice in motor skill acquisition','Res Q Exerc Sport',PM+'Distribution+of+practice+in+motor+skill+acquisition+learning+and+performance+effects+reconsidered'],
+         ['Spiering et al. 2021, The minimal dose to maintain strength','J Strength Cond Res',PM+'Maintaining+physical+performance+the+minimal+dose+of+exercise+needed+to+preserve+endurance+and+strength']] },
   rom:{ t:'Use the whole range', c:'mod', g:'Practice',
     s:'Training through a full range of motion is at least as good as partial work for size and strength, and the stretched portion of a movement looks particularly valuable. Half push-ups and chin-ups that stop short give away much of the stimulus.',
     a:'Chest to the floor, arms straight at the bottom of a hang. If you can’t own the full range, drop to an easier rung that you can.',
@@ -6200,6 +6208,12 @@ function defaultPicks(){ return todayPlan().map(x=>x.id); }
    - what else your goals take (balance, mobility, joint prep, control, technique, other strength standards) comes
      on top, up to four a session, taking turns when there are more, each at your rung on that ladder but never past
      its standard. Confirmed needs retain lighter maintenance. Hand balancing and straight-arm pushing always get the wrist warm-up.
+   - a session has room for SESSION_CAP exercises, besides the wrist warm-up and the one-set maintenance check. With more
+     goals than fit, goals take turns: the strength work of GOAL_CAP goals a session and BALANCE_CAP balance skills, goals
+     on the same movement spread apart. What it takes weekly is the sets, not how they are spread over the days (with weekly
+     volume matched, frequency changes little), and a long session costs the quality of its later sets; balance is
+     practised little and often, so it has its own room. Then up to two of what else your goals take, then support work,
+     then the rest of what else your goals take and the extra, while there is room.
    The rotation moves on once per day you train, so a plan holds for the whole day. */
 const FAM={pull:'vpull', pullvar:'vpull', muscleup:'vpull', row:'hpull', dip:'dip', rings:'dip', pushh:'hpush', plyopush:'hpush',
   planche:'planche', planchepush:'planche', pushv:'vpush', press:'vpush', handstand:'balance', onearmhs:'balance', armbalance:'balance',
@@ -6216,25 +6230,42 @@ function rotation(){ return new Set(state.history.map(w=>dayStart(w.date))).size
 /* An unplaced ladder starts at its first related movement; later steps need repeatable evidence and a direct check. */
 function guessRung(id, mains){ return pathFor(id)[0]; }
 /* [{id, i rung, sets, role: goal|volume|support|extra|new}]; ahead looks that many sessions further on. */
-const NEED_CAP=4;
+const NEED_CAP=4, SESSION_CAP=7, GOAL_CAP=3, BALANCE_CAP=2, SUP_CAP=2;
+/* Goals of the same kind spread apart in the turn order: pull, push, legs, pull... rather than pull, pull, push, so a
+   session mixes them and the muscles one goal loads recover while the others train. */
+function spread(ids){
+  const by={}, fams=[]; ids.forEach(id=>{ const f=LADDERS[id].p||famOf(id); if(!by[f]){ by[f]=[]; fams.push(f); } by[f].push(id); });
+  const out=[]; for(let j=0; out.length<ids.length; j++) fams.forEach(f=>{ if(by[f][j]) out.push(by[f][j]); });
+  return out;
+}
+/* Session r's share of a list that takes turns cap at a time: [id, how many turns it has had]. Everything fits: all of it, every session. */
+function turns(ids, cap, r){
+  const n=ids.length; if(n<=cap) return ids.map(id=>[id, r]);
+  return Array.from({length:cap},(_,j)=>{ const c=r*cap+j; return [ids[c%n], Math.floor(c/n)]; });
+}
 const WRIST_LOAD=['handstand','planche','planchepush','armbalance','press','onearmhs','hsdrill','pushv','plyopush'];
 function todayPlan(ahead){
   const {mains,sups,needs,maintenance}=planIds(), r=rotation()+(ahead||0), out=[], seen=new Set(), fams=new Set();
   const add=(id,i,sets,role)=>{ const st=stepsOf(id)[i]; if(!st||seen.has(st.id)||out.some(x=>x.id===id)) return false;
     seen.add(st.id); fams.add(famOf(id)); out.push({id,i,sets,role,target:rungTarget(id,i,role)}); return true; };
-  mains.forEach((id,k)=>{ const cur=curIdx(id), st=stepsOf(id)[cur], vi=st.volume?stepsOf(id).findIndex(x=>x.id===st.volume):-1;
+  // each goal alternates by its own turns, so one that skips sessions still gets both its target and volume days
+  const bal=id=>practiceOf(id)==='balance';
+  turns(spread(mains.filter(id=>!bal(id))), GOAL_CAP, r).concat(turns(spread(mains.filter(bal)), BALANCE_CAP, r))
+    .sort((a,b)=>mains.indexOf(a[0])-mains.indexOf(b[0])).forEach(([id,t])=>{ const k=mains.indexOf(id);
+    const cur=curIdx(id), st=stepsOf(id)[cur], vi=st.volume?stepsOf(id).findIndex(x=>x.id===st.volume):-1;
     const need=pendingStandard(id);
-    if(need&&(r+k)%2===1)add(id,need.r,stepsOf(id)[need.r].sets,'need');
-    else if(practiceOf(id,cur)==='strength'&&state.placed[id]&&vi>=0&&(r+k)%2===1) add(id,vi,stepsOf(id)[vi].sets+1,'volume');
+    if(need&&(t+k)%2===1)add(id,need.r,stepsOf(id)[need.r].sets,'need');
+    else if(practiceOf(id,cur)==='strength'&&state.placed[id]&&vi>=0&&(t+k)%2===1) add(id,vi,stepsOf(id)[vi].sets+1,'volume');
     else add(id,cur,st.sets,'goal'); });
   const byFam={}, order=[];
   sups.forEach(id=>{ if(mains.includes(id)) return; const f=famOf(id); if(!byFam[f]){ byFam[f]=[]; order.push(f); } byFam[f].push(id); });
-  const n=order.length, take= n<=1? n : Math.ceil(n/2);
+  // what else your goals take keeps two places ahead of support work
+  const firstNeeds=Math.min(2, needs.length), n=order.length, take=Math.max(0, Math.min(n<=1? n : Math.ceil(n/2), SUP_CAP, SESSION_CAP-out.length-firstNeeds));
   // slot c counts every support slot ever handed out: it walks the movements in turn, and each time a movement
   // comes round again it takes its next ladder
   for(let j=0;j<take;j++){const c=r*take+j,ids=byFam[order[c%n]],id=ids[Math.floor(c/n)%ids.length],need=pendingStandard(id),i=need?need.r:curIdx(id);add(id,i,stepsOf(id)[i].sets,need?'need':'support');}
-  const k=Math.min(NEED_CAP, needs.length);
-  if(mains.length && out.length+k<6){   // no extra when what else your goals take already fills the session
+  const k=Math.max(0, Math.min(NEED_CAP, needs.length, SESSION_CAP-out.length));
+  if(mains.length && out.length+k<Math.min(6, SESSION_CAP)){   // no extra when what else your goals take already fills the session
     const pool=[]; mains.forEach(id=>(VARIETY[famOf(id)]||[]).forEach(x=>{ if(LADDERS[x]&&!pool.includes(x)) pool.push(x); }));
     const free=pool.filter(x=>!out.some(o=>o.id===x) && !fams.has(famOf(x)));
     if(free.length){ const id=free[r%free.length], placed=!!state.placed[id], i=placed? curIdx(id) : guessRung(id, mains);
@@ -6243,7 +6274,7 @@ function todayPlan(ahead){
   const plan=out.slice(), more=[], taken=new Set(plan.map(x=>stepsOf(x.id)[x.i].id));
   const put=(id,i,role)=>{ const st=stepsOf(id)[i]; if(!st||taken.has(st.id)||plan.some(x=>x.id===id)||more.some(x=>x.id===id)) return;
     taken.add(st.id); more.push({id,i,sets:role==='maintenance'?1:st.sets,role,target:rungTarget(id,i,role)}); };
-  const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), at= ns.length>NEED_CAP? (r*NEED_CAP)%ns.length : 0;
+  const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), at= ns.length>k&&k? (r*k)%ns.length : 0;
   for(let j=0;j<k;j++){ const n=ns[(at+j)%ns.length], p=pathFor(n.l), cur=curIdx(n.l), target=p.indexOf(n.r);
     put(n.l,state.placed[n.l]&&target>=0?p[Math.min(p.indexOf(cur),target)]:p[0],isPrep(n.l)?'prep':'need'); }
   if(maintenance.length){const n=maintenance[r%maintenance.length];put(n.l,n.r,'maintenance');}
@@ -6902,9 +6933,13 @@ function viewToday(){
       <button class="btn primary block" data-act="nav" data-route="train">${I.flag} Back to session</button></div>`;
   } else if(goals.length){
     const P=todayPlan(), xs=orderIds(P.map(x=>x.id)).map(id=>P.find(x=>x.id===id));
+    // goals that wait their turn today: name the ones the next session brings
+    const {mains}=planIds(), waiting=mains.filter(id=>!P.some(x=>x.id===id)), next=todayPlan(1).filter(x=>waiting.includes(x.id)).map(x=>x.id);
+    const turnNote= waiting.length? `<p class="sub" style="margin:10px 0 0;font-size:12.5px">Your ${goals.length} goals take turns so each session stays short.${next.length? ' Next session: '+next.flatMap(id=>goalsOn(id).map(g=>esc(g.n))).join(' &middot; ')+'.' : ''} ${evChip('session','Why')}</p>` : '';
     hero=`<div class="hero"><h2>Today&rsquo;s session</h2>
       <div class="nxlist">${xs.map(x=>{ const st=stepsOf(x.id)[x.i]; return `<button class="nx" data-act="how" data-id="${esc(x.id)}" data-i="${x.i}"><span>${esc(st.n)}</span><b class="mono">${planText(x)}</b>
         <i>${esc(LADDERS[x.id].n)} &middot; ${roleText(x)}</i></button>`; }).join('')}</div>
+      ${turnNote}
       <p class="sub" style="margin:10px 0 0;font-size:12.5px">Train the movement and setup you can control. Related easier work supports strength days; balance and power stay fresh. Targets grow toward your goals, and supporting mobility and technique stay in a small maintenance rotation.</p>
       <div class="grid2" style="margin-top:14px"><button class="btn primary block" data-act="start-plan">${I.play} Start</button>
         <button class="btn ghost block" data-act="builder">${I.sliders} Choose</button></div></div>`;
