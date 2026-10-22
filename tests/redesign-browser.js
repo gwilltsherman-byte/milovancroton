@@ -212,6 +212,60 @@
       frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture)); localStorage.removeItem('proladder.v1');
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
+    // a second workout can start while one is open: the first stays open, you switch between them, and ending one leaves the other
+    { frame.remove(); frame=null;
+      const fx=JSON.parse(JSON.stringify(fixture));
+      fx.active={id:'multi-a',name:'Pull day',startedAt:Date.now()-600000,restEndsAt:null,restDuration:0,
+        entries:[{exId:'bench',name:'Bench press',primary:['chest'],secondary:['tri','fdelt'],equipment:'Barbell',target:{repLow:6,repHigh:10,rir:2,rest:120},mi:0,
+          sets:[{type:'work',weight:40,reps:8,rir:2,done:true},{type:'work',weight:40,reps:null,rir:null,done:false}]}]};
+      localStorage.setItem('hyplog.v1',JSON.stringify(fx));
+      ({win,doc}=await load()); root=rootOf(doc,'lift');
+      const act=a=>root.querySelector(`[data-act="${a}"]`), saved=()=>JSON.parse(localStorage.getItem('hyplog.v1'));
+      check(!!act('start-empty'),'With a session open, Muscle’s Today still offers to start another');
+      act('start-empty').click(); await pause(150);
+      check(!!dialog(root)?.querySelector('[data-act="park-active-confirm"]'),'Starting one offers to keep the open one going beside it');
+      dialog(root).querySelector('[data-act="park-active-confirm"]').click(); await pause(250);
+      if(dialog(root)) closeDialog(root);   // the exercise picker a free session opens with
+      await pause(250);
+      const second=saved().active.id;
+      check(second!=='multi-a' && saved().parked.length===1 && saved().parked[0].id==='multi-a' && saved().parked[0].entries[0].sets[0].done,'The new workout is on screen and the first is kept open, sets and all');
+      const bar=act('switch-session');
+      check(!!bar && bar.closest('.banner').textContent.includes('Also open: Pull day'),'The session screen shows the other open one, to switch to');
+      act('leave-session').click(); await pause(200);
+      check(root.querySelectorAll('.resume').length===2 && root.querySelector('.resume [data-act="switch-session"]'),'Today lists both open sessions');
+      root.querySelector('.resume [data-act="switch-session"]').click(); await pause(250);
+      check(saved().active.id==='multi-a' && saved().parked.map(p=>p.id).join()===second,'Resuming one brings it on screen and keeps the other open');
+      check(win.__hub.api('lift').info().open.join()==='multi-a,'+second,'Together sees both as open');
+      check(win.__hub.api('lift').end(false, second),'A session left open can be ended by name');
+      await pause(250);
+      check(saved().active.id==='multi-a' && saved().parked.length===0,'and the one you were on stays on screen');
+      frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture));
+      ({win,doc}=await load()); root=rootOf(doc,'lift'); }
+
+    // Ladder and Strength: Start another keeps the session going open beside the next one
+    { frame.remove(); frame=null;
+      const now=Date.now();
+      localStorage.setItem('proladder.v1',JSON.stringify({v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:4}, placed:{pull:true}, tests:[], history:[],
+        goals:[{id:'g10', key:'pullup10', n:'10 strict pull-ups', l:'pull', r:4, std:10, sup:['row'], added:1, achieved:null}],
+        active:{id:'lad-open', name:'First one', startedAt:now-600000, restEndsAt:null, restDur:0, entries:[{ladderId:'pull', stepIdx:4, kind:'reps', target:8, setup:{}, sets:[{v:7, done:true}]}]}}));
+      localStorage.setItem('strlog.v2',JSON.stringify({v:2, onboarded:true, route:'today', settings:{unit:'kg'}, history:[],
+        active:{id:'str-open', name:'First one', startedAt:now-600000, restEndsAt:null, restDur:0, note:null, plan:null, entries:[]}}));
+      ({win,doc}=await load());
+      for(const [m,key] of [['cal','proladder.v1'],['str','strlog.v2']]){
+        win.__go(m); await pause(300);
+        const r=rootOf(doc,m), saved=()=>JSON.parse(localStorage.getItem(key)), first=m==='cal'? 'lad-open' : 'str-open';
+        r.querySelector('[data-act="park-today"]').click(); await pause(250);
+        check(!saved().active && saved().parked.map(p=>p.id).join()===first && r.querySelector('[data-act="switch-session"]'),`${m==='cal'?'Ladder':'Strength'}: Start another sets the session aside, still open, and Today offers to resume it`);
+        r.querySelector(m==='cal'? '[data-act="start-plan"]' : '[data-act="free"]').click(); await pause(300);
+        if(dialog(r)) closeDialog(r);
+        await pause(200);
+        check(saved().active && saved().active.id!==first && saved().parked[0].id===first,'the next session starts with the first still open');
+        r.querySelector('[data-act="switch-session"]').click(); await pause(250);
+        check(saved().active.id===first && saved().parked.length===1 && saved().parked[0].id!==first,'and Switch swaps between them');
+      }
+      frame.remove(); frame=null; localStorage.removeItem('proladder.v1'); localStorage.removeItem('strlog.v2');
+      ({win,doc}=await load()); root=rootOf(doc,'lift'); }
+
     // every how-to shows the movement drawn and the muscles it works, in the theme's colours
     { const how=(m,id)=>{ const r=rootOf(doc,m), b=doc.createElement('button'); b.dataset.act='howto'; b.dataset.id=id; b.hidden=true;
         r.getElementById('view').appendChild(b); b.click(); b.remove(); return r; };

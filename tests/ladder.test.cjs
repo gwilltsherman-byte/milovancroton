@@ -45,6 +45,7 @@ function ladder() {
   const openSetsEnd = app.indexOf('/* ==================== TAKE BACK ====================', openSetsStart);
   vm.runInContext(app.slice(openSetsStart, openSetsEnd), context, {filename: 'app.js:OpenSets'});
   context.OpenSets = context.window.OpenSets;
+  context.Parked = context.window.Parked;
   vm.runInContext(`(function(__root) { ${app.slice(bodyStart, end)}
     state = defaultState();
     globalThis.ladderTest = {
