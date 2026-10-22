@@ -164,6 +164,38 @@
     check(!!saved().run, 'the next day starts');
     root.querySelector('[data-a="t-new"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(300);
     check(!saved().run && saved().plan.week===1 && saved().next===0, 'a new block starts mid-day: the day ends and the block begins at Day 1');
+    // recommended Ladder goals: more goals than Ladder has room for get a keep-and-pause recommendation
+    { const G={pullup1:['First strict pull-up','pull',4,1], pushup20:['20 strict push-ups','pushh',3,20], frontlever:['Full front lever, 5 s','frontlever',4,5], tuckplanche:['Tuck planche, 10 s','planche',1,10]};
+      const four=Object.assign({}, ladder, {goals:Object.keys(G).map((k,i)=>({id:'rg'+i, key:k, n:G[k][0], l:G[k][1], r:G[k][2], std:G[k][3], sup:['core'], added:1, achieved:null}))});
+      frame.remove(); frame=null;   // first, so its exit save can't write over the new data
+      reset({'milo.persist':'1', 'proladder.v1':JSON.stringify(four)});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      root.querySelector('[data-a="d-sec"][data-m="cal"]').click(); root.querySelector('[data-a="d-save"]').click(); await pause(300);
+      const rec=root.querySelector('.trec'), C=win.__hub.api('cal'), lg=()=>JSON.parse(localStorage.getItem('proladder.v1')).goals.length;
+      check(rec && /Recommended: (one goal|two goals) at a time/.test(rec.textContent) && rec.querySelector('[data-a="t-rec-keep"]'), 'with more goals than Ladder has room for, Together recommends which to keep');
+      check(/each gets about \d+ sets? a week/.test(rec.textContent) && /each would get about \d+/.test(rec.textContent), 'it says how many sets each goal gets now, and kept to its recommendation');
+      const kept=rec.querySelector('.tlist').textContent;
+      check(!(kept.includes('front lever') && kept.includes('planche')), 'it never keeps two straight-arm skills together');
+      const r=C.trial([{key:'frontlever'},{key:'tuckplanche'}], 2, k=>C.upcoming(k));
+      check(r.length===2 && r.every(x=>x.sets>0) && lg()===4, 'trying out other goals plans a week for them without changing yours');
+      rec.querySelector('[data-a="t-rec-keep"]').click(); await pause(300);
+      const left=lg(); check(left>=1 && left<4 && root.querySelector('#toast [data-a="t-goal-back"]'), 'Keep pauses the other goals, with Undo');
+      root.querySelector('#toast [data-a="t-goal-back"]').click(); await pause(300);
+      check(lg()===4, 'Undo brings every paused goal back');
+      // no goals yet: what to start with, on the block and on the main page, added through Ladder's own placement
+      frame.remove(); frame=null;
+      reset({'milo.persist':'1', 'proladder.v1':JSON.stringify(Object.assign({}, ladder, {goals:[]}))});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      root.querySelector('[data-a="d-sec"][data-m="cal"]').click(); root.querySelector('[data-a="d-save"]').click(); await pause(300);
+      check(root.querySelector('.trec [data-a="t-rec-add"]') && root.querySelector('.trec').textContent.includes('Best fit'), 'with no goals, the block recommends some to start with');
+      root.querySelector('[data-a="t-save"]').click(); await pause(300);
+      const add=root.querySelector('.trec [data-a="t-rec-add"]'), key=add&&add.dataset.k;
+      check(!!add && root.querySelector('.trec').textContent.includes('Recommended to start'), 'and so does the main page, until there is one');
+      add.click(); await pause(400);
+      const lad=doc.getElementById('m-cal').shadowRoot, there=win.__hub.current()==='cal' && !!lad.querySelector('#sheet.on');
+      check(there && JSON.parse(localStorage.getItem('proladder.v1')).goals.some(g=>g.key===key), 'Add sets the goal and opens Ladder to place it');
+      lad.querySelector('#sheet.on [data-act="close-modal"]').click(); await pause(400);
+      check(win.__hub.current()==='mix', 'and closing Ladder comes back to Together'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;

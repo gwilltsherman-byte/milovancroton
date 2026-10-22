@@ -6902,6 +6902,8 @@ const GOAL_LV={pullup1:1, pullup10:2, oapu:4, pushup20:1, oapush:3, dip10:2, hsp
   skater:2, sissy:2, revnordic:2, calf25:1, t2b:2, dragonflag:3, copenhagen:2, abwheel:3, bridge:3, tuckbl:2, backlever:3, humanflag:4, crow:1,
   elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3, weightedpull:2};
 const LV_N=['','Beginner','Intermediate','Advanced','Elite'], LV_T=['','a few weeks','a few months','6 to 12 months','a year or more'];
+/* Straight-arm strength skills: they load the elbows and the biceps tendon the same way, so Together recommends one at a time. */
+const STRAIGHT_ARM=['frontlever','backlever','planche','planchepush','flag'];
 const CAT_N={Pull:'Pulling', Push:'Pushing', Legs:'Legs', Core:'Core', Arms:'Arms', Skill:'Skills'};
 const STARTERS=['pullup1','pushup20','crow'];
 /* ==================== WHAT A GOAL TAKES ====================
@@ -9051,8 +9053,32 @@ if(window.__hub) window.__hub.reg('cal', {
   setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(); },
   open(){ state.route=state.active?'train':'today'; render(); window.scrollTo(0,0); },
   // your goals, for Together to show and change: where you are on each, and removing or putting one back
-  goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null;
-    return {id:g.id, n:g.n, placed:!!state.placed[g.l], step:st? st.n : '', pct:Math.round(goalProgress(g)*100), skill:isSkill(g.l)}; }); },
+  goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null, p=pathFor(g.l,g);
+    return {id:g.id, key:g.key, n:g.n, l:g.l, fam:famOf(g.l), placed:!!state.placed[g.l], step:st? st.n : '', pct:Math.round(goalProgress(g)*100), skill:isSkill(g.l),
+      dist: state.placed[g.l]? Math.max(0, p.indexOf(g.r)-Math.max(0,p.indexOf(curIdx(g.l)))) : null, lv:GOAL_LV[g.key]||2,
+      balance:practiceOf(g.l, g.r)==='balance', straight:STRAIGHT_ARM.includes(g.l)}; }); },
+  // For Together's recommended goals: the standard goals and where you stand on each. fit is the same measure Ladder's
+  // own suggestions use: a few rungs away is best, then the rung you are on, then by level once you have placed something.
+  catalog(){ const lv=userLevel(), have=new Set(activeGoals().map(g=>g.key)), done=new Set(state.goals.filter(g=>g.achieved).map(g=>g.key));
+    return GOAL_ORDER.filter(k=>LADDERS[GOALS[k].l]).map(k=>{ const G=GOALS[k], d=goalDist(k), gl=GOAL_LV[k]||2;
+      return {key:k, n:G.n, l:G.l, fam:famOf(G.l), lv:gl, lvn:LV_N[gl], hint:goalHint(k), have:have.has(k), done:done.has(k), met:goalMetNow(k),
+        balance:practiceOf(G.l, G.r)==='balance', straight:STRAIGHT_ARM.includes(G.l),
+        fit: d!=null? (d>=1&&d<=3? 10-d : d===0? 8 : d<0? -5 : 5-Math.min(4,d/2)) : lv? 6-2*Math.abs(gl-lv) : STARTERS.includes(k)? 6 : 4-gl}; }); },
+  // A week of sessions as a set of goals would plan it: picks(k) is session k as Together runs it. Each goal's share of the
+  // sets is its own movement in full, and support or what it needs shared evenly with the goals that bring it. Nothing is
+  // saved: your own goals go straight back. list: [{id} for one of yours, or {key} for a standard goal]
+  trial(list, n, picks){ const keep=state.goals;
+    try{ const gs=list.map(x=>x.id? keep.find(g=>g.id===x.id&&!g.achieved) : GOALS[x.key]? makeGoal(x.key) : null).filter(Boolean);
+      state.goals=keep.filter(g=>g.achieved).concat(gs);
+      const out=gs.map(()=>0), own=id=>gs.map((g,i)=>g.l===id? i : -1).filter(i=>i>=0),
+        rest=id=>gs.map((g,i)=>(g.sup||[]).includes(id)||goalNeeds(g).some(x=>x.l===id)? i : -1).filter(i=>i>=0);
+      for(let k=0;k<n;k++) (picks(k)||[]).forEach(x=>{ if(x.id==='wrist') return;   // the wrist warm-up serves the whole session
+        const o=own(x.id), to=o.length? o : rest(x.id); to.forEach(i=>{ out[i]+=x.sets/to.length; }); });
+      return gs.map((g,i)=>({id:g.id, key:g.key, sets:out[i]})); }
+    finally{ state.goals=keep; } },
+  // standard goals added from Together, through the same placement as choosing them here
+  addGoals(keys){ const list=(keys||[]).filter(k=>GOALS[k]&&!activeGoals().some(g=>g.key===k)).map(makeGoal); if(!list.length) return false;
+    state.route='today'; render(); window.scrollTo(0,0); addGoals(list); return true; },
   removeGoal(id){ const g=state.goals.find(x=>x.id===id&&!x.achieved); if(!g) return false;
     gone[id]=g; state.goals=state.goals.filter(x=>x!==g); save(); render(); return true; },
   restoreGoal(id){ const g=gone[id]; if(!g||state.goals.some(x=>x.id===id)) return false; delete gone[id]; state.goals.push(g); save(); render(); return true; },
@@ -12201,11 +12227,14 @@ const PROGRAM_SOURCES=[
   ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
   ['Simão et al. 2012, Exercise order in resistance training','Sports Med','Exercise order in resistance training Simao 2012'],
 ];
-/* Why fewer Ladder goals at once move faster. */
+/* Why fewer Ladder goals at once move faster, and how Together recommends them. */
 const LADDER_SOURCES=[
   ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
   ['Pelland et al. 2026, Volume and frequency dose-response','Sports Med','resistance training dose-response meta-regressions weekly volume frequency hypertrophy strength'],
+  ['Simão et al. 2012, Exercise order in resistance training','Sports Med','Exercise order in resistance training Simao 2012'],
   ['Lee & Genovese 1988, Spaced practice and motor skills','Res Q Exerc Sport','Distribution of practice in motor skill acquisition learning and performance effects reconsidered'],
+  ['Locke & Latham 2002, Goal setting and task motivation','Am Psychol','Building a practically useful theory of goal setting and task motivation'],
+  ['Magnusson & Kjaer 2019, Loading and the human tendon','J Physiol','The impact of loading, unloading, ageing and injury on the human tendon'],
   ['Spiering et al. 2021, The minimal dose to maintain strength','J Strength Cond Res','Maintaining physical performance the minimal dose of exercise needed to preserve endurance and strength over time'],
 ];
 /* Why a few exercises for a muscle, kept for the block. */
@@ -12322,16 +12351,15 @@ function viewTune(){
           const opts=S&&S.options? S.options(a, kit()) : [], n=P.days.filter(d=>d.str.some(x=>x.a===a)).length, cur=T.lift[a]&&opts.some(o=>o.id===T.lift[a])? T.lift[a] : S&&S.pick(a, kit()), o=opts.find(o=>o.id===cur);
           return opts.length? row('lift', a, AREA_N[a], T.off[a]? 'Left out' : plural(n,'time')+' a week', T.off[a]? '' : esc(o? o.n : ''))
             : `<div class="trow"><span class="tn"><b>${AREA_N[a]}</b><span>Nothing in your kit trains this</span></span></div>`; }).join('')+'</div>'; },
-    cal:()=>{ const C=H.api('cal'), gs=C&&C.goals? C.goals() : [], bal=gs.filter(g=>g.skill).length, str=gs.length-bal;
+    cal:()=>{ const C=H.api('cal'), gs=C&&C.goals? C.goals() : [];
         const rows=gs.map(g=>`<div class="trow"><span class="tn"><b>${esc(g.n)}</b><span>${g.placed? esc(g.step)+' &middot; '+g.pct+'% of the way' : 'Not placed yet: Ladder asks where you start'}</span></span>
           <button class="btn sm ghost" data-a="t-goal-rm" data-id="${esc(g.id)}" aria-label="Remove ${esc(g.n)}">${IC.x} Remove</button></div>`).join('');
-        // more goals than a session has room for take turns, so each gets fewer of the week's sets
-        const turns= str>3 || bal>2;
         return `<p class="hint" style="margin-top:0">${gs.length? 'Ladder trains toward these goals, each from the rung you are on. Removing one here keeps its rungs and history in Ladder.' : 'No Ladder goals yet, so its days are empty. Add one and Together trains toward it.'}</p>
           ${gs.length? `<div class="tlist">${rows}</div>` : ''}
-          ${turns? `<p class="tnote">${IC.info}<span>A session has room for the strength work of three goals and two balance skills. With ${plural(gs.length,'goal')} they take turns, so each one gets fewer of the week’s sets and moves more slowly than it would alone. To push one faster, train fewer at once.</span></p>` : ''}
+          ${recHtml(recModel(P))}
           <div class="row2" style="margin-top:10px"><button class="btn sm" data-a="t-goal-add">${IC.plus} Add a goal</button></div>
-          ${basedOn('Why fewer goals move faster', ['Strength in a movement grows with the hard sets you do of it each week, and goals share a session’s sets: past three strength goals and two balance skills, each gets fewer, so each moves more slowly. Balance skills like the handstand are motor skills, which improve most with short practice spread over many days, so they come round often. What you already have keeps with far less work than it took to build. The caps themselves are coaching defaults drawn from these studies, not results of one trial.'], LADDER_SOURCES)}`; },
+          ${basedOn('Why fewer goals move faster', ['Strength in a movement grows with the hard sets you do of it each week, by less for each extra set. Goals share Ladder’s sessions: one has room for the strength work of three goals and two balance skills, and past that they take turns, so each gets fewer sets. Below that, each extra goal still shares the session’s room for what the goals rest on (mobility, prep and supporting strength), and its work comes later in the session; exercises done later in a session get fewer good reps. Balance skills like the handstand are motor skills, which improve most with short practice spread over many days.',
+            'So Together recommends two goals when Ladder builds on two or more days a week, and one otherwise. It suggests goals a few rungs from where you are: goal-setting research finds specific goals that are hard but within reach work best, and that several goals at once pull effort apart. It spreads them over different movements, so the muscles one loads recover while another trains, and picks at most one straight-arm skill like the planche or a lever, as these load the elbows and the biceps tendon the same way and tendons adapt more slowly than muscle. A paused goal waits safely: what you have built keeps with far less work than it took to build. The counts are coaching defaults drawn from these studies, not results of one trial.'], LADDER_SOURCES)}`; },
   };
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tune.fresh? 'New block &middot; week 1 of '+BLOCK : 'Week '+Math.min(plan().week,BLOCK)+' of '+BLOCK}</div>
@@ -12341,6 +12369,52 @@ function viewTune(){
     <div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start this block' : IC.check+' Save changes'}</button></div>
     <button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">${tune.setup? 'Use it as it is' : tune.fresh? 'Keep my current block' : 'Cancel'}</button>
   </section></div>`;
+}
+/* ==================== RECOMMENDED LADDER GOALS ====================
+   Goals share Ladder's sessions, so the fewer at once, the more of each session each one gets. How many: two when
+   Ladder builds on two or more days of the week, one otherwise (one Ladder day, or the lighter dose it gets lower in your
+   order). Which: your own goals closest to done; or standard goals a few rungs from where you are, on movements your
+   goals don't already train, at most one straight-arm skill and one balance skill, and not a movement Strength already
+   trains heavily (on days with both, Ladder leaves out its support work for it). The numbers are Ladder's own plan for a
+   week of your block: sets aimed at each goal, its own movement and its share of what it rests on. */
+function recModel(P){
+  const C=H.api('cal'); if(!C||!C.catalog||!C.trial||!P) return null;
+  const doses=P.days.filter(d=>d.cal).map(d=>d.cal.dose); if(!doses.length) return null;
+  const build=doses.filter(x=>x==='build').length, n= build>=2? 2 : 1, gs=C.goals(), cat=C.catalog();
+  const sp= tg.secs.includes('str')? new Set(strLifts().map(x=>AREA_PAT[x.a])) : new Set();
+  const week=list=>{ if(!list.length) return 0; const r=C.trial(list, doses.length, k=>calPicks(doses[k], k)); return r.length? Math.round(r.reduce((a,x)=>a+x.sets,0)/r.length) : 0; };
+  const fits=(base, g)=>!base.some(x=>x.fam===g.fam) && !(g.straight&&base.some(x=>x.straight)) && !(g.balance&&base.some(x=>x.balance));
+  const choose=(pool, k, base)=>{ const out=[]; [true,false].forEach(strict=>pool.forEach(g=>{ if(out.length<k && !out.includes(g) && (!strict||fits(base.concat(out), g))) out.push(g); })); return out; };
+  // your own goals nearest done first: furthest along, then fewest rungs to go, then the easier level
+  const near=(a,b)=>b.pct-a.pct || (a.dist==null)-(b.dist==null) || (a.dist||0)-(b.dist||0) || a.lv-b.lv;
+  const keep= gs.length>n? choose(gs.slice().sort(near), n, []) : gs;
+  const pool=cat.filter(c=>!c.have&&!c.done&&!c.met&&c.fit>0).map(c=>Object.assign({}, c, {both:sp.has(LAD_PAT[c.l]), sc:c.fit - (sp.has(LAD_PAT[c.l])? 2 : 0)})).sort((a,b)=>b.sc-a.sc);
+  const add= gs.length<n? choose(pool, 3, keep) : [];
+  const ids=list=>list.map(g=>({id:g.id}));
+  // two goals of your own that load the same way: straight-arm skills share the elbows, balance skills the practice slot
+  const clash= gs.length<=n && gs.length>1? (gs.filter(g=>g.straight).length>1? 'straight' : gs.filter(g=>g.balance).length>1? 'balance' : gs[0].fam===gs[1].fam? 'fam' : '') : '';
+  return {n, days:doses.length, build, gs, keep, pause:gs.filter(g=>!keep.includes(g)), add, clash, now:week(ids(gs)),
+    kept: gs.length>n? week(ids(keep)) : null, plus: add.length&&gs.length? week(ids(gs).concat({key:add[0].key})) : null};
+}
+function recHtml(M, compact){
+  if(!M) return '';
+  const add=M.add.map((c,i)=>`<div class="trow"><span class="tn"><b>${esc(c.n)}</b><span>${i===0? 'Best fit &middot; ' : ''}${c.hint} &middot; ${esc(c.lvn)}${c.both? ' &middot; Strength trains this movement too' : ''}</span></span>
+    <button class="btn sm" data-a="t-rec-add" data-k="${esc(c.key)}">${IC.plus} Add</button></div>`).join('');
+  if(compact) return add? `<div class="trec"><div class="eyebrow">Recommended to start</div><p class="hint">${M.n===2? 'One or two goals' : 'One goal'} for the ${plural(M.days,'Ladder day')} in your week: fewer goals each get more of every session, so each moves faster.</p><div class="tlist">${add}</div></div>` : '';
+  const why= M.n===2? `Ladder has ${plural(M.days,'day')} in your week. With two goals, both are trained early in every session, while you are fresh. Each goal you add shares the same sessions, so each one moves more slowly.`
+    : `Ladder has ${M.days===1? 'one day' : plural(M.days,'day')} in your week${M.days>1? ', at a lighter dose because it is lower in your order' : ''}. One goal gets all of that room and moves fastest; start the next when it is done.`;
+  const G=M.gs.length, row=(g,sub)=>`<div class="trow"><span class="tn"><b>${esc(g.n)}</b><span>${sub}</span></span></div>`;
+  let body='';
+  const togo=g=> g.pct>0? g.pct+'% of the way' : g.dist!=null? (g.dist===0? 'On its rung now' : g.dist===1? 'One rung to go' : g.dist+' rungs to go') : 'Not placed yet';
+  if(G>M.n) body=`<p class="hint">You have ${plural(G,'goal')}, so each gets about ${plural(M.now,'set')} a week aimed at it, counting what it rests on. Kept to the ${M.keep.length===1? 'one' : M.keep.length} nearest done, each would get about ${M.kept}:</p>
+      <div class="tlist">${M.keep.map(g=>row(g, togo(g))).join('')}</div>
+      <p class="hint" style="margin-top:10px">Paused for now: ${esc(listText(M.pause.map(g=>g.n)))}. Their rungs and history stay in Ladder, and what you have built keeps with far less work than it took to build.</p>
+      <button class="btn sm pri" data-a="t-rec-keep" data-ids="${esc(M.pause.map(g=>g.id).join(','))}" style="margin-top:8px">${IC.check} Keep ${M.keep.length===1? 'this one' : 'these '+M.keep.length}, pause ${plural(M.pause.length,'other')}</button>`;
+  else if(G<M.n && M.add.length) body=`<p class="hint">${G? `Your goal gets about ${plural(M.now,'set')} a week aimed at it, counting what it rests on. With one more, each would get about ${M.plus}. Room for one more:` : `Start with ${M.n===2? 'one or two' : 'one'} of these:`}</p><div class="tlist">${add}</div>`;
+  else if(G) body=`<p class="hint">Your ${G===1? 'goal fits' : plural(G,'goal')+' fit'}: ${G===1? 'it gets' : 'each gets'} about ${plural(M.now,'set')} a week aimed at it, counting what it rests on.</p>`
+      + (M.clash? `<p class="tnote">${IC.info}<span>${M.clash==='straight'? 'Both are straight-arm skills, which load the elbows and the biceps tendon the same way. Tendons adapt more slowly than muscle, so one at a time is the safer pace.'
+        : M.clash==='balance'? 'Both are balance skills, so they share each session’s practice while you are fresh. One at a time gets it all.' : 'Both train the same movement, so they share its sets.'}</span></p>` : '');
+  return `<div class="trec"><div class="eyebrow">Recommended: ${M.n===1? 'one goal' : 'two goals'} at a time</div><p class="hint">${why}</p>${body}</div>`;
 }
 /* The library, opened from a row in Customize this block: every exercise that works the muscle, or the lifts for a
    strength area, and a form to make your own exercise, which joins Muscle's library. */
@@ -12418,7 +12492,8 @@ function viewMain(){
     ${tg.run? heroRun() : heroNext(W)}
     ${missing.map(m=>`<section class="card"><div class="spread" style="align-items:flex-start"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n}</div>
       <p class="lead" style="margin-top:4px">${notReady(m,{})}</p></div>
-      ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div></section>`).join('')}
+      ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div>
+      ${m==='cal'? recHtml(recModel(plan()), true) : ''}</section>`).join('')}
     ${programCard()}
     ${weekCard(W, DM)}
     ${volCard(dayInfo(Math.max(0,n)))}
@@ -12594,7 +12669,13 @@ __root.addEventListener('click', e=>{
     case 't-goal-add': { const C=H.api('cal'); if(!C) break; H.away('cal','rec'); C.setup(); break; }
     case 't-goal-rm': { const C=H.api('cal'), id=el.dataset.id, g=C&&C.goals? C.goals().find(x=>x.id===id) : null;
       if(!g||!C.removeGoal(id)) break; render(); toast(`${esc(g.n)} removed. Its rungs and history stay in Ladder.`, {a:'t-goal-back', id}); break; }
-    case 't-goal-back': { const C=H.api('cal'); if(C&&C.restoreGoal(el.dataset.id)){ render(); toast('Goal back.'); } break; }
+    case 't-goal-back': { const C=H.api('cal'), ids=(el.dataset.id||'').split(',').filter(Boolean);
+      if(C&&ids.map(id=>C.restoreGoal(id)).some(Boolean)){ render(); toast(ids.length>1? 'Goals back.' : 'Goal back.'); } break; }
+    // recommended goals: pause the rest, or add one through Ladder's own placement, which comes back here
+    case 't-rec-keep': { const C=H.api('cal'), ids=(el.dataset.ids||'').split(',').filter(Boolean); if(!C) break;
+      const done=ids.filter(id=>C.removeGoal(id)); if(!done.length) break;
+      render(); toast(`${plural(done.length,'goal')} paused. Their rungs and history stay in Ladder.`, {a:'t-goal-back', id:done.join(',')}); break; }
+    case 't-rec-add': { const C=H.api('cal'); if(!C||!C.addGoals) break; H.away('cal','rec'); C.addGoals([el.dataset.k]); break; }
   }
 });
 
