@@ -1341,6 +1341,21 @@ window.Parked={
       <button class="btn primary sm" data-act="switch-session" data-id="${esc(p.id)}">Resume</button></div></div>`; }).join(''); }
 };
 
+/* ==================== ONE CHOICE FOR THE WHOLE APP ====================
+   Units, sound and vibration are set once: a trainer's settings call Prefs.set, the shell passes it to the others
+   (and their saved data), and a trainer opened for the first time starts from it. Your kit is remembered the same
+   way, so a set-up that asks for it starts from what you said in the other. */
+window.Prefs={
+  get(k, d){ try{ const v=localStorage.getItem('trainer.shell.'+k); return v==null? d : JSON.parse(v); }catch(e){ return d; } },
+  set(o){ try{ Object.keys(o).forEach(k=>localStorage.setItem('trainer.shell.'+k, JSON.stringify(o[k]))); }catch(e){} if(window.__prefs) window.__prefs(o); }
+};
+/* Strength's lifts that are the same exercise as one in Muscle: each starts from your latest sets in either, and
+   Strength's estimated max takes in Muscle's sets too. (Weighted dips, pull-ups and push-ups log the added weight in both.) */
+window.SAME_LIFT={bench:'barbell-bench', dbbench:'db-bench', mchest:'machine-chest-press', cgbench:'close-grip-bench', incdb:'incline-db-press',
+  row:'barbell-row', dbrow:'db-row', mrow:'chest-supported-row', crow:'seated-cable-row', pulldown:'lat-pulldown', ohp:'ohp', dbpress:'db-shoulder-press',
+  mpress:'machine-shoulder-press', pushpress:'push-press', squat:'back-squat', legpress:'leg-press', fsquat:'front-squat', goblet:'goblet-squat',
+  deadlift:'deadlift', dbrdl:'db-rdl', rdl:'romanian-deadlift', sumo:'sumo-deadlift', wdip:'dip', wpull:'pullup', wpushup:'pushup', backext:'back-extension'};
+
 /* ==================== SETS IN NUMBERS ====================
    Shared by every section, so the same set means the same thing everywhere. */
 window.Lift={
@@ -1825,7 +1840,7 @@ let state = null;
 function defaultState(){
   return {
     v:1, route:'today', onboarded:false,
-    settings:{unit:'kg', theme:'system', target:10, sound:true, vibrate:true,
+    settings:{unit:Prefs.get('unit','kg'), theme:'system', target:10, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true),
       barKg:20, platesKg:[25,20,15,10,5,2.5,1.25], platesLb:[45,35,25,10,5,2.5],
       equipment:['Barbell','Dumbbell','Machine','Cable','Bodyweight'], tempo:[3,0,1,0]},
     exercises: buildSeed(),
@@ -1932,11 +1947,21 @@ function ladderLast(exId){
   const k=C.stamp(); if(ladMemo.k!==k) ladMemo={k, v:{}};
   if(!(exId in ladMemo.v)) ladMemo.v[exId]=C.lastSet(exId); return ladMemo.v[exId];
 }
-/* previous performance lookup: best-matching last logged top working set for an exercise */
+const STR_OF={}; Object.keys(SAME_LIFT).forEach(k=>{ STR_OF[SAME_LIFT[k]]=k; });
+let strMemo={k:null, v:{}};
+function strengthLast(exId){
+  const H=window.__hub, id=STR_OF[exId]; if(!id||!H||!H.has||!H.has('str')) return null;
+  const S=H.api('str'); if(!S||!S.lastSet) return null;
+  const k=S.stamp(); if(strMemo.k!==k) strMemo={k, v:{}};
+  if(!(exId in strMemo.v)) strMemo.v[exId]=S.lastSet(id); return strMemo.v[exId];
+}
+/* previous performance lookup: best-matching last logged top working set for an exercise, here or, for an exercise
+   Ladder or Strength has too, there if that is newer */
 function lastPerf(exId, beforeTs){
-  const own=ownLastPerf(exId, beforeTs), l=ladderLast(exId);
-  if(l && (!beforeTs || l.date<beforeTs) && (!own || l.date>own.date)) return {type:'work', weight:null, reps:l.reps, rir:l.rir, done:true, from:'Ladder', date:l.date};
-  return own;
+  let best=ownLastPerf(exId, beforeTs);
+  [['Ladder', ladderLast(exId)], ['Strength', strengthLast(exId)]].forEach(([from, x])=>{
+    if(x && (!beforeTs || x.date<beforeTs) && (!best || x.date>best.date)) best={type:'work', weight:x.weight||null, reps:x.reps, rir:x.rir, done:true, from, date:x.date}; });
+  return best;
 }
 function ownLastPerf(exId, beforeTs){
   for(let i=state.history.length-1;i>=0;i--){
@@ -4899,11 +4924,11 @@ __root.addEventListener('click', e=>{
     case 'save-body': saveBody(); break;
     case 'rest-add': if(state.active&&state.active.restEndsAt){ state.active.restEndsAt+=30000; state.active.restDuration+=30; save(); tickRest(); } break;
     case 'rest-skip': stopRest(); break;
-    case 'set-unit': state.settings.unit=el.dataset.v; save(); openSettings(); render(); break;
+    case 'set-unit': state.settings.unit=el.dataset.v; Prefs.set({unit:el.dataset.v}); save(); openSettings(); render(); break;
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
     case 'set-target': state.settings.target=+el.dataset.v; save(); openSettings(); render(); break;
-    case 'toggle-sound': state.settings.sound=el.dataset.v==='1'; if(state.settings.sound){ primeAudio(); chime(); } save(); openSettings(); break;
-    case 'toggle-vibrate': state.settings.vibrate=el.dataset.v==='1'; if(state.settings.vibrate) buzz([80]); save(); openSettings(); break;
+    case 'toggle-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); if(state.settings.sound){ primeAudio(); chime(); } save(); openSettings(); break;
+    case 'toggle-vibrate': state.settings.vibrate=el.dataset.v==='1'; Prefs.set({vibrate:state.settings.vibrate}); if(state.settings.vibrate) buzz([80]); save(); openSettings(); break;
     case 'set-bar': state.settings.barKg=+el.dataset.v; save(); openSettings(); break;
     case 'open-plate-calc': openLoading(null); break;
     case 'toggle-plate': { const p=parseFloat(el.dataset.v); const key=state.settings.unit==='lb'?'platesLb':'platesKg'; const arr=state.settings[key]; const i=arr.indexOf(p); if(i>=0)arr.splice(i,1); else{ arr.push(p); arr.sort((a,b)=>b-a);} save(); openSettings(); break; }
@@ -4913,7 +4938,7 @@ __root.addEventListener('click', e=>{
     case 'reset-data': confirmReset(); break;
     case 'load-sample': confirmSample(); break;
     case 'load-sample-confirm': loadSampleData(); closeModal(); state.route='progress'; state.progressTab='insights'; render(); toast('Sample data loaded'); break;
-    case 'ob-unit': state.settings.unit=el.dataset.v; onboard(); break;
+    case 'ob-unit': state.settings.unit=el.dataset.v; Prefs.set({unit:el.dataset.v}); onboard(); break;
     case 'ob-done': state.onboarded=true; save(); closeModal(); render(); break;
     case 'ob-restore': closeModal(); if(window.__openBackup) window.__openBackup(); break;
     /* ---- PLAN / MESO ---- */
@@ -5331,6 +5356,7 @@ function hubSetup(days, gap, calPerWeek){
 }
 if(window.__hub) window.__hub.reg('lift', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
+  syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['unit','sound','vibrate'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
   sheetOpen:()=>modalOn, running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   info:hubInfo, work:hubWork, start:hubStart, setup:hubSetup, upcoming:hubUpcoming, catalog:hubCatalog, startWith:hubStartWith,
   equipment:()=>CUSTOM_EQUIP.slice(),
@@ -5344,7 +5370,11 @@ if(window.__hub) window.__hub.reg('lift', {
   // for Ladder: the ticked work sets of exercises it has too, and a counter that moves whenever they may have changed
   sharedSets(ids){ const want=new Set(ids);
     return state.history.map(w=>({id:w.id, date:w.date, entries:w.entries.filter(e=>want.has(e.exId))
-      .map(e=>({exId:e.exId, sets:e.sets.filter(s=>isWork(s)&&s.done&&s.reps>0).map(s=>({reps:s.reps, rir:s.rir}))})).filter(e=>e.sets.length)})).filter(w=>w.entries.length); },
+      .map(e=>({exId:e.exId, sets:e.sets.filter(s=>isWork(s)&&s.done&&s.reps>0).map(s=>({reps:s.reps, rir:s.rir, weight:s.weight}))})).filter(e=>e.sets.length)})).filter(w=>w.entries.length); },
+  // for Together's check-in: your latest bodyweight, and logging a new one (kg)
+  body(){ const b=state.bodylog.filter(x=>x.weight!=null).sort((a,c)=>c.date-a.date)[0]; return {unit:unit(), last:b? {date:b.date, kg:b.weight} : null}; },
+  logBody(kg){ if(!(kg>20&&kg<400)) return false; const d=startOfToday(); let e=state.bodylog.find(b=>b.date===d);
+    if(!e){ e={date:d}; state.bodylog.push(e); } e.weight=kg; state.bodylog.sort((a,c)=>a.date-c.date); save(); return true; },
   stamp:()=>histVer,
   table(){ return {muscles:MUSCLES, groups:GROUPS}; },
   openRec(id){ openEditSession(id, true); },
@@ -6364,7 +6394,7 @@ let state=null;
 function defaultState(){
   const rung={}; LADDER_ORDER.forEach(k=>rung[k]=0);
   return { v:2, onboarded:false, route:'today',
-    settings:{theme:'system', rest:120, sound:true, vibrate:true},
+    settings:{theme:'system', rest:120, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true)},
     rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, parked:[], repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull' };
 }
 /* Fill in anything missing and upgrade version 1 data (no goals, no placement). */
@@ -8109,7 +8139,7 @@ __root.addEventListener('click', e=>{
     /* settings */
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
     case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
-    case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; save(); openSettings(); break;
+    case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; Prefs.set({vibrate:state.settings.vibrate}); save(); openSettings(); break;
     case 'export': exportData(); break;
     case 'copy-export': { const t=__root.getElementById('exp'); if(t){ t.select();
       if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(()=>toast('Copied')).catch(()=>toast('Couldn’t copy it. Select the text and copy it yourself'));
@@ -8284,6 +8314,7 @@ function hubInfo(){
 }
 if(window.__hub) window.__hub.reg('cal', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
+  syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['sound','vibrate'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
   // Together ends a day's open session (id, or the one on screen): keep:true saves the sets you logged, false drops it (Take back still works)
   end(keep, id){ const ok=Parked.endOne(state, id, stopRest, ()=>{ endOpt={keep:!!keep, repeat:false}; endSession(); }); if(ok) save(); return ok; },
   // Together starts a part while another session is open here: that one stays open, out of the way
@@ -8576,8 +8607,8 @@ let state=null;
 function defaultLifts(){ const o={}; Object.keys(EX).forEach(k=>{ o[k]={tm:null, work:null, fails:0, seed:null, var:0}; }); return o; }
 function defaultState(){
   return { v:2, onboarded:false, route:'today',
-    settings:{unit:'kg', theme:'system', barKg:20, platesKg:[25,20,15,10,5,2.5,1.25], platesLb:[45,35,25,10,5,2.5],
-      dbStepKg:2, dbStepLb:5, stackStepKg:5, stackStepLb:10, rest:180, sound:true, vibrate:true, warmups:true, tmPct:90, bw:null},
+    settings:{unit:Prefs.get('unit','kg'), theme:'system', barKg:20, platesKg:[25,20,15,10,5,2.5,1.25], platesLb:[45,35,25,10,5,2.5],
+      dbStepKg:2, dbStepLb:5, stackStepKg:5, stackStepLb:10, rest:180, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true), warmups:true, tmPct:90, bw:null},
     setup:null, lifts:defaultLifts(), program:null, history:[], active:null, parked:[], repeat:null,
     progTab:'lifts', progLift:null, toolTab:'max' };
 }
@@ -8601,7 +8632,8 @@ function load(){
 let saveTimer=null;
 function payload(){ return {v:state.v, onboarded:state.onboarded, route:state.route, settings:state.settings, setup:state.setup, lifts:state.lifts,
   program:state.program, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, progTab:state.progTab, progLift:state.progLift, toolTab:state.toolTab}; }
-function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
+let strVer=0;   // moves on every change, so Muscle knows when to read Strength's sets again
+function save(){ strVer++; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
    when the page is hidden or closed: a phone can drop the app at any moment. */
 function flush(){ if(saveTimer){ clearTimeout(saveTimer); Safe.put(LS_KEY,JSON.stringify(payload())); } }
@@ -8728,9 +8760,21 @@ function liftSessions(id){
     if(best>0) out.push({date:h.date, best, top}); });
   return out;
 }
+/* Muscle's sessions of the same lift (SAME_LIFT), as liftSessions gives them. Sets of 12 or fewer reps counting the reps
+   left only: estimates from longer sets run wide. */
+let musMemo={k:null, v:{}};
+function muscleSessions(id){
+  const ex=SAME_LIFT[id], H=window.__hub; if(!ex||!H||!H.has||!H.has('lift')) return [];
+  const M=H.api('lift'); if(!M||!M.sharedSets) return [];
+  const k=M.stamp(); if(musMemo.k!==k) musMemo={k, v:{}};
+  if(!musMemo.v[id]) musMemo.v[id]=M.sharedSets([ex]).map(w=>{ let best=0;
+    w.entries.forEach(e=>e.sets.forEach(s=>{ if(!s.weight||s.reps+(s.rir>0? s.rir : 0)>12) return; best=Math.max(best, Lift.e1rm(s.weight, s.reps, s.rir)); }));
+    return best>0? {date:w.date, best, from:'Muscle'} : null; }).filter(Boolean);
+  return musMemo.v[id];
+}
 function currentE1(id){
   if(!EX[id]||EX[id].k!=='load') return null;
-  const L=state.lifts[id], ss=liftSessions(id);
+  const L=state.lifts[id], ss=liftSessions(id).concat(muscleSessions(id)).sort((a,b)=>a.date-b.date);
   const lastT=ss.length? ss[ss.length-1].date : 0;
   if(L.seed && L.seed.date>=lastT) return L.seed.v;
   const recent=ss.filter(x=>x.date>=lastT-42*86400000).slice(-3);
@@ -9100,7 +9144,7 @@ function cycleHtml(cycle){
 let wz=null;
 function openSetup(){
   const S=state.setup; stDraft={};
-  wz={step:0, areas:new Set(S?S.areas:[]), equip:new Set(S?S.equip:[]), choice:Object.assign({},S?S.choice:{}),
+  wz={step:0, areas:new Set(S?S.areas:[]), equip:new Set(S?S.equip:(Prefs.get('kit',[])||[]).filter(e=>EQUIP[e])), choice:Object.assign({},S?S.choice:{}),
     days:S?S.days:3, model:S?S.model:'linear', exp:S?S.exp:'new', fresh:!S};
   renderSetup();
 }
@@ -9154,6 +9198,7 @@ function renderSetup(){
 function saveSetup(){
   const areas=AREA_ORDER.filter(a=>wz.areas.has(a)&&wz.choice[a]);
   const S={areas, equip:EQ_ORDER.filter(e=>wz.equip.has(e)), choice:{}, days:wz.days, model:wz.model, exp:wz.exp};
+  Prefs.set({kit:S.equip});
   areas.forEach(a=>S.choice[a]=wz.choice[a]);
   const old=state.setup, same= old && JSON.stringify([old.areas,old.days,old.model,old.choice])===JSON.stringify([S.areas,S.days,S.model,S.choice]);
   state.setup=S; state.onboarded=true;
@@ -10076,7 +10121,7 @@ __root.addEventListener('click', e=>{
       const c=endCycle(); save(); render();
       openModal(`<div class="sheet-grab"></div><div class="sheet-body">${cycleHtml(c)}<button class="btn primary block" data-act="close-modal" style="margin-top:18px">${I.check} Start cycle ${P.cycle}</button></div>`); break; }
 
-    case 'set-unit': state.settings.unit=el.dataset.v; save(); openSettings(); render(); break;
+    case 'set-unit': state.settings.unit=el.dataset.v; Prefs.set({unit:el.dataset.v}); save(); openSettings(); render(); break;
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
     case 'set-bar': state.settings.barKg=+el.dataset.v; save(); openSettings(); render(); break;
     case 'set-dbstep': state.settings[isLb()?'dbStepLb':'dbStepKg']=+el.dataset.v; save(); openSettings(); render(); break;
@@ -10084,8 +10129,8 @@ __root.addEventListener('click', e=>{
     case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
     case 'set-tm': state.settings.tmPct=+el.dataset.v; save(); openSettings(); break;
     case 'set-warm': state.settings.warmups=el.dataset.v==='1'; save(); openSettings(); break;
-    case 'set-sound': state.settings.sound=el.dataset.v==='1'; if(state.settings.sound){ primeAudio(); chime(); } save(); openSettings(); break;
-    case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; if(state.settings.vibrate) buzz(80); save(); openSettings(); break;
+    case 'set-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); if(state.settings.sound){ primeAudio(); chime(); } save(); openSettings(); break;
+    case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; Prefs.set({vibrate:state.settings.vibrate}); if(state.settings.vibrate) buzz(80); save(); openSettings(); break;
     case 'toggle-plate': { const p=parseFloat(el.dataset.v), key=isLb()?'platesLb':'platesKg', arr=state.settings[key], i=arr.indexOf(p);
       if(i>=0){ if(arr.length>1) arr.splice(i,1); else { toast('Keep at least one plate'); break; } } else { arr.push(p); arr.sort((a,b)=>b-a); } save(); openSettings(); render(); break; }
     case 'export': exportData(); break;
@@ -10098,7 +10143,7 @@ __root.addEventListener('click', e=>{
       <h2 class="disp" style="font-size:24px;margin:0 0 6px">Erase Strength Log?</h2><p class="muted" style="font-size:14px;line-height:1.5;margin:0 auto 16px;max-width:290px">Every session, number and plan in this section, on this device. The other sections aren’t touched. It can’t be undone.</p></div>
       <button class="btn danger block" data-act="reset-go">Yes, erase it</button><button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Keep my data</button></div>`); break;
     case 'reset-go': { try{ localStorage.removeItem(LS_KEY); }catch(err){} tb.clear(); state=defaultState(); state.onboarded=true; applyTheme(); closeModal(); render(); toast('Strength Log erased'); break; }
-    case 'ob-unit': state.settings.unit=el.dataset.v; save(); onboard(); break;
+    case 'ob-unit': state.settings.unit=el.dataset.v; Prefs.set({unit:el.dataset.v}); save(); onboard(); break;
     case 'ob-setup': state.onboarded=true; save(); openSetup(); break;
     case 'ob-done': state.onboarded=true; save(); closeModal(); render(); break;
   }
@@ -10295,6 +10340,14 @@ function hubStartWith(spec){
 }
 if(window.__hub) window.__hub.reg('str', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
+  syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['unit','sound','vibrate'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
+  // for Muscle: the top set of a lift from your latest Strength session with it, and a counter that moves whenever that may have changed
+  lastSet(id){ for(let i=state.history.length-1;i>=0;i--){ const h=state.history[i], en=h.entries.find(e=>e.liftId===id); if(!en) continue;
+      const ss=en.sets.filter(s=>s.done!==false&&s.kind!=='warm'&&s.reps>0); if(!ss.length) continue;
+      const rir=s=>s.rpe!=null? Math.max(0,10-s.rpe) : null, sc=s=>s.w? Lift.e1rm(s.w, s.reps, rir(s)) : s.reps/1000;
+      const top=ss.reduce((a,b)=>sc(b)>sc(a)? b : a); return {weight:top.w||null, reps:top.reps, rir:rir(top), date:h.date}; }
+    return null; },
+  stamp:()=>strVer,
   // Together ends a day's open session: keep:true saves the sets you logged, false drops it (Take back still works)
   end(keep, id){ const ok=Parked.endOne(state, id, stopRest, ()=>{ endOpt={keep:!!keep, repeat:false}; endSession(); }); if(ok) save(); return ok; },
   // Together starts a part while another session is open here: that one stays open, out of the way
@@ -10474,7 +10527,9 @@ function muscleName(k){ const T=table(); return T&&T.muscles[k]? T.muscles[k].n 
 function rankList(secs){ return orderParts(secs||tg.secs); }
 function doses(){ const o={}; rankList().forEach((m,k)=>{ o[m]=DOSE[k]; }); return o; }
 /* Your kit: everything until you say otherwise; none of it means bodyweight only. */
-function kit(){ return tg.kit? tg.kit : KIT.map(k=>k[0]); }
+function kit(){ if(tg.kit) return tg.kit;
+  // before Together is set up, the kit you gave Strength
+  const k=!tg.on&&Prefs.get('kit',null); return Array.isArray(k)&&k.length? k.filter(x=>KIT.some(y=>y[0]===x)) : KIT.map(k=>k[0]); }
 /* What the plan is built from. A change to any of it builds a new block; changing which days a section is on only
    refills the days. */
 const GEN='g2';   // half sets for helping muscles, Muscle over more of your days when full
@@ -11206,12 +11261,19 @@ function ciForm(C){
       ${d.painAsked? `<p class="hint" style="margin:10px 0 4px">Pain in the joint itself (not muscle burn) right now: 0 is none, 10 is the worst you can imagine. Which joint?</p>
         ${painKeys.map(k=>row('pain',k,3,jn[k])).join('')}${add('ci-add-pain', painMore, jn)}` : ''}</div>
     </div>
+    ${bodyAsk()? `<div class="field" style="margin-top:14px"><label for="cibw">Bodyweight <span class="hint">(optional, once a week)</span></label>
+      <input id="cibw" class="num" inputmode="decimal" autocomplete="off" placeholder="${bodyAsk().unit}" style="max-width:140px">
+      <p class="hint" style="margin:6px 0 0">Muscle uses it for bodyweight exercises, like a pull-up, where you lift most of it.</p></div>` : ''}
     <div style="margin-top:20px"><button class="btn pri block" id="cisave" data-a="ci-save" ${ciCanSave()?'':'disabled'}>${IC.check} Save check-in</button></div>
     <button class="btn ghost block" data-a="${rec? 'ci-cancel' : 'ci-skip'}" style="margin-top:8px">${rec? 'Cancel' : 'Skip today'}</button>
   </section>`;
 }
+/* Bodyweight is asked in the check-in when none is logged in the last week: one place for it, used wherever you lift it. */
+function bodyAsk(){ try{ if(!H.has('lift')) return null; const M=H.api('lift'), b=M&&M.body&&M.body(); if(!b) return null; return !b.last||b.last.date<startOfToday()-6*DAY_MS? b : null; }catch(e){ return null; } }
 function ciSave(){
   const d=ciDraft; if(!d||!ciCanSave()) return;
+  { const el=$('#cibw'), v=el&&parseFloat(String(el.value).replace(',','.')), b=bodyAsk();
+    if(b && v>0){ const M=H.api('lift'); if(M&&M.logBody) M.logBody(b.unit==='lb'? v*0.45359237 : v); } }
   const C=carryOver(), ask=ciAsk(C), rec={day:startOfToday(), at:Date.now(), w:{}, sore:{}, x:{}};
   WELL.forEach(([k])=>{ if(d.w[k]>=1) rec.w[k]=d.w[k]; });
   if(d.soreAsked!=null){
@@ -11792,7 +11854,7 @@ function render(){
       <p class="muted" style="margin:0 0 14px;font-size:13px;line-height:1.5">Your training data is safe. If this keeps happening, send a screenshot of this message:<br><code style="font-size:12px;word-break:break-word">${esc(String(err&&err.message||err))}</code></p>
       <button class="btn" data-a="retry">Try again</button> <button class="btn" data-a="edit">Change the setup</button></div>`); }
 }
-const newDraft=()=>({secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice(), kit:tg.kit&&tg.kit.slice(), exp:tg.exp||'intermediate'});
+const newDraft=()=>({secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice(), kit:kit().length<KIT.length? kit().slice() : null, exp:tg.exp||'intermediate'});
 function draw(){
   fresh(); refreshRun(); strip();
   if(!tg.on && !draft) draft=newDraft();
@@ -11873,6 +11935,7 @@ __root.addEventListener('click', e=>{
       if(tg.on) remember('changes to the set-up');
       tg.secs=draft.secs.slice(); tg.days=draft.days; tg.mins=draft.mins; tg.prio=(draft.prio||autoOrder(ALL, skillGoal())).slice(); tg.on=true;
       tg.kit= draft.kit&&draft.kit.length<KIT.length? draft.kit.slice() : null; tg.exp=draft.exp||'intermediate';
+      Prefs.set({kit:tg.kit||KIT.map(k=>k[0])});
       // a day already running takes the new order for what is left of it
       if(tg.run){ const ord=orderParts(tg.run.parts.map(p=>p.m)); tg.run.parts.sort((x,y)=>ord.indexOf(x.m)-ord.indexOf(y.m)); }
       if(changed){ tg.custom=null; tg.next=(tg.next||0)%tg.days; }
@@ -12126,6 +12189,18 @@ render();
     if(bg){ document.body.style.background=bg;
       const mt=document.getElementById('themecolor'); if(mt) mt.setAttribute('content',bg); }
   }
+  /* Prefs.set calls this: units, sound and vibration go to every trainer, loaded or only saved. */
+  window.__prefs=function(o){
+    const keys=['unit','sound','vibrate'].filter(k=>k in o); if(!keys.length) return;
+    MODS.forEach(m=>{ const api=apis[m]; if(api&&api.syncPrefs) api.syncPrefs(o); });
+    MODS.forEach(m=>{ try{
+      if(!KEYS[m]||apis[m]) return;
+      const raw=localStorage.getItem(KEYS[m]); if(!raw) return;
+      const s=JSON.parse(raw); if(!s||!s.settings) return; let ch=false;
+      keys.forEach(k=>{ if(k in s.settings && s.settings[k]!==o[k]){ s.settings[k]=o[k]; ch=true; } });
+      if(ch) localStorage.setItem(KEYS[m],JSON.stringify(s));
+    }catch(e){} });
+  };
   /* Modules call this from their own theme picker, so one choice covers the whole app. */
   window.__setTheme=function(t){
     theme=t||'system'; stampTheme(); paintBg();
