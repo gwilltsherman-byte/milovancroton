@@ -188,6 +188,30 @@
       frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture));
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
+    // exercises in both Muscle and Ladder share their sets: Ladder's latest pull-ups start Muscle's, and Muscle's count in Ladder as clean
+    { frame.remove(); frame=null;
+      const day=n=>{ const d=new Date(); d.setDate(d.getDate()-n); d.setHours(12,0,0,0); return d.getTime(); };
+      const pull=sets=>({exId:'pullup',name:'Pull-Up',primary:['lat'],secondary:['bi','uback'],equipment:'Bodyweight',sets});
+      const fx=JSON.parse(JSON.stringify(fixture));
+      fx.history.push(...[4,2].map(n=>({id:'mus-pull-'+n,name:'Pull day',date:day(n),durationSec:600,prs:[],entries:[pull([0,1,2].map(()=>({type:'work',weight:null,reps:10,rir:1,done:true})))]})));
+      fx.route='train';
+      fx.active={id:'share-active',name:'Pull day',startedAt:Date.now(),restEndsAt:null,restDuration:0,
+        entries:[Object.assign(pull([{type:'work',weight:null,reps:null,rir:null,done:false}]),{target:{repLow:6,repHigh:12,rir:2,rest:180},mi:0})]};
+      const lad={v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:4}, placed:{pull:true}, tests:[], active:null,
+        goals:[{id:'g10', key:'pullup10', n:'10 strict pull-ups', l:'pull', r:4, std:10, sup:['row'], added:1, achieved:null}],
+        history:[{id:'lad-1', name:'Ladder', date:day(1), entries:[{ladderId:'pull', stepIdx:4, kind:'reps', target:8, setup:{}, clean:true, role:'goal',
+          sets:[7,7,6].map(v=>({v, done:true, clean:true}))}]}]};
+      localStorage.setItem('hyplog.v1',JSON.stringify(fx)); localStorage.setItem('proladder.v1',JSON.stringify(lad));
+      ({win,doc}=await load()); root=rootOf(doc,'lift');
+      await until(()=>root.querySelector('.excard'),'The session did not open');
+      check(root.querySelector('.excard').textContent.includes('Last: BW×7 @') || root.querySelector('.excard').textContent.includes('Last: BW×7 in Ladder'),'Muscle starts pull-ups from your newer Ladder set');
+      check(root.querySelector('.excard').textContent.includes('in Ladder'),'and says it came from Ladder');
+      const C=win.__hub.api('cal');
+      check(C.catalog().find(c=>c.key==='pullup10').met===true,'Ladder counts the 10-rep pull-up sets logged in Muscle as clean, so the goal is met');
+      check(win.__hub.sets(day(10), null, ['cal']).direct.lat===3,'Ladder’s weekly sets still count only its own, so nothing is counted twice');
+      frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture)); localStorage.removeItem('proladder.v1');
+      ({win,doc}=await load()); root=rootOf(doc,'lift'); }
+
     // every how-to shows the movement drawn and the muscles it works, in the theme's colours
     { const how=(m,id)=>{ const r=rootOf(doc,m), b=doc.createElement('button'); b.dataset.act='howto'; b.dataset.id=id; b.hidden=true;
         r.getElementById('view').appendChild(b); b.click(); b.remove(); return r; };

@@ -2772,8 +2772,9 @@ function storePayload(){
 /* Finishing or ending a session, deleting one or saving changes to one can be taken back (TakeBack, shared). */
 const tb=TakeBack.make({key:LS_KEY+'.undo', data:()=>storePayload(), load:c=>hydrate(c),
   sessions:()=>state.history, busy:()=>!!state.active});
+let histVer=0;   // moves on every change, so Ladder knows when to read Muscle's sets again
 function save(){
-  clearTimeout(saveTimer);
+  histVer++; clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{ Safe.put(LS_KEY, JSON.stringify(storePayload())); }, 120);
 }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
@@ -2811,8 +2812,22 @@ function relDay(ts){
 }
 function fmtDur(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
 
+/* Exercises Ladder has too (pull-ups, dips, push-ups and the like): for a bodyweight one, Ladder's latest set counts as
+   your last one when it is newer. Ladder records reps, not added weight, so a loaded exercise keeps to Muscle's own sets. */
+let ladMemo={k:null, v:{}};
+function ladderLast(exId){
+  const H=window.__hub; if(!isBW(exId)||!H||!H.has||!H.has('cal')) return null;
+  const C=H.api('cal'); if(!C||!C.lastSet) return null;
+  const k=C.stamp(); if(ladMemo.k!==k) ladMemo={k, v:{}};
+  if(!(exId in ladMemo.v)) ladMemo.v[exId]=C.lastSet(exId); return ladMemo.v[exId];
+}
 /* previous performance lookup: best-matching last logged top working set for an exercise */
 function lastPerf(exId, beforeTs){
+  const own=ownLastPerf(exId, beforeTs), l=ladderLast(exId);
+  if(l && (!beforeTs || l.date<beforeTs) && (!own || l.date>own.date)) return {type:'work', weight:null, reps:l.reps, rir:l.rir, done:true, from:'Ladder', date:l.date};
+  return own;
+}
+function ownLastPerf(exId, beforeTs){
   for(let i=state.history.length-1;i>=0;i--){
     const w = state.history[i];
     if(beforeTs && w.date>=beforeTs) continue;
@@ -2823,7 +2838,7 @@ function lastPerf(exId, beforeTs){
         // the top set: load and reps folded into one number
         let top = work[0];
         for(const s of work){ if(setScore(exId,s,w.date)>setScore(exId,top,w.date)) top=s; }
-        return top;
+        return Object.assign({}, top, {date:w.date});
       }
     }
   }
@@ -3126,7 +3141,7 @@ function exerciseCard(en, ei){
         <h3 data-act="howto" data-id="${esc(en.exId)}" style="cursor:pointer">${esc(en.name)}<span class="hinfo">${I.info}</span></h3>
         <div class="mm">${prim}${sec}</div>
         ${en.overloadNote?`<div class="chip heat" style="margin-top:7px">${I.trending} ${en.overloadNote}</div>`:''}
-        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`
+        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}${lp.from? ' in '+lp.from : ''}</div>`
           : bw? '' : (()=>{ const sp=similarPerf(en.exId);
             return `<div class="newex">${sp? `First time here. Your latest ${esc(sp.name)}: <b>${wTxt(sp.exId, sp.s.weight)}&times;${sp.s.reps}</b>, ${relDay(sp.date).toLowerCase()}. Weights differ between machines, dumbbells and bars, so start a little lighter and adjust.`
               : `First time here: pick a weight you can lift for ${t.repLow}&ndash;${t.repHigh} reps with about ${t.rir} left in the tank.`} Next time starts from what you log.</div>`; })()}
@@ -6168,6 +6183,11 @@ if(window.__hub) window.__hub.reg('lift', {
   addCustom(d){ const e=addCustomEx(d||{}); if(e&&state.route==='library') render(); return e? e.id : null; },
   open(){ state.route=state.active?'train':'plan'; render(); window.scrollTo(0,0); },
   exMuscles(id){ const e=exById(id); return e? {p:e.primary.slice(), s:e.secondary.slice()} : null; },
+  // for Ladder: the ticked work sets of exercises it has too, and a counter that moves whenever they may have changed
+  sharedSets(ids){ const want=new Set(ids);
+    return state.history.map(w=>({id:w.id, date:w.date, entries:w.entries.filter(e=>want.has(e.exId))
+      .map(e=>({exId:e.exId, sets:e.sets.filter(s=>isWork(s)&&s.done&&s.reps>0).map(s=>({reps:s.reps, rir:s.rir}))})).filter(e=>e.sets.length)})).filter(w=>w.entries.length); },
+  stamp:()=>histVer,
   table(){ return {muscles:MUSCLES, groups:GROUPS}; },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
@@ -7226,7 +7246,8 @@ function load(){
 let saveTimer=null;
 function payload(){ return {v:state.v,onboarded:state.onboarded,route:state.route,settings:state.settings,rung:state.rung,paths:state.paths,needClaims:state.needClaims,placed:state.placed,said:state.said,
   advances:state.advances, history:state.history, active:state.active, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab}; }
-function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
+let ladVer=0;   // moves on every change, so Muscle knows when to read Ladder's sets again
+function save(){ ladVer++; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
    when the page is hidden or closed: a phone can drop the app at any moment. */
 function flush(){ if(saveTimer){ clearTimeout(saveTimer); Safe.put(LS_KEY,JSON.stringify(payload())); } }
@@ -7294,9 +7315,23 @@ function isSkill(id){ return !!LADDERS[id].skill; }
 function practiceOf(id,i){const L=LADDERS[id];return stepsOf(id)[i==null?curIdx(id):i].practice||L.practice||(L.like&&LADDERS[L.like]&&LADDERS[L.like].practice)||'strength';}
 function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||Math.min(st.v,st.k==='hold'?5:3); }
 const PROOF_DAYS=90, CLEAR_DAYS=42;
+/* Exercises Muscle has too (pull-ups, dips, push-ups and the like): its ticked sets count here as clean sets of that
+   exercise, so the pull-ups you log in Muscle move your pull-up rung on like ones logged here. Muscle logs reps, so holds
+   are left out. They count toward your best, your targets and your next rung; Ladder's own week of hard sets is unchanged. */
+let musMemo={k:null, v:[]};
+function fromMuscle(){
+  const H=window.__hub; if(!H||!H.has||!H.has('lift')) return [];
+  const L=H.api('lift'); if(!L||!L.sharedSets) return [];
+  const k=L.stamp(); if(musMemo.k===k) return musMemo.v;
+  const where={}; Object.keys(LADDERS).forEach(id=>stepsOf(id).forEach((st,i)=>{ if(st.k!=='hold'&&!where[st.id]) where[st.id]=[id,i]; }));
+  const v=L.sharedSets(Object.keys(where)).map(w=>({id:'muscle-'+w.id, date:w.date, muscle:true, entries:w.entries.map(e=>{ const [l,i]=where[e.exId];
+    return {ladderId:l, stepIdx:i, target:stepsOf(l)[i].v, setup:{}, clean:true, sets:e.sets.map(x=>({v:x.reps, rir:x.rir, done:true, clean:true}))}; })}));
+  musMemo={k, v}; return v;
+}
+function allHistory(){ const m=fromMuscle(); return m.length? state.history.concat(m) : state.history; }
 function proofSets(id,i,days){
   const rid=rungId(id,i), st=stepsOf(id)[i], since=Date.now()-days*86400000, out=[];
-  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+  allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{};
       if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,target:e.target||st.v}); });
@@ -7311,7 +7346,7 @@ function verifiedBestFor(id,i){
 }
 function currentProof(id,i){
   const st=stepsOf(id)[i], groups=new Map(), since=Date.now()-CLEAR_DAYS*86400000, rid=rungId(id,i);
-  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+  allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     const setsBySetup=new Map();
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{}, key=setupKey(st,setup);
@@ -7335,7 +7370,7 @@ function rungTarget(id,i,role){
   if(role==='maintenance') return Math.min(st.v,limit);
   let target=st.v;
   const rid=rungId(id,i), since=Date.now()-CLEAR_DAYS*86400000, byTarget=new Map();
-  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+  allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     const t=Math.max(st.v,e.target||st.v), keys=new Map();
     (e.sets||[]).forEach(s=>{const key=setupKey(st,s.setup||e.setup||{});if(s.done&&s.clean===true&&s.v>=t&&key!=null) keys.set(key,(keys.get(key)||0)+1);});
@@ -7369,7 +7404,7 @@ function setsIn(days){ const since=daysAgo(days-1); let n=0;
 function rungId(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; return st? st.id : null; }
 function bestFor(id,i){
   let best=0; const rid=rungId(id,i);
-  state.history.forEach(w=>w.entries.forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)===rid) e.sets.forEach(s=>{ if(s.done&&(s.v||0)>best) best=s.v; }); }));
+  allHistory().forEach(w=>w.entries.forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)===rid) e.sets.forEach(s=>{ if(s.done&&(s.v||0)>best) best=s.v; }); }));
   state.tests.forEach(t=>{ if(rungId(t.ladderId,t.stepIdx)===rid&&t.v>best) best=t.v; });
   return best;
 }
@@ -9104,6 +9139,14 @@ if(window.__hub) window.__hub.reg('cal', {
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
+  // for Muscle: the top set of an exercise from your latest Ladder session with it (reps, not holds), and a counter that
+  // moves whenever that may have changed
+  lastSet(exId){ for(let w=state.history.length-1;w>=0;w--){ const h=state.history[w];
+      for(const e of h.entries||[]){ const st=LADDERS[e.ladderId]&&stepsOf(e.ladderId)[e.stepIdx]; if(!st||st.id!==exId||st.k==='hold') continue;
+        const done=(e.sets||[]).filter(x=>x.done&&x.v>0); if(!done.length) continue;
+        const top=done.reduce((a,x)=>x.v>a.v? x : a); return {date:h.date, reps:top.v, rir:top.rir!=null? top.rir : null}; } }
+    return null; },
+  stamp:()=>ladVer,
 });
 
 /* ==================== BOOT ==================== */
