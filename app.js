@@ -2790,6 +2790,16 @@ function toDisp(kg){ if(kg==null||kg==='') return ''; const v = unit()==='lb'? k
 function fromDisp(v){ if(v===''||v==null||isNaN(v)) return null; const n=parseFloat(v); return unit()==='lb'? n*KG_PER_LB : n; }
 function fmtW(kg){ if(kg==null) return '&ndash;'; const v=toDisp(kg); return (Math.round(v*10)/10)+''; }
 function est1RM(kg,reps){ if(!kg||!reps) return 0; return kg*(1+reps/30); }
+/* Bodyweight exercises: the weight box is what you add, like a belt or a vest; left blank, it is your bodyweight alone.
+   Where load and reps fold into one number, your logged bodyweight counts too, since you lift it on every rep. */
+function isBW(exId){ const e=exById(exId); return !!e && e.equipment==='Bodyweight'; }
+function bodyAt(ts){ let b=null, first=null;
+  state.bodylog.forEach(x=>{ if(x.weight==null) return; if(!first||x.date<first.date) first=x; if(x.date<=ts&&(!b||x.date>b.date)) b=x; });
+  return (b||first)? (b||first).weight : null; }
+function setLoad(exId, s, ts){ const w=s.weight||0; if(!isBW(exId)) return w; const b=bodyAt(ts==null? Date.now() : ts); return b!=null? b+w : w; }
+// a set in one number, for finding the best one: the Epley estimate, or the reps for bodyweight alone with no bodyweight logged
+function setScore(exId, s, ts){ const L=setLoad(exId, s, ts); return L>0? est1RM(L, s.reps) : isBW(exId)? (s.reps||0)/1000 : 0; }
+function wTxt(exId, w, sp){ sp=sp||''; return isBW(exId)? (w? '+'+fmtW(w)+sp+unit() : 'BW') : fmtW(w)+sp+unit(); }
 function isWork(s){ return s.type!=='warmup'; }
 function startOfToday(){ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
 function daysAgo(n){ return startOfToday()-n*86400000; }
@@ -2810,9 +2820,9 @@ function lastPerf(exId, beforeTs){
     if(en){
       const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps);
       if(work.length){
-        // top set by est1RM
+        // the top set: load and reps folded into one number
         let top = work[0];
-        for(const s of work){ if(est1RM(s.weight,s.reps)>est1RM(top.weight,top.reps)) top=s; }
+        for(const s of work){ if(setScore(exId,s,w.date)>setScore(exId,top,w.date)) top=s; }
         return top;
       }
     }
@@ -3066,9 +3076,29 @@ function viewTrain(){
   `;
 }
 
+/* A weight logged on a bodyweight exercise heavy enough to be a bodyweight typed into the box, until you say which it was. */
+function bwTyped(exId){
+  if(!isBW(exId) || (state.settings.bwAsked||{})[exId]) return null;
+  let t=null, at=0;
+  state.history.forEach(h=>h.entries.forEach(e=>{ if(e.exId===exId) e.sets.forEach(s=>{ if(s.done && s.weight>=25 && h.date>=at){ t=s.weight; at=h.date; } }); }));
+  return t;
+}
+/* It was your bodyweight: those sets become bodyweight alone, and the number is kept as your bodyweight if none is logged near then. */
+function bwWasBody(exId){
+  const t=bwTyped(exId); if(t==null) return;
+  const near=w=>w!=null && w>=t*0.8 && w<=t*1.2;   // the same person's bodyweight, give or take some kilos over the months
+  let last=null;
+  state.history.forEach(h=>h.entries.forEach(e=>{ if(e.exId===exId) e.sets.forEach(s=>{ if(near(s.weight)){ s.weight=null; if(last==null||h.date>last) last=h.date; } }); }));
+  if(state.active) state.active.entries.forEach(e=>{ if(e.exId===exId) e.sets.forEach(s=>{ if(near(s.weight)) s.weight=null; }); });
+  const keep= last!=null && !state.bodylog.some(b=>b.weight!=null && Math.abs(b.date-last)<30*86400000);
+  if(keep){ const d=new Date(last); d.setHours(0,0,0,0); let b=state.bodylog.find(x=>x.date===d.getTime()); if(!b){ b={date:d.getTime()}; state.bodylog.push(b); } b.weight=t; state.bodylog.sort((a,c)=>a.date-c.date); }
+  (state.settings.bwAsked=state.settings.bwAsked||{})[exId]='body';
+  if(state.active) state.active.entries.forEach(e=>{ if(e.exId===exId) e.overloadNote=suggestLoad(exId, e, !!(exById(exId)||{}).comp, !!(state.active.meso&&state.active.meso.deload)).note; });
+  save(); render(); toast(`${esc((exById(exId)||{}).name||'It')} now counts your bodyweight on its own${keep? `, and ${fmtW(t)} ${unit()} is saved under Body as your bodyweight` : ''}.`);
+}
 function exerciseCard(en, ei){
   const ex = exById(en.exId) || en;
-  const lp = lastPerf(en.exId);
+  const lp = lastPerf(en.exId), bw = isBW(en.exId), typed = bwTyped(en.exId);
   const ls = lastSetsFor(en.exId);
   const prim = (en.primary||[]).map(m=>`<span class="mtag prim"><span class="mdot"></span>${MUSCLES[m]?MUSCLES[m].n:m}</span>`).join('');
   const sec = (en.secondary||[]).map(m=>`<span class="mtag">${MUSCLES[m]?MUSCLES[m].n:m}</span>`).join('');
@@ -3084,7 +3114,9 @@ function exerciseCard(en, ei){
         <h3 data-act="howto" data-id="${esc(en.exId)}" style="cursor:pointer">${esc(en.name)}<span class="hinfo">${I.info}</span></h3>
         <div class="mm">${prim}${sec}</div>
         ${en.overloadNote?`<div class="chip heat" style="margin-top:7px">${I.trending} ${en.overloadNote}</div>`:''}
-        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${fmtW(lp.weight)}${unit()}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`:''}
+        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`:''}
+        ${typed!=null?`<div class="banner warn" style="margin:10px 0 0;align-items:flex-start">${I.info}<span><b>Was the ${fmtW(typed)} ${unit()} logged here your bodyweight?</b> ${esc(en.name)} counts your bodyweight on its own, so its weight box is only for what you add, like a belt or a vest.
+          <span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="tinybtn" data-act="bw-body" data-ex="${ei}">It was my bodyweight</button><button class="tinybtn" data-act="bw-added" data-ex="${ei}">I added it</button></span></span></div>`:''}
         ${en.note?`<div data-act="ex-note" data-ex="${ei}" style="margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;gap:6px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}
       </div>
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
@@ -3109,14 +3141,14 @@ function exerciseCard(en, ei){
     </div>
     <div class="setgrid">
       <div class="setrow-head">
-        <span>Set</span><span>${unit()==='kg'?'Kg':'Lb'}</span><span>Reps</span><span>RIR</span><span></span><span></span>
+        <span>Set</span><span>${bw?'+':''}${unit()==='kg'?'Kg':'Lb'}</span><span>Reps</span><span>RIR</span><span></span><span></span>
       </div>
       ${setsHtml}
     </div>
     <div class="excard-actions">
       <button class="tinybtn" data-act="add-set" data-ex="${ei}">${I.plus} Add set</button>
       ${ls?`<button class="tinybtn" data-act="fill-last" data-ex="${ei}">${I.copy} Same as last</button>`:''}
-      <button class="tinybtn" data-act="loading" data-ex="${ei}">${I.barbell} Loading</button>
+      ${bw? '' : `<button class="tinybtn" data-act="loading" data-ex="${ei}">${I.barbell} Loading</button>`}
       <button class="tinybtn" data-act="ex-swap" data-ex="${ei}">${I.swap} Swap</button>
       ${en.sets.length>1?`<button class="tinybtn danger" data-act="del-last-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
     </div>
@@ -3145,7 +3177,8 @@ function setRow(en, ei, s, si){
   }
   return `<div class="setrow ${s.done?'done':''} ${warm?'warm':''} ${isNext?'next':''}" data-set="${si}">
     <div class="sidx ${warm?'warmb':''}">${idxLabel}</div>
-    <div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev?fmtW(prev.weight):'0'}" aria-label="Set ${idxLabel} weight"></div>
+    ${isBW(en.exId)? `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight?fmtW(s.weight):''}" placeholder="${prev&&prev.weight?'+'+fmtW(prev.weight):'BW'}" aria-label="Set ${idxLabel} added weight, blank for bodyweight alone"></div>`
+      : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev?fmtW(prev.weight):'0'}" aria-label="Set ${idxLabel} weight"></div>`}
     <div class="setwrap"><input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${idxLabel} reps"></div>
     <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
     <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
@@ -3495,9 +3528,9 @@ function clearNote(){
 function repRecords(exId){
   const perWeight={}; let sessions=0;
   state.history.forEach(w=>{ const en=w.entries.find(e=>e.exId===exId); if(!en) return;
-    const work=en.sets.filter(s=>isWork(s)&&s.done&&s.weight&&s.reps); if(!work.length) return;
+    const body=isBW(exId), work=en.sets.filter(s=>isWork(s)&&s.done&&(s.weight||body)&&s.reps); if(!work.length) return;
     sessions++;
-    work.forEach(s=>{ const cur=perWeight[s.weight]; if(!cur || s.reps>cur.reps) perWeight[s.weight]={reps:s.reps, date:w.date}; });
+    work.forEach(s=>{ const k=s.weight||0, cur=perWeight[k]; if(!cur || s.reps>cur.reps) perWeight[k]={reps:s.reps, date:w.date}; });
   });
   let latest=null;
   Object.keys(perWeight).forEach(k=>{ const c=perWeight[k]; if(!latest || c.date>latest.date || (c.date===latest.date && +k>latest.weight)) latest={weight:+k, reps:c.reps, date:c.date}; });
@@ -3511,7 +3544,7 @@ function progRecords(){
   const rows=ids.map(id=>{ const r=recs[id]; const nm=(exById(id)||{}).name||id; const loads=Object.keys(r.perWeight).length;
     return `<button class="ev-lib-item" data-act="rec-detail" data-id="${id}" style="width:100%">
       <div class="eli-n" style="flex:1"><div class="t">${esc(nm)}</div>
-        <div class="muted" style="font-size:11.5px;margin-top:2px">last record ${fmtW(r.latest.weight)}${unit()}&times;${r.latest.reps} &middot; ${relDay(r.latest.date)} &middot; ${loads} load${loads===1?'':'s'}</div></div>
+        <div class="muted" style="font-size:11.5px;margin-top:2px">last record ${wTxt(id, r.latest.weight)}&times;${r.latest.reps} &middot; ${relDay(r.latest.date)} &middot; ${loads} load${loads===1?'':'s'}</div></div>
       <span style="color:var(--faint)">${I.arrow}</span></button>`;
   }).join('');
   return `<div class="card pad">
@@ -3527,14 +3560,14 @@ function openRecord(exId){
   const nm=(exById(exId)||{}).name||exId;
   const weights=Object.keys(r.perWeight).map(Number).sort((a,b)=>b-a).slice(0,12);
   const ledger=weights.map(wt=>{ const c=r.perWeight[wt];
-    return `<div class="spread" style="padding:8px 2px;border-bottom:1px solid var(--border);font-size:13.5px"><span><b>${fmtW(wt)}</b> ${unit()} &times; ${c.reps}</span><span class="muted" style="font-size:11.5px">${relDay(c.date)}</span></div>`;
+    return `<div class="spread" style="padding:8px 2px;border-bottom:1px solid var(--border);font-size:13.5px"><span><b>${wTxt(exId, wt, ' ')}</b> &times; ${c.reps}</span><span class="muted" style="font-size:11.5px">${relDay(c.date)}</span></div>`;
   }).join('');
   openModal(`
     <div class="sheet-grab"></div>
     <div class="sheet-head"><button class="iconbtn" data-act="close-modal" data-back aria-label="Back">${I.back}</button><h3 style="flex:1">${esc(nm)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="grid2" style="margin-bottom:14px">
-        <div class="rstat"><div class="v tnum">${fmtW(r.latest.weight)}<span style="font-size:13px">&times;${r.latest.reps}</span></div><div class="k">Last record (${unit()})</div></div>
+        <div class="rstat"><div class="v tnum">${isBW(exId)? wTxt(exId, r.latest.weight) : fmtW(r.latest.weight)}<span style="font-size:13px">&times;${r.latest.reps}</span></div><div class="k">${isBW(exId)? 'Last record' : 'Last record ('+unit()+')'}</div></div>
         <div class="rstat"><div class="v tnum">${r.sessions}</div><div class="k">Sessions logged</div></div>
       </div>
       <div class="section-label" style="margin:0 0 2px">Most reps at each load <span class="ln"></span></div>
@@ -3805,8 +3838,8 @@ function progHistory(){
     const exLines = w.entries.map(en=>{
       const work = en.sets.filter(s=>isWork(s)&&s.done);
       if(!work.length) return '';
-      let top=work[0]; for(const s of work){ if(est1RM(s.weight,s.reps)>est1RM(top.weight,top.reps)) top=s; }
-      return `<div class="hist-ex"><span>${esc(en.name)}</span><span class="hx-s">${work.length} &times; ${fmtW(top.weight)}${unit()}&times;${top.reps||'&ndash;'}</span></div>${en.note?`<div style="font-size:11.5px;color:var(--muted);margin:0 0 6px;display:flex;gap:5px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}`;
+      let top=work[0]; for(const s of work){ if(setScore(en.exId,s,w.date)>setScore(en.exId,top,w.date)) top=s; }
+      return `<div class="hist-ex"><span>${esc(en.name)}</span><span class="hx-s">${work.length} &times; ${wTxt(en.exId, top.weight)}&times;${top.reps||'&ndash;'}</span></div>${en.note?`<div style="font-size:11.5px;color:var(--muted);margin:0 0 6px;display:flex;gap:5px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}`;
     }).join('');
     return `<div class="card hist-item" data-act="ed-view" data-id="${esc(w.id)}">
       <div class="hh"><div class="hd">${esc(w.name)}</div><div class="hm">${longDate(w.date)}</div></div>
@@ -3824,14 +3857,16 @@ function progTrends(){
   if(!ids.length) return `<div class="muted" style="text-align:center;padding:40px 20px;font-size:13.5px">Finish a few sessions to see performance trends.</div>`;
   if(!state.progressEx || !ids.includes(state.progressEx)) state.progressEx = ids[0];
   const opts = ids.map(id=>{ const e=exById(id); return `<option value="${id}" ${id===state.progressEx?'selected':''}>${esc(e?e.name:id)}</option>`; }).join('');
-  // series: top est1RM per session
+  // series: the best set each session, load and reps folded into one number. A bodyweight exercise counts your logged
+  // bodyweight as load; with none logged it follows the reps of the best set instead.
+  const id=state.progressEx, body=isBW(id), byReps=body && !state.bodylog.some(b=>b.weight!=null);
   const pts=[];
   for(const w of state.history){
-    const en = w.entries.find(e=>e.exId===state.progressEx);
+    const en = w.entries.find(e=>e.exId===id);
     if(!en) continue;
-    const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&s.weight);
+    const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&(s.weight||body));
     if(!work.length) continue;
-    let best=0, bw=0, br=0; for(const s of work){ const e=est1RM(s.weight,s.reps); if(e>best){best=e; bw=s.weight; br=s.reps;} }
+    let best=0, bw=0, br=0; for(const s of work){ const e= byReps? s.reps : est1RM(setLoad(id,s,w.date),s.reps); if(e>best){best=e; bw=s.weight||0; br=s.reps;} }
     pts.push({t:w.date, v:best, bw, br});
   }
   let chart='';
@@ -3848,12 +3883,13 @@ function progTrends(){
     <div class="pad" style="padding-bottom:0">
       <div class="spread">
         <div><div class="muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Performance trend</div>
-        <div class="disp" style="font-weight:800;font-size:24px;letter-spacing:-.02em;margin-top:2px">${latest?fmtW(latest.v)+' '+unit():'&ndash;'}</div></div>
-        ${delta!==0?`<span class="chip ${delta>0?'steel':''}" style="${delta<0?'color:var(--warn)':''}">${delta>0?'&#9650;':'&#9660;'} ${fmtW(Math.abs(delta))} ${unit()}</span>`:''}
+        <div class="disp" style="font-weight:800;font-size:24px;letter-spacing:-.02em;margin-top:2px">${latest? (byReps? latest.v+' reps' : fmtW(latest.v)+' '+unit()) :'&ndash;'}</div></div>
+        ${delta!==0?`<span class="chip ${delta>0?'steel':''}" style="${delta<0?'color:var(--warn)':''}">${delta>0?'&#9650;':'&#9660;'} ${byReps? Math.abs(delta)+' rep'+(Math.abs(delta)===1?'':'s') : fmtW(Math.abs(delta))+' '+unit()}</span>`:''}
       </div>
     </div>
     <div class="chartwrap">${chart}</div>
-    <div class="muted" style="font-size:11px;padding:0 16px 14px">Your best set each session, with load and reps folded into one number (an Epley estimate), so one more rep and one more plate both count. Read the direction, not the number.</div>
+    <div class="muted" style="font-size:11px;padding:0 16px 14px">${byReps? 'Your best set each session, in reps. Log your bodyweight under Body and this becomes a strength estimate that also counts any weight you add.'
+      : 'Your best set each session, with load and reps folded into one number (an Epley estimate), so one more rep and one more plate both count.'+(body? ' For a bodyweight exercise the load is your logged bodyweight plus anything you add.' : '')+' Read the direction, not the number.'}</div>
   </div>`;
 }
 function lineChart(pts){
@@ -4103,6 +4139,13 @@ function genCreate(){
 function roundLoad(kg){ return Math.round(kg*2)/2; }
 function suggestLoad(exId, entry, comp, deload){
   const prev=lastPerf(exId);
+  // bodyweight alone last time: the reps climb first; at the top of the range, add a little weight or take a harder version
+  if(prev && !prev.weight && entry.equipment==='Bodyweight'){
+    if(deload) return {weight:null, note:'deload &middot; bodyweight, with a few more reps in reserve'};
+    const tr=prev.rir==null? null : prev.rir+rirBias();
+    if(prev.reps!=null && prev.reps>=entry.target.repHigh && (tr==null || tr<=entry.target.rir)) return {weight:null, note:'top of the range at bodyweight &middot; add a little weight, or pick a harder version'};
+    return {weight:null, note:'bodyweight &middot; aim for +1 rep toward '+entry.target.repHigh};
+  }
   if(!prev || prev.weight==null) return {weight:null, note:null};
   if(deload) return {weight:roundLoad(prev.weight*0.9), note:'~10% lighter for the deload'};
   const trueRir = prev.rir==null? null : prev.rir + rirBias(); // correct for your RIR accuracy
@@ -4812,18 +4855,19 @@ setInterval(()=>{ if(state.active && state.active.restEndsAt) tickRest(); }, 250
 function repPrs(entries, past){
   const prs=[];
   for(const en of entries){
-    const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&s.weight);
+    const body=isBW(en.exId), W=s=>s.weight||0, counts=s=>isWork(s)&&s.done&&s.reps&&(s.weight||body);   // bodyweight alone is a load too
+    const work = en.sets.filter(counts);
     if(!work.length) continue;
     const prior=[];
-    for(const w of past){ const he=w.entries.find(x=>x.exId===en.exId); if(he) he.sets.forEach(s=>{ if(isWork(s)&&s.done&&s.weight&&s.reps) prior.push(s); }); }
+    for(const w of past){ const he=w.entries.find(x=>x.exId===en.exId); if(he) he.sets.forEach(s=>{ if(counts(s)) prior.push(s); }); }
     if(!prior.length) continue;
     let best=null;
     for(const s of work){
-      const heavier=prior.filter(p=>p.weight>=s.weight-0.01);
+      const heavier=prior.filter(p=>W(p)>=W(s)-0.01);
       const prev=heavier.length? Math.max(...heavier.map(p=>p.reps)) : 0;
-      if(s.reps>prev && (!best || s.weight>best.s.weight || (s.weight===best.s.weight && s.reps>best.s.reps))) best={s, prev};
+      if(s.reps>prev && (!best || W(s)>W(best.s) || (W(s)===W(best.s) && s.reps>best.s.reps))) best={s, prev};
     }
-    if(best) prs.push({ex:en.name, type:best.prev? 'Rep record, up from '+best.prev : 'Rep record at a new load', val:fmtW(best.s.weight)+' '+unit()+' &times; '+best.s.reps});
+    if(best) prs.push({ex:en.name, type:best.prev? 'Rep record, up from '+best.prev : 'Rep record at a new load', val:wTxt(en.exId, best.s.weight, ' ')+' &times; '+best.s.reps});
   }
   return prs;
 }
@@ -5343,7 +5387,7 @@ function exDetail(id){
         <div class="spread"><span class="muted">Rep range</span><b>${e.def.repLow}&ndash;${e.def.repHigh}</b></div>
         <div class="spread" style="margin-top:6px"><span class="muted">Target RIR</span><b>${e.def.rir} in reserve</b></div>
         <div class="spread" style="margin-top:6px"><span class="muted">Rest</span><b>${e.def.rest}s</b></div>
-        ${perf?`<div class="spread" style="margin-top:6px"><span class="muted">Your last top set</span><b>${fmtW(perf.weight)}${unit()} &times; ${perf.reps}</b></div>`:''}
+        ${perf?`<div class="spread" style="margin-top:6px"><span class="muted">Your last top set</span><b>${wTxt(id, perf.weight, ' ')} &times; ${perf.reps}</b></div>`:''}
       </div>
       <p class="muted" style="font-size:12.5px;line-height:1.55;margin:0 0 10px">Full, controlled, pain-free range of motion. Stop most sets 1&ndash;3 reps shy of failure. These are starting heuristics, not fixed rules.</p>
       <div style="margin-bottom:16px">${evChip('rom','Range of motion')}${'&nbsp;'}${evChip('effort','Effort')}</div>
@@ -5593,6 +5637,8 @@ __root.addEventListener('click', e=>{
     case 'set-menu': openSetMenu(ei,si); break;
     case 'del-last-set': { const en=state.active.entries[ei]; if(en.sets.length>1){ en.sets.pop(); save(); render(); } break; }
     case 'loading': openLoading(ei); break;
+    case 'bw-body': bwWasBody(state.active.entries[ei].exId); break;
+    case 'bw-added': { const id=state.active.entries[ei].exId; (state.settings.bwAsked=state.settings.bwAsked||{})[id]='added'; save(); render(); break; }
     case 'repeat-set': { const en=state.active.entries[ei]; const s=en.sets[si]; en.sets.splice(si+1,0,Object.assign(makeSet('work'),{weight:s.weight,reps:s.reps,rir:s.rir})); save(); closeModal(); render(); toast('Set repeated'); break; }
     case 'add-warmup-ramp': { const en=state.active.entries[ei]; const ramp=warmupRamp(loadingState.weight); ramp.slice().reverse().forEach(r=>{ en.sets.unshift(Object.assign(makeSet('warmup'),{weight:fromDisp(r.w), reps:r.reps})); }); save(); closeModal(); render(); toast(ramp.length+' warm-up sets added'); break; }
     case 'ex-swap': openSwap(ei); break;
