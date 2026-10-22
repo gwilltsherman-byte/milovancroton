@@ -1341,6 +1341,28 @@ window.Parked={
       <button class="btn primary sm" data-act="switch-session" data-id="${esc(p.id)}">Resume</button></div></div>`; }).join(''); }
 };
 
+/* ==================== SETS IN NUMBERS ====================
+   Shared by every section, so the same set means the same thing everywhere. */
+window.Lift={
+  /* The share of your one-rep max a set takes, from its reps plus the reps you had left (Epley; a straight line
+     from 1 to 4, where Epley runs high). */
+  pct(eff){ const e4=1/(1+4/30); if(eff<=1) return 1; if(eff<4) return 1-(eff-1)*(1-e4)/3; return 1/(1+eff/30); },
+  /* Estimated one-rep max. A set of 8 with 2 left counts as the 10 you could have done, so pushing closer to failure
+     late in a block doesn't pass for getting stronger. */
+  e1rm(w, reps, rir){ if(!w||!reps||reps<1) return 0; const r=Number(rir); return w/Lift.pct(reps+(r>0? r : 0)); },
+  /* How much a set counts as a hard set: in full when it ends 0 to 3 reps short of failure, half at 4 or 5, not at
+     all further off; unknown effort counts in full. Growth falls as sets end further from failure (Robinson et al. 2024). */
+  hard(rir){ if(rir==null||rir==='') return 1; const r=Number(rir); return !(r>3)? 1 : r<=5? 0.5 : 0; },
+  /* How much a set adds to what its muscles have to recover from: more taken to failure, less when easy
+     (Morán-Navarro et al. 2017), and half again for a movement new to you or not done in four weeks, since the
+     first sessions of a movement cause the most damage and soreness (the repeated-bout effect). */
+  tiring(rir, novel){ const r= rir==null||rir===''? 1 : Number(rir); return (r<=0? 1.3 : r>=4? 0.7 : 1)*(novel? 1.5 : 1); },
+  /* For counting sets: novel(w, key) tells whether exercise key in session w had no session in the 4 weeks before.
+     keys(w) lists a session's exercises. */
+  novelty(history, keys){ const at={}; history.forEach(w=>keys(w).forEach(k=>{ (at[k]||(at[k]=[])).push(w.date); }));
+    return (w, k)=>!(at[k]||[]).some(d=>d<w.date && d>=w.date-28*86400000); }
+};
+
 /* ==================== TAKE BACK ====================
    Shared by every section. Finishing or ending a session can be taken back: you go back into the session as it
    was, and the clock carries on. Just before, the section keeps a copy of its saved data in a slot of its own;
@@ -1631,9 +1653,10 @@ const RAW_EX = [
 function buildSeed(){
   return RAW_EX.map(r=>{
     const comp = r[5]===1;
+    const hold=HOLDS.includes(r[0]);   // seconds, not reps
     return {id:r[0], name:r[1], equipment:r[2], primary:r[3], secondary:r[4], comp,
       custom:false, alt:r[6]===1,
-      def:{repLow:comp?6:10, repHigh:comp?10:15, rir:comp?2:1, rest:comp?180:90}};
+      def: hold? {repLow:20, repHigh:60, rir:2, rest:90} : {repLow:comp?6:10, repHigh:comp?10:15, rir:comp?2:1, rest:comp?180:90}};
   });
 }
 const TEMPLATES = [
@@ -1659,7 +1682,7 @@ const TIPS = [
 const EVIDENCE = {
   volume:{ t:'Training volume', c:'high', g:'Essentials',
     s:'More weekly hard sets per muscle generally means more growth, but with clearly diminishing returns, and the best personal dose varies a lot between people. Reviews find enhanced hypertrophy once you\'re into roughly 10+ hard sets per muscle per week; newer dose-response work supports a positive-but-flattening curve and separating direct from indirect work.',
-    a:'Start around a manageable 10+ direct sets/week for muscles you want to grow. Add sets only when a muscle plateaus and you\'re recovering well. More isn’t automatically better, and there’s no proven universal ceiling.',
+    a:'Start around a manageable 10+ hard sets/week for muscles you want to grow, counting a set at half for a muscle it only helps (the count that fits growth best), and a set left 4 or more reps short of failure as part of one. Add sets only when a muscle plateaus and you\'re recovering well. More isn’t automatically better, and there’s no proven universal ceiling.',
     src:[['ACSM 2026 Position Stand on resistance training','https://pmc.ncbi.nlm.nih.gov/articles/PMC12965823/'],['Pelland et al. 2026, volume & frequency dose-response','https://pubmed.ncbi.nlm.nih.gov/41343037/'],['Hypertrophy variables umbrella review','https://pmc.ncbi.nlm.nih.gov/articles/PMC9302196/']] },
   effort:{ t:'Effort & proximity to failure', c:'mod', g:'Essentials',
     s:'Sets generally need to be challenging, and muscle growth tends to go up the closer you get to failure. The exact curve is uncertain, though, and training all the way to momentary failure isn’t consistently better than stopping a few reps short, while it adds fatigue.',
@@ -1702,9 +1725,9 @@ const EVIDENCE = {
     a:'Put your priority lifts or lagging muscles first. No order is wrong for growth, so put first whatever you most want to improve.',
     src:[['Nunes et al. 2021, exercise order meta-analysis','https://pubmed.ncbi.nlm.nih.gov/32077380/']] },
   deload:{ t:'Deloads, fatigue & periodization', c:'mod', g:'Recovery',
-    s:'When volume is equated, periodized and non-periodized programs produce similar hypertrophy. Structure (blocks, deloads) mainly helps manage fatigue, keep performance up, and keep things interesting. It doesn’t build more muscle by itself.',
+    s:'When volume is equated, periodized and non-periodized programs produce similar hypertrophy. Structure (blocks, deloads) mainly helps manage fatigue, keep performance up, and keep things interesting. It doesn’t build more muscle by itself: in a 2024 trial a planned one-week deload added no muscle and slightly slowed lower-body strength gains. So blocks here have no deload week unless you add one, and the app offers one when fatigue shows.',
     a:'Use a lighter deload when several sessions show falling performance plus rising fatigue, soreness, or joint niggles. Don\'t diagnose "overtraining" or assume a fixed limit on how much you can recover from. Nobody can measure that directly.',
-    src:[['Moesgaard et al. 2022, periodization','https://pubmed.ncbi.nlm.nih.gov/35044672/'],['ACSM 2026 Position Stand','https://pmc.ncbi.nlm.nih.gov/articles/PMC12965823/']] },
+    src:[['Moesgaard et al. 2022, periodization','https://pubmed.ncbi.nlm.nih.gov/35044672/'],['Coleman et al. 2024, one-week deload trial','https://pubmed.ncbi.nlm.nih.gov/?term=Gaining+more+from+doing+less+effects+of+a+one-week+deload+period+during+supervised+resistance+training'],['ACSM 2026 Position Stand','https://pmc.ncbi.nlm.nih.gov/articles/PMC12965823/']] },
   advanced:{ t:'Advanced set techniques', c:'mod', g:'Techniques',
     s:'As a category, drop sets, supersets, rest-pause, clusters, and tempo methods haven’t produced more hypertrophy than well-matched traditional training when effort and volume are equated. Their real value is time-efficiency, variety, and working around equipment or plateaus. Rest-pause may have a small signal; drop sets and supersets can save substantial time.',
     a:'Use advanced methods as tools for time or preference, not as multipliers. The app never auto-inflates their "effective set" count.',
@@ -1867,16 +1890,27 @@ function unit(){ return state.settings.unit; }
 function toDisp(kg){ if(kg==null||kg==='') return ''; const v = unit()==='lb'? kg/KG_PER_LB : kg; return Math.round(v*100)/100; }
 function fromDisp(v){ if(v===''||v==null||isNaN(v)) return null; const n=parseFloat(v); return unit()==='lb'? n*KG_PER_LB : n; }
 function fmtW(kg){ if(kg==null) return '&ndash;'; const v=toDisp(kg); return (Math.round(v*10)/10)+''; }
-function est1RM(kg,reps){ if(!kg||!reps) return 0; return kg*(1+reps/30); }
+function est1RM(kg,reps,rir){ return Lift.e1rm(kg, reps, rir); }
 /* Bodyweight exercises: the weight box is what you add, like a belt or a vest; left blank, it is your bodyweight alone.
    Where load and reps fold into one number, your logged bodyweight counts too, since you lift it on every rep. */
 function isBW(exId){ const e=exById(exId); return !!e && e.equipment==='Bodyweight'; }
+/* The share of your bodyweight each bodyweight exercise moves. Push-ups and pull-ups from force-plate studies (a push-up
+   about 65 to 75 percent: Ebben et al. 2011, Suprak et al. 2011); the rest estimated from body-segment masses. Not listed:
+   all of it. Holds are timed: their reps box is seconds. */
+const BW_SHARE={pushup:0.7, 'close-grip-pushup':0.7, 'diamond-pushup':0.7, 'deficit-pushup':0.72, 'pike-pushup':0.75, dip:0.95, pullup:0.95, 'chin-up':0.95,
+  'wide-pullup':0.95, 'inverted-row':0.55, 'feet-elevated-row':0.7, 'bw-curl':0.5, 'bw-tricep-ext-high':0.5, 'hanging-leg-raise':0.33, 'hanging-knee-raise':0.25,
+  'toes-to-bar':0.35, 'lying-leg-raise':0.3, crunch:0.3, 'reverse-crunch':0.3, 'russian-twist':0.3, 'kneeling-rollout':0.5, 'dead-bug':0.2, 'back-extension':0.6,
+  'neck-curl':0.08, 'pistol-squat':0.9, 'split-squat':0.9, 'reverse-lunge':0.9, 'sissy-squat':0.9, 'nordic-curl':0.8, 'sliding-hamstring-curl':0.4,
+  'glute-bridge':0.45, 'single-leg-glute-bridge':0.55, 'single-leg-calf-raise':0.97, 'bw-calf-raise':0.97};
+const HOLDS=['plank','side-plank','dead-hang'];
+function isHold(exId){ return HOLDS.includes(exId); }
 function bodyAt(ts){ let b=null, first=null;
   state.bodylog.forEach(x=>{ if(x.weight==null) return; if(!first||x.date<first.date) first=x; if(x.date<=ts&&(!b||x.date>b.date)) b=x; });
   return (b||first)? (b||first).weight : null; }
-function setLoad(exId, s, ts){ const w=s.weight||0; if(!isBW(exId)) return w; const b=bodyAt(ts==null? Date.now() : ts); return b!=null? b+w : w; }
+function setLoad(exId, s, ts){ const w=s.weight||0; if(!isBW(exId)) return w; const b=bodyAt(ts==null? Date.now() : ts); return b!=null? b*(BW_SHARE[exId]||1)+w : w; }
 // a set in one number, for finding the best one: the Epley estimate, or the reps for bodyweight alone with no bodyweight logged
-function setScore(exId, s, ts){ const L=setLoad(exId, s, ts); return L>0? est1RM(L, s.reps) : isBW(exId)? (s.reps||0)/1000 : 0; }
+// (with the reps you had left counted in, and seconds for a hold)
+function setScore(exId, s, ts){ if(isHold(exId)) return (s.reps||0)/1000; const L=setLoad(exId, s, ts); return L>0? est1RM(L, s.reps, s.rir) : isBW(exId)? (s.reps||0)/1000 : 0; }
 function wTxt(exId, w, sp){ sp=sp||''; return isBW(exId)? (w? '+'+fmtW(w)+sp+unit() : 'BW') : fmtW(w)+sp+unit(); }
 function isWork(s){ return s.type!=='warmup'; }
 function startOfToday(){ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
@@ -1966,8 +2000,9 @@ function weeklyVolume(){
       const work = en.sets.filter(s=>isWork(s)&&s.done);
       if(!work.length) continue;
       rawSets += work.length;
-      for(const m of (en.primary||[])){ direct[m]=(direct[m]||0)+work.length; frac[m]=(frac[m]||0)+work.length; }
-      for(const m of (en.secondary||[])){ frac[m]=(frac[m]||0)+work.length*0.5; }
+      const n = work.reduce((x,s)=>x+Lift.hard(s.rir),0);   // easy sets count part or not at all
+      for(const m of (en.primary||[])){ direct[m]=(direct[m]||0)+n; frac[m]=(frac[m]||0)+n; }
+      for(const m of (en.secondary||[])){ frac[m]=(frac[m]||0)+n*0.5; }
     }
   };
   for(const w of state.history){ if(w.date>=since) scan(w.entries); }
@@ -2078,11 +2113,12 @@ function viewToday(){
   const target = state.settings.target;
   for(const g of GROUPS){
     const ms = Object.keys(MUSCLES).filter(k=>MUSCLES[k].g===g);
-    const groupTotal = ms.reduce((a,k)=>a+vol.direct[k],0);
+    const groupTotal = ms.reduce((a,k)=>a+vol.frac[k],0);
     if(groupTotal===0 && g==='Neck') continue;
     volHtml += `<div class="grouphdr">${g}</div>`;
     for(const k of ms){
-      const d = vol.direct[k]; const f = vol.frac[k];
+      // counting a set at half for muscles it only helps fits growth best (Pelland et al.)
+      const d = Math.round(vol.frac[k]*2)/2;
       const pct = Math.min(100, (d/ (target*1.6))*100);
       const markPct = Math.min(100,(target/(target*1.6))*100);
       volHtml += `<div class="volrow">
@@ -2106,7 +2142,7 @@ function viewToday(){
     </div>
 
     <div class="grid3">
-      <div class="metric"><div class="k"><span class="kt">Direct sets</span><span class="q">7d</span></div><div class="v tnum">${totalDirect}</div></div>
+      <div class="metric"><div class="k"><span class="kt">Hard sets</span><span class="q">7d</span></div><div class="v tnum">${Math.round(totalDirect*2)/2}</div></div>
       <div class="metric" data-act="sessions" role="button" tabindex="0"><div class="k"><span class="kt">Sessions</span><span class="q">7d</span></div><div class="v tnum">${sessions7}</div></div>
       <div class="metric" data-act="sessions" role="button" tabindex="0"><div class="k"><span class="kt">All sessions</span></div><div class="v tnum">${state.history.length}</div></div>
     </div>
@@ -2118,7 +2154,7 @@ function viewToday(){
     </div>
 
     <div>
-      <div class="section-label">Weekly muscle volume <span class="ln"></span><span class="faint" style="text-transform:none;letter-spacing:0;font-weight:600">direct sets &middot; rolling 7d</span></div>
+      <div class="section-label">Weekly muscle volume <span class="ln"></span><span class="faint" style="text-transform:none;letter-spacing:0;font-weight:600">hard sets, helpers at half &middot; rolling 7d</span></div>
       <div class="card pad">
         <div class="spread" style="margin-bottom:4px">
           <span class="muted" style="font-size:12.5px">Marker = ~${target} sets/wk starting heuristic</span>
@@ -2250,8 +2286,8 @@ function exerciseCard(en, ei){
         <label>Target</label>
         <input class="tnum" inputmode="numeric" data-field="tRepLow" data-ex="${ei}" value="${t.repLow}" maxlength="2" aria-label="Target reps, lowest">
         <span class="dash">&ndash;</span>
-        <input class="tnum" inputmode="numeric" data-field="tRepHigh" data-ex="${ei}" value="${t.repHigh}" maxlength="2" aria-label="Target reps, highest">
-        <span class="faint" style="font-size:11px">reps</span>
+        <input class="tnum" inputmode="numeric" data-field="tRepHigh" data-ex="${ei}" value="${t.repHigh}" maxlength="${isHold(en.exId)?3:2}" aria-label="Target ${isHold(en.exId)?'seconds':'reps'}, highest">
+        <span class="faint" style="font-size:11px">${isHold(en.exId)?'s':'reps'}</span>
       </div>
       <div class="tinput">
         <label>RIR</label>
@@ -2265,7 +2301,7 @@ function exerciseCard(en, ei){
     </div>
     <div class="setgrid">
       <div class="setrow-head">
-        <span>Set</span><span>${bw?'+':''}${unit()==='kg'?'Kg':'Lb'}</span><span>Reps</span><span>RIR</span><span></span><span></span>
+        <span>Set</span><span>${bw?'+':''}${unit()==='kg'?'Kg':'Lb'}</span><span>${isHold(en.exId)?'Secs':'Reps'}</span><span>RIR</span><span></span><span></span>
       </div>
       ${setsHtml}
     </div>
@@ -2419,13 +2455,16 @@ function volumeBalance(){
   return {push:s(['chest','fdelt','tri']), pull:s(['lat','uback','rdelt','bi']),
     quad:v.quad||0, ham:v.ham||0, biceps:v.bi||0, triceps:v.tri||0};
 }
+/* A session from a lighter week on purpose: marked when it was saved, or found through the block day it ticked off. */
+function mesoDeload(w){ return !!w.deload || state.mesos.some(m=>Object.keys(m.done||{}).some(k=>m.done[k]&&m.done[k].historyId===w.id && isDeloadWeek(m, parseInt(k,10)))); }
 function stalledLifts(){
   const out=[]; const ids=[...new Set(state.history.flatMap(w=>w.entries.map(e=>e.exId)))];
   ids.forEach(id=>{
     const series=[];
     state.history.forEach(w=>{ const en=w.entries.find(e=>e.exId===id); if(!en) return;
-      const work=en.sets.filter(s=>isWork(s)&&s.done&&s.weight&&s.reps); if(!work.length) return;
-      let best=0; work.forEach(s=>best=Math.max(best,est1RM(s.weight,s.reps))); series.push({t:w.date,v:best}); });
+      if(mesoDeload(w)) return;   // a lighter week on purpose is not a stall
+      const work=en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&(s.weight||isBW(id))); if(!work.length) return;
+      let best=0; work.forEach(s=>best=Math.max(best,setScore(id,s,w.date))); if(best>0) series.push({t:w.date,v:best}); });
     if(series.length<3) return;
     const last=series[series.length-1]; if(startOfToday()-last.t > 16*86400000) return; // stale, not "stalled"
     const r=series.slice(-3);
@@ -2476,12 +2515,12 @@ function coachDeload(){
   return {suggest:score>=2, score, reasons, hasMeso:!!m};
 }
 function coachVolume(muscle){
-  const v=weeklyVolume().direct[muscle]||0;
+  const v=Math.round((weeklyVolume().frac[muscle]||0)*2)/2;
   const target=state.settings.target;
   const fb=muscleFeedback(muscle);
   const parts=[]; let verdict, flag;
   if(fb.pain>=1){ verdict='Hold, and watch that joint.'; flag='warn'; parts.push('you flagged joint discomfort here recently'); }
-  else if(v < target){ verdict='Yes, adding 1-2 sets is reasonable.'; flag='good'; parts.push(MUSCLES[muscle].n+' is at '+v+' direct sets/week, under your '+target+' marker'); if(fb.up) parts.push('and it\'s been progressing'); }
+  else if(v < target){ verdict='Yes, adding 1-2 sets is reasonable.'; flag='good'; parts.push(MUSCLES[muscle].n+' is at '+v+' hard sets/week (helpers at half), under your '+target+' marker'); if(fb.up) parts.push('and it\'s been progressing'); }
   else if(fb.sore>=1){ verdict='Hold for now.'; flag='ok'; parts.push('you\'re still getting sore at '+v+' sets/week'); }
   else if(fb.down>=1){ verdict='Hold, and check effort and recovery first.'; flag='ok'; parts.push('performance dipped recently at '+v+' sets/week'); }
   else { verdict='You could try +1-2 sets, but you don\'t have to.'; flag='ok'; parts.push('you\'re at '+v+' sets/week with no red flags'); parts.push('more isn\'t automatically better'); }
@@ -2983,14 +3022,14 @@ function progTrends(){
   const opts = ids.map(id=>{ const e=exById(id); return `<option value="${id}" ${id===state.progressEx?'selected':''}>${esc(e?e.name:id)}</option>`; }).join('');
   // series: the best set each session, load and reps folded into one number. A bodyweight exercise counts your logged
   // bodyweight as load; with none logged it follows the reps of the best set instead.
-  const id=state.progressEx, body=isBW(id), byReps=body && !state.bodylog.some(b=>b.weight!=null);
+  const id=state.progressEx, body=isBW(id), byReps=isHold(id) || (body && !state.bodylog.some(b=>b.weight!=null));
   const pts=[];
   for(const w of state.history){
     const en = w.entries.find(e=>e.exId===id);
     if(!en) continue;
     const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&(s.weight||body));
     if(!work.length) continue;
-    let best=0, bw=0, br=0; for(const s of work){ const e= byReps? s.reps : est1RM(setLoad(id,s,w.date),s.reps); if(e>best){best=e; bw=s.weight||0; br=s.reps;} }
+    let best=0, bw=0, br=0; for(const s of work){ const e= byReps? s.reps : est1RM(setLoad(id,s,w.date),s.reps,s.rir); if(e>best){best=e; bw=s.weight||0; br=s.reps;} }
     pts.push({t:w.date, v:best, bw, br});
   }
   let chart='';
@@ -3174,7 +3213,8 @@ function generateDraft(o){
   const parts=(Array.isArray(o.emphasis)?o.emphasis:[o.emphasis]).filter(e=>e&&e!=='balanced');
   const label=parts.length? parts.map(cap).join(' & ')+' ' : '';
   const name=o.days+'-Day '+label+'Block';
-  return {name, totalWeeks:o.weeks||5, hasDeload:true, startRir:3, endRir:o.experience==='advanced'?0:1, days};
+  // no deload week by default: one adds no muscle and can slow lower-body strength (Coleman et al. 2024); the app offers one when fatigue shows
+  return {name, totalWeeks:o.weeks||5, hasDeload:false, startRir:3, endRir:o.experience==='advanced'?0:1, days};
 }
 let genOpts={days:4, experience:'intermediate', emphasis:['balanced'], weeks:5, gap:false};
 function openGenerator(){
@@ -3233,7 +3273,7 @@ function generateGapDraft(o){
     names[name]=(names[name]||0)+1; if(names[name]>1) name+=' '+String.fromCharCode(64+names[name]);
     return {id:'d-'+uid(), name, exercises};
   });
-  return {name:nd+'-Day Block around Strength & Ladder', totalWeeks:o.weeks||5, hasDeload:true, startRir:3, endRir:o.experience==='advanced'?0:1, days};
+  return {name:nd+'-Day Block around Strength & Ladder', totalWeeks:o.weeks||5, hasDeload:false, startRir:3, endRir:o.experience==='advanced'?0:1, days};
 }
 function renderGenerator(){
   const pills=(field,opts)=>`<div class="pillpick">${opts.map(([v,l])=>{ const on=Array.isArray(genOpts[field])?genOpts[field].includes(v):genOpts[field]===v; return `<button class="${on?'on':''}" data-act="gen-set" data-f="${field}" data-v="${v}">${l}</button>`; }).join('')}</div>`;
@@ -3260,28 +3300,36 @@ function genCreate(){
   closeModal(); render(); toast('Program ready. Have a look, tweak anything you like, then start');
 }
 
-function roundLoad(kg){ return Math.round(kg*2)/2; }
+/* The smallest step your kit takes, in the unit you use: the lightest pair of plates on a bar, a dumbbell size, a pin on a
+   stack (or a plate on a belt). Suggested weights land on it, so they are weights you can actually load. */
+function loadStep(eq){ const lb=unit()==='lb';
+  if(eq==='Barbell'){ const p=availablePlates(); return 2*(p.length? p[p.length-1] : (lb? 2.5 : 1.25)); }
+  return eq==='Dumbbell'? (lb? 5 : 2) : (lb? 5 : 2.5); }
+function roundLoad(kg, eq){ const st=loadStep(eq), v=toDisp(kg); return fromDisp(Math.max(0, Math.round(v/st)*st)); }
 function suggestLoad(exId, entry, comp, deload){
   const prev=lastPerf(exId);
   // bodyweight alone last time: the reps climb first; at the top of the range, add a little weight or take a harder version
+  // the weight goes up once every working set at it reached the top of the range, not just the best one
+  const ls=prev&&!prev.from? lastSetsFor(exId) : null, at=ls? ls.sets.filter(s=>(s.weight||0)===(prev.weight||0)) : [];
+  const allTop=!!prev && (at.length? at : [prev]).every(s=>s.reps!=null && s.reps>=entry.target.repHigh);
+  const hold=isHold(exId), more=hold? '+5 s toward '+entry.target.repHigh+' s' : '+1 rep toward '+entry.target.repHigh;
   if(prev && !prev.weight && entry.equipment==='Bodyweight'){
     if(deload) return {weight:null, note:'deload &middot; bodyweight, with a few more reps in reserve'};
-    const tr=prev.rir==null? null : prev.rir+rirBias();
-    if(prev.reps!=null && prev.reps>=entry.target.repHigh && (tr==null || tr<=entry.target.rir)) return {weight:null, note:'top of the range at bodyweight &middot; add a little weight, or pick a harder version'};
-    return {weight:null, note:'bodyweight &middot; aim for +1 rep toward '+entry.target.repHigh};
+    if(allTop) return {weight:null, note:'top of the range at bodyweight on every set &middot; add a little weight, or pick a harder version'};
+    return {weight:null, note:'bodyweight &middot; aim for '+more};
   }
   if(!prev || prev.weight==null) return {weight:null, note:null};
-  if(deload) return {weight:roundLoad(prev.weight*0.9), note:'~10% lighter for the deload'};
+  const eq=entry.equipment, step=fromDisp(loadStep(eq));
+  if(deload) return {weight:roundLoad(prev.weight*0.9, eq), note:'~10% lighter for the deload'};
   const trueRir = prev.rir==null? null : prev.rir + rirBias(); // correct for your RIR accuracy
-  const maxed = prev.reps!=null && prev.reps>=entry.target.repHigh && (trueRir==null || trueRir<=entry.target.rir);
-  if(maxed){ const inc=comp?2.5:1.25; return {weight:roundLoad(prev.weight+inc), note:'+'+fmtW(inc)+unit()+' &middot; you hit the top of the range last time'}; }
+  if(allTop) return {weight:roundLoad(prev.weight+step, eq), note:'+'+fmtW(step)+unit()+' &middot; every set reached the top of the range last time'};
   // stuck below the bottom of the range even near failure: the load is too heavy for this rep target
   const belowFloor = prev.reps!=null && prev.reps<entry.target.repLow && (trueRir==null || trueRir<=entry.target.rir+1);
   if(belowFloor){
     if(entry.equipment==='Bodyweight') return {weight:prev.weight, note:'heavy for '+entry.target.repLow+'&ndash;'+entry.target.repHigh+' reps &middot; add assistance to land in range'};
-    const dec=comp?5:2.5; return {weight:roundLoad(Math.max(0,prev.weight-dec)), note:'&minus;'+fmtW(dec)+unit()+' &middot; last set landed under '+entry.target.repLow+' reps, so ease the load to get back in range'};
+    const dec=step*(comp?2:1); return {weight:roundLoad(Math.max(0,prev.weight-dec), eq), note:'&minus;'+fmtW(dec)+unit()+' &middot; last set landed under '+entry.target.repLow+' reps, so ease the load to get back in range'};
   }
-  return {weight:prev.weight, note:'hold load &middot; aim for +1 rep toward '+entry.target.repHigh};
+  return {weight:prev.weight, note:'hold load &middot; aim for '+more};
 }
 function mesoEntry(ex, idx, nSets, rir, deload){
   const entry={exId:ex.exId,name:ex.name,primary:ex.primary.slice(),secondary:ex.secondary.slice(),equipment:ex.equipment,
@@ -3498,7 +3546,7 @@ function viewMesoDashboard(m){
 
 /* ---- BUILDER ---- */
 function newMeso(){
-  state.builder={name:'', totalWeeks:5, hasDeload:true, startRir:3, endRir:1,
+  state.builder={name:'', totalWeeks:5, hasDeload:false, startRir:3, endRir:1,
     days:[{id:'d-'+uid(), name:'Day 1', exercises:[]}]};
   state.planMode='build'; render();
 }
@@ -4019,6 +4067,7 @@ function finishWorkout(){
   const durationSec = Math.floor((Date.now()-a.startedAt)/1000);
   const C=a.cont&&a.cont.rec, prs=repPrs(entries, C? state.history.filter(h=>h.date<C.date) : state.history);
   const record = {id:a.id, name:a.name, date:C? C.date : Date.now(), durationSec, entries, prs, note:a.note||null};
+  if((a.meso&&a.meso.deload) || (a.tgDay&&a.tgDay.deload)) record.deload=true;
   // the sets you didn't tick off, kept apart (ones with numbers typed in already stay in the exercise, as before)
   const typed=s=>isWork(s)&&(s.weight!=null||s.reps!=null);
   const open=OpenSets.left(a.entries.map(en=>entries.some(e=>e.exId===en.exId)? Object.assign({}, en, {sets:en.sets.filter(s=>!typed(s))}) : en), exOf);
@@ -5220,11 +5269,12 @@ __root.addEventListener('input', e=>{ const el=e.target.closest&&e.target.closes
 
 /* ==================== TOGETHER ==================== */
 /* What the Together tab reads from this section and how it starts a day here. The hub lives in the shell. */
+/* n: the hard sets (Lift.hard); f: what they leave to recover from (Lift.tiring). */
 function hubWork(since, until){
-  const out=[];
+  const out=[], novel=Lift.novelty(state.history, w=>w.entries.map(e=>e.exId));
   state.history.forEach(w=>{ if(w.date<since||w.date>=until) return;
-    w.entries.forEach(en=>{ const n=en.sets.filter(s=>isWork(s)&&s.done).length;
-      if(n) out.push({key:en.exId, p:en.primary||[], s:en.secondary||[], n}); }); });
+    w.entries.forEach(en=>{ const ss=en.sets.filter(s=>isWork(s)&&s.done); if(!ss.length) return; const nv=novel(w, en.exId);
+      out.push({key:en.exId, p:en.primary||[], s:en.secondary||[], n:ss.reduce((x,s)=>x+Lift.hard(s.rir),0), f:ss.reduce((x,s)=>x+Lift.tiring(s.rir,nv),0)}); }); });
   return out;
 }
 function mesoDayInfo(m, d, w){
@@ -8206,12 +8256,14 @@ __root.addEventListener('input', e=>{ const el=e.target.closest&&e.target.closes
    Holds only count toward muscles on the core, lever and planche progressions; a dead hang isn’t a hard set,
    and nor is prep (mobility, balance, wrist and shoulder blade work, landings). */
 const COUNTED_HOLDS=['core','frontlever','planche','backlever','flag','sidecore','grip'];
+/* n: the hard sets (Lift.hard); f: what they leave to recover from (Lift.tiring). */
 function hubWork(since, until){
-  const out=[];
+  const out=[], novel=Lift.novelty(state.history, w=>(w.entries||[]).map(e=>e.ladderId+'|'+e.stepIdx));
   state.history.forEach(w=>{ if(w.date<since||w.date>=until) return;
     w.entries.forEach(e=>{ const L=LADDERS[e.ladderId], st=L&&L.steps[e.stepIdx]; if(!st||L.prep) return;
       const group=L.like||e.ladderId; if(st.k==='hold' && !COUNTED_HOLDS.includes(group)) return;
-      const n=e.sets.filter(x=>x.done!==false).length; if(n) out.push({key:st.id, group, n}); }); });
+      const ss=e.sets.filter(x=>x.done!==false); if(!ss.length) return; const nv=novel(w, e.ladderId+'|'+e.stepIdx);
+      out.push({key:st.id, group, n:ss.reduce((x,s)=>x+Lift.hard(s.rir),0), f:ss.reduce((x,s)=>x+Lift.tiring(s.rir,nv),0)}); }); });
   return out;
 }
 function hubPicks(ahead){
@@ -8663,8 +8715,8 @@ function plateVisual(kg){
 /* Share of your max you can lift for `eff` reps to failure. Epley from 4 reps up; below that it is
    blended straight toward 100% at a single, which removes Epley's too-steep drop from 1 rep to 2.
    Reps in reserve count as reps, so 5 reps at RPE 8 is treated as 7 to failure. */
-function pctOf(eff){ const e4=1/(1+4/30); if(eff<=1) return 1; if(eff<4) return 1-(eff-1)*(1-e4)/3; return 1/(1+eff/30); }
-function e1(w, reps, rir){ if(!w||!reps||reps<1) return 0; return w/pctOf(reps+(rir||0)); }
+function pctOf(eff){ return Lift.pct(eff); }
+function e1(w, reps, rir){ return Lift.e1rm(w, reps, rir); }
 function loadFor(e1rm, reps, rpe){ return e1rm*pctOf(reps+Math.max(0,10-(rpe==null?10:rpe))); }
 function setRir(s){ if(s.rpe!=null) return Math.max(0,10-s.rpe); if(s.trpe!=null) return Math.max(0,10-s.trpe); return 0; }
 /* estimated max only means something for external loads */
@@ -10178,11 +10230,12 @@ __root.addEventListener('input', e=>{ const el=e.target.closest&&e.target.closes
 /* ==================== TOGETHER ==================== */
 /* What the Together tab reads from this section and how it starts a day here. The hub lives in the shell. */
 function hubKey(id, vi){ const X=EX[id]; return X.k==='bw'? X.chain[viOf(id,vi)][0] : X.h; }
+/* n: the hard sets (Lift.hard); f: what they leave to recover from (Lift.tiring). Effort from the RPE you logged, or the one planned. */
 function hubWork(since, until){
-  const out=[];
+  const out=[], novel=Lift.novelty(state.history, h=>h.entries.map(e=>e.liftId)), rir=s=>s.rpe!=null? 10-s.rpe : s.trpe!=null? 10-s.trpe : null;
   state.history.forEach(h=>{ if(h.date<since||h.date>=until) return;
-    h.entries.forEach(en=>{ if(!EX[en.liftId]) return; const n=en.sets.filter(s=>s.done!==false&&s.kind!=='warm').length;
-      if(n) out.push({key:hubKey(en.liftId,en.vi), group:EX[en.liftId].a, n}); }); });
+    h.entries.forEach(en=>{ if(!EX[en.liftId]) return; const ss=en.sets.filter(s=>s.done!==false&&s.kind!=='warm'); if(!ss.length) return; const nv=novel(h, en.liftId);
+      out.push({key:hubKey(en.liftId,en.vi), group:EX[en.liftId].a, n:ss.reduce((x,s)=>x+Lift.hard(rir(s)),0), f:ss.reduce((x,s)=>x+Lift.tiring(rir(s),nv),0)}); }); });
   return out;
 }
 function hubDay(D, d, week){
@@ -10475,8 +10528,8 @@ function clash(){
 }
 /* Strength's scheme for one exposure in a block week: heavy work climbs from 5 at RPE 7 to 3 at RPE 9; the lighter
    week is a set less at RPE 6. Bodyweight progressions and added-weight moves use rep ranges, as in Strength. */
-function strScheme(x, week){
-  const dl=week>=BLOCK, [r,e]=STR_WEEK[Math.min(week,4)-1]||STR_WEEK[0], n=dl? Math.max(2,x.sets-1) : x.sets;
+function strScheme(x, week, dl){
+  const [r,e]=STR_WEEK[Math.min(week,4)-1]||STR_WEEK[0], n=dl? Math.max(2,x.sets-1) : x.sets;
   if(x.k==='bw') return {t:'var', sets:n, lo:4, hi:8};
   if(x.k==='added') return {t:'dp', sets:n, lo:5, hi:8};
   return x.heavy? {t:'rpe', sets:n, reps:dl?5:r, rpe:dl?6:e} : {t:'rpe', sets:n, reps:6, rpe:dl?6:7};
@@ -10617,15 +10670,15 @@ function calAhead(d){ const ks=upcomingK(weekOf(), d); return ks&&('cal' in ks)?
 /* What a day holds, in the shape the views read: one entry per section, as if each section had planned it. */
 function dayInfo(d, ahead){
   const key='day'+d+':'+(ahead==null? '' : ahead); if(memo[key]) return memo[key];
-  const P=plan(), day=P.days[d]||{str:[], lift:[], cal:null}, week=Math.min(P.week, P.weeks), dl=week>=P.weeks, I={};
+  const P=plan(), day=P.days[d]||{str:[], lift:[], cal:null}, week=Math.min(P.week, P.weeks), dl=week>=P.weeks && lighterNow(), I={};
   const wn='Week '+week+' of '+P.weeks+(dl? ' &middot; lighter week' : '');
   if(tg.secs.includes('str')){ const S=H.api('str');
-    const slots=day.str.map(x=>{ const sc=strScheme(x, week), L=S&&S.lift(x.id), pv=S&&S.preview(x.id, sc);
+    const slots=day.str.map(x=>{ const sc=strScheme(x, week, dl), L=S&&S.lift(x.id), pv=S&&S.preview(x.id, sc);
       return L? {id:x.id, name:L.n, area:x.a, key:L.key, k:L.k, sets:pv? pv.sets : sc.sets, sum:pv? pv.sum : '', sc, heavy:x.heavy} : null; }).filter(Boolean);
     const heavy=slots.filter(x=>x.heavy).length;
     I.str={ready:slots.length>0, name:DOSE_N[P.dose.str]+' strength', weekName:wn, deload:dl,
       next:{name: heavy===slots.length? 'Heavy lifts' : heavy? 'Heavy and lighter lifts' : 'Lighter lifts', slots}}; }
-  if(tg.secs.includes('lift')){ const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], rir=dl? 4 : LIFT_RIR[week-1];
+  if(tg.secs.includes('lift')){ const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], rir=dl? 4 : LIFT_RIR[Math.min(week, LIFT_RIR.length)-1];
     const exercises=day.lift.map(x=>{ const e=cat.find(c=>c.id===x.exId); return e? {exId:e.id, name:e.name, p:e.p.slice(), s:e.s.slice(), comp:e.comp,
       sets:dl? Math.max(1,Math.round(x.sets/2)) : x.sets, reps:e.repLow+'&ndash;'+e.repHigh} : null; }).filter(Boolean);
     const T=table(), gs=[...new Set(exercises.flatMap(e=>e.p.map(q=>T&&T.muscles[q]? T.muscles[q].g : null)).filter(Boolean))];
@@ -10714,6 +10767,9 @@ const JOINTS={neck:{n:'Neck', m:['neck','trap']}, shoulder:{n:'Shoulder', m:['fd
 const Y_STAR=4;   // soreness, 0 to 10, at which a muscle counts as still recovering
 const FIT={K0:Y_STAR/TIRED, LAM_ALL:120, LAM_MU:100, MIN:3, WINDOW:120*DAY_MS, HALF:45*DAY_MS};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+/* The block's last week is lighter only when you seem to need it: two or more low check-ins in the last seven days.
+   A planned deload week adds no muscle and can slightly slow lower-body strength gains (Coleman et al. 2024). */
+function lighterNow(){ const since=startOfToday()-6*DAY_MS; return ciAll().filter(c=>c.day>=since).map(readyOf).filter(r=>r&&r.ease).length>=2; }
 function ciAll(){ return (tg.checkins||[]).filter(c=>c&&!c.skip).sort((a,b)=>a.day-b.day); }
 function ciToday(){ const d=startOfToday(); return (tg.checkins||[]).find(c=>c.day===d)||null; }
 /* Mean of the wellness answers (needs three of the four), or null. */
@@ -10766,8 +10822,9 @@ function painLevel(j, c){
 
 function carryOver(){
   const t0=startOfToday(), by={};
-  CARRY_W.forEach((w,k)=>{ const t=H.sets(t0-(k+1)*DAY_MS, t0-k*DAY_MS, ALL);
-    Object.keys(t.by).forEach(mu=>Object.keys(t.by[mu]).forEach(m=>{ const b=by[mu]||(by[mu]={}); b[m]=(b[m]||0)+t.by[mu][m]*w; })); });
+  // weighted by what each set leaves to recover from (Lift.tiring): sets to failure and new movements more, easy sets less
+  CARRY_W.forEach((w,k)=>{ const t=H.sets(t0-(k+1)*DAY_MS, t0-k*DAY_MS, ALL), F=t.fby||t.by;
+    Object.keys(F).forEach(mu=>Object.keys(F[mu]).forEach(m=>{ const b=by[mu]||(by[mu]={}); b[m]=(b[m]||0)+F[mu][m]*w; })); });
   // what today's check-in adds: soreness you reported, a sore joint, and how ready you say you are
   const C={by, fit:fitModel(), rep:{}, soreRaw:{}, pain:{}, ready:null}, ci=ciToday();
   if(ci){
@@ -11017,8 +11074,8 @@ function closeRun(){
 function moveOn(d){
   const W=weekOf(); tg.next=(d+1)%W.length;
   const n=nextIdx(W), P=plan(); let moved='';
-  if(n>=0 && n<=d){ if(P.week>=P.weeks){ tg.plan=null; moved=' That was the lighter week: your next block is built from your latest numbers.'; }
-    else { P.week++; moved=` On to week ${P.week} of ${P.weeks}${P.week>=P.weeks? ', the lighter one' : ''}.`; } }
+  if(n>=0 && n<=d){ if(P.week>=P.weeks){ tg.plan=null; moved=' That was the block’s last week: your next block is built from your latest numbers.'; }
+    else { P.week++; moved=` On to week ${P.week} of ${P.weeks}${P.week>=P.weeks? ', the last' : ''}.`; } }
   return {n, moved};
 }
 /* Undo for what you change in Together: skipping, the days, the week, the block, the set-up. Each keeps how
@@ -11376,13 +11433,13 @@ function fitNotes(W, DM){
 }
 /* The program at a glance: the dose each section gets from your order, and where the block is. */
 function programCard(){
-  const P=plan(), R=rankList(), wk=Math.min(P.week,P.weeks), dl=wk>=P.weeks;
+  const P=plan(), R=rankList(), wk=Math.min(P.week,P.weeks), dl=wk>=P.weeks && lighterNow();
   const line={str:'heavy lifts, loads from your estimated maxes', lift:'hard sets for each muscle, counting what the rest already gives it', cal:'your Ladder goals, at the rung you are on'};
   const what={build:'a building dose', moderate:'a moderate dose', maintain:'a dose to keep what you have'};
   return `<section class="card"><div class="spread"><div class="h3">Your program</div><span class="chip">Week ${wk} of ${P.weeks}${dl?' &middot; lighter':''}</span></div>
     <div class="parts">${R.map((m,k)=>`<div class="part"><div class="pn" style="background:${SEC[m].c};color:${SEC[m].ink}">${k+1}</div><div style="min-width:0">
       <div class="ph"><b>${SEC[m].n} &middot; ${DOSE_N[P.dose[m]]}</b><span>${daysOn(m)}</span></div><div class="pt">${cap(what[P.dose[m]])}: ${line[m]}.</div></div></div>`).join('')}</div>
-    <p class="hint">${dl? 'This is the lighter week: fewer sets at an easier effort, so the next block starts fresh.' : 'Effort climbs each week, then a lighter week. After it, Together builds the next block from your new numbers.'} Built from your order, ${plural(tg.days,'day')} and ${tg.mins? tg.mins+' minutes' : 'no time limit'}.</p>
+    <p class="hint">${dl? 'This is the lighter week: fewer sets at an easier effort, so the next block starts fresh.' : 'Effort climbs each week. The last week turns lighter only if your check-ins say you need it. After it, Together builds the next block from your new numbers.'} Built from your order, ${plural(tg.days,'day')} and ${tg.mins? tg.mins+' minutes' : 'no time limit'}.</p>
     ${tuneLine(P)}
     <div class="row2" style="margin-top:12px"><button class="btn sm" data-a="t-edit">${IC.sliders} Customize this block</button><button class="btn sm ghost" data-a="t-new">${IC.play} Start a new block</button></div>
     ${`<div class="grp" style="margin-top:16px">Week ${wk} of ${P.weeks}</div>
@@ -11430,7 +11487,7 @@ function rulesCard(){
     ['Your order sets the dose',`First in your order gets a building dose: in Strength each main lift once or twice a week, heavy; in Muscle about ${LIFT_TARGET.build[tg.exp||'intermediate']} hard sets a week for each muscle; Ladder three or four sessions a week. Second gets a moderate dose. Third gets enough to keep what you have: much less work at the same effort, about once a week, which studies find holds strength and size for months.`],
     ['And the order of each day',`Each day runs its parts in that order: ${rankList().map(m=>SEC[m].n).join(', then ')}. The first gets you at your freshest, and work done early in a session is the work that improves most.`],
     ['One program, one count','Together builds every session itself, from each trainer&rsquo;s exercises and your own numbers: estimated maxes in Strength, your last sets in Muscle, your rungs in Ladder. Hard sets from every part count toward one weekly total per muscle, so Muscle tops up only what Strength and Ladder leave, and on a heavy day it uses isolation work that adds little to what&rsquo;s already tired.'],
-    ['Blocks that build, then ease off','A block is four weeks of rising effort (Strength&rsquo;s heavy sets go from 5 reps at RPE 7 to 3 at RPE 9; Muscle from 3 reps in reserve to 1), then a lighter week with fewer, easier sets. After it, Together builds the next block from your new numbers.'],
+    ['Blocks that build, then ease off','A block is four weeks of rising effort (Strength&rsquo;s heavy sets go from 5 reps at RPE 7 to 3 at RPE 9; Muscle from 3 reps in reserve to 1), then a fifth week that turns lighter (fewer, easier sets) only if two or more check-ins that week say you’re below your usual: a planned deload adds no muscle and can slightly slow lower-body strength (Coleman et al. 2024). After it, Together builds the next block from your new numbers.'],
     ['Fits your time','A day that would run over your limit gives way from the last in your order: Muscle sets first, then Ladder&rsquo;s dose, then the lighter strength work.'],
     ['Make each block yours','Every block opens for you to customize before it starts, and you can change it any time with Customize this block. For each muscle group, More gives about half as much weekly work again, for what you most want to grow (more sets grow more, with diminishing returns); Less is the dose that keeps what you have; Skip leaves it to the rest of your week. Pick the exercise for each muscle and the lift for each strength area, or leave an area out. Changes mid-block refill the days and keep your week; Start a new block begins again at week 1.'],
     ['Earlier keeps its work','Where two parts of a day still overlap, the earlier one keeps its work and the later one gives way. Muscle takes off hard sets a muscle already got earlier in the day, compounds first, and shows what it took off so you can put it back. Ladder leaves out support work an earlier part already trains. Ladder goal work always stays.'],
@@ -12203,7 +12260,7 @@ render();
   }
   /* Hard sets per muscle logged between two times, from any mix of sections. by[muscle][section] splits the direct count. */
   function tallySets(since, until, mods){
-    const out={direct:{}, frac:{}, by:{}, keys:{}, total:0};
+    const out={direct:{}, frac:{}, by:{}, fby:{}, keys:{}, total:0};
     (mods||['lift','str','cal']).forEach(m=>{
       if(!hasData(m)) return;
       const api=hubApi(m); if(!api||!api.work) return;
@@ -12211,7 +12268,8 @@ render();
         if(!w.n) return;
         const mm= w.p? {p:w.p, s:w.s||[]} : musclesOf(w.key, w.group);
         mm.p.forEach(p=>{ out.direct[p]=(out.direct[p]||0)+w.n; out.frac[p]=(out.frac[p]||0)+w.n;
-          const b=out.by[p]||(out.by[p]={}); b[m]=(b[m]||0)+w.n; });
+          const b=out.by[p]||(out.by[p]={}); b[m]=(b[m]||0)+w.n;
+          const f=out.fby[p]||(out.fby[p]={}); f[m]=(f[m]||0)+(w.f!=null? w.f : w.n); });
         mm.s.forEach(x=>{ out.frac[x]=(out.frac[x]||0)+w.n*0.5; });
         if(w.key) (out.keys[m]||(out.keys[m]=[])).push(w.key);
         if(mm.p.length) out.total+=w.n;
