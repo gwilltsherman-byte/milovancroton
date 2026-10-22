@@ -68,7 +68,6 @@
     check(!!k0 && !root.querySelector('select'), 'each muscle’s exercise opens a library, not a dropdown');
     root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k0}"]`).click(); await pause(150);
     check(root.textContent.includes('Exercises for') && root.querySelectorAll('[data-a="t-choose"]').length>1, 'the exercise library opens for the muscle');
-    check(root.querySelectorAll('[data-a="t-choose"] .tfig svg.mvthumb').length>1, 'each exercise in the library shows a drawing of it');
     // several picks for one muscle, which take turns on its days
     const ids=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean), picks=[ids[ids.length-1], ids[0]]; pickEx=picks[0];
     for(const id of picks){ root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(120); }
@@ -99,8 +98,7 @@
       check(shown && win.__hub.current()==='mix' && root.textContent.includes('Customize this block'), 'Add a goal opens Ladder’s goal chooser, and closing it comes back to the block'); }
     const lats=root.querySelector('[data-a="t-pick"][data-t="lift"][data-k="lats"]');
     if(lats){ lats.click(); await pause(150);
-      check(root.querySelectorAll('[data-a="t-choose"] .tfig svg.mvthumb').length>0, 'each lift to choose from shows a drawing of it');
-      root.querySelector('[data-a="t-choose"][data-id="-"]').click(); await pause(150); }
+        root.querySelector('[data-a="t-choose"][data-id="-"]').click(); await pause(150); }
     root.querySelector('[data-a="t-save"]').click(); await pause(300);
     P=saved().plan;
     check(P.goal.bi>before && weekOf(P,'bi')>=P.goal.bi-1, 'More for arms raises the biceps target, and the week meets it');

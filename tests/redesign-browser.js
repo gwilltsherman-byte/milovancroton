@@ -266,20 +266,12 @@
       frame.remove(); frame=null; localStorage.removeItem('proladder.v1'); localStorage.removeItem('strlog.v2');
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
-    // every how-to shows the movement drawn and the muscles it works, in the theme's colours
+    // how-tos are written instructions only: no drawings or animation
     { const how=(m,id)=>{ const r=rootOf(doc,m), b=doc.createElement('button'); b.dataset.act='howto'; b.dataset.id=id; b.hidden=true;
         r.getElementById('view').appendChild(b); b.click(); b.remove(); return r; };
-      let r=how('lift','barbell-bench'), fig=dialog(r)?.querySelector('.mvcard');
-      check(!!fig?.querySelector('svg.mvfig[data-mv]') && /Main: chest\. Helps: front delts, triceps\./.test(fig.getAttribute('aria-label')),'Muscle’s how-to shows the movement, animated, with its main muscles and helpers');
-      check(win.getComputedStyle(fig).getPropertyValue('--mv-main').trim()===(doc.documentElement.dataset.theme==='dark'? '#f39a63' : '#e0662c'),'The drawing takes the theme’s colours');
-      const at=()=>[...dialog(r).querySelectorAll('svg.mvfig .mvb line')].map(l=>l.getAttribute('x2')+','+l.getAttribute('y2')).join(' ');
-      await pause(900); const a1=at(); await pause(600);
-      check(win.matchMedia('(prefers-reduced-motion: reduce)').matches || at()!==a1,'The movement plays');
-      closeDialog(r);
-      win.__go('str'); await pause(300);
-      r=how('str','squat'); fig=dialog(r)?.querySelector('.mvcard');
-      check(!!fig?.querySelector('svg.mvfig') && /Main: quads, glutes/.test(fig.getAttribute('aria-label')),'Strength’s how-to shows the lift and the muscles its sets count toward');
-      closeDialog(r); win.__go('lift'); await pause(200); }
+      const r=how('lift','barbell-bench');
+      check(!!dialog(r)?.querySelector('.howto') && !dialog(r).querySelector('svg.mvfig, .mvcard') && !win.MiloVis,'Muscle’s how-to is text only');
+      closeDialog(r); }
 
     await pause(200);
     const beforeInvalid=JSON.stringify(take(localStorage));
