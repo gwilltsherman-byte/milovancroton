@@ -3076,6 +3076,18 @@ function viewTrain(){
   `;
 }
 
+/* For an exercise you haven't logged yet: your latest set of one that works the same main muscle the same way (compound or
+   isolation). Loads don't carry between machines, dumbbells and bars, so it is a guide to start from, not filled in. */
+function similarPerf(exId){
+  const e=exById(exId); if(!e) return null;
+  for(let i=state.history.length-1;i>=0;i--){ const w=state.history[i];
+    for(const en of w.entries){ if(en.exId===exId) continue; const x=exById(en.exId)||en;
+      if(!(x.primary||[]).includes(e.primary[0]) || !!x.comp!==!!e.comp) continue;
+      const work=en.sets.filter(s=>isWork(s)&&s.done&&s.reps); if(!work.length) continue;
+      let top=work[0]; for(const s of work){ if(setScore(en.exId,s,w.date)>setScore(en.exId,top,w.date)) top=s; }
+      return {name:en.name, exId:en.exId, s:top, date:w.date}; } }
+  return null;
+}
 /* A weight logged on a bodyweight exercise heavy enough to be a bodyweight typed into the box, until you say which it was. */
 function bwTyped(exId){
   if(!isBW(exId) || (state.settings.bwAsked||{})[exId]) return null;
@@ -3114,7 +3126,10 @@ function exerciseCard(en, ei){
         <h3 data-act="howto" data-id="${esc(en.exId)}" style="cursor:pointer">${esc(en.name)}<span class="hinfo">${I.info}</span></h3>
         <div class="mm">${prim}${sec}</div>
         ${en.overloadNote?`<div class="chip heat" style="margin-top:7px">${I.trending} ${en.overloadNote}</div>`:''}
-        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`:''}
+        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`
+          : bw? '' : (()=>{ const sp=similarPerf(en.exId);
+            return `<div class="newex">${sp? `First time here. Your latest ${esc(sp.name)}: <b>${wTxt(sp.exId, sp.s.weight)}&times;${sp.s.reps}</b>, ${relDay(sp.date).toLowerCase()}. Weights differ between machines, dumbbells and bars, so start a little lighter and adjust.`
+              : `First time here: pick a weight you can lift for ${t.repLow}&ndash;${t.repHigh} reps with about ${t.rir} left in the tank.`} Next time starts from what you log.</div>`; })()}
         ${typed!=null?`<div class="banner warn" style="margin:10px 0 0;align-items:flex-start">${I.info}<span><b>Was the ${fmtW(typed)} ${unit()} logged here your bodyweight?</b> ${esc(en.name)} counts your bodyweight on its own, so its weight box is only for what you add, like a belt or a vest.
           <span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="tinybtn" data-act="bw-body" data-ex="${ei}">It was my bodyweight</button><button class="tinybtn" data-act="bw-added" data-ex="${ei}">I added it</button></span></span></div>`:''}
         ${en.note?`<div data-act="ex-note" data-ex="${ei}" style="margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;gap:6px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}
@@ -3158,7 +3173,7 @@ function exerciseCard(en, ei){
 function setRow(en, ei, s, si){
   const prev = lastPerf(en.exId);
   const hint = repHint(en, s);
-  const repsPh = (hint!=null)? '~'+hint : (prev?prev.reps:'0');
+  const repsPh = (hint!=null)? '~'+hint : (prev?prev.reps:'&ndash;');
   const warm = s.type==='warmup';
   const nextIdx = en.sets.findIndex(x=>isWork(x) && !x.done);
   const isNext = !warm && !s.done && si===nextIdx;
@@ -3178,7 +3193,7 @@ function setRow(en, ei, s, si){
   return `<div class="setrow ${s.done?'done':''} ${warm?'warm':''} ${isNext?'next':''}" data-set="${si}">
     <div class="sidx ${warm?'warmb':''}">${idxLabel}</div>
     ${isBW(en.exId)? `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight?fmtW(s.weight):''}" placeholder="${prev&&prev.weight?'+'+fmtW(prev.weight):'BW'}" aria-label="Set ${idxLabel} added weight, blank for bodyweight alone"></div>`
-      : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev?fmtW(prev.weight):'0'}" aria-label="Set ${idxLabel} weight"></div>`}
+      : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev&&prev.weight!=null?fmtW(prev.weight):'&ndash;'}" aria-label="Set ${idxLabel} weight"></div>`}
     <div class="setwrap"><input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${idxLabel} reps"></div>
     <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
     <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
@@ -4782,8 +4797,9 @@ function toggleDone(ei,si){
     if(s.reps==null){ const hint=repHint(en,s); if(hint!=null) s.reps=hint; else if(prev) s.reps=prev.reps; }
   }
   s.done=!s.done;
-  let jumpTo=null;
+  let jumpTo=null, noW=false;
   if(s.done){
+    noW= s.weight==null && !isBW(en.exId);
     if(s.rir==null || s.rir==='') s.rir = state.active.entries[ei].target.rir;
     const g=ssGroup(ei);
     const rest = (g && !g.isLast)? 20 : (state.active.entries[ei].target.rest||120);
@@ -4792,6 +4808,7 @@ function toggleDone(ei,si){
     if(g && !g.isLast) jumpTo=ei+1; // guided superset: move to next linked exercise
   }
   save(); render();
+  if(noW) toast('Logged with no weight. Type it in, and next time starts from it');
   if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
 }
 
@@ -6122,8 +6139,10 @@ function hubStart(tg){
   return state.active? state.active.id : null;
 }
 /* Exercises Together can build a day from, with what each trains and its rep range. */
-function hubCatalog(){ return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp,
-  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt})); }
+function hubCatalog(){ const last=lastDone(); return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp,
+  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt, last:last[e.id]||0})); }
+/* When each exercise last had a ticked work set: {exId: date}. */
+function lastDone(){ const out={}; state.history.forEach(w=>w.entries.forEach(en=>{ if(en.sets.some(s=>isWork(s)&&s.done) && !(out[en.exId]>=w.date)) out[en.exId]=w.date; })); return out; }
 /* A day Together built: [{exId, sets}] at one effort, loads from your last sets of each exercise. tg trims it as for a block day. */
 function hubStartWith(spec, tg){
   if(state.active) return null;
@@ -11332,8 +11351,11 @@ function buildPlan(T){
             const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[], k=turn[x.mu]||0, want=mine.length? mine[k%mine.length] : null;
             const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id));
             const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
+              // one you have logged before one you haven't, the most recent first: its weights carry on, and getting better
+              // at an exercise is part of the progress, so changing it at random slows things down
+              || ((b.last>0)-(a.last>0))
               // something you can load before bodyweight work, which is harder to progress, then variety across the days
-              || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
+              || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (b.last||0)-(a.last||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
             if(!e) return;
             taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; turn[x.mu]=k+1;
             out[i].push(Object.assign({exId:e.id, mu:x.mu, sets:n, comp:e.comp}, x.more? {more:true} : {}));

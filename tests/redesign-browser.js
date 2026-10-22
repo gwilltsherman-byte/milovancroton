@@ -172,6 +172,22 @@
       frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture));
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
+    // an exercise you haven't logged starts from your latest similar one, shown rather than filled in
+    { frame.remove(); frame=null;
+      const fx=JSON.parse(JSON.stringify(fixture)), d0=new Date(); d0.setDate(d0.getDate()-3); d0.setHours(12,0,0,0);
+      const ex=(id,name,eq,sets)=>({exId:id,name,primary:['fdelt'],secondary:['sdelt','tri'],equipment:eq,sets});
+      fx.history.push({id:'sim-test',name:'Push day',date:d0.getTime(),durationSec:600,prs:[],entries:[ex('db-shoulder-press','Dumbbell Shoulder Press','Dumbbell',[{type:'work',weight:20,reps:8,rir:2,done:true}])]});
+      fx.route='train';
+      fx.active={id:'sim-active',name:'Push day',startedAt:Date.now(),restEndsAt:null,restDuration:0,
+        entries:[Object.assign(ex('machine-shoulder-press','Machine Shoulder Press','Machine',[{type:'work',weight:null,reps:null,rir:null,done:false}]),{target:{repLow:6,repHigh:10,rir:3,rest:180},mi:0})]};
+      localStorage.setItem('hyplog.v1',JSON.stringify(fx));
+      ({win,doc}=await load()); root=rootOf(doc,'lift');
+      await until(()=>root.querySelector('.excard'),'The session did not open');
+      const note=root.querySelector('.excard .newex'), w=root.querySelector('.excard input[data-field="weight"]');
+      check(!!note && note.textContent.includes('Dumbbell Shoulder Press') && note.textContent.includes('×8') && w.value==='' && w.placeholder==='–','A new exercise shows your latest similar set to start from, and an empty weight box shows a dash, not 0');
+      frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture));
+      ({win,doc}=await load()); root=rootOf(doc,'lift'); }
+
     // every how-to shows the movement drawn and the muscles it works, in the theme's colours
     { const how=(m,id)=>{ const r=rootOf(doc,m), b=doc.createElement('button'); b.dataset.act='howto'; b.dataset.id=id; b.hidden=true;
         r.getElementById('view').appendChild(b); b.click(); b.remove(); return r; };

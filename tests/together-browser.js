@@ -196,6 +196,23 @@
       check(there && JSON.parse(localStorage.getItem('proladder.v1')).goals.some(g=>g.key===key), 'Add sets the goal and opens Ladder to place it');
       lad.querySelector('#sheet.on [data-act="close-modal"]').click(); await pause(400);
       check(win.__hub.current()==='mix', 'and closing Ladder comes back to Together'); }
+    // Together keeps to exercises you have logged, so their weights carry on
+    { frame.remove(); frame=null; reset({'milo.persist':'1'});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      root.querySelector('[data-a="d-sec"][data-m="lift"]').click(); root.querySelector('[data-a="d-save"]').click(); await pause(300);
+      root.querySelector('[data-a="t-save"]').click(); await pause(300);
+      const cat=win.__hub.api('lift').catalog(), xs=saved().plan.days.flatMap(d=>d.lift), taken=new Set(xs.map(x=>x.exId));
+      // another exercise just for the same muscle, of the same kind and equipment, that this block didn't choose
+      const other=x=>{ const a=cat.find(e=>e.id===x.exId); return a && cat.find(e=>e.id!==a.id && !taken.has(e.id) && e.p.length===1 && e.p[0]===x.mu && e.comp===a.comp && e.equipment===a.equipment); };
+      const x0=xs.find(other), alt=x0&&other(x0);
+      check(!!alt, 'a muscle in the block has another exercise that would do');
+      const hy=JSON.parse(localStorage.getItem('hyplog.v1')||'{"v":1}');
+      hy.history=[{id:'logged-1', name:'Earlier', date:Date.now()-3*86400000, durationSec:600, prs:[], entries:[{exId:alt.id, name:alt.name, primary:alt.p, secondary:alt.s, equipment:alt.equipment,
+        sets:[{type:'work', weight:20, reps:10, rir:2, done:true}]}]}];
+      frame.remove(); frame=null; localStorage.setItem('hyplog.v1', JSON.stringify(hy));
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      root.querySelector('[data-a="t-new"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(300);
+      check(saved().plan.days.some(d=>d.lift.some(x=>x.exId===alt.id && x.mu===x0.mu)), 'a new block picks the exercise you have logged for a muscle, so its weights carry on'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;
