@@ -62,11 +62,9 @@
     check(heads()[1].getAttribute('aria-expanded') === 'true' && !bodies()[1].hidden && bodies()[0].hidden && !!bodies()[1].querySelector('.rung'), 'tapping a goal shows its ladder');
     root.querySelector('#tabbar [data-route="today"]').click(); root.querySelector('#tabbar [data-route="goals"]').click();
     check(heads()[1].getAttribute('aria-expanded') === 'true' && heads()[0].getAttribute('aria-expanded') === 'false', 'an opened goal stays open after switching tabs');
-    // a rung's how-to shows the movement drawn, with the muscles it works named for screen readers
+    // a rung's how-to is written instructions only
     bodies()[1].querySelector('.rung[data-act="how"]').click(); await pause(200);
-    const fig = root.querySelector('#sheet.on .mvcard');
-    check(!!fig && !!fig.querySelector('svg.mvfig') && !!fig.querySelector('svg.mvmap') && /Main: chest/.test(fig.getAttribute('aria-label')), 'a rung’s how-to shows the movement and the muscles it works');
-    check(fig.compareDocumentPosition(root.querySelector('#sheet.on .howto')) & Node.DOCUMENT_POSITION_FOLLOWING, 'the drawing comes before the written steps');
+    check(!!root.querySelector('#sheet.on .howto') && !root.querySelector('#sheet.on svg.mvfig'), 'a rung’s how-to shows the written steps, with no drawing');
     result.textContent = results.join('\n') + '\nALL TESTS PASSED';
   } catch (error) {
     result.textContent = results.join('\n') + '\nFAIL ' + error.stack;
