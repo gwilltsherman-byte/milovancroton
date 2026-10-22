@@ -81,9 +81,19 @@ Every recommendation in all three links to the research behind it, with an hones
   </tr>
 </table>
 
+## Exercise drawings
+
+Every movement with instructions, 355 across the three trainers, has a drawing at the top of its how-to: a figure doing the movement, played slowly from start to finish and back, and a front-and-back muscle map. The figure's tinted body parts and the map show the main muscles in a strong colour and the helpers in a lighter one. Each trainer uses the muscles it counts sets toward, so the drawing agrees with the volume numbers.
+
+Some movements count toward no muscle's weekly sets, yet clearly work some. Handstands and arm balances show the shoulders, traps, triceps and forearms that hold them. Stretches are labelled **Stretched** and **Also stretched** instead of Main and Helps, because a stretch lengthens a muscle rather than training it. The map also shows two muscles no trainer tracks: the adductors (inner thigh) for Copenhagen planks, straddles and Cossack squats, and serratus anterior (the side of the ribs) for shoulder blade work.
+
+The poses are set by balance, not by eye. In a front lever, back lever or planche the hands sit over the body's centre of mass: near the hips for a full lever, closer to the shoulders for a tuck. A chest-to-wall handstand has the wall on the chest side and a back-to-wall one on the back. Hands and feet meant to rest on the floor, a bar, a box or a wall reach it, and a test checks that for every figure.
+
+Together's exercise and lift libraries show a small drawing beside each name, in the end position (the bottom of the squat, the arms out in a lateral raise). Drawings use the theme's colours and need no download, so they work offline.
+
 ## Accessibility
 
-Pinch zoom works, but double-tap zoom is off so a quick second tap (on +30s, say) stays a tap. Text meets the 4.5:1 contrast standard in both themes (checked with axe-core on every tab, the main sheets and a live session). Sheets are real dialogs: a screen reader announces them by name, Escape closes them, the page behind can't be reached while one is open, and focus goes back to where you were. The four section tabs work with the arrow keys, Home and End. Icon buttons and set fields have names (for example "Set 2 weight"). On iPhone, fields are kept at 16px so the page doesn't jump when you tap one.
+Pinch zoom works, but double-tap zoom is off so a quick second tap (on +30s, say) stays a tap. Text meets the 4.5:1 contrast standard in both themes (checked with axe-core on every tab, the main sheets and a live session). Sheets are real dialogs: a screen reader announces them by name, Escape closes them, the page behind can't be reached while one is open, and focus goes back to where you were. The four section tabs work with the arrow keys, Home and End. Icon buttons and set fields have names (for example "Set 2 weight"). Each exercise drawing is labelled with what it shows and the muscles it works, and with reduced motion turned on it shows the first and last positions side by side instead of moving. On iPhone, fields are kept at 16px so the page doesn't jump when you tap one.
 
 <p><sub>The light theme. It follows your phone&rsquo;s setting unless you pick one.</sub></p>
 <table>
@@ -118,7 +128,7 @@ These are training logs. If a joint hurts or you feel off, stop and see someone 
 
 ## Under the hood
 
-`index.html` loads the trainers from `app.js` and backup checks from `security.js`. The app uses plain JavaScript without a framework or build step. `sw.js` handles offline caching, and `manifest.webmanifest` supplies installation details. The PNGs provide the home-screen icons. `docs/screenshots` holds the pictures in this guide; the app never loads them.
+`index.html` loads the trainers from `app.js` and backup checks from `security.js`. The app uses plain JavaScript without a framework. The one generated part is the exercise drawings: `tools/visuals` holds the drawing engine and the poses, and `node tools/visuals/build.cjs` writes them into `app.js`. `sw.js` handles offline caching, and `manifest.webmanifest` supplies installation details. The PNGs provide the home-screen icons. `docs/screenshots` holds the pictures in this guide; the app never loads them.
 
 ## License
 

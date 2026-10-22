@@ -77,6 +77,7 @@ and does not apply `_headers`.
 After changing application scripts, styles or the shell, run:
 
 ```sh
+node tools/visuals/build.cjs   # only after editing the exercise drawings in tools/visuals
 node tools/update-integrity.cjs
 node tools/update-integrity.cjs --check
 node --test tests/*.test.cjs

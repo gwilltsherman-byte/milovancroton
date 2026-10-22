@@ -10,7 +10,7 @@ Use the [issue forms](https://github.com/gwilltsherman-byte/milovancroton/issues
 
 Serve the repository with any static web server, such as `python3 -m http.server 8000`, then open `http://localhost:8000`. There is no build step.
 
-The page is `index.html`, and the trainers live in `app.js`. Each trainer has its own shadow root and saved data. `security.js` checks backups and HTML rendering. After changing app assets, run `node tools/update-integrity.cjs`; it updates the recorded hashes and offline cache. Check the result with `node tools/update-integrity.cjs --check` and `node --test tests/*.test.cjs`.
+The page is `index.html`, and the trainers live in `app.js`. Each trainer has its own shadow root and saved data. `security.js` checks backups and HTML rendering. After changing app assets, run `node tools/update-integrity.cjs`; it updates the recorded hashes and offline cache. Check the result with `node tools/update-integrity.cjs --check` and `node --test tests/*.test.cjs`. The exercise drawings are made in `tools/visuals` (the engine, and one file of poses per body area); after editing them run `node tools/visuals/build.cjs` before the integrity tool. `node tools/visuals/check.cjs` lists any hand or foot that misses what it should rest on, and `--sheet <file>` on the build writes a page of every figure for checking poses by eye.
 
 Before opening a pull request, exercise the flow you changed on a narrow screen and with keyboard navigation. Check that sessions and backups still work if your change touches saved data. Describe what changed and how you checked it.
 
