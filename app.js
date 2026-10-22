@@ -2790,6 +2790,16 @@ function toDisp(kg){ if(kg==null||kg==='') return ''; const v = unit()==='lb'? k
 function fromDisp(v){ if(v===''||v==null||isNaN(v)) return null; const n=parseFloat(v); return unit()==='lb'? n*KG_PER_LB : n; }
 function fmtW(kg){ if(kg==null) return '&ndash;'; const v=toDisp(kg); return (Math.round(v*10)/10)+''; }
 function est1RM(kg,reps){ if(!kg||!reps) return 0; return kg*(1+reps/30); }
+/* Bodyweight exercises: the weight box is what you add, like a belt or a vest; left blank, it is your bodyweight alone.
+   Where load and reps fold into one number, your logged bodyweight counts too, since you lift it on every rep. */
+function isBW(exId){ const e=exById(exId); return !!e && e.equipment==='Bodyweight'; }
+function bodyAt(ts){ let b=null, first=null;
+  state.bodylog.forEach(x=>{ if(x.weight==null) return; if(!first||x.date<first.date) first=x; if(x.date<=ts&&(!b||x.date>b.date)) b=x; });
+  return (b||first)? (b||first).weight : null; }
+function setLoad(exId, s, ts){ const w=s.weight||0; if(!isBW(exId)) return w; const b=bodyAt(ts==null? Date.now() : ts); return b!=null? b+w : w; }
+// a set in one number, for finding the best one: the Epley estimate, or the reps for bodyweight alone with no bodyweight logged
+function setScore(exId, s, ts){ const L=setLoad(exId, s, ts); return L>0? est1RM(L, s.reps) : isBW(exId)? (s.reps||0)/1000 : 0; }
+function wTxt(exId, w, sp){ sp=sp||''; return isBW(exId)? (w? '+'+fmtW(w)+sp+unit() : 'BW') : fmtW(w)+sp+unit(); }
 function isWork(s){ return s.type!=='warmup'; }
 function startOfToday(){ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
 function daysAgo(n){ return startOfToday()-n*86400000; }
@@ -2810,9 +2820,9 @@ function lastPerf(exId, beforeTs){
     if(en){
       const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps);
       if(work.length){
-        // top set by est1RM
+        // the top set: load and reps folded into one number
         let top = work[0];
-        for(const s of work){ if(est1RM(s.weight,s.reps)>est1RM(top.weight,top.reps)) top=s; }
+        for(const s of work){ if(setScore(exId,s,w.date)>setScore(exId,top,w.date)) top=s; }
         return top;
       }
     }
@@ -3066,9 +3076,41 @@ function viewTrain(){
   `;
 }
 
+/* For an exercise you haven't logged yet: your latest set of one that works the same main muscle the same way (compound or
+   isolation). Loads don't carry between machines, dumbbells and bars, so it is a guide to start from, not filled in. */
+function similarPerf(exId){
+  const e=exById(exId); if(!e) return null;
+  for(let i=state.history.length-1;i>=0;i--){ const w=state.history[i];
+    for(const en of w.entries){ if(en.exId===exId) continue; const x=exById(en.exId)||en;
+      if(!(x.primary||[]).includes(e.primary[0]) || !!x.comp!==!!e.comp) continue;
+      const work=en.sets.filter(s=>isWork(s)&&s.done&&s.reps); if(!work.length) continue;
+      let top=work[0]; for(const s of work){ if(setScore(en.exId,s,w.date)>setScore(en.exId,top,w.date)) top=s; }
+      return {name:en.name, exId:en.exId, s:top, date:w.date}; } }
+  return null;
+}
+/* A weight logged on a bodyweight exercise heavy enough to be a bodyweight typed into the box, until you say which it was. */
+function bwTyped(exId){
+  if(!isBW(exId) || (state.settings.bwAsked||{})[exId]) return null;
+  let t=null, at=0;
+  state.history.forEach(h=>h.entries.forEach(e=>{ if(e.exId===exId) e.sets.forEach(s=>{ if(s.done && s.weight>=25 && h.date>=at){ t=s.weight; at=h.date; } }); }));
+  return t;
+}
+/* It was your bodyweight: those sets become bodyweight alone, and the number is kept as your bodyweight if none is logged near then. */
+function bwWasBody(exId){
+  const t=bwTyped(exId); if(t==null) return;
+  const near=w=>w!=null && w>=t*0.8 && w<=t*1.2;   // the same person's bodyweight, give or take some kilos over the months
+  let last=null;
+  state.history.forEach(h=>h.entries.forEach(e=>{ if(e.exId===exId) e.sets.forEach(s=>{ if(near(s.weight)){ s.weight=null; if(last==null||h.date>last) last=h.date; } }); }));
+  if(state.active) state.active.entries.forEach(e=>{ if(e.exId===exId) e.sets.forEach(s=>{ if(near(s.weight)) s.weight=null; }); });
+  const keep= last!=null && !state.bodylog.some(b=>b.weight!=null && Math.abs(b.date-last)<30*86400000);
+  if(keep){ const d=new Date(last); d.setHours(0,0,0,0); let b=state.bodylog.find(x=>x.date===d.getTime()); if(!b){ b={date:d.getTime()}; state.bodylog.push(b); } b.weight=t; state.bodylog.sort((a,c)=>a.date-c.date); }
+  (state.settings.bwAsked=state.settings.bwAsked||{})[exId]='body';
+  if(state.active) state.active.entries.forEach(e=>{ if(e.exId===exId) e.overloadNote=suggestLoad(exId, e, !!(exById(exId)||{}).comp, !!(state.active.meso&&state.active.meso.deload)).note; });
+  save(); render(); toast(`${esc((exById(exId)||{}).name||'It')} now counts your bodyweight on its own${keep? `, and ${fmtW(t)} ${unit()} is saved under Body as your bodyweight` : ''}.`);
+}
 function exerciseCard(en, ei){
   const ex = exById(en.exId) || en;
-  const lp = lastPerf(en.exId);
+  const lp = lastPerf(en.exId), bw = isBW(en.exId), typed = bwTyped(en.exId);
   const ls = lastSetsFor(en.exId);
   const prim = (en.primary||[]).map(m=>`<span class="mtag prim"><span class="mdot"></span>${MUSCLES[m]?MUSCLES[m].n:m}</span>`).join('');
   const sec = (en.secondary||[]).map(m=>`<span class="mtag">${MUSCLES[m]?MUSCLES[m].n:m}</span>`).join('');
@@ -3084,7 +3126,12 @@ function exerciseCard(en, ei){
         <h3 data-act="howto" data-id="${esc(en.exId)}" style="cursor:pointer">${esc(en.name)}<span class="hinfo">${I.info}</span></h3>
         <div class="mm">${prim}${sec}</div>
         ${en.overloadNote?`<div class="chip heat" style="margin-top:7px">${I.trending} ${en.overloadNote}</div>`:''}
-        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${fmtW(lp.weight)}${unit()}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`:''}
+        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`
+          : bw? '' : (()=>{ const sp=similarPerf(en.exId);
+            return `<div class="newex">${sp? `First time here. Your latest ${esc(sp.name)}: <b>${wTxt(sp.exId, sp.s.weight)}&times;${sp.s.reps}</b>, ${relDay(sp.date).toLowerCase()}. Weights differ between machines, dumbbells and bars, so start a little lighter and adjust.`
+              : `First time here: pick a weight you can lift for ${t.repLow}&ndash;${t.repHigh} reps with about ${t.rir} left in the tank.`} Next time starts from what you log.</div>`; })()}
+        ${typed!=null?`<div class="banner warn" style="margin:10px 0 0;align-items:flex-start">${I.info}<span><b>Was the ${fmtW(typed)} ${unit()} logged here your bodyweight?</b> ${esc(en.name)} counts your bodyweight on its own, so its weight box is only for what you add, like a belt or a vest.
+          <span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="tinybtn" data-act="bw-body" data-ex="${ei}">It was my bodyweight</button><button class="tinybtn" data-act="bw-added" data-ex="${ei}">I added it</button></span></span></div>`:''}
         ${en.note?`<div data-act="ex-note" data-ex="${ei}" style="margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;gap:6px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}
       </div>
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
@@ -3109,14 +3156,14 @@ function exerciseCard(en, ei){
     </div>
     <div class="setgrid">
       <div class="setrow-head">
-        <span>Set</span><span>${unit()==='kg'?'Kg':'Lb'}</span><span>Reps</span><span>RIR</span><span></span><span></span>
+        <span>Set</span><span>${bw?'+':''}${unit()==='kg'?'Kg':'Lb'}</span><span>Reps</span><span>RIR</span><span></span><span></span>
       </div>
       ${setsHtml}
     </div>
     <div class="excard-actions">
       <button class="tinybtn" data-act="add-set" data-ex="${ei}">${I.plus} Add set</button>
       ${ls?`<button class="tinybtn" data-act="fill-last" data-ex="${ei}">${I.copy} Same as last</button>`:''}
-      <button class="tinybtn" data-act="loading" data-ex="${ei}">${I.barbell} Loading</button>
+      ${bw? '' : `<button class="tinybtn" data-act="loading" data-ex="${ei}">${I.barbell} Loading</button>`}
       <button class="tinybtn" data-act="ex-swap" data-ex="${ei}">${I.swap} Swap</button>
       ${en.sets.length>1?`<button class="tinybtn danger" data-act="del-last-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
     </div>
@@ -3126,7 +3173,7 @@ function exerciseCard(en, ei){
 function setRow(en, ei, s, si){
   const prev = lastPerf(en.exId);
   const hint = repHint(en, s);
-  const repsPh = (hint!=null)? '~'+hint : (prev?prev.reps:'0');
+  const repsPh = (hint!=null)? '~'+hint : (prev?prev.reps:'&ndash;');
   const warm = s.type==='warmup';
   const nextIdx = en.sets.findIndex(x=>isWork(x) && !x.done);
   const isNext = !warm && !s.done && si===nextIdx;
@@ -3145,7 +3192,8 @@ function setRow(en, ei, s, si){
   }
   return `<div class="setrow ${s.done?'done':''} ${warm?'warm':''} ${isNext?'next':''}" data-set="${si}">
     <div class="sidx ${warm?'warmb':''}">${idxLabel}</div>
-    <div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev?fmtW(prev.weight):'0'}" aria-label="Set ${idxLabel} weight"></div>
+    ${isBW(en.exId)? `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight?fmtW(s.weight):''}" placeholder="${prev&&prev.weight?'+'+fmtW(prev.weight):'BW'}" aria-label="Set ${idxLabel} added weight, blank for bodyweight alone"></div>`
+      : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev&&prev.weight!=null?fmtW(prev.weight):'&ndash;'}" aria-label="Set ${idxLabel} weight"></div>`}
     <div class="setwrap"><input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${idxLabel} reps"></div>
     <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
     <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
@@ -3495,9 +3543,9 @@ function clearNote(){
 function repRecords(exId){
   const perWeight={}; let sessions=0;
   state.history.forEach(w=>{ const en=w.entries.find(e=>e.exId===exId); if(!en) return;
-    const work=en.sets.filter(s=>isWork(s)&&s.done&&s.weight&&s.reps); if(!work.length) return;
+    const body=isBW(exId), work=en.sets.filter(s=>isWork(s)&&s.done&&(s.weight||body)&&s.reps); if(!work.length) return;
     sessions++;
-    work.forEach(s=>{ const cur=perWeight[s.weight]; if(!cur || s.reps>cur.reps) perWeight[s.weight]={reps:s.reps, date:w.date}; });
+    work.forEach(s=>{ const k=s.weight||0, cur=perWeight[k]; if(!cur || s.reps>cur.reps) perWeight[k]={reps:s.reps, date:w.date}; });
   });
   let latest=null;
   Object.keys(perWeight).forEach(k=>{ const c=perWeight[k]; if(!latest || c.date>latest.date || (c.date===latest.date && +k>latest.weight)) latest={weight:+k, reps:c.reps, date:c.date}; });
@@ -3511,7 +3559,7 @@ function progRecords(){
   const rows=ids.map(id=>{ const r=recs[id]; const nm=(exById(id)||{}).name||id; const loads=Object.keys(r.perWeight).length;
     return `<button class="ev-lib-item" data-act="rec-detail" data-id="${id}" style="width:100%">
       <div class="eli-n" style="flex:1"><div class="t">${esc(nm)}</div>
-        <div class="muted" style="font-size:11.5px;margin-top:2px">last record ${fmtW(r.latest.weight)}${unit()}&times;${r.latest.reps} &middot; ${relDay(r.latest.date)} &middot; ${loads} load${loads===1?'':'s'}</div></div>
+        <div class="muted" style="font-size:11.5px;margin-top:2px">last record ${wTxt(id, r.latest.weight)}&times;${r.latest.reps} &middot; ${relDay(r.latest.date)} &middot; ${loads} load${loads===1?'':'s'}</div></div>
       <span style="color:var(--faint)">${I.arrow}</span></button>`;
   }).join('');
   return `<div class="card pad">
@@ -3527,14 +3575,14 @@ function openRecord(exId){
   const nm=(exById(exId)||{}).name||exId;
   const weights=Object.keys(r.perWeight).map(Number).sort((a,b)=>b-a).slice(0,12);
   const ledger=weights.map(wt=>{ const c=r.perWeight[wt];
-    return `<div class="spread" style="padding:8px 2px;border-bottom:1px solid var(--border);font-size:13.5px"><span><b>${fmtW(wt)}</b> ${unit()} &times; ${c.reps}</span><span class="muted" style="font-size:11.5px">${relDay(c.date)}</span></div>`;
+    return `<div class="spread" style="padding:8px 2px;border-bottom:1px solid var(--border);font-size:13.5px"><span><b>${wTxt(exId, wt, ' ')}</b> &times; ${c.reps}</span><span class="muted" style="font-size:11.5px">${relDay(c.date)}</span></div>`;
   }).join('');
   openModal(`
     <div class="sheet-grab"></div>
     <div class="sheet-head"><button class="iconbtn" data-act="close-modal" data-back aria-label="Back">${I.back}</button><h3 style="flex:1">${esc(nm)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="grid2" style="margin-bottom:14px">
-        <div class="rstat"><div class="v tnum">${fmtW(r.latest.weight)}<span style="font-size:13px">&times;${r.latest.reps}</span></div><div class="k">Last record (${unit()})</div></div>
+        <div class="rstat"><div class="v tnum">${isBW(exId)? wTxt(exId, r.latest.weight) : fmtW(r.latest.weight)}<span style="font-size:13px">&times;${r.latest.reps}</span></div><div class="k">${isBW(exId)? 'Last record' : 'Last record ('+unit()+')'}</div></div>
         <div class="rstat"><div class="v tnum">${r.sessions}</div><div class="k">Sessions logged</div></div>
       </div>
       <div class="section-label" style="margin:0 0 2px">Most reps at each load <span class="ln"></span></div>
@@ -3805,8 +3853,8 @@ function progHistory(){
     const exLines = w.entries.map(en=>{
       const work = en.sets.filter(s=>isWork(s)&&s.done);
       if(!work.length) return '';
-      let top=work[0]; for(const s of work){ if(est1RM(s.weight,s.reps)>est1RM(top.weight,top.reps)) top=s; }
-      return `<div class="hist-ex"><span>${esc(en.name)}</span><span class="hx-s">${work.length} &times; ${fmtW(top.weight)}${unit()}&times;${top.reps||'&ndash;'}</span></div>${en.note?`<div style="font-size:11.5px;color:var(--muted);margin:0 0 6px;display:flex;gap:5px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}`;
+      let top=work[0]; for(const s of work){ if(setScore(en.exId,s,w.date)>setScore(en.exId,top,w.date)) top=s; }
+      return `<div class="hist-ex"><span>${esc(en.name)}</span><span class="hx-s">${work.length} &times; ${wTxt(en.exId, top.weight)}&times;${top.reps||'&ndash;'}</span></div>${en.note?`<div style="font-size:11.5px;color:var(--muted);margin:0 0 6px;display:flex;gap:5px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}`;
     }).join('');
     return `<div class="card hist-item" data-act="ed-view" data-id="${esc(w.id)}">
       <div class="hh"><div class="hd">${esc(w.name)}</div><div class="hm">${longDate(w.date)}</div></div>
@@ -3824,14 +3872,16 @@ function progTrends(){
   if(!ids.length) return `<div class="muted" style="text-align:center;padding:40px 20px;font-size:13.5px">Finish a few sessions to see performance trends.</div>`;
   if(!state.progressEx || !ids.includes(state.progressEx)) state.progressEx = ids[0];
   const opts = ids.map(id=>{ const e=exById(id); return `<option value="${id}" ${id===state.progressEx?'selected':''}>${esc(e?e.name:id)}</option>`; }).join('');
-  // series: top est1RM per session
+  // series: the best set each session, load and reps folded into one number. A bodyweight exercise counts your logged
+  // bodyweight as load; with none logged it follows the reps of the best set instead.
+  const id=state.progressEx, body=isBW(id), byReps=body && !state.bodylog.some(b=>b.weight!=null);
   const pts=[];
   for(const w of state.history){
-    const en = w.entries.find(e=>e.exId===state.progressEx);
+    const en = w.entries.find(e=>e.exId===id);
     if(!en) continue;
-    const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&s.weight);
+    const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&(s.weight||body));
     if(!work.length) continue;
-    let best=0, bw=0, br=0; for(const s of work){ const e=est1RM(s.weight,s.reps); if(e>best){best=e; bw=s.weight; br=s.reps;} }
+    let best=0, bw=0, br=0; for(const s of work){ const e= byReps? s.reps : est1RM(setLoad(id,s,w.date),s.reps); if(e>best){best=e; bw=s.weight||0; br=s.reps;} }
     pts.push({t:w.date, v:best, bw, br});
   }
   let chart='';
@@ -3848,12 +3898,13 @@ function progTrends(){
     <div class="pad" style="padding-bottom:0">
       <div class="spread">
         <div><div class="muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Performance trend</div>
-        <div class="disp" style="font-weight:800;font-size:24px;letter-spacing:-.02em;margin-top:2px">${latest?fmtW(latest.v)+' '+unit():'&ndash;'}</div></div>
-        ${delta!==0?`<span class="chip ${delta>0?'steel':''}" style="${delta<0?'color:var(--warn)':''}">${delta>0?'&#9650;':'&#9660;'} ${fmtW(Math.abs(delta))} ${unit()}</span>`:''}
+        <div class="disp" style="font-weight:800;font-size:24px;letter-spacing:-.02em;margin-top:2px">${latest? (byReps? latest.v+' reps' : fmtW(latest.v)+' '+unit()) :'&ndash;'}</div></div>
+        ${delta!==0?`<span class="chip ${delta>0?'steel':''}" style="${delta<0?'color:var(--warn)':''}">${delta>0?'&#9650;':'&#9660;'} ${byReps? Math.abs(delta)+' rep'+(Math.abs(delta)===1?'':'s') : fmtW(Math.abs(delta))+' '+unit()}</span>`:''}
       </div>
     </div>
     <div class="chartwrap">${chart}</div>
-    <div class="muted" style="font-size:11px;padding:0 16px 14px">Your best set each session, with load and reps folded into one number (an Epley estimate), so one more rep and one more plate both count. Read the direction, not the number.</div>
+    <div class="muted" style="font-size:11px;padding:0 16px 14px">${byReps? 'Your best set each session, in reps. Log your bodyweight under Body and this becomes a strength estimate that also counts any weight you add.'
+      : 'Your best set each session, with load and reps folded into one number (an Epley estimate), so one more rep and one more plate both count.'+(body? ' For a bodyweight exercise the load is your logged bodyweight plus anything you add.' : '')+' Read the direction, not the number.'}</div>
   </div>`;
 }
 function lineChart(pts){
@@ -4103,6 +4154,13 @@ function genCreate(){
 function roundLoad(kg){ return Math.round(kg*2)/2; }
 function suggestLoad(exId, entry, comp, deload){
   const prev=lastPerf(exId);
+  // bodyweight alone last time: the reps climb first; at the top of the range, add a little weight or take a harder version
+  if(prev && !prev.weight && entry.equipment==='Bodyweight'){
+    if(deload) return {weight:null, note:'deload &middot; bodyweight, with a few more reps in reserve'};
+    const tr=prev.rir==null? null : prev.rir+rirBias();
+    if(prev.reps!=null && prev.reps>=entry.target.repHigh && (tr==null || tr<=entry.target.rir)) return {weight:null, note:'top of the range at bodyweight &middot; add a little weight, or pick a harder version'};
+    return {weight:null, note:'bodyweight &middot; aim for +1 rep toward '+entry.target.repHigh};
+  }
   if(!prev || prev.weight==null) return {weight:null, note:null};
   if(deload) return {weight:roundLoad(prev.weight*0.9), note:'~10% lighter for the deload'};
   const trueRir = prev.rir==null? null : prev.rir + rirBias(); // correct for your RIR accuracy
@@ -4739,8 +4797,9 @@ function toggleDone(ei,si){
     if(s.reps==null){ const hint=repHint(en,s); if(hint!=null) s.reps=hint; else if(prev) s.reps=prev.reps; }
   }
   s.done=!s.done;
-  let jumpTo=null;
+  let jumpTo=null, noW=false;
   if(s.done){
+    noW= s.weight==null && !isBW(en.exId);
     if(s.rir==null || s.rir==='') s.rir = state.active.entries[ei].target.rir;
     const g=ssGroup(ei);
     const rest = (g && !g.isLast)? 20 : (state.active.entries[ei].target.rest||120);
@@ -4749,6 +4808,7 @@ function toggleDone(ei,si){
     if(g && !g.isLast) jumpTo=ei+1; // guided superset: move to next linked exercise
   }
   save(); render();
+  if(noW) toast('Logged with no weight. Type it in, and next time starts from it');
   if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
 }
 
@@ -4812,18 +4872,19 @@ setInterval(()=>{ if(state.active && state.active.restEndsAt) tickRest(); }, 250
 function repPrs(entries, past){
   const prs=[];
   for(const en of entries){
-    const work = en.sets.filter(s=>isWork(s)&&s.done&&s.reps&&s.weight);
+    const body=isBW(en.exId), W=s=>s.weight||0, counts=s=>isWork(s)&&s.done&&s.reps&&(s.weight||body);   // bodyweight alone is a load too
+    const work = en.sets.filter(counts);
     if(!work.length) continue;
     const prior=[];
-    for(const w of past){ const he=w.entries.find(x=>x.exId===en.exId); if(he) he.sets.forEach(s=>{ if(isWork(s)&&s.done&&s.weight&&s.reps) prior.push(s); }); }
+    for(const w of past){ const he=w.entries.find(x=>x.exId===en.exId); if(he) he.sets.forEach(s=>{ if(counts(s)) prior.push(s); }); }
     if(!prior.length) continue;
     let best=null;
     for(const s of work){
-      const heavier=prior.filter(p=>p.weight>=s.weight-0.01);
+      const heavier=prior.filter(p=>W(p)>=W(s)-0.01);
       const prev=heavier.length? Math.max(...heavier.map(p=>p.reps)) : 0;
-      if(s.reps>prev && (!best || s.weight>best.s.weight || (s.weight===best.s.weight && s.reps>best.s.reps))) best={s, prev};
+      if(s.reps>prev && (!best || W(s)>W(best.s) || (W(s)===W(best.s) && s.reps>best.s.reps))) best={s, prev};
     }
-    if(best) prs.push({ex:en.name, type:best.prev? 'Rep record, up from '+best.prev : 'Rep record at a new load', val:fmtW(best.s.weight)+' '+unit()+' &times; '+best.s.reps});
+    if(best) prs.push({ex:en.name, type:best.prev? 'Rep record, up from '+best.prev : 'Rep record at a new load', val:wTxt(en.exId, best.s.weight, ' ')+' &times; '+best.s.reps});
   }
   return prs;
 }
@@ -5343,7 +5404,7 @@ function exDetail(id){
         <div class="spread"><span class="muted">Rep range</span><b>${e.def.repLow}&ndash;${e.def.repHigh}</b></div>
         <div class="spread" style="margin-top:6px"><span class="muted">Target RIR</span><b>${e.def.rir} in reserve</b></div>
         <div class="spread" style="margin-top:6px"><span class="muted">Rest</span><b>${e.def.rest}s</b></div>
-        ${perf?`<div class="spread" style="margin-top:6px"><span class="muted">Your last top set</span><b>${fmtW(perf.weight)}${unit()} &times; ${perf.reps}</b></div>`:''}
+        ${perf?`<div class="spread" style="margin-top:6px"><span class="muted">Your last top set</span><b>${wTxt(id, perf.weight, ' ')} &times; ${perf.reps}</b></div>`:''}
       </div>
       <p class="muted" style="font-size:12.5px;line-height:1.55;margin:0 0 10px">Full, controlled, pain-free range of motion. Stop most sets 1&ndash;3 reps shy of failure. These are starting heuristics, not fixed rules.</p>
       <div style="margin-bottom:16px">${evChip('rom','Range of motion')}${'&nbsp;'}${evChip('effort','Effort')}</div>
@@ -5593,6 +5654,8 @@ __root.addEventListener('click', e=>{
     case 'set-menu': openSetMenu(ei,si); break;
     case 'del-last-set': { const en=state.active.entries[ei]; if(en.sets.length>1){ en.sets.pop(); save(); render(); } break; }
     case 'loading': openLoading(ei); break;
+    case 'bw-body': bwWasBody(state.active.entries[ei].exId); break;
+    case 'bw-added': { const id=state.active.entries[ei].exId; (state.settings.bwAsked=state.settings.bwAsked||{})[id]='added'; save(); render(); break; }
     case 'repeat-set': { const en=state.active.entries[ei]; const s=en.sets[si]; en.sets.splice(si+1,0,Object.assign(makeSet('work'),{weight:s.weight,reps:s.reps,rir:s.rir})); save(); closeModal(); render(); toast('Set repeated'); break; }
     case 'add-warmup-ramp': { const en=state.active.entries[ei]; const ramp=warmupRamp(loadingState.weight); ramp.slice().reverse().forEach(r=>{ en.sets.unshift(Object.assign(makeSet('warmup'),{weight:fromDisp(r.w), reps:r.reps})); }); save(); closeModal(); render(); toast(ramp.length+' warm-up sets added'); break; }
     case 'ex-swap': openSwap(ei); break;
@@ -6076,8 +6139,10 @@ function hubStart(tg){
   return state.active? state.active.id : null;
 }
 /* Exercises Together can build a day from, with what each trains and its rep range. */
-function hubCatalog(){ return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp,
-  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt})); }
+function hubCatalog(){ const last=lastDone(); return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp,
+  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt, last:last[e.id]||0})); }
+/* When each exercise last had a ticked work set: {exId: date}. */
+function lastDone(){ const out={}; state.history.forEach(w=>w.entries.forEach(en=>{ if(en.sets.some(s=>isWork(s)&&s.done) && !(out[en.exId]>=w.date)) out[en.exId]=w.date; })); return out; }
 /* A day Together built: [{exId, sets}] at one effort, loads from your last sets of each exercise. tg trims it as for a block day. */
 function hubStartWith(spec, tg){
   if(state.active) return null;
@@ -6856,6 +6921,8 @@ const GOAL_LV={pullup1:1, pullup10:2, oapu:4, pushup20:1, oapush:3, dip10:2, hsp
   skater:2, sissy:2, revnordic:2, calf25:1, t2b:2, dragonflag:3, copenhagen:2, abwheel:3, bridge:3, tuckbl:2, backlever:3, humanflag:4, crow:1,
   elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3, weightedpull:2};
 const LV_N=['','Beginner','Intermediate','Advanced','Elite'], LV_T=['','a few weeks','a few months','6 to 12 months','a year or more'];
+/* Straight-arm strength skills: they load the elbows and the biceps tendon the same way, so Together recommends one at a time. */
+const STRAIGHT_ARM=['frontlever','backlever','planche','planchepush','flag'];
 const CAT_N={Pull:'Pulling', Push:'Pushing', Legs:'Legs', Core:'Core', Arms:'Arms', Skill:'Skills'};
 const STARTERS=['pullup1','pushup20','crow'];
 /* ==================== WHAT A GOAL TAKES ====================
@@ -9005,8 +9072,32 @@ if(window.__hub) window.__hub.reg('cal', {
   setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(); },
   open(){ state.route=state.active?'train':'today'; render(); window.scrollTo(0,0); },
   // your goals, for Together to show and change: where you are on each, and removing or putting one back
-  goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null;
-    return {id:g.id, n:g.n, placed:!!state.placed[g.l], step:st? st.n : '', pct:Math.round(goalProgress(g)*100), skill:isSkill(g.l)}; }); },
+  goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null, p=pathFor(g.l,g);
+    return {id:g.id, key:g.key, n:g.n, l:g.l, fam:famOf(g.l), placed:!!state.placed[g.l], step:st? st.n : '', pct:Math.round(goalProgress(g)*100), skill:isSkill(g.l),
+      dist: state.placed[g.l]? Math.max(0, p.indexOf(g.r)-Math.max(0,p.indexOf(curIdx(g.l)))) : null, lv:GOAL_LV[g.key]||2,
+      balance:practiceOf(g.l, g.r)==='balance', straight:STRAIGHT_ARM.includes(g.l)}; }); },
+  // For Together's recommended goals: the standard goals and where you stand on each. fit is the same measure Ladder's
+  // own suggestions use: a few rungs away is best, then the rung you are on, then by level once you have placed something.
+  catalog(){ const lv=userLevel(), have=new Set(activeGoals().map(g=>g.key)), done=new Set(state.goals.filter(g=>g.achieved).map(g=>g.key));
+    return GOAL_ORDER.filter(k=>LADDERS[GOALS[k].l]).map(k=>{ const G=GOALS[k], d=goalDist(k), gl=GOAL_LV[k]||2;
+      return {key:k, n:G.n, l:G.l, fam:famOf(G.l), lv:gl, lvn:LV_N[gl], hint:goalHint(k), have:have.has(k), done:done.has(k), met:goalMetNow(k),
+        balance:practiceOf(G.l, G.r)==='balance', straight:STRAIGHT_ARM.includes(G.l),
+        fit: d!=null? (d>=1&&d<=3? 10-d : d===0? 8 : d<0? -5 : 5-Math.min(4,d/2)) : lv? 6-2*Math.abs(gl-lv) : STARTERS.includes(k)? 6 : 4-gl}; }); },
+  // A week of sessions as a set of goals would plan it: picks(k) is session k as Together runs it. Each goal's share of the
+  // sets is its own movement in full, and support or what it needs shared evenly with the goals that bring it. Nothing is
+  // saved: your own goals go straight back. list: [{id} for one of yours, or {key} for a standard goal]
+  trial(list, n, picks){ const keep=state.goals;
+    try{ const gs=list.map(x=>x.id? keep.find(g=>g.id===x.id&&!g.achieved) : GOALS[x.key]? makeGoal(x.key) : null).filter(Boolean);
+      state.goals=keep.filter(g=>g.achieved).concat(gs);
+      const out=gs.map(()=>0), own=id=>gs.map((g,i)=>g.l===id? i : -1).filter(i=>i>=0),
+        rest=id=>gs.map((g,i)=>(g.sup||[]).includes(id)||goalNeeds(g).some(x=>x.l===id)? i : -1).filter(i=>i>=0);
+      for(let k=0;k<n;k++) (picks(k)||[]).forEach(x=>{ if(x.id==='wrist') return;   // the wrist warm-up serves the whole session
+        const o=own(x.id), to=o.length? o : rest(x.id); to.forEach(i=>{ out[i]+=x.sets/to.length; }); });
+      return gs.map((g,i)=>({id:g.id, key:g.key, sets:out[i]})); }
+    finally{ state.goals=keep; } },
+  // standard goals added from Together, through the same placement as choosing them here
+  addGoals(keys){ const list=(keys||[]).filter(k=>GOALS[k]&&!activeGoals().some(g=>g.key===k)).map(makeGoal); if(!list.length) return false;
+    state.route='today'; render(); window.scrollTo(0,0); addGoals(list); return true; },
   removeGoal(id){ const g=state.goals.find(x=>x.id===id&&!x.achieved); if(!g) return false;
     gone[id]=g; state.goals=state.goals.filter(x=>x!==g); save(); render(); return true; },
   restoreGoal(id){ const g=gone[id]; if(!g||state.goals.some(x=>x.id===id)) return false; delete gone[id]; state.goals.push(g); save(); render(); return true; },
@@ -11260,8 +11351,11 @@ function buildPlan(T){
             const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[], k=turn[x.mu]||0, want=mine.length? mine[k%mine.length] : null;
             const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id));
             const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
+              // one you have logged before one you haven't, the most recent first: its weights carry on, and getting better
+              // at an exercise is part of the progress, so changing it at random slows things down
+              || ((b.last>0)-(a.last>0))
               // something you can load before bodyweight work, which is harder to progress, then variety across the days
-              || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
+              || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (b.last||0)-(a.last||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
             if(!e) return;
             taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; turn[x.mu]=k+1;
             out[i].push(Object.assign({exId:e.id, mu:x.mu, sets:n, comp:e.comp}, x.more? {more:true} : {}));
@@ -12155,11 +12249,14 @@ const PROGRAM_SOURCES=[
   ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
   ['Simão et al. 2012, Exercise order in resistance training','Sports Med','Exercise order in resistance training Simao 2012'],
 ];
-/* Why fewer Ladder goals at once move faster. */
+/* Why fewer Ladder goals at once move faster, and how Together recommends them. */
 const LADDER_SOURCES=[
   ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
   ['Pelland et al. 2026, Volume and frequency dose-response','Sports Med','resistance training dose-response meta-regressions weekly volume frequency hypertrophy strength'],
+  ['Simão et al. 2012, Exercise order in resistance training','Sports Med','Exercise order in resistance training Simao 2012'],
   ['Lee & Genovese 1988, Spaced practice and motor skills','Res Q Exerc Sport','Distribution of practice in motor skill acquisition learning and performance effects reconsidered'],
+  ['Locke & Latham 2002, Goal setting and task motivation','Am Psychol','Building a practically useful theory of goal setting and task motivation'],
+  ['Magnusson & Kjaer 2019, Loading and the human tendon','J Physiol','The impact of loading, unloading, ageing and injury on the human tendon'],
   ['Spiering et al. 2021, The minimal dose to maintain strength','J Strength Cond Res','Maintaining physical performance the minimal dose of exercise needed to preserve endurance and strength over time'],
 ];
 /* Why a few exercises for a muscle, kept for the block. */
@@ -12276,16 +12373,15 @@ function viewTune(){
           const opts=S&&S.options? S.options(a, kit()) : [], n=P.days.filter(d=>d.str.some(x=>x.a===a)).length, cur=T.lift[a]&&opts.some(o=>o.id===T.lift[a])? T.lift[a] : S&&S.pick(a, kit()), o=opts.find(o=>o.id===cur);
           return opts.length? row('lift', a, AREA_N[a], T.off[a]? 'Left out' : plural(n,'time')+' a week', T.off[a]? '' : esc(o? o.n : ''))
             : `<div class="trow"><span class="tn"><b>${AREA_N[a]}</b><span>Nothing in your kit trains this</span></span></div>`; }).join('')+'</div>'; },
-    cal:()=>{ const C=H.api('cal'), gs=C&&C.goals? C.goals() : [], bal=gs.filter(g=>g.skill).length, str=gs.length-bal;
+    cal:()=>{ const C=H.api('cal'), gs=C&&C.goals? C.goals() : [];
         const rows=gs.map(g=>`<div class="trow"><span class="tn"><b>${esc(g.n)}</b><span>${g.placed? esc(g.step)+' &middot; '+g.pct+'% of the way' : 'Not placed yet: Ladder asks where you start'}</span></span>
           <button class="btn sm ghost" data-a="t-goal-rm" data-id="${esc(g.id)}" aria-label="Remove ${esc(g.n)}">${IC.x} Remove</button></div>`).join('');
-        // more goals than a session has room for take turns, so each gets fewer of the week's sets
-        const turns= str>3 || bal>2;
         return `<p class="hint" style="margin-top:0">${gs.length? 'Ladder trains toward these goals, each from the rung you are on. Removing one here keeps its rungs and history in Ladder.' : 'No Ladder goals yet, so its days are empty. Add one and Together trains toward it.'}</p>
           ${gs.length? `<div class="tlist">${rows}</div>` : ''}
-          ${turns? `<p class="tnote">${IC.info}<span>A session has room for the strength work of three goals and two balance skills. With ${plural(gs.length,'goal')} they take turns, so each one gets fewer of the week’s sets and moves more slowly than it would alone. To push one faster, train fewer at once.</span></p>` : ''}
+          ${recHtml(recModel(P))}
           <div class="row2" style="margin-top:10px"><button class="btn sm" data-a="t-goal-add">${IC.plus} Add a goal</button></div>
-          ${basedOn('Why fewer goals move faster', ['Strength in a movement grows with the hard sets you do of it each week, and goals share a session’s sets: past three strength goals and two balance skills, each gets fewer, so each moves more slowly. Balance skills like the handstand are motor skills, which improve most with short practice spread over many days, so they come round often. What you already have keeps with far less work than it took to build. The caps themselves are coaching defaults drawn from these studies, not results of one trial.'], LADDER_SOURCES)}`; },
+          ${basedOn('Why fewer goals move faster', ['Strength in a movement grows with the hard sets you do of it each week, by less for each extra set. Goals share Ladder’s sessions: one has room for the strength work of three goals and two balance skills, and past that they take turns, so each gets fewer sets. Below that, each extra goal still shares the session’s room for what the goals rest on (mobility, prep and supporting strength), and its work comes later in the session; exercises done later in a session get fewer good reps. Balance skills like the handstand are motor skills, which improve most with short practice spread over many days.',
+            'So Together recommends two goals when Ladder builds on two or more days a week, and one otherwise. It suggests goals a few rungs from where you are: goal-setting research finds specific goals that are hard but within reach work best, and that several goals at once pull effort apart. It spreads them over different movements, so the muscles one loads recover while another trains, and picks at most one straight-arm skill like the planche or a lever, as these load the elbows and the biceps tendon the same way and tendons adapt more slowly than muscle. A paused goal waits safely: what you have built keeps with far less work than it took to build. The counts are coaching defaults drawn from these studies, not results of one trial.'], LADDER_SOURCES)}`; },
   };
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tune.fresh? 'New block &middot; week 1 of '+BLOCK : 'Week '+Math.min(plan().week,BLOCK)+' of '+BLOCK}</div>
@@ -12295,6 +12391,52 @@ function viewTune(){
     <div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start this block' : IC.check+' Save changes'}</button></div>
     <button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">${tune.setup? 'Use it as it is' : tune.fresh? 'Keep my current block' : 'Cancel'}</button>
   </section></div>`;
+}
+/* ==================== RECOMMENDED LADDER GOALS ====================
+   Goals share Ladder's sessions, so the fewer at once, the more of each session each one gets. How many: two when
+   Ladder builds on two or more days of the week, one otherwise (one Ladder day, or the lighter dose it gets lower in your
+   order). Which: your own goals closest to done; or standard goals a few rungs from where you are, on movements your
+   goals don't already train, at most one straight-arm skill and one balance skill, and not a movement Strength already
+   trains heavily (on days with both, Ladder leaves out its support work for it). The numbers are Ladder's own plan for a
+   week of your block: sets aimed at each goal, its own movement and its share of what it rests on. */
+function recModel(P){
+  const C=H.api('cal'); if(!C||!C.catalog||!C.trial||!P) return null;
+  const doses=P.days.filter(d=>d.cal).map(d=>d.cal.dose); if(!doses.length) return null;
+  const build=doses.filter(x=>x==='build').length, n= build>=2? 2 : 1, gs=C.goals(), cat=C.catalog();
+  const sp= tg.secs.includes('str')? new Set(strLifts().map(x=>AREA_PAT[x.a])) : new Set();
+  const week=list=>{ if(!list.length) return 0; const r=C.trial(list, doses.length, k=>calPicks(doses[k], k)); return r.length? Math.round(r.reduce((a,x)=>a+x.sets,0)/r.length) : 0; };
+  const fits=(base, g)=>!base.some(x=>x.fam===g.fam) && !(g.straight&&base.some(x=>x.straight)) && !(g.balance&&base.some(x=>x.balance));
+  const choose=(pool, k, base)=>{ const out=[]; [true,false].forEach(strict=>pool.forEach(g=>{ if(out.length<k && !out.includes(g) && (!strict||fits(base.concat(out), g))) out.push(g); })); return out; };
+  // your own goals nearest done first: furthest along, then fewest rungs to go, then the easier level
+  const near=(a,b)=>b.pct-a.pct || (a.dist==null)-(b.dist==null) || (a.dist||0)-(b.dist||0) || a.lv-b.lv;
+  const keep= gs.length>n? choose(gs.slice().sort(near), n, []) : gs;
+  const pool=cat.filter(c=>!c.have&&!c.done&&!c.met&&c.fit>0).map(c=>Object.assign({}, c, {both:sp.has(LAD_PAT[c.l]), sc:c.fit - (sp.has(LAD_PAT[c.l])? 2 : 0)})).sort((a,b)=>b.sc-a.sc);
+  const add= gs.length<n? choose(pool, 3, keep) : [];
+  const ids=list=>list.map(g=>({id:g.id}));
+  // two goals of your own that load the same way: straight-arm skills share the elbows, balance skills the practice slot
+  const clash= gs.length<=n && gs.length>1? (gs.filter(g=>g.straight).length>1? 'straight' : gs.filter(g=>g.balance).length>1? 'balance' : gs[0].fam===gs[1].fam? 'fam' : '') : '';
+  return {n, days:doses.length, build, gs, keep, pause:gs.filter(g=>!keep.includes(g)), add, clash, now:week(ids(gs)),
+    kept: gs.length>n? week(ids(keep)) : null, plus: add.length&&gs.length? week(ids(gs).concat({key:add[0].key})) : null};
+}
+function recHtml(M, compact){
+  if(!M) return '';
+  const add=M.add.map((c,i)=>`<div class="trow"><span class="tn"><b>${esc(c.n)}</b><span>${i===0? 'Best fit &middot; ' : ''}${c.hint} &middot; ${esc(c.lvn)}${c.both? ' &middot; Strength trains this movement too' : ''}</span></span>
+    <button class="btn sm" data-a="t-rec-add" data-k="${esc(c.key)}">${IC.plus} Add</button></div>`).join('');
+  if(compact) return add? `<div class="trec"><div class="eyebrow">Recommended to start</div><p class="hint">${M.n===2? 'One or two goals' : 'One goal'} for the ${plural(M.days,'Ladder day')} in your week: fewer goals each get more of every session, so each moves faster.</p><div class="tlist">${add}</div></div>` : '';
+  const why= M.n===2? `Ladder has ${plural(M.days,'day')} in your week. With two goals, both are trained early in every session, while you are fresh. Each goal you add shares the same sessions, so each one moves more slowly.`
+    : `Ladder has ${M.days===1? 'one day' : plural(M.days,'day')} in your week${M.days>1? ', at a lighter dose because it is lower in your order' : ''}. One goal gets all of that room and moves fastest; start the next when it is done.`;
+  const G=M.gs.length, row=(g,sub)=>`<div class="trow"><span class="tn"><b>${esc(g.n)}</b><span>${sub}</span></span></div>`;
+  let body='';
+  const togo=g=> g.pct>0? g.pct+'% of the way' : g.dist!=null? (g.dist===0? 'On its rung now' : g.dist===1? 'One rung to go' : g.dist+' rungs to go') : 'Not placed yet';
+  if(G>M.n) body=`<p class="hint">You have ${plural(G,'goal')}, so each gets about ${plural(M.now,'set')} a week aimed at it, counting what it rests on. Kept to the ${M.keep.length===1? 'one' : M.keep.length} nearest done, each would get about ${M.kept}:</p>
+      <div class="tlist">${M.keep.map(g=>row(g, togo(g))).join('')}</div>
+      <p class="hint" style="margin-top:10px">Paused for now: ${esc(listText(M.pause.map(g=>g.n)))}. Their rungs and history stay in Ladder, and what you have built keeps with far less work than it took to build.</p>
+      <button class="btn sm pri" data-a="t-rec-keep" data-ids="${esc(M.pause.map(g=>g.id).join(','))}" style="margin-top:8px">${IC.check} Keep ${M.keep.length===1? 'this one' : 'these '+M.keep.length}, pause ${plural(M.pause.length,'other')}</button>`;
+  else if(G<M.n && M.add.length) body=`<p class="hint">${G? `Your goal gets about ${plural(M.now,'set')} a week aimed at it, counting what it rests on. With one more, each would get about ${M.plus}. Room for one more:` : `Start with ${M.n===2? 'one or two' : 'one'} of these:`}</p><div class="tlist">${add}</div>`;
+  else if(G) body=`<p class="hint">Your ${G===1? 'goal fits' : plural(G,'goal')+' fit'}: ${G===1? 'it gets' : 'each gets'} about ${plural(M.now,'set')} a week aimed at it, counting what it rests on.</p>`
+      + (M.clash? `<p class="tnote">${IC.info}<span>${M.clash==='straight'? 'Both are straight-arm skills, which load the elbows and the biceps tendon the same way. Tendons adapt more slowly than muscle, so one at a time is the safer pace.'
+        : M.clash==='balance'? 'Both are balance skills, so they share each session’s practice while you are fresh. One at a time gets it all.' : 'Both train the same movement, so they share its sets.'}</span></p>` : '');
+  return `<div class="trec"><div class="eyebrow">Recommended: ${M.n===1? 'one goal' : 'two goals'} at a time</div><p class="hint">${why}</p>${body}</div>`;
 }
 /* The library, opened from a row in Customize this block: every exercise that works the muscle, or the lifts for a
    strength area, and a form to make your own exercise, which joins Muscle's library. */
@@ -12372,7 +12514,8 @@ function viewMain(){
     ${tg.run? heroRun() : heroNext(W)}
     ${missing.map(m=>`<section class="card"><div class="spread" style="align-items:flex-start"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n}</div>
       <p class="lead" style="margin-top:4px">${notReady(m,{})}</p></div>
-      ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div></section>`).join('')}
+      ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div>
+      ${m==='cal'? recHtml(recModel(plan()), true) : ''}</section>`).join('')}
     ${programCard()}
     ${weekCard(W, DM)}
     ${volCard(dayInfo(Math.max(0,n)))}
@@ -12548,7 +12691,13 @@ __root.addEventListener('click', e=>{
     case 't-goal-add': { const C=H.api('cal'); if(!C) break; H.away('cal','rec'); C.setup(); break; }
     case 't-goal-rm': { const C=H.api('cal'), id=el.dataset.id, g=C&&C.goals? C.goals().find(x=>x.id===id) : null;
       if(!g||!C.removeGoal(id)) break; render(); toast(`${esc(g.n)} removed. Its rungs and history stay in Ladder.`, {a:'t-goal-back', id}); break; }
-    case 't-goal-back': { const C=H.api('cal'); if(C&&C.restoreGoal(el.dataset.id)){ render(); toast('Goal back.'); } break; }
+    case 't-goal-back': { const C=H.api('cal'), ids=(el.dataset.id||'').split(',').filter(Boolean);
+      if(C&&ids.map(id=>C.restoreGoal(id)).some(Boolean)){ render(); toast(ids.length>1? 'Goals back.' : 'Goal back.'); } break; }
+    // recommended goals: pause the rest, or add one through Ladder's own placement, which comes back here
+    case 't-rec-keep': { const C=H.api('cal'), ids=(el.dataset.ids||'').split(',').filter(Boolean); if(!C) break;
+      const done=ids.filter(id=>C.removeGoal(id)); if(!done.length) break;
+      render(); toast(`${plural(done.length,'goal')} paused. Their rungs and history stay in Ladder.`, {a:'t-goal-back', id:done.join(',')}); break; }
+    case 't-rec-add': { const C=H.api('cal'); if(!C||!C.addGoals) break; H.away('cal','rec'); C.addGoals([el.dataset.k]); break; }
   }
 });
 

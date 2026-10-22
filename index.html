@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-ZP80OR/ZQWARxH38IfoMontPtp8dqzYxGdxUIGy2dlg='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=' 'sha256-0CyakNaWJIWXt6h2Yn4RuRpDEjejxhlB9hG9sFiDbQo='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -710,6 +710,8 @@ svg{width:18px; height:18px; flex:none}
 .banner.warn{background:var(--heat-soft); color:var(--heat-ink); border-color:transparent}
 .banner.info{background:var(--steel-soft); color:color-mix(in srgb, var(--steel) 68%, var(--ink)); border-color:transparent}
 .banner svg{flex:none}
+.newex{margin-top:8px; font-size:12px; line-height:1.45; color:var(--muted); padding:8px 10px; border-radius:10px; background:var(--well); border:1px solid var(--border)}
+.newex b{color:var(--ink)}
 
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 :focus-visible{outline:2px solid var(--heat); outline-offset:2px}
@@ -2101,6 +2103,10 @@ span.dchip{cursor:default}
 @media(hover:hover){ .tpick:hover .tn b{text-decoration:underline} }
 .tlist>.grp:first-child{margin-top:4px}
 .tnote{display:flex; gap:9px; align-items:flex-start; margin:0 0 14px; padding:11px 12px; border-radius:12px; background:var(--warn-soft); color:var(--ink); font-size:12.5px; line-height:1.5}
+.trec{margin:14px 0 4px; padding:12px 14px 6px; border-radius:14px; background:var(--well); border:1px solid var(--border)}
+.trec .hint{margin:6px 0 8px}
+.trec .tlist .trow:first-child{border-top:0}
+.trec .tnote{margin:4px 0 10px}
 .tnote svg{width:16px; height:16px; flex:none; margin-top:1px; color:var(--warn)}
 .tback{margin-left:-6px}
 .tback svg{width:16px; height:16px}
@@ -2195,7 +2201,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=aaeb279ed49117e8c549" integrity="sha256-qusnntSRF+jFSTm8OnxKOtM4dyPGPTkIb7QDsewvSfE=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=64ff34391fd9416011c4" integrity="sha256-ZP80OR/ZQWARxH38IfoMontPtp8dqzYxGdxUIGy2dlg=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=d02c9a90d696248597b7" integrity="sha256-0CyakNaWJIWXt6h2Yn4RuRpDEjejxhlB9hG9sFiDbQo=" crossorigin="anonymous"></script>
 </body>
 </html>
 
