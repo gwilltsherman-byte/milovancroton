@@ -40,6 +40,12 @@ test('foreign storage, future versions, malformed sessions, injected identifiers
   assert.throws(()=>security.parseSection('{"settings":{"__proto__":{"polluted":true}}}','strlog.v2'));
   assert.throws(()=>security.parseSection('{"settings":{"rest":"<img onerror=alert(1)>"}}','strlog.v2'));
   assert.throws(()=>security.parseSection('{"v":99}','strlog.v2'));
+  // sessions left open beside the one on screen are checked like it
+  const open={id:'open-1', name:'Pull day', startedAt:1700000000000, entries:[{exId:'squat', name:'Squat', sets:[{weight:50, reps:5, done:true}]}]};
+  assert.ok(security.section({...structuredClone(state), parked:[open]}, 'hyplog.v1'));
+  assert.throws(()=>security.section({...structuredClone(state), parked:open}, 'hyplog.v1'));
+  assert.throws(()=>security.section({...structuredClone(state), parked:[{...open, id:'" onclick="x'}]}, 'hyplog.v1'));
+  assert.throws(()=>security.parseSection('{"parked":[{"id":"s","name":"S","entries":[{"sets":[]}]}]}','proladder.v1'));
 });
 test('oversized and deeply nested inputs fail before storage changes', () => {
   assert.throws(()=>security.backup(' '.repeat(security.MAX_BYTES+1)));

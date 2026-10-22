@@ -59,6 +59,10 @@
     }
     if (value.history) value.history.forEach(session);
     if (value.active != null && key !== 'trainer.together') session(value.active);
+    if (own(value, 'parked') && key !== 'trainer.together') {
+      if (!Array.isArray(value.parked)) bad();
+      value.parked.forEach(session);
+    }
     if (value.repeat != null && key !== 'trainer.together') {
       if (!record(value.repeat) || typeof value.repeat.name !== 'string') bad();
       if (key === 'hyplog.v1' && (!Array.isArray(value.repeat.items) || !value.repeat.items.every(x => Array.isArray(x) && id(x[0]) && typeof x[1] === 'number'))) bad();

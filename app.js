@@ -2266,6 +2266,42 @@ window.OpenSets={
   }
 };
 
+/* ==================== MORE THAN ONE SESSION OPEN ====================
+   Shared by every section. state.active is the session on screen; state.parked holds the others still open, so a
+   second workout can start without finishing the first (training a friend alongside, or a session you mean to come
+   back to) and you switch between them. A parked session stays exactly as it was and its clock keeps running, as an
+   open session's does; only the one on screen has a rest timer. */
+window.Parked={
+  list(st){ if(!Array.isArray(st.parked)) st.parked=[]; return st.parked; },
+  /* The session on screen goes aside, so another can start. */
+  park(st){ const a=st.active; if(!a) return false; a.restEndsAt=null; Parked.list(st).push(a); st.active=null; return true; },
+  /* A parked session onto the screen; the one there goes aside. */
+  pick(st, id){ const L=Parked.list(st), i=L.findIndex(p=>p.id===id); if(i<0) return false;
+    const p=L.splice(i,1)[0]; Parked.park(st); st.active=p; return true; },
+  /* Every open session, the one on screen first. */
+  all(st){ return (st.active? [st.active] : []).concat(Parked.list(st)); },
+  ids(st){ return Parked.all(st).map(s=>s.id); },
+  /* Ends open session id with fn (the one on screen when id is left out): a parked one comes on screen for it, and the
+     one that was there goes back on screen after. stop() stops the section's rest timer. */
+  endOne(st, id, stop, fn){
+    const was=st.active&&st.active.id;
+    if(id && was!==id){ stop(); if(!Parked.pick(st, id)) return false; }
+    if(!st.active) return false;
+    fn(); if(was && was!==id && !st.active) Parked.pick(st, was);
+    return true;
+  },
+  clock(ts){ return new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); },
+  /* Above the session on screen: each other open one, to switch to. n(s) counts a session's sets done. */
+  bars(st, n, esc, icon){ return Parked.list(st).map(p=>{ const k=n(p);
+    return `<div class="banner info" style="align-items:center">${icon}<span style="flex:1;min-width:0">Also open: <b>${esc(p.name)}</b> &middot; ${k} set${k===1?'':'s'}</span><button class="tinybtn" data-act="switch-session" data-id="${esc(p.id)}" style="flex:none">Switch</button></div>`; }).join(''); },
+  /* Ladder's and Strength's Today: a card for each session left open, to pick it back up. */
+  cards(st, n, esc){ return Parked.list(st).map(p=>{ const k=n(p);
+    return `<div class="card pad"><div class="spread"><div style="min-width:0"><div class="eyebrow">Also open</div>
+      <div style="font-weight:700;font-size:16px;margin-top:3px">${esc(p.name)}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:2px">${k} set${k===1?'':'s'} done &middot; started ${Parked.clock(p.startedAt)}</div></div>
+      <button class="btn primary sm" data-act="switch-session" data-id="${esc(p.id)}">Resume</button></div></div>`; }).join(''); }
+};
+
 /* ==================== TAKE BACK ====================
    Shared by every section. Finishing or ending a session can be taken back: you go back into the session as it
    was, and the clock carries on. Just before, the section keeps a copy of its saved data in a slot of its own;
@@ -2282,7 +2318,7 @@ window.TakeBack=(function(){
     let mem;
     const read=()=>{ if(mem===undefined){ try{ mem=JSON.parse(localStorage.getItem(o.key)||'null'); }catch(e){ mem=null; } } return mem; };
     const write=v=>{ mem=v; try{ if(v) localStorage.setItem(o.key, JSON.stringify(v)); else localStorage.removeItem(o.key); }catch(e){} };
-    const print=d=>{ const c=Object.assign({}, d); ['route','settings','active'].concat(o.ui||[]).forEach(k=>{ delete c[k]; }); return JSON.stringify(c); };
+    const print=d=>{ const c=Object.assign({}, d); ['route','settings','active','parked'].concat(o.ui||[]).forEach(k=>{ delete c[k]; }); return JSON.stringify(c); };
     const closing=t=>t&&(t.kind==='finish'||t.kind==='end');
     function get(){
       const t=read(); if(!t) return null;
@@ -2310,7 +2346,8 @@ window.TakeBack=(function(){
         if(t.kind==='delete') list.splice(Math.min(t.i, list.length), 0, t.rec);
         else if(t.kind==='edit'){ const i=list.findIndex(h=>h.id===t.id); if(i>=0) list[i]=t.rec; }
         else {
-          const d=JSON.parse(t.snap); d.settings=o.data().settings;
+          // other sessions left open stay as they are now
+          const d=JSON.parse(t.snap), now=o.data(); d.settings=now.settings; if(now.parked) d.parked=now.parked;
           if(d.active){ d.active.startedAt+=Date.now()-t.at; d.active.restEndsAt=null; }   // the time away doesn't count
           o.load(d);
         }
@@ -2731,7 +2768,7 @@ function defaultState(){
       equipment:['Barbell','Dumbbell','Machine','Cable','Bodyweight'], tempo:[3,0,1,0]},
     exercises: buildSeed(),
     history:[],
-    active:null, repeat:null,
+    active:null, parked:[], repeat:null,
     bodylog:[], milestones:[], rirCal:[],
     mesos:[], planMode:'home', builder:null,
     progressTab:'insights', progressEx:null,
@@ -2755,6 +2792,7 @@ function hydrate(p){
     state.bodylog = Array.isArray(p.bodylog)? p.bodylog : [];
     state.milestones = Array.isArray(p.milestones)? p.milestones : [];
     state.rirCal = Array.isArray(p.rirCal)? p.rirCal : [];
+    state.parked = Array.isArray(p.parked)? p.parked : [];
     state.builder = null; state.planMode = 'home';
     // ensure seed exercises present (merge custom on top)
     const seed = buildSeed();
@@ -2766,14 +2804,15 @@ let saveTimer=null;
 function storePayload(){
   return { v:state.v, route:state.route, onboarded:state.onboarded, settings:state.settings,
     exercises: state.exercises.filter(e=>e.custom),
-    history: state.history, active: state.active, repeat: state.repeat, mesos: state.mesos, bodylog: state.bodylog, milestones: state.milestones,
+    history: state.history, active: state.active, parked: state.parked, repeat: state.repeat, mesos: state.mesos, bodylog: state.bodylog, milestones: state.milestones,
     rirCal: state.rirCal };
 }
 /* Finishing or ending a session, deleting one or saving changes to one can be taken back (TakeBack, shared). */
 const tb=TakeBack.make({key:LS_KEY+'.undo', data:()=>storePayload(), load:c=>hydrate(c),
   sessions:()=>state.history, busy:()=>!!state.active});
+let histVer=0;   // moves on every change, so Ladder knows when to read Muscle's sets again
 function save(){
-  clearTimeout(saveTimer);
+  histVer++; clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{ Safe.put(LS_KEY, JSON.stringify(storePayload())); }, 120);
 }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
@@ -2811,8 +2850,22 @@ function relDay(ts){
 }
 function fmtDur(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
 
+/* Exercises Ladder has too (pull-ups, dips, push-ups and the like): for a bodyweight one, Ladder's latest set counts as
+   your last one when it is newer. Ladder records reps, not added weight, so a loaded exercise keeps to Muscle's own sets. */
+let ladMemo={k:null, v:{}};
+function ladderLast(exId){
+  const H=window.__hub; if(!isBW(exId)||!H||!H.has||!H.has('cal')) return null;
+  const C=H.api('cal'); if(!C||!C.lastSet) return null;
+  const k=C.stamp(); if(ladMemo.k!==k) ladMemo={k, v:{}};
+  if(!(exId in ladMemo.v)) ladMemo.v[exId]=C.lastSet(exId); return ladMemo.v[exId];
+}
 /* previous performance lookup: best-matching last logged top working set for an exercise */
 function lastPerf(exId, beforeTs){
+  const own=ownLastPerf(exId, beforeTs), l=ladderLast(exId);
+  if(l && (!beforeTs || l.date<beforeTs) && (!own || l.date>own.date)) return {type:'work', weight:null, reps:l.reps, rir:l.rir, done:true, from:'Ladder', date:l.date};
+  return own;
+}
+function ownLastPerf(exId, beforeTs){
   for(let i=state.history.length-1;i>=0;i--){
     const w = state.history[i];
     if(beforeTs && w.date>=beforeTs) continue;
@@ -2823,7 +2876,7 @@ function lastPerf(exId, beforeTs){
         // the top set: load and reps folded into one number
         let top = work[0];
         for(const s of work){ if(setScore(exId,s,w.date)>setScore(exId,top,w.date)) top=s; }
-        return top;
+        return Object.assign({}, top, {date:w.date});
       }
     }
   }
@@ -2879,7 +2932,7 @@ function weeklyVolume(){
     }
   };
   for(const w of state.history){ if(w.date>=since) scan(w.entries); }
-  if(state.active) scan(state.active.entries);
+  Parked.all(state).forEach(a=>scan(a.entries));
   // hard sets logged in Strength and Ladder count toward the same muscles
   let ext=0; const extFrom=[];
   if(window.__hub){ try{
@@ -2921,26 +2974,31 @@ function renderTabs(){
 }
 
 /* ==================== TODAY ==================== */
+/* An open session on Today: the one on screen, or one left open to come back to. */
+function setsDone(a){ return a.entries.reduce((x,e)=>x+e.sets.filter(s=>isWork(s)&&s.done).length,0); }
+function resumeRow(a){
+  const done = setsDone(a), on = a===state.active, many = Parked.list(state).length>0;
+  return `<div class="resume">
+      <div class="rico">${I.play}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14.5px">${esc(a.name)}</div>
+        <div class="muted" style="font-size:12px;margin-top:1px">${done} set${done===1?'':'s'} logged &middot; ${many? 'started '+Parked.clock(a.startedAt) : 'in progress'}</div>
+      </div>
+      <button class="btn primary sm" data-act="${on?'nav':'switch-session'}" data-route="train" data-id="${esc(a.id)}">Resume</button>
+    </div>`;
+}
+/* A block day already open, on screen or left open: starting it again would log it twice. */
+function mesoDayOpen(m, dayId){ return Parked.all(state).some(a=>a.meso && a.meso.mesoId===m.id && a.meso.dayId===dayId && a.meso.week===m.currentWeek); }
 function viewToday(){
   const hour = new Date().getHours();
   const greet = hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';
   const vol = weeklyVolume();
   const totalDirect = Object.values(vol.direct).reduce((a,b)=>a+b,0);
-  const sessions7 = state.history.filter(w=>w.date>=daysAgo(6)).length + (state.active?1:0);
+  const open = Parked.all(state);
+  const sessions7 = state.history.filter(w=>w.date>=daysAgo(6)).length + open.length;
   const tip = TIPS[new Date().getDate() % TIPS.length];
 
-  let resumeHtml='';
-  if(state.active){
-    const done = state.active.entries.reduce((a,e)=>a+e.sets.filter(s=>isWork(s)&&s.done).length,0);
-    resumeHtml = `<div class="resume">
-      <div class="rico">${I.play}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:14.5px">${esc(state.active.name)}</div>
-        <div class="muted" style="font-size:12px;margin-top:1px">${done} sets logged &middot; in progress</div>
-      </div>
-      <button class="btn primary sm" data-act="nav" data-route="train">Resume</button>
-    </div>`;
-  }
+  const resumeHtml = open.map(resumeRow).join('');
 
   const R=state.repeat;
   const repeatHtml = state.active || !R ? '' : `<div class="resume">
@@ -2951,7 +3009,8 @@ function viewToday(){
       <button class="btn primary sm" data-act="repeat-go">Start again</button>
       <button class="iconbtn" data-act="repeat-x" aria-label="Not now">${I.x}</button>
     </div>`;
-  const startCards = state.active ? '' : `
+  // with a session open these start another alongside it
+  const startCards = `
     <div class="grid2" style="margin-top:12px;gap:12px">
       <button class="btn ghost block" data-act="start-empty">${I.plus} Free session</button>
       <button class="btn ghost block" data-act="open-templates">${I.layers} Templates</button>
@@ -2970,7 +3029,7 @@ function viewToday(){
           <div style="font-family:Archivo;font-weight:800;font-size:16px;letter-spacing:-.01em">${esc(am.name)}</div>
           <div class="muted" style="font-size:12px;margin-top:2px">Week ${am.currentWeek}/${am.totalWeeks} &middot; ${doneN}/${am.days.length} days done${nextDay?' &middot; next: '+esc(nextDay.name):''}</div>
         </div>
-        ${nextDay && !state.active? `<button class="btn primary sm" data-act="meso-startday" data-day="${esc(nextDay.id)}">${I.play} Start</button>` : `<button class="btn ghost sm" data-act="nav" data-route="plan">View plan</button>`}
+        ${nextDay && !mesoDayOpen(am, nextDay.id)? `<button class="btn ${open.length?'ghost':'primary'} sm" data-act="meso-startday" data-day="${esc(nextDay.id)}">${I.play} Start</button>` : `<button class="btn ghost sm" data-act="nav" data-route="plan">View plan</button>`}
       </div>
     </div>`;
   }
@@ -2998,12 +3057,12 @@ function viewToday(){
   return `
   <div class="stack">
     <div class="hero">
-      <h2>${state.active?'Session in progress':am?'Your next session starts here.':'Build muscle, one session at a time.'}</h2>
-      <p class="sub">${state.active?'Pick up where you left off.':am?'Follow your block, log your sets, and give each muscle time to recover.':'Plan your next block or start with a session. Log your sets and see your training take shape.'}</p>
+      <h2>${open.length>1?'Sessions in progress':open.length?'Session in progress':am?'Your next session starts here.':'Build muscle, one session at a time.'}</h2>
+      <p class="sub">${open.length>1?'Pick one up, or start another alongside them.':open.length?'Pick up where you left off.':am?'Follow your block, log your sets, and give each muscle time to recover.':'Plan your next block or start with a session. Log your sets and see your training take shape.'}</p>
       ${resumeHtml}
       ${repeatHtml}
       ${mesoCard}
-      ${!am&&!state.active?`<button class="btn primary block" data-act="gen-open">${I.calendar} Build my training plan</button>`:''}
+      ${!am&&!open.length?`<button class="btn primary block" data-act="gen-open">${I.calendar} Build my training plan</button>`:''}
       ${startCards}
     </div>
 
@@ -3034,7 +3093,17 @@ function viewToday(){
 
 /* ==================== TRAIN ==================== */
 function viewTrain(){
-  const a = state.active;
+  const a = state.active, parked = Parked.list(state);
+  if(!a && parked.length){
+    return `<div class="stack"><div class="hero">
+      <h2>${parked.length===1?'A session is still open':parked.length+' sessions are still open'}</h2>
+      <p class="sub">Pick one up, or start another.</p>
+      ${parked.map(resumeRow).join('')}
+      <div class="grid2" style="margin-top:12px;gap:12px">
+        <button class="btn ghost block" data-act="start-empty">${I.plus} Free session</button>
+        <button class="btn ghost block" data-act="open-templates">${I.layers} Templates</button>
+      </div></div></div>`;
+  }
   if(!a){
     return `<div class="empty-train">
       <div class="ei">${I.dumbbell}</div>
@@ -3065,6 +3134,7 @@ function viewTrain(){
     </div>
     <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
   </div>
+  ${Parked.bars(state, setsDone, esc, I.layers)}
   ${readi}
   ${a.trim? `<div class="banner info" style="align-items:flex-start">${I.layers}<span style="flex:1;min-width:0"><b>Trimmed for Together.</b> ${a.trim.cuts.map(c=>esc(c.name)+' '+(c.to? c.from+'&rarr;'+c.to+' sets' : 'left out')+(c.why? ' ('+esc(c.why)+')':'')).join('; ')}.</span><button class="tinybtn" data-act="trim-undo" style="flex:none">Put back</button></div>` : ''}
   ${a.note
@@ -3126,7 +3196,7 @@ function exerciseCard(en, ei){
         <h3 data-act="howto" data-id="${esc(en.exId)}" style="cursor:pointer">${esc(en.name)}<span class="hinfo">${I.info}</span></h3>
         <div class="mm">${prim}${sec}</div>
         ${en.overloadNote?`<div class="chip heat" style="margin-top:7px">${I.trending} ${en.overloadNote}</div>`:''}
-        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}</div>`
+        ${lp?`<div class="chip" style="margin-top:7px" title="Reps placeholders show a predicted target at your entered weight">${I.repeat} Last: ${wTxt(en.exId, lp.weight)}&times;${lp.reps}${lp.rir!=null?' @'+lp.rir:''}${lp.from? ' in '+lp.from : ''}</div>`
           : bw? '' : (()=>{ const sp=similarPerf(en.exId);
             return `<div class="newex">${sp? `First time here. Your latest ${esc(sp.name)}: <b>${wTxt(sp.exId, sp.s.weight)}&times;${sp.s.reps}</b>, ${relDay(sp.date).toLowerCase()}. Weights differ between machines, dumbbells and bars, so start a little lighter and adjust.`
               : `First time here: pick a weight you can lift for ${t.repLow}&ndash;${t.repHigh} reps with about ${t.rir} left in the tank.`} Next time starts from what you log.</div>`; })()}
@@ -4712,7 +4782,7 @@ function applyImport(data, mode){
       state.bodylog=Array.isArray(data.bodylog)?data.bodylog:[];
       state.milestones=Array.isArray(data.milestones)?data.milestones:[];
       state.rirCal=Array.isArray(data.rirCal)?data.rirCal:[];
-      state.active=null;
+      state.active=null; state.parked=[];
     } else {
       const have=new Set(state.exercises.map(e=>e.id));
       (data.exercises||[]).forEach(e=>{ if(e&&e.custom&&!have.has(e.id)){ state.exercises.push(e); have.add(e.id); } });
@@ -4761,7 +4831,8 @@ function addExerciseToActive(exId){
 }
 let pendingStart=null;
 function confirmNewSession(cb){
-  const dirty = state.active && state.active.entries.some(e=>e.sets.some(s=>isWork(s)&&s.done));
+  // one picked back up from history always asks: throwing it away puts it back there
+  const dirty = state.active && (state.active.cont || state.active.entries.some(e=>e.sets.some(s=>isWork(s)&&s.done)));
   if(!dirty){ cb(); return; }
   pendingStart=cb;
   const done=state.active.entries.reduce((a,e)=>a+e.sets.filter(s=>isWork(s)&&s.done).length,0);
@@ -4770,10 +4841,19 @@ function confirmNewSession(cb){
     <div class="sheet-body">
       <div style="text-align:center;padding:6px 0"><div class="logo" style="width:44px;height:44px;border-radius:13px;margin:0 auto 12px;background:var(--grad-heat)">${I.dumbbell}</div>
       <h2 class="disp" style="font-weight:800;font-size:19px;margin:0 0 6px">A session is already going</h2>
-      <p class="muted" style="font-size:13px;margin:0 auto 18px;max-width:290px">You have ${done} set${done===1?'':'s'} logged in &ldquo;${esc(state.active.name)}&rdquo;. Finish it first, or discard it to start the new one.</p></div>
-      <button class="btn primary block" data-act="resume-active">Keep logging current session</button>
+      <p class="muted" style="font-size:13px;margin:0 auto 18px;max-width:290px">You have ${done} set${done===1?'':'s'} logged in &ldquo;${esc(state.active.name)}&rdquo;. Keep it open and start the new one alongside it (switch between them from Today), or discard it.</p></div>
+      <button class="btn primary block" data-act="park-active-confirm">${I.plus} Start the new one too</button>
+      <button class="btn ghost block" data-act="resume-active" style="margin-top:8px">Back to &ldquo;${esc(state.active.name)}&rdquo;</button>
       <button class="btn ghost block" data-act="replace-active-confirm" style="margin-top:8px;color:var(--crit)">Discard it &amp; start new</button>
     </div>`, true);
+}
+/* The session on screen stays open while another starts or comes on screen (Parked, shared). */
+function parkActive(){ if(!state.active) return; stopRest(); Parked.park(state); save(); }
+function switchSession(id){
+  if(state.active&&state.active.id===id){ state.route='train'; render(); return; }
+  stopRest(); if(!Parked.pick(state, id)) return;
+  save(); state.route='train'; render(); window.scrollTo(0,0);
+  if(window.__hub) window.__hub.changed('lift');
 }
 function startEmpty(){ state.active=null; ensureActive('Workout'); save(); state.route='train'; render(); openPicker(); }
 function startTemplate(tpl){
@@ -4948,8 +5028,8 @@ function insertRec(rec){ const i=state.history.findIndex(h=>h.date>rec.date); if
    didn't waiting. Finishing it again saves it in its place, keeping its date; the day it ticked off in your block and next week’s sets stay as they are. */
 function continueSession(id){
   if(window.__hub) window.__hub.stay('lift');   // opened from Together: train it here
-  if(state.active){ closeModal(); state.route='train'; render(); toast('Finish or end the session you have going first'); return; }
   const r=state.history.find(h=>h.id===id); if(!r) return;
+  if(state.active){ closeModal(); confirmNewSession(()=>{ state.active=null; continueSession(id); }); return; }
   if(resumable(id) && !tb.changed()){ takeBack(); return; }
   const entries=OpenSets.reopen(r, e=>e.exId, x=>Object.assign(makeSet(x.type), x)).filter(e=>e.exId);
   state.history=state.history.filter(h=>h!==r);
@@ -5634,7 +5714,11 @@ __root.addEventListener('click', e=>{
     case 'open-templates': openTemplates(); break;
     case 'pick-template': { const t=TEMPLATES.find(x=>x.id===el.dataset.tpl); closeModal(); if(t) confirmNewSession(()=>startTemplate(t)); break; }
     case 'resume-active': pendingStart=null; closeModal(); state.route='train'; render(); break;
-    case 'replace-active-confirm': { const cb=pendingStart; pendingStart=null; closeModal(); if(cb) cb(); break; }
+    case 'replace-active-confirm': { const cb=pendingStart, a=state.active; pendingStart=null; closeModal();
+      if(a&&a.cont){ insertRec(a.cont.rec); state.active=null; stopRest(); }   // back in history as it was
+      if(cb) cb(); break; }
+    case 'park-active-confirm': { const cb=pendingStart; pendingStart=null; closeModal(); parkActive(); if(cb) cb(); break; }
+    case 'switch-session': closeModal(); switchSession(el.dataset.id); break;
     case 'open-picker': openPicker({type:'active'}); break;
     case 'pick-ex': {
       const id=el.dataset.id;
@@ -5976,7 +6060,7 @@ function loadSampleData(){
   }
   const body=[]; for(let d=120; d>=0; d-=5) body.push({date:Math.floor((now-d*DAY)/DAY)*DAY, weight:Math.round((80-(120-d)*0.012)*10)/10});
   state.history=hist; state.mesos=mesos; state.bodylog=body;
-  state.rirCal=[]; state.active=null;
+  state.rirCal=[]; state.active=null; state.parked=[];
   save();
 }
 function confirmSample(){
@@ -6121,7 +6205,7 @@ function hubUpcoming(k){
 }
 function hubInfo(){
   const a=state.active, m=getActiveMeso();
-  const o={ready:!!m, onboarded:state.onboarded, busy:!!a, activeId:a?a.id:null, activeName:a?a.name:null, target:state.settings.target};
+  const o={ready:!!m, onboarded:state.onboarded, busy:!!a, activeId:a?a.id:null, activeName:a?a.name:null, open:Parked.ids(state), target:state.settings.target};
   if(!m){ o.why= state.mesos.some(x=>x.status==='complete')? 'finished' : state.mesos.length? 'paused' : 'none'; return o; }
   const w=m.currentWeek, complete=weekComplete(m);
   const dayInfo=d=>mesoDayInfo(m, d, complete? Math.min(w+1,m.totalWeeks) : w);
@@ -6163,11 +6247,18 @@ if(window.__hub) window.__hub.reg('lift', {
   sheetOpen:()=>modalOn, running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   info:hubInfo, work:hubWork, start:hubStart, setup:hubSetup, upcoming:hubUpcoming, catalog:hubCatalog, startWith:hubStartWith,
   equipment:()=>CUSTOM_EQUIP.slice(),
-  // Together ends a day's open session: keep:true saves the sets you logged, false drops it (Take back still works)
-  end(keep){ if(!state.active) return false; endOpt={keep:!!keep, repeat:false}; endSession(); return true; },
+  // Together ends a day's open session (id, or the one on screen): keep:true saves the sets you logged, false drops it (Take back still works)
+  end(keep, id){ const ok=Parked.endOne(state, id, stopRest, ()=>{ endOpt={keep:!!keep, repeat:false}; endSession(); }); if(ok) save(); return ok; },
+  // Together starts a part while another session is open here: that one stays open, out of the way
+  park(){ if(!state.active) return false; parkActive(); return true; },
   addCustom(d){ const e=addCustomEx(d||{}); if(e&&state.route==='library') render(); return e? e.id : null; },
-  open(){ state.route=state.active?'train':'plan'; render(); window.scrollTo(0,0); },
+  open(){ state.route=Parked.all(state).length?'train':'plan'; render(); window.scrollTo(0,0); },
   exMuscles(id){ const e=exById(id); return e? {p:e.primary.slice(), s:e.secondary.slice()} : null; },
+  // for Ladder: the ticked work sets of exercises it has too, and a counter that moves whenever they may have changed
+  sharedSets(ids){ const want=new Set(ids);
+    return state.history.map(w=>({id:w.id, date:w.date, entries:w.entries.filter(e=>want.has(e.exId))
+      .map(e=>({exId:e.exId, sets:e.sets.filter(s=>isWork(s)&&s.done&&s.reps>0).map(s=>({reps:s.reps, rir:s.rir}))})).filter(e=>e.sets.length)})).filter(w=>w.entries.length); },
+  stamp:()=>histVer,
   table(){ return {muscles:MUSCLES, groups:GROUPS}; },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
@@ -7187,7 +7278,7 @@ function defaultState(){
   const rung={}; LADDER_ORDER.forEach(k=>rung[k]=0);
   return { v:2, onboarded:false, route:'today',
     settings:{theme:'system', rest:120, sound:true, vibrate:true},
-    rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull' };
+    rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, parked:[], repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull' };
 }
 /* Fill in anything missing and upgrade version 1 data (no goals, no placement). */
 function normalize(p){
@@ -7212,10 +7303,9 @@ function normalize(p){
   if(s.route==='ladders') s.route='library';
   if(!['today','train','goals','progress','library'].includes(s.route)) s.route='today';
   if(!PATTERNS.includes(s.libTab)) s.libTab='Pull';
-  if(s.active){
-    s.active.entries=(s.active.entries||[]).filter(e=>LADDERS[e.ladderId]&&LADDERS[e.ladderId].steps[e.stepIdx]);
-    if(s.active.restEndsAt && s.active.restEndsAt<Date.now()) s.active.restEndsAt=null;
-  }
+  if(!Array.isArray(s.parked)) s.parked=[];
+  Parked.all(s).forEach(a=>{ a.entries=(a.entries||[]).filter(e=>LADDERS[e.ladderId]&&LADDERS[e.ladderId].steps[e.stepIdx]); });
+  if(s.active && s.active.restEndsAt && s.active.restEndsAt<Date.now()) s.active.restEndsAt=null;
   return s;
 }
 function load(){
@@ -7225,8 +7315,9 @@ function load(){
 }
 let saveTimer=null;
 function payload(){ return {v:state.v,onboarded:state.onboarded,route:state.route,settings:state.settings,rung:state.rung,paths:state.paths,needClaims:state.needClaims,placed:state.placed,said:state.said,
-  advances:state.advances, history:state.history, active:state.active, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab}; }
-function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
+  advances:state.advances, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab}; }
+let ladVer=0;   // moves on every change, so Muscle knows when to read Ladder's sets again
+function save(){ ladVer++; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
    when the page is hidden or closed: a phone can drop the app at any moment. */
 function flush(){ if(saveTimer){ clearTimeout(saveTimer); Safe.put(LS_KEY,JSON.stringify(payload())); } }
@@ -7294,9 +7385,23 @@ function isSkill(id){ return !!LADDERS[id].skill; }
 function practiceOf(id,i){const L=LADDERS[id];return stepsOf(id)[i==null?curIdx(id):i].practice||L.practice||(L.like&&LADDERS[L.like]&&LADDERS[L.like].practice)||'strength';}
 function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||Math.min(st.v,st.k==='hold'?5:3); }
 const PROOF_DAYS=90, CLEAR_DAYS=42;
+/* Exercises Muscle has too (pull-ups, dips, push-ups and the like): its ticked sets count here as clean sets of that
+   exercise, so the pull-ups you log in Muscle move your pull-up rung on like ones logged here. Muscle logs reps, so holds
+   are left out. They count toward your best, your targets and your next rung; Ladder's own week of hard sets is unchanged. */
+let musMemo={k:null, v:[]};
+function fromMuscle(){
+  const H=window.__hub; if(!H||!H.has||!H.has('lift')) return [];
+  const L=H.api('lift'); if(!L||!L.sharedSets) return [];
+  const k=L.stamp(); if(musMemo.k===k) return musMemo.v;
+  const where={}; Object.keys(LADDERS).forEach(id=>stepsOf(id).forEach((st,i)=>{ if(st.k!=='hold'&&!where[st.id]) where[st.id]=[id,i]; }));
+  const v=L.sharedSets(Object.keys(where)).map(w=>({id:'muscle-'+w.id, date:w.date, muscle:true, entries:w.entries.map(e=>{ const [l,i]=where[e.exId];
+    return {ladderId:l, stepIdx:i, target:stepsOf(l)[i].v, setup:{}, clean:true, sets:e.sets.map(x=>({v:x.reps, rir:x.rir, done:true, clean:true}))}; })}));
+  musMemo={k, v}; return v;
+}
+function allHistory(){ const m=fromMuscle(); return m.length? state.history.concat(m) : state.history; }
 function proofSets(id,i,days){
   const rid=rungId(id,i), st=stepsOf(id)[i], since=Date.now()-days*86400000, out=[];
-  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+  allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{};
       if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,target:e.target||st.v}); });
@@ -7311,7 +7416,7 @@ function verifiedBestFor(id,i){
 }
 function currentProof(id,i){
   const st=stepsOf(id)[i], groups=new Map(), since=Date.now()-CLEAR_DAYS*86400000, rid=rungId(id,i);
-  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+  allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     const setsBySetup=new Map();
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{}, key=setupKey(st,setup);
@@ -7335,7 +7440,7 @@ function rungTarget(id,i,role){
   if(role==='maintenance') return Math.min(st.v,limit);
   let target=st.v;
   const rid=rungId(id,i), since=Date.now()-CLEAR_DAYS*86400000, byTarget=new Map();
-  state.history.filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
+  allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     const t=Math.max(st.v,e.target||st.v), keys=new Map();
     (e.sets||[]).forEach(s=>{const key=setupKey(st,s.setup||e.setup||{});if(s.done&&s.clean===true&&s.v>=t&&key!=null) keys.set(key,(keys.get(key)||0)+1);});
@@ -7369,7 +7474,7 @@ function setsIn(days){ const since=daysAgo(days-1); let n=0;
 function rungId(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; return st? st.id : null; }
 function bestFor(id,i){
   let best=0; const rid=rungId(id,i);
-  state.history.forEach(w=>w.entries.forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)===rid) e.sets.forEach(s=>{ if(s.done&&(s.v||0)>best) best=s.v; }); }));
+  allHistory().forEach(w=>w.entries.forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)===rid) e.sets.forEach(s=>{ if(s.done&&(s.v||0)>best) best=s.v; }); }));
   state.tests.forEach(t=>{ if(rungId(t.ladderId,t.stepIdx)===rid&&t.v>best) best=t.v; });
   return best;
 }
@@ -7971,6 +8076,31 @@ function beginSession(ids, sets){
   save(); closeModal(); state.route='train'; render(); window.scrollTo(0,0); toast('Session started');
   if(window.__hub) window.__hub.changed('cal');
 }
+/* Starting a session while one is going: keep that one open beside the new one (Parked, shared), go back to it, or throw it away. */
+let pendingStart=null;
+function confirmStart(fn){
+  const a=state.active; if(!a){ fn(); return; }
+  pendingStart=fn;
+  const done=setsDone(a);
+  openModal(`<div class="sheet-grab"></div>
+    <div class="sheet-head"><h3>A session is already going</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
+    <div class="sheet-body">
+      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 14px">${done? done+' set'+(done===1?'':'s')+' done' : 'Nothing done yet'} in &ldquo;${esc(a.name)}&rdquo;. Keep it open and start the new one alongside it (switch between them from Today), or throw it away.</p>
+      <button class="btn primary block" data-act="park-start">${I.plus} Start the new one too</button>
+      <button class="btn ghost block" data-act="go-train" style="margin-top:8px">Back to &ldquo;${esc(a.name)}&rdquo;</button>
+      <button class="btn ghost block" data-act="replace-start" style="margin-top:8px;color:var(--crit)">Throw it away and start new</button>
+    </div>`);
+}
+function setsDone(a){ return a.entries.reduce((n,e)=>n+e.sets.filter(s=>s.done).length,0); }
+/* The session on screen stays open while another starts or comes on screen. */
+function parkActive(){ if(!state.active) return; stopRest(); Parked.park(state); save(); }
+/* Thrown away: one picked back up from history goes back there as it was. */
+function dropActive(){ const a=state.active; if(!a) return; if(a.cont) insertRec(a.cont.rec); state.active=null; stopRest(); save(); }
+function switchSession(id){
+  if(!(state.active&&state.active.id===id)){ stopRest(); if(!Parked.pick(state, id)) return; save(); }
+  state.route='train'; render(); window.scrollTo(0,0);
+  if(window.__hub) window.__hub.changed('cal');
+}
 /* ==================== END WITHOUT FINISHING ==================== */
 /* Stop part-way: keep or drop the sets done, then repeat the session next time or not. No rung is offered for an ended session. */
 let endOpt=null;
@@ -8143,8 +8273,8 @@ function insertRec(rec){ const i=state.history.findIndex(h=>h.date>rec.date); if
    didn't waiting. Finishing it again saves it in its place, keeping its date; rungs it moved you up stay where they are. */
 function continueSession(id){
   if(window.__hub) window.__hub.stay('cal');   // opened from Together: train it here
-  if(state.active){ closeModal(); state.route='train'; render(); toast('Finish or end the session you have going first'); return; }
   const r=state.history.find(h=>h.id===id); if(!r) return;
+  if(state.active){ confirmStart(()=>continueSession(id)); return; }
   if(resumable(id) && !tb.changed()){ takeBack(); return; }
   const entries=OpenSets.reopen(r, e=>e.ladderId+'|'+e.stepIdx, x=>Object.assign(makeSet(), x)).filter(e=>LADDERS[e.ladderId]&&LADDERS[e.ladderId].steps[e.stepIdx]);
   state.history=state.history.filter(h=>h!==r);
@@ -8189,7 +8319,8 @@ function viewToday(){
   if(a){
     hero=`<div class="hero"><div class="eyebrow">Session in progress</div><h2>${esc(a.name)}</h2>
       <p class="sub">${a.entries.length} exercise${a.entries.length===1?'':'s'} loaded. Pick up where you left off.</p>
-      <button class="btn primary block" data-act="nav" data-route="train">${I.flag} Back to session</button></div>`;
+      <button class="btn primary block" data-act="nav" data-route="train">${I.flag} Back to session</button>
+      <button class="btn ghost block" data-act="park-today" style="margin-top:8px">${I.plus} Start another</button></div>`;
   } else if(goals.length){
     const P=todayPlan(), xs=orderIds(P.map(x=>x.id)).map(id=>P.find(x=>x.id===id));
     // goals that wait their turn today: name the ones the next session brings
@@ -8218,7 +8349,7 @@ function viewToday(){
   const sets7=setsIn(7), sessions7=new Set(state.history.filter(w=>w.date>=daysAgo(6)).map(w=>dayStart(w.date))).size;
   const achieved=state.goals.filter(g=>g.achieved).length;
   const recentAdv=state.advances.slice().reverse().slice(0,3);
-  return `<div class="stack">${again}${hero}${a? '' : unlockCard()}
+  return `<div class="stack">${again}${hero}${Parked.cards(state, setsDone, esc)}${a? '' : unlockCard()}
     ${due.length?`<button class="banner brass" data-act="test-go" data-ids="${due.join(',')}" style="width:100%;text-align:left;margin:0">${I.test}
       <span><b>${due.some(id=>lastTestFor(id))?'Time for a progress check.':'Test where you are.'}</b> One all-out set on ${due.map(id=>esc(curStep(id).n)).join(' and ')} keeps your plan honest.</span><span style="margin-left:auto">${I.arrow}</span></button>`:''}
     ${goals.length?`<div><div class="section-label">${I.target}<span>Your goals</span><span class="ln"></span><button class="tinybtn" data-act="goal-add" style="padding:5px 9px">${I.plus} Add</button></div>${goals.map(goalCard).join('')}</div>`:''}
@@ -8433,6 +8564,8 @@ function deleteCustomLadder(id){
 /* ==================== VIEWS: TRAIN ==================== */
 function viewTrain(){
   const a=state.active;
+  if(!a && Parked.list(state).length) return `<div class="stack">${Parked.cards(state, setsDone, esc)}
+    <div class="grid2"><button class="btn ghost block" data-act="builder">${I.plus} Start another</button><button class="btn ghost block" data-act="nav" data-route="today">${I.home} Today</button></div></div>`;
   if(!a) return `<div class="empty"><div class="ei">${I.bar}</div>
     <h3>No session running</h3><p>${activeGoals().length?'Start today&rsquo;s goal session, or pick exactly what you want to train.':'Pick the exercises you want to train today.'}</p>
     <div class="grid2" style="max-width:320px;margin:0 auto">
@@ -8447,6 +8580,7 @@ function viewTrain(){
       <button class="setmenu" data-act="session-menu" aria-label="Session options">${I.dots}</button>
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
     </div>
+    ${Parked.bars(state, setsDone, esc, I.copy)}
     ${a.entries.map((e,ei)=>exCard(e,ei)).join('')}
     <button class="btn ghost block" data-act="pick-ex" style="margin-top:4px">${I.plus} Add exercise</button>
     <button class="btn ghost block" data-act="end-open" style="margin-top:8px">${I.flag} End without finishing</button>`;
@@ -8820,9 +8954,14 @@ __root.addEventListener('click', e=>{
 
     /* sessions */
     case 'start-plan': if(A){ state.route='train'; render(); break; } beginSession(defaultPicks()); break;
-    case 'builder': if(A){ state.route='train'; render(); toast('Finish or discard the current session first'); break; } openBuilder(); break;
+    case 'builder': openBuilder(); break;
+    case 'park-start': { const fn=pendingStart; pendingStart=null; closeModal(); parkActive(); if(fn) fn(); break; }
+    case 'replace-start': { const fn=pendingStart; pendingStart=null; closeModal(); dropActive(); if(fn) fn(); break; }
+    case 'go-train': pendingStart=null; closeModal(); state.route='train'; render(); break;
+    case 'switch-session': closeModal(); switchSession(el.dataset.id); break;
+    case 'park-today': { const n=A&&A.name; parkActive(); state.route='today'; render(); window.scrollTo(0,0); if(n) toast('“'+n+'” stays open. Start the next one here'); if(window.__hub) window.__hub.changed('cal'); break; }
     case 'bpick': { const id=el.dataset.id; if(pick.has(id)) pick.delete(id); else pick.add(id); el.classList.toggle('on',pick.has(id)); const b=$('#bstart'); if(b) b.innerHTML=MiloSecurity.html(bstart()); break; }
-    case 'bstart': if(!pick||!pick.size){ toast('Tick at least one exercise'); break; } beginSession([...pick]); break;
+    case 'bstart': { if(!pick||!pick.size){ toast('Tick at least one exercise'); break; } const ids=[...pick]; confirmStart(()=>beginSession(ids)); break; }
     case 'pick-ex': openPicker(); break;
     case 'add-to-session': addToSession(el.dataset.id, el.dataset.i!=null? +el.dataset.i : null); break;
     case 'toggle-done': toggleDone(ei,si); break;
@@ -8852,7 +8991,7 @@ __root.addEventListener('click', e=>{
     case 'end-keep': endOpt.keep=el.dataset.v==='1'; openEnd(); break;
     case 'end-rep': endOpt.repeat=el.dataset.v==='1'; openEnd(); break;
     case 'end-go': endSession(); break;
-    case 'repeat-go': if(A){ state.route='train'; render(); toast('Finish or end the current session first'); break; } startRepeat(); break;
+    case 'repeat-go': confirmStart(startRepeat); break;
     case 'repeat-x': state.repeat=null; save(); render(); break;
     case 'tb-go': takeBack(); break;
     case 'rest-add': { if(A&&A.restEndsAt){ A.restEndsAt+=30000; save(); tickRest(); } break; }
@@ -9053,7 +9192,7 @@ function hubPicks(ahead){
 const gone={};
 function hubInfo(){
   const a=state.active, goals=activeGoals();
-  const o={ready:goals.length>0, onboarded:state.onboarded, busy:!!a, activeId:a?a.id:null, activeName:a?a.name:null,
+  const o={ready:goals.length>0, onboarded:state.onboarded, busy:!!a, activeId:a?a.id:null, activeName:a?a.name:null, open:Parked.ids(state),
     goals:goals.map(g=>g.n), skillGoal:goals.some(g=>isSkill(g.l)), testsDue:testsDue().length};
   if(!o.ready){ o.why='none'; return o; }
   o.picks=hubPicks(0);
@@ -9061,8 +9200,10 @@ function hubInfo(){
 }
 if(window.__hub) window.__hub.reg('cal', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
-  // Together ends a day's open session: keep:true saves the sets you logged, false drops it (Take back still works)
-  end(keep){ if(!state.active) return false; endOpt={keep:!!keep, repeat:false}; endSession(); return true; },
+  // Together ends a day's open session (id, or the one on screen): keep:true saves the sets you logged, false drops it (Take back still works)
+  end(keep, id){ const ok=Parked.endOne(state, id, stopRest, ()=>{ endOpt={keep:!!keep, repeat:false}; endSession(); }); if(ok) save(); return ok; },
+  // Together starts a part while another session is open here: that one stays open, out of the way
+  park(){ if(!state.active) return false; parkActive(); return true; },
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
   info:hubInfo, work:hubWork, upcoming:k=>hubPicks(k),
@@ -9070,7 +9211,7 @@ if(window.__hub) window.__hub.reg('cal', {
     const ids=orderIds(o&&o.ids? o.ids.filter(id=>LADDERS[id]) : defaultPicks()).filter(id=>!drop.includes(id)); if(!ids.length) return null;
     beginSession(ids, o&&o.sets); return state.active? state.active.id : null; },
   setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(); },
-  open(){ state.route=state.active?'train':'today'; render(); window.scrollTo(0,0); },
+  open(){ state.route=Parked.all(state).length?'train':'today'; render(); window.scrollTo(0,0); },
   // your goals, for Together to show and change: where you are on each, and removing or putting one back
   goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null, p=pathFor(g.l,g);
     return {id:g.id, key:g.key, n:g.n, l:g.l, fam:famOf(g.l), placed:!!state.placed[g.l], step:st? st.n : '', pct:Math.round(goalProgress(g)*100), skill:isSkill(g.l),
@@ -9104,6 +9245,14 @@ if(window.__hub) window.__hub.reg('cal', {
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
+  // for Muscle: the top set of an exercise from your latest Ladder session with it (reps, not holds), and a counter that
+  // moves whenever that may have changed
+  lastSet(exId){ for(let w=state.history.length-1;w>=0;w--){ const h=state.history[w];
+      for(const e of h.entries||[]){ const st=LADDERS[e.ladderId]&&stepsOf(e.ladderId)[e.stepIdx]; if(!st||st.id!==exId||st.k==='hold') continue;
+        const done=(e.sets||[]).filter(x=>x.done&&x.v>0); if(!done.length) continue;
+        const top=done.reduce((a,x)=>x.v>a.v? x : a); return {date:h.date, reps:top.v, rir:top.rir!=null? top.rir : null}; } }
+    return null; },
+  stamp:()=>ladVer,
 });
 
 /* ==================== BOOT ==================== */
@@ -9345,7 +9494,7 @@ function defaultState(){
   return { v:2, onboarded:false, route:'today',
     settings:{unit:'kg', theme:'system', barKg:20, platesKg:[25,20,15,10,5,2.5,1.25], platesLb:[45,35,25,10,5,2.5],
       dbStepKg:2, dbStepLb:5, stackStepKg:5, stackStepLb:10, rest:180, sound:true, vibrate:true, warmups:true, tmPct:90, bw:null},
-    setup:null, lifts:defaultLifts(), program:null, history:[], active:null, repeat:null,
+    setup:null, lifts:defaultLifts(), program:null, history:[], active:null, parked:[], repeat:null,
     progTab:'lifts', progLift:null, toolTab:'max' };
 }
 function normalize(p){
@@ -9355,7 +9504,9 @@ function normalize(p){
   if(!Array.isArray(s.history)) s.history=[];
   if(s.setup){ s.setup.areas=(s.setup.areas||[]).filter(a=>AREAS[a]); s.setup.equip=(s.setup.equip||[]).filter(e=>EQUIP[e]); s.setup.choice=s.setup.choice||{};
     Object.keys(s.setup.choice).forEach(a=>{ if(!EX[s.setup.choice[a]]) delete s.setup.choice[a]; }); if(!MODELS[s.setup.model]) s.setup.model='linear'; }
-  if(s.active){ s.active.entries=(s.active.entries||[]).filter(e=>EX[e.liftId]); if(s.active.restEndsAt&&s.active.restEndsAt<Date.now()) s.active.restEndsAt=null; }
+  if(!Array.isArray(s.parked)) s.parked=[];
+  Parked.all(s).forEach(a=>{ a.entries=(a.entries||[]).filter(e=>EX[e.liftId]); });
+  if(s.active&&s.active.restEndsAt&&s.active.restEndsAt<Date.now()) s.active.restEndsAt=null;
   return s;
 }
 function load(){
@@ -9365,7 +9516,7 @@ function load(){
 }
 let saveTimer=null;
 function payload(){ return {v:state.v, onboarded:state.onboarded, route:state.route, settings:state.settings, setup:state.setup, lifts:state.lifts,
-  program:state.program, history:state.history, active:state.active, repeat:state.repeat, progTab:state.progTab, progLift:state.progLift, toolTab:state.toolTab}; }
+  program:state.program, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, progTab:state.progTab, progLift:state.progLift, toolTab:state.toolTab}; }
 function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
    when the page is hidden or closed: a phone can drop the app at any moment. */
@@ -9654,9 +9805,18 @@ function confirmStart(fn){
   window._pendingStart=fn;
   openModal(`<div class="sheet-grab"></div><div class="sheet-body">
     <div style="text-align:center;padding:4px 0 8px"><h2 class="disp" style="font-size:24px;margin:0 0 6px">A session is already going</h2>
-    <p class="muted" style="font-size:14px;line-height:1.5;margin:0 auto 16px;max-width:300px">Finish &ldquo;${esc(state.active.name)}&rdquo; first, or throw it away and start the new one.</p></div>
-    <button class="btn primary block" data-act="go-train">Back to the current session</button>
+    <p class="muted" style="font-size:14px;line-height:1.5;margin:0 auto 16px;max-width:300px">Keep &ldquo;${esc(state.active.name)}&rdquo; open and start the new one alongside it (switch between them from Today), or throw it away.</p></div>
+    <button class="btn primary block" data-act="park-start">${I.plus} Start the new one too</button>
+    <button class="btn ghost block" data-act="go-train" style="margin-top:8px">Back to the current session</button>
     <button class="btn ghost block" data-act="replace-active" style="margin-top:8px;color:var(--crit)">Discard it and start new</button></div>`);
+}
+function setsDone(a){ return a.entries.reduce((n,e)=>n+e.sets.filter(s=>s.done&&s.kind!=='warm').length,0); }
+/* The session on screen stays open while another starts or comes on screen (Parked, shared). */
+function parkActive(){ if(!state.active) return; stopRest(); Parked.park(state); save(); }
+function switchSession(id){
+  if(!(state.active&&state.active.id===id)){ stopRest(); if(!Parked.pick(state, id)) return; save(); }
+  state.route='train'; render(); window.scrollTo(0,0);
+  if(window.__hub) window.__hub.changed('str');
 }
 function lastSetsFor(id){
   for(let i=state.history.length-1;i>=0;i--){ const en=state.history[i].entries.find(x=>x.liftId===id);
@@ -9984,7 +10144,8 @@ function viewToday(){
     const done=a.entries.reduce((n,e)=>n+e.sets.filter(s=>s.done&&s.kind!=='warm').length,0);
     hero=`<div class="hero"><div class="eyebrow">Session in progress</div><h2>${esc(a.name)}</h2>
       <p class="sub">${done} working set${done===1?'':'s'} done. Pick up where you left off.</p>
-      <button class="btn primary block" data-act="nav" data-route="train">${I.play} Back to the session</button></div>`;
+      <button class="btn primary block" data-act="nav" data-route="train">${I.play} Back to the session</button>
+      <button class="btn ghost block" data-act="park-today" style="margin-top:8px">${I.plus} Start another</button></div>`;
   } else if(D){
     const d=nextDayIdx(), day=D.days[d], R=state.repeat, again=R&&R.plan&&R.plan.day===d&&R.plan.cycle===P.cycle&&R.plan.week===P.week;
     const lines=day.slots.map(([id,sc])=>`<button class="nx" data-act="howto" data-id="${id}"><span>${esc(exName(id))}</span><b class="mono">${slotSummary(id,sc,P.week,D.model)}</b><i>${AREAS[EX[id].a].n} &middot; ${chipText(id,sc,P.week,D.model)}</i></button>`).join('');
@@ -10013,7 +10174,7 @@ function viewToday(){
       <div class="metric" data-act="sessions" role="button" tabindex="0"><div class="k"><span>Sessions</span><span class="q">7d</span></div><div class="v">${week.length}</div></div>
       <div class="metric" data-act="sessions" role="button" tabindex="0"><div class="k"><span>All sessions</span></div><div class="v">${state.history.length}</div></div>
     </div>`;
-  return `<div class="stack">${again}${hero}
+  return `<div class="stack">${again}${hero}${Parked.cards(state, setsDone, esc)}
     ${metrics}
     ${state.setup?`<div><div class="section-label">${I.gauge}<span>Where you are</span><span class="ln"></span><button class="tinybtn" data-act="start-test" style="padding:5px 9px">Test</button></div>${board()}</div>`:''}
     ${prs.length?`<div class="card pad"><div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Recent records</span></div>
@@ -10054,6 +10215,8 @@ function board(){
 /* ==================== VIEWS: TRAIN ==================== */
 function viewTrain(){
   const a=state.active;
+  if(!a && Parked.list(state).length) return `<div class="stack">${Parked.cards(state, setsDone, esc)}
+    <button class="btn ghost block" data-act="nav" data-route="today">${I.plus} Start another</button></div>`;
   if(!a) return `<div class="empty"><div class="ei">${I.bar}</div><h3>No session running</h3>
     <p>${state.program&&progDef()?'Start the next day of your plan, or log a free session.':'Set up a plan for prescribed loads, or log a free session.'}</p>
     <div class="grid2" style="max-width:320px;margin:0 auto">
@@ -10069,6 +10232,7 @@ function viewTrain(){
       <button class="setmenu" data-act="session-menu" aria-label="Session options">${I.dots}</button>
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
     </div>
+    ${Parked.bars(state, setsDone, esc, I.copy)}
     ${a.note?`<div class="banner info" data-act="session-note" style="cursor:pointer">${I.note}<span>${esc(a.note)}</span></div>`:''}
     ${a.entries.map((en,ei)=>exCard(en,ei)).join('')}
     <button class="btn ghost block" data-act="pick-lift" style="margin-top:4px">${I.plus} Add an exercise</button>
@@ -10220,7 +10384,7 @@ function insertRec(rec){ const i=state.history.findIndex(h=>h.date>rec.date); if
    didn't waiting. Finishing it again saves it in its place, keeping its date; next time’s weights and plan stay as the first finish set them. */
 function continueSession(id){
   if(window.__hub) window.__hub.stay('str');   // opened from Together: train it here
-  if(state.active){ closeModal(); state.route='train'; render(); toast('Finish or end the session you have going first'); return; }
+  if(state.active){ confirmStart(()=>continueSession(id)); return; }
   const r=state.history.find(h=>h.id===id); if(!r) return;
   if(resumable(id) && !tb.changed()){ takeBack(); return; }
   const entries=OpenSets.reopen(r, e=>e.liftId+'|'+(e.vi||0), x=>Object.assign(makeSet(x), x)).filter(e=>EX[e.liftId]);
@@ -10730,7 +10894,12 @@ __root.addEventListener('click', e=>{
     case 'evidence-lib': openEvidenceLib(); break;
     case 'howto': openHowto(el.dataset.id, el.dataset.vi); break;
     case 'go-train': closeModal(); state.route='train'; render(); break;
-    case 'replace-active': { const fn=window._pendingStart; window._pendingStart=null; state.active=null; stopRest(); closeModal(); if(fn) setTimeout(fn,280); break; }
+    case 'replace-active': { const fn=window._pendingStart, a=state.active; window._pendingStart=null;
+      if(a&&a.cont) insertRec(a.cont.rec);   // one picked back up from history goes back there as it was
+      state.active=null; stopRest(); closeModal(); if(fn) setTimeout(fn,280); break; }
+    case 'park-start': { const fn=window._pendingStart; window._pendingStart=null; parkActive(); closeModal(); if(fn) setTimeout(fn,280); break; }
+    case 'switch-session': closeModal(); switchSession(el.dataset.id); break;
+    case 'park-today': { const n=A&&A.name; parkActive(); state.route='today'; render(); window.scrollTo(0,0); if(n) toast('“'+n+'” stays open. Start the next one here'); if(window.__hub) window.__hub.changed('str'); break; }
 
     /* set-up */
     case 'setup': openSetup(); break;
@@ -11001,7 +11170,7 @@ function hubUpcoming(k){
 }
 function hubInfo(){
   const a=state.active, P=state.program, D=progDef();
-  const o={ready:!!(P&&D), onboarded:state.onboarded, busy:!!a, activeId:a?a.id:null, activeName:a?a.name:null};
+  const o={ready:!!(P&&D), onboarded:state.onboarded, busy:!!a, activeId:a?a.id:null, activeName:a?a.name:null, open:Parked.ids(state)};
   if(!o.ready){ o.why=state.setup? 'empty' : 'none'; return o; }
   return Object.assign(o,{name:D.n, perWeek:state.setup.days, week:P.week, weeks:D.weeks,
     weekName: D.weeks? 'Week '+P.week+' of '+D.weeks+' &middot; '+weekName(D.model,P.week) : 'Session '+(Object.keys(P.done).length+1),
@@ -11044,7 +11213,9 @@ function hubStartWith(spec){
 if(window.__hub) window.__hub.reg('str', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   // Together ends a day's open session: keep:true saves the sets you logged, false drops it (Take back still works)
-  end(keep){ if(!state.active) return false; endOpt={keep:!!keep, repeat:false}; endSession(); return true; },
+  end(keep, id){ const ok=Parked.endOne(state, id, stopRest, ()=>{ endOpt={keep:!!keep, repeat:false}; endSession(); }); if(ok) save(); return ok; },
+  // Together starts a part while another session is open here: that one stays open, out of the way
+  park(){ if(!state.active) return false; parkActive(); return true; },
   pick:hubPick, options:hubOptions, lift:hubLift, preview:hubPreview, startWith:hubStartWith,
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
@@ -11052,7 +11223,7 @@ if(window.__hub) window.__hub.reg('str', {
   start(){ if(state.active) return null; const D=progDef(); if(!state.program||!D) return null;
     startProgramDay(nextDayIdx()); return state.active? state.active.id : null; },
   setup(){ state.route='today'; render(); window.scrollTo(0,0); openSetup(); },
-  open(){ state.route=state.active?'train':'today'; render(); window.scrollTo(0,0); },
+  open(){ state.route=Parked.all(state).length?'train':'today'; render(); window.scrollTo(0,0); },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -11200,6 +11371,8 @@ let memo={};
 function fresh(){ memo={}; }
 function infoOf(m){ if(m in memo) return memo[m];
   try{ const a=H.api(m); return memo[m]= a? a.info() : null; }catch(e){ console.error('Together couldn’t read '+m, e); return memo[m]=null; } }
+/* Whether session sid is open in its section: on screen there, or left open beside another. */
+function isOpen(i, sid){ return !!(i && sid && (i.open || (i.busy? [i.activeId] : [])).includes(sid)); }
 function skillGoal(){ const i=infoOf('cal'); return !!(i&&i.skillGoal); }
 /* A section can join a day when it has something planned for it. */
 function usable(m, i){ return !!(i && i.ready && (m!=='lift' || i.next) && (m!=='cal' || (i.picks&&i.picks.length))); }
@@ -11739,7 +11912,8 @@ function startPart(k){
   const run=tg.run, p=run&&run.parts[k]; if(!p||p.st!=='todo') return;
   const api=H.api(p.m); if(!api) return;
   const i=api.info();
-  if(i.busy){ toast(`${SEC[p.m].n} already has a session going${i.activeName? ' ('+esc(i.activeName)+')' : ''}. Finish or end it, then come back.`); api.open(); H.away(p.m,'run'); return; }
+  // a session already going there stays open beside this part's, and you switch between them in the section
+  if(i.busy && !(api.park && api.park())){ toast(`${SEC[p.m].n} already has a session going${i.activeName? ' ('+esc(i.activeName)+')' : ''}. Finish or end it, then come back.`); api.open(); H.away(p.m,'run'); return; }
   // each part starts with what Together planned for it, not with its section's own plan
   fresh(); const I=dayInfo(run.day, 0), name='Together · Day '+(run.day+1);
   let id=null;
@@ -11759,7 +11933,7 @@ function startPart(k){
    part running again, and it is next up again. */
 function reopenRun(){
   const L=tg.log||[], last=L[L.length-1]; if(!last||(last.start||last.date)<startOfToday()) return false;
-  const back=last.parts.some(([m,st,sid])=>{ if(!sid||st==='skip'||st==='left') return false; const i=infoOf(m); return !!(i&&i.busy&&i.activeId===sid); });
+  const back=last.parts.some(([m,st,sid])=>{ if(!sid||st==='skip'||st==='left') return false; return isOpen(infoOf(m), sid); });
   if(!back) return false;
   tg.run={day:last.day, date:startOfToday(), at:last.start||last.date, short:!!tg.short, pats:[], parts:last.parts.map(([m,st,sid])=>({m, st, sid, drop:[]}))};
   tg.log=L.slice(0,-1); tg.next=last.day; save(); return true;
@@ -11773,7 +11947,7 @@ function refreshRun(){
   run.parts.forEach(p=>{
     if(!p.sid||p.st==='skip'||p.st==='left') return;
     const api=H.api(p.m); if(!api) return;
-    const i=api.info(), st= i.busy&&i.activeId===p.sid? 'run' : (api.rec&&api.rec(p.sid)) || 'todo';
+    const st= isOpen(api.info(), p.sid)? 'run' : (api.rec&&api.rec(p.sid)) || 'todo';
     if(st==='todo') p.sid=null;
     if(st!==p.st){ p.st=st; ch=true; }
   });
@@ -12092,7 +12266,7 @@ function upcomingK(W, d){
 /* A part of a closed day left open when it ended, whose session is still going in its section. */
 function stillOpen(e, m){
   const x=e&&e.parts.find(p=>p[0]===m&&p[1]==='left'&&p[2]); if(!x) return false;
-  const i=infoOf(m); return !!(i&&i.busy&&i.activeId===x[2]);
+  return isOpen(infoOf(m), x[2]);
 }
 /* A day already closed this time round: what was done and what was skipped, in the day's order. */
 function closedHtml(W, d){
@@ -12632,7 +12806,7 @@ __root.addEventListener('click', e=>{
       // with a part still going, you choose what happens to its session first
       if(going.length && !how){ endAsk=true; render(); break; }
       remember('Day '+(tg.run.day+1)+' ended early'); endAsk=false;
-      if(how==='save'||how==='drop') going.forEach(p=>{ const api=H.api(p.m); if(api&&api.end) api.end(how==='save'); });
+      if(how==='save'||how==='drop') going.forEach(p=>{ const api=H.api(p.m); if(api&&api.end) api.end(how==='save', p.sid); });
       refreshRun();
       if(tg.run){ tg.run.parts.forEach(p=>{ if(p.st==='todo') p.st='skip'; else if(p.st==='run') p.st='left'; }); save(); }
       render(); window.scrollTo(0,0); break; }

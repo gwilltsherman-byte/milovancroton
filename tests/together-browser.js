@@ -158,6 +158,21 @@
     root.querySelector('[data-a="end-day"][data-how="leave"]').click(); await pause(300);
     check(!saved().run && saved().log.slice(-1)[0].parts.some(p=>p[1]==='left') && !root.querySelector('[data-a="end-day"]'), 'the day ends, and its End button goes with it');
     check(!!JSON.parse(localStorage.getItem('strlog.v2')).active && root.textContent.includes('open'), 'the session left open is still there to finish, and the week says so');
+    // the next Strength day starts beside the session left open, which stays open to finish
+    { const old=JSON.parse(localStorage.getItem('strlog.v2')).active.id, d2=P.kinds.findIndex((k,i)=>i!==d && k.includes('str'));
+      check(d2>=0, 'the week has a second Strength day');
+      root.querySelector('[data-a="pickday"]').click(); await pause(100);
+      root.querySelector(`[data-a="setnext"][data-d="${d2}"]`).click(); await pause(150);
+      root.querySelector('[data-a="start-day"]').click(); await pause(500);
+      const S=JSON.parse(localStorage.getItem('strlog.v2')), part=saved().run.parts.find(p=>p.m==='str');
+      check(S.active.id!==old && S.parked.map(p=>p.id).join()===old && part.st==='run' && part.sid===S.active.id, 'a part starts with a session already open in its trainer, and that one stays open beside it');
+      win.__hub.go('mix'); await pause(250);
+      root.querySelector('[data-a="end-day"]').click(); await pause(200);
+      root.querySelector('[data-a="end-day"][data-how="drop"]').click(); await pause(300);
+      const S2=JSON.parse(localStorage.getItem('strlog.v2'));
+      check(!S2.active && S2.parked.map(p=>p.id).join()===old, 'ending the day ends its own part’s session and leaves the other open');
+      const ended=win.__hub.api('str').end(false, old); await pause(250);
+      check(ended && !JSON.parse(localStorage.getItem('strlog.v2')).parked.length, 'the one left open ends by name too'); }
     // a new block, even mid-day
     win.__hub.api('str').end(false); await pause(200); win.__hub.go('mix'); await pause(250);
     root.querySelector('[data-a="start-day"]').click(); await pause(500); win.__hub.go('mix'); await pause(250);
