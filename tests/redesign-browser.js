@@ -230,10 +230,12 @@
       const second=saved().active.id;
       check(second!=='multi-a' && saved().parked.length===1 && saved().parked[0].id==='multi-a' && saved().parked[0].entries[0].sets[0].done,'The new workout is on screen and the first is kept open, sets and all');
       const bar=act('switch-session');
-      check(!!bar && bar.closest('.banner').textContent.includes('Also open: Pull day'),'The session screen shows the other open one, to switch to');
+      check(!!bar && bar.closest('.card').textContent.includes('2 sessions in progress') && bar.closest('.card').textContent.includes('Pull day') && bar.closest('.card').textContent.includes('On screen'),'The Train tab lists both sessions in progress, the one on screen marked');
       act('leave-session').click(); await pause(200);
-      check(root.querySelectorAll('.resume').length===2 && root.querySelector('.resume [data-act="switch-session"]'),'Today lists both open sessions');
-      root.querySelector('.resume [data-act="switch-session"]').click(); await pause(250);
+      check(!root.querySelector('#view [data-act="switch-session"]') && root.querySelector('#tabbar [data-route="train"]').classList.contains('live'),'Today doesn’t list them; the Train tab shows a dot');
+      root.querySelector('#tabbar [data-route="train"]').click(); await pause(200);
+      check(root.querySelector('#view').textContent.includes('2 sessions in progress') && root.querySelectorAll('#view [data-act="switch-session"]').length===1,'the Train tab lists both open sessions, the one on screen marked');
+      act('switch-session').click(); await pause(250);
       check(saved().active.id==='multi-a' && saved().parked.map(p=>p.id).join()===second,'Resuming one brings it on screen and keeps the other open');
       check(win.__hub.api('lift').info().open.join()==='multi-a,'+second,'Together sees both as open');
       check(win.__hub.api('lift').end(false, second),'A session left open can be ended by name');
@@ -254,13 +256,17 @@
       for(const [m,key] of [['cal','proladder.v1'],['str','strlog.v2']]){
         win.__go(m); await pause(300);
         const r=rootOf(doc,m), saved=()=>JSON.parse(localStorage.getItem(key)), first=m==='cal'? 'lad-open' : 'str-open';
-        r.querySelector('[data-act="park-today"]').click(); await pause(250);
-        check(!saved().active && saved().parked.map(p=>p.id).join()===first && r.querySelector('[data-act="switch-session"]'),`${m==='cal'?'Ladder':'Strength'}: Start another sets the session aside, still open, and Today offers to resume it`);
+        const name=m==='cal'?'Ladder':'Strength';
+        check(!r.querySelector('#view').textContent.includes('First one') && r.querySelector('#tabbar [data-route="train"]').classList.contains('live'),`${name}: Today doesn’t list the session going; the Train tab shows a dot`);
         r.querySelector(m==='cal'? '[data-act="start-plan"]' : '[data-act="free"]').click(); await pause(300);
-        if(dialog(r)) closeDialog(r);
+        const both=r.querySelector('#sheet.on [data-act="park-start"]'); check(!!both, `${name}: starting another asks, and offers to keep this one open`);
+        both.click(); await pause(500);
+        if(r.querySelector('#sheet.on [data-act="close-modal"]')) r.querySelector('#sheet.on [data-act="close-modal"]').click();
         await pause(200);
         check(saved().active && saved().active.id!==first && saved().parked[0].id===first,'the next session starts with the first still open');
-        r.querySelector('[data-act="switch-session"]').click(); await pause(250);
+        r.querySelector('#tabbar [data-route="train"]').click(); await pause(200);
+        check(r.querySelector('#view').textContent.includes('2 sessions in progress'),'the Train tab lists both');
+        r.querySelector('#view [data-act="switch-session"]').click(); await pause(250);
         check(saved().active.id===first && saved().parked.length===1 && saved().parked[0].id!==first,'and Switch swaps between them');
       }
       frame.remove(); frame=null; localStorage.removeItem('proladder.v1'); localStorage.removeItem('strlog.v2');
