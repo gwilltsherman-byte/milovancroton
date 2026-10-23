@@ -75,11 +75,12 @@
     // one day's exercise changed on its own, then handed back to Together
     { const dr=root.querySelector('[data-a="t-day"]'), d=dr&&dr.dataset.d, pin=ids.find(id=>!picks.includes(id));
       check(!!dr && !!pin, 'each day the muscle lands on is listed, to change on its own');
-      dr.click(); await pause(150);
+      win.scrollTo(0, 300); const y0=win.scrollY; dr.click(); await pause(150);
       check(root.textContent.includes('on Day '+(+d+1)) && !!root.querySelector('[data-a="t-day-cancel"]'), 'a day opens its own list');
       root.querySelector(`[data-a="t-choose"][data-id="${pin}"]`).click(); await pause(150);
       const row=()=>root.querySelector(`[data-a="t-day"][data-d="${d}"]`);
       check(row() && row().textContent.includes('Your pick for this day') && !!root.querySelector('[data-a="t-back"]'), 'the day takes the exercise you chose, back in the muscle’s list');
+      check(y0>0 && Math.abs(win.scrollY-y0)<2, 'and back where you were in it, not at the top');
       row().click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id=""]').click(); await pause(150);
       check(!row().textContent.includes('Your pick for this day'), 'and Let Together pick hands the day back'); }
     root.querySelector('[data-a="t-back"]').click(); await pause(150);
