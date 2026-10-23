@@ -10465,7 +10465,7 @@ function cleanTune(T){
   Object.entries(rec(T.focus)).forEach(([g,v])=>{ if(TUNE_GROUPS.includes(g) && ['skip','less','more'].includes(v)) o.focus[g]=v; });
   // one muscle of a group left out, like traps in Back
   Object.entries(rec(T.mu)).forEach(([m,v])=>{ if(LIFT_MUSCLES.includes(m) && v==='skip') o.mu[m]='skip'; });
-  // a muscle's exercises: one or several, which take turns on its days in the order picked (one, from older saves)
+  // a muscle's exercises: one or several, which Together puts on the days each suits best (one, from older saves)
   Object.entries(rec(T.ex)).forEach(([m,v])=>{ const ids=[...new Set((Array.isArray(v)? v : [v]).filter(idOk))].slice(0, PICKS_MAX); if(LIFT_MUSCLES.includes(m) && ids.length) o.ex[m]=ids; });
   // an exercise for one day of the week (0 is Day 1), over Together's pick or your turns
   Object.entries(rec(T.perDay)).forEach(([m,v])=>{ const d={}; Object.entries(rec(v)).forEach(([i,id])=>{ if(/^[0-6]$/.test(i) && idOk(id)) d[i]=id; });
@@ -10621,7 +10621,7 @@ function buildPlan(T){
     const natural=need=> dose.lift==='maintain'? 1 : Math.max(Math.min(2, ld.length), Math.min(ld.length, Math.ceil(need/4)));
     // one go at the week: each muscle in turn gets what it still needs after the exercises before it
     const run=(freqOf, room)=>{
-      const C=Object.assign({}, cov), hit=dayHit.map(s=>new Set(s)), taken=days.map(()=>new Set()), used={}, out=days.map(()=>[]), at={}, skipped=[], lim=room===Infinity? Infinity : cap, turn={};
+      const C=Object.assign({}, cov), hit=dayHit.map(s=>new Set(s)), taken=days.map(()=>new Set()), used={}, out=days.map(()=>[]), at={}, skipped=[], lim=room===Infinity? Infinity : cap;
       // the parts of each muscle the week trains (GROWTH.region), starting with Strength's lifts
       const regs={}, addReg=(id,ps)=>ps.forEach(q=>{ const r=GROWTH.region(id,q); if(r) (regs[q]||(regs[q]=new Set())).add(r); });
       days.forEach(d=>d.str.forEach(x=>{ const id=SAME_LIFT[x.id], e=id&&exOf[id]; if(e) addReg(id, e.p); }));
@@ -10632,20 +10632,20 @@ function buildPlan(T){
         const need= need0<lo&&gap? lo : need0; at[x.mu]=need; if(need<lo) return;
         const f=Math.min(ld.length, freqOf(x.mu, need)); if(f>left){ skipped.push(x.mu); return; }
         const n=Math.max(lo, Math.min(4, Math.round(need/f)));
-        let got=0;
+        let got=0; const seen=new Set();
         choose(f, ld.length, sel=>spacing(sel.map(j=>ld[j]),D)*2 + sel.reduce((c,j)=>c + out[ld[j]].length*3 + (hit[ld[j]].has(x.mu)? 4 : 0) + (out[ld[j]].length>=lim? 1e4 : 0),0))
           // a day you set an exercise for goes first, so Together's picks for the other days fit around it
           .sort((a,b)=>!!((T.perDay||{})[x.mu]||{})[ld[b]] - !!((T.perDay||{})[x.mu]||{})[ld[a]])
-          .forEach(j=>{ const i=ld[j]; if(out[i].length>=lim) return;
+          .forEach((j,nth,sel)=>{ const i=ld[j]; if(out[i].length>=lim) return;
             // with heavy lifting that day, or a muscle the week already works, isolation adds the least to what's tired;
             // otherwise a big muscle gets a compound. An exercise you picked comes first, even if it needs equipment you didn't choose
-            // your picks take turns on its days, in the order you picked them; one you set for this day goes first and takes no turn
-            const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[], k=turn[x.mu]||0;
-            const pin=((T.perDay||{})[x.mu]||{})[i]||null, want=pin||(mine.length? mine[k%mine.length] : null);
+            // one you set for this day first; then your picks, one not used yet this week first, each on the day it suits best
+            const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[];
+            const pin=((T.perDay||{})[x.mu]||{})[i]||null;
             const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id) || e.id===pin);
             const miss=GROWTH.missing(x.mu, regs), gain=e=>miss.includes(GROWTH.region(e.id,x.mu))? 1 : 0;
             // after your picks: a part of the muscle the week doesn't train yet (GROWTH), like a leg extension next to squats
-            const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || (gain(b)-gain(a)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
+            const e=cat.filter(fits).sort((a,b)=> ((b.id===pin)-(a.id===pin)) || (mine.includes(b.id)-mine.includes(a.id)) || (seen.has(a.id)-seen.has(b.id)) || (gain(b)-gain(a)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
               // one you have logged before one you haven't, the most recent first: its weights carry on, and getting better
               // at an exercise is part of the progress, so changing it at random slows things down
               || ((b.last>0)-(a.last>0))
@@ -10654,9 +10654,15 @@ function buildPlan(T){
               // something you can load before bodyweight work, which is harder to progress, then variety across the days
               || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (b.last||0)-(a.last||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
             if(!e) return;
-            taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; if(!pin||e.id!==pin) turn[x.mu]=k+1; addReg(e.id, e.p);
-            out[i].push(Object.assign({exId:e.id, mu:x.mu, sets:n, comp:e.comp}, x.more? {more:true} : {}));
-            hit[i].add(x.mu); e.p.forEach(q=>{ if(q!==x.mu){ C[q]=(C[q]||0)+n; hit[i].add(q); } }); e.s.forEach(q=>{ C[q]=(C[q]||0)+n*0.5; }); });
+            // more of your picks not used yet than days left: this day takes two, its sets split, the one better for growth getting more
+            const rest=mine.filter(id=>id!==e.id && !seen.has(id) && exOf[id] && fits(exOf[id])).map(id=>exOf[id])
+              // one with no other day left to go to first (another muscle has it there), then the one that suits this day
+              .sort((a,b)=>sel.slice(nth+1).filter(q=>!taken[ld[q]].has(a.id)).length-sel.slice(nth+1).filter(q=>!taken[ld[q]].has(b.id)).length || ((a.comp===iso)-(b.comp===iso)));
+            const e2= n>=2 && rest.length>sel.length-1-nth && out[i].length+1<lim? rest[0] : null, grow=g=>2*(g.long||0)+gain(g), top= e2&&grow(e2)>grow(e)? e2 : e;
+            [e, e2].filter(Boolean).forEach(g=>{ const m= !e2? n : g===top? Math.ceil(n/2) : Math.floor(n/2);
+              taken[i].add(g.id); used[g.id]=(used[g.id]||0)+1; got++; addReg(g.id, g.p); if(mine.includes(g.id)) seen.add(g.id);
+              out[i].push(Object.assign({exId:g.id, mu:x.mu, sets:m, comp:g.comp}, x.more? {more:true} : {}));
+              hit[i].add(x.mu); g.p.forEach(q=>{ if(q!==x.mu){ C[q]=(C[q]||0)+m; hit[i].add(q); } }); g.s.forEach(q=>{ C[q]=(C[q]||0)+m*0.5; }); }); });
         left-=got; if(!got) skipped.push(x.mu);
       });
       return {out, at, skipped};
@@ -11785,7 +11791,7 @@ const pickItem=(id, name, sub, on)=>`<button class="tpick topt${on?' on':''}" da
 /* Which of this week's days use each exercise for a muscle, in the block as you have it now, and what each day has. */
 function daysFor(mu){
   const P=buildPlan(tune.T), by={}, on=[];
-  P.days.forEach((d,i)=>{ const xs=d.lift.filter(x=>x.mu===mu); if(xs.length) on.push([i, xs[0].exId]); xs.forEach(x=>{ (by[x.exId]||(by[x.exId]=[])).push(i+1); }); });
+  P.days.forEach((d,i)=>{ const xs=d.lift.filter(x=>x.mu===mu); if(xs.length) on.push([i, xs.map(x=>x.exId)]); xs.forEach(x=>{ (by[x.exId]||(by[x.exId]=[])).push(i+1); }); });
   return {by, n:on.length, on, P};
 }
 const dayWords=ds=> ds.length>1? 'Days '+listText(ds.map(String)) : 'Day '+ds[0];
@@ -11801,21 +11807,21 @@ function pickList(){
   const why=e=> e.long===2? 'Grew it more in trials: long lengths' : e.long===1? 'Trains it at a stretch' : fills(e)? 'Grows a part your week misses' : '';
   // what it is, and the days it lands on this week: yours, or Together's while you let it pick
   const sub=e=>{ const also=e.p.filter(x=>x!==mu).map(x=>muscleName(x).toLowerCase()), on=D.by[e.id], k=mine.indexOf(e.id);
-    const when= on? `<em class="tday">${k>=0&&mine.length>1? 'Pick '+(k+1)+': ' : ''}${dayWords(on)}</em>` : k>=0? `<em class="tday off">Pick ${k+1}: no day left for it, ${esc(muscleName(mu).toLowerCase())} has ${plural(D.n,'day')}</em>` : '';
+    const when= on? `<em class="tday">${dayWords(on)}</em>` : k>=0? `<em class="tday off">No room for it this week</em>` : '';
     return (when? when+' &middot; ' : '')+(why(e)? [why(e)] : []).concat([e.comp? 'Compound' : 'Isolation', esc(e.equipment)]).concat(also.length? ['also '+esc(listText(also))] : [], e.custom? ['Yours'] : []).join(' &middot; '); };
   const ord=(a,b)=>score(b)-score(a) || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (b.custom-a.custom) || a.name.localeCompare(b.name);
   const inKit=all.filter(e=>eq.includes(e.equipment)&&match(e)).sort(ord), out=all.filter(e=>!eq.includes(e.equipment)&&match(e)).sort(ord);
   // choosing for one day: only the one you set for it is on
   const on=e=> day!=null? pins[day]===e.id : mine.includes(e.id);
   // each day this muscle lands on, with what it has there, to change one day on its own
-  const each= D.on.map(([i,id])=>{ const e=all.find(x=>x.id===id);
-    return `<button class="trow tpick" data-a="t-day" data-d="${i}"><span class="tn"><b>Day ${i+1}</b><span>${pins[i]===id? 'Your pick for this day' : mine.includes(id)? (mine.length>1? 'Your picks, taking turns' : 'Your pick') : 'Together’s pick'}</span></span>
-      <span class="tval">${esc(e? e.name : '')}</span>${IC.chev}</button>`; }).join('');
+  const each= D.on.map(([i,ids])=>{ const nm=ids.map(id=>(all.find(x=>x.id===id)||{}).name).filter(Boolean);
+    return `<button class="trow tpick" data-a="t-day" data-d="${i}"><span class="tn"><b>Day ${i+1}</b><span>${ids.includes(pins[i])? 'Your pick for this day' : ids.some(id=>mine.includes(id))? (mine.length>1? 'From your picks' : 'Your pick') : 'Together’s pick'}</span></span>
+      <span class="tval">${esc(nm.join(' + '))}</span>${IC.chev}</button>`; }).join('');
   // the day you just set (or your only one) kept, and Together picking the other days again to go with it
-  const keep= K.last!=null&&pins[K.last]? K.last : Object.keys(pins).length===1? +Object.keys(pins)[0] : null, others=Object.keys(pins).length>1||mine.length;
+  const keep= K.last!=null&&pins[K.last]? K.last : Object.keys(pins).length===1? +Object.keys(pins)[0] : null, others=Object.keys(pins).length>1;
   const refit= keep!=null && D.on.length>1 && D.on.some(([i])=>i===keep)? `<button class="btn sm" data-a="t-refit" data-d="${keep}" style="margin-top:12px">${IC.sliders} Re-optimize the other days around Day ${keep+1}</button>
-    <p class="hint">Keeps Day ${keep+1} as you set it and lets Together pick the rest to go with it${others? ', clearing your other picks for '+esc(muscleName(mu).toLowerCase()) : ''}.</p>` : '';
-  return (q? '' : day!=null? pickItem('', 'Let Together pick', `It picks for Day ${day+1} the way it does for the other days${mine.length? ', taking turns with your picks' : ''}.`, !pins[day])
+    <p class="hint">Keeps Day ${keep+1} as you set it and lets Together arrange the other days to go with it${mine.length? ', from your picks' : ''}${others? ', clearing the other days you set' : ''}.</p>` : '';
+  return (q? '' : day!=null? pickItem('', 'Let Together pick', `It picks for Day ${day+1} the way it does for the other days${mine.length? ', from your picks' : ''}.`, !pins[day])
       : pickItem('', 'Let Together pick', 'It picks for each day and varies them: isolation work when the day already has heavy lifting or the muscle is worked elsewhere that week, otherwise a compound for a big muscle.', !mine.length)
         + (each? `<div class="grp">Each day</div>${each}${refit}` : ''))
     + (inKit.length? `<div class="grp">In your kit</div>`+inKit.map(e=>pickItem(e.id, esc(e.name), sub(e), on(e))).join('') : '')
@@ -11849,7 +11855,7 @@ function viewPick(){
     <div class="tlist" id="tlist">${pickList()}</div>`;
   if(K.day!=null) return `<div class="stack"><section class="card">${head(cap(mn)+' on Day '+(K.day+1), `The exercise for ${mn} on Day ${K.day+1} only. Your other days keep theirs.`)}${search}</section></div>`;
   const n=daysFor(mu).n;
-  return `<div class="stack"><section class="card">${head('Exercises for '+mn, `Every exercise in your library that works ${mn} as a main muscle, so each set counts in full. ${cap(mn)} is trained on ${plural(n,'day')} a week. Pick one for ${n>1? 'all of them' : 'it'}, or several to take turns on ${n>1? 'those days' : 'it'} in the order you pick them.`)}
+  return `<div class="stack"><section class="card">${head('Exercises for '+mn, `Every exercise in your library that works ${mn} as a main muscle, so each set counts in full. ${cap(mn)} is trained on ${plural(n,'day')} a week. Pick one for ${n>1? 'all of them' : 'it'}, or several: Together puts each on the day it suits best and uses every one, splitting a day’s sets between two when you pick more than there are days.`)}
     <p class="hint" style="margin-top:8px">Best for growth first: training a muscle at long lengths grew it more in trials, like overhead triceps work, seated leg curls and standing calf raises, then exercises that grow a part of it your week misses. Most exercises were never compared head to head, so the rest rank equal.</p>
     <p class="hint" style="margin-top:8px">Two or three exercises for a muscle can grow it more evenly than one, as each loads it a little differently. Keep them for the block: changing exercises at random every session tends to slow progress.</p>
     ${search}
@@ -11934,11 +11940,11 @@ __root.addEventListener('click', e=>{
       { const b=$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 't-back': closePick(); break;
     case 't-refit': { const K=tune.pick, T=tune.T, d=+el.dataset.d, m=(T.perDay||{})[K.k]; if(!m||!m[d]) break;
-      // keep the day you set; your other picks for the muscle clear, and Together picks the rest around it
-      T.perDay[K.k]={[d]:m[d]}; delete T.ex[K.k]; K.last=d;
+      // keep the day you set; the other days you set clear, and Together arranges the rest around it, from your picks if you have any
+      T.perDay[K.k]={[d]:m[d]}; K.last=d;
       const l=$('#tlist'); if(l) l.innerHTML=MiloSecurity.html(pickList());
       const rest=daysFor(K.k).on.map(([i])=>i+1).filter(n=>n!==d+1);
-      if(rest.length) toast(`${dayWords(rest)}: Together’s picks, fitted around your Day ${d+1} pick.`);
+      if(rest.length) toast(`${dayWords(rest)}: ${(T.ex[K.k]||[]).length? 'your picks, placed' : 'Together’s picks'} around your Day ${d+1} pick.`);
       { const b=$('[data-a="t-refit"]'); if(b) b.focus({preventScroll:true}); } break; }
     case 't-choose': { const K=tune.pick, v=el.dataset.id, T=tune.T;
       if(K.t==='ex' && K.day!=null){
@@ -11949,7 +11955,7 @@ __root.addEventListener('click', e=>{
         K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
         { const b=$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
       if(K.t==='ex'){
-        // a muscle's exercises: tap to add or take one off; they take turns in the order picked
+        // a muscle's exercises: tap to add or take one off; Together places them
         const cur=(T.ex[K.k]||[]).slice(), i=cur.indexOf(v);
         if(!v) cur.length=0; else if(i>=0) cur.splice(i,1); else if(cur.length>=PICKS_MAX){ toast(`${PICKS_MAX} is the most for one muscle. Take one off first.`); break; } else cur.push(v);
         if(cur.length) T.ex[K.k]=cur; else delete T.ex[K.k];
