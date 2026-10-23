@@ -68,7 +68,7 @@
     check(!!k0 && !root.querySelector('select'), 'each muscle’s exercise opens a library, not a dropdown');
     root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k0}"]`).click(); await pause(150);
     check(root.textContent.includes('Exercises for') && root.querySelectorAll('[data-a="t-choose"]').length>1, 'the exercise library opens for the muscle');
-    // several picks for one muscle, which take turns on its days
+    // several picks for one muscle, which Together places on its days
     const ids=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean), picks=[ids[ids.length-1], ids[0]]; pickEx=picks[0];
     for(const id of picks){ root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(120); }
     check(picks.every(id=>root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).getAttribute('aria-pressed')==='true') && root.querySelector('.tday'), 'you can pick more than one exercise, and each shows its days');
@@ -116,7 +116,7 @@
     check(!P.days.some(d=>d.lift.some(x=>x.mu==='abs'||x.mu==='obli')), 'Skip leaves core to the rest of the week');
     check(!P.days.some(d=>d.lift.some(x=>x.mu==='trap'||['rack-pull','shrug','barbell-shrug','cable-shrug','cable-upright-row'].includes(x.exId))) && saved().tune.mu.trap==='skip', 'a muscle left out gets no exercises, none aimed at it for other muscles either');
     { const xs=P.days.flatMap(d=>d.lift).filter(x=>x.mu===k0).map(x=>x.exId), mine=saved().tune.ex[k0];
-      check(xs.length && xs.every(id=>mine.includes(id)) && xs[0]===mine[0] && new Set(xs).size===Math.min(mine.length, xs.length), 'your picks train that muscle, taking turns in the order you picked them'); }
+      check(xs.length && xs.every(id=>mine.includes(id)), 'your picks train that muscle'); }
     check(!lats || !P.days.some(d=>d.str.some(x=>x.a==='lats')), 'a strength area you leave out is left out');
     check(P.week===1 && root.textContent.includes('Customized:'), 'customizing keeps the week and shows what you changed');
     // a new block starts again at week 1
@@ -220,13 +220,20 @@
         const rows=()=>[...root.querySelectorAll('[data-a="t-pick"][data-t="ex"]')].map(b=>b.dataset.k); let done=false;
         for(const k of rows()){ root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k}"]`).click(); await pause(150);
           const ds=[...root.querySelectorAll('[data-a="t-day"]')];
-          if(ds.length>1 && !done){ const d=ds[1].dataset.d, at=()=>root.querySelector(`[data-a="t-day"][data-d="${d}"]`); ds[1].click(); await pause(150);
-            const id=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean).pop();
+          if(ds.length>1 && !done){ const d=ds[1].dataset.d, at=()=>root.querySelector(`[data-a="t-day"][data-d="${d}"]`);
+            // more picks than days: every one is used, two of them sharing a day
+            const ids=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean), pk=ids.slice(0, ds.length+1), id=ids.find(x=>!pk.includes(x));
+            for(const x of pk){ root.querySelector(`[data-a="t-choose"][data-id="${x}"]`).click(); await pause(120); }
+            const vals=()=>[...root.querySelectorAll('[data-a="t-day"] .tval')].map(v=>v.textContent), nm=x=>root.querySelector(`[data-a="t-choose"][data-id="${x}"] b`).textContent;
+            check(pk.every(x=>vals().join('|').includes(nm(x))) && vals().some(v=>v.includes(' + ')), 'with more picks than days, every pick is used, two of them sharing a day');
+            at().click(); await pause(150);
             root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(150);
             root.querySelector(`[data-a="t-refit"][data-d="${d}"]`).click(); await pause(150);
-            check(at().textContent.includes('Your pick for this day') && [...root.querySelectorAll('[data-a="t-day"]')].filter(b=>b.dataset.d!==d).every(b=>b.textContent.includes('Together’s pick')),
-              'Re-optimize keeps the day you set and lets Together pick the other days around it');
-            at().click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id=""]').click(); await pause(150); done=true; }
+            check(at().textContent.includes('Your pick for this day') && [...root.querySelectorAll('[data-a="t-day"]')].filter(b=>b.dataset.d!==d).every(b=>b.textContent.includes('From your picks'))
+              && pk.every(x=>root.querySelector(`[data-a="t-choose"][data-id="${x}"]`).getAttribute('aria-pressed')==='true') && pk.every(x=>vals().join('|').includes(nm(x))), 'Re-optimize keeps the day you set and arranges your picks on the other days around it');
+            at().click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id=""]').click(); await pause(150);
+            for(const x of pk){ root.querySelector(`[data-a="t-choose"][data-id="${x}"]`).click(); await pause(120); }
+            done=true; }
           root.querySelector('[data-a="t-back"]').click(); await pause(150); if(done) break; }
         check(done, 'a muscle trained on two days or more is there to re-optimize');
         root.querySelector('[data-a="t-cancel"]').click(); await pause(150); } }
