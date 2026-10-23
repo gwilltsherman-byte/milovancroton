@@ -1354,6 +1354,28 @@ window.SAME_LIFT={bench:'barbell-bench', dbbench:'db-bench', mchest:'machine-che
   mpress:'machine-shoulder-press', pushpress:'push-press', squat:'back-squat', legpress:'leg-press', fsquat:'front-squat', goblet:'goblet-squat',
   deadlift:'deadlift', dbrdl:'db-rdl', rdl:'romanian-deadlift', sumo:'sumo-deadlift', wdip:'dip', wpull:'pullup', wpushup:'pushup', backext:'back-extension'};
 
+/* ==================== WHAT GROWS MORE ====================
+   Shared by Muscle and Together when they choose exercises (Muscle's ids).
+   long: exercises that train a muscle at long lengths, which grew it more than the same muscle trained short: overhead
+   triceps extensions about 40 percent more than pushdowns (Maeo et al. 2023), seated leg curls more than lying ones (Maeo
+   et al. 2021), standing calf raises more for the calves than seated (Kinoshita et al. 2023), incline and behind-the-body
+   curls the biceps at a stretch (weaker evidence: 1, not 2).
+   region: parts of a muscle one kind of exercise misses. Squats and leg presses barely grow the rectus femoris, the quad
+   that crosses the hip, and knee extensions do (Ema et al. 2013; Zabaleta-Korta et al. 2021); hamstrings grow from both a
+   hip hinge and a curl (Maeo et al. 2021); the triceps' long head from overhead work. A block covers each one. */
+window.GROWTH={
+  long:{'overhead-ext':2, 'seated-db-tri-ext':2, 'bw-tricep-ext-high':1, skullcrusher:1, 'leg-curl':2, 'standing-calf':1, 'leg-press-calf':1,
+    'incline-db-curl':1, 'bayesian-curl':1},
+  R:{quad:{rf:['leg-extension','sissy-squat']}, ham:{curl:['leg-curl','lying-leg-curl','nordic-curl','glute-ham-raise','sliding-hamstring-curl']},
+    tri:{long:['overhead-ext','seated-db-tri-ext','skullcrusher','bw-tricep-ext-high']}},
+  D:{quad:'squat', ham:'hinge', tri:'short'},
+  NEED:{quad:['squat','rf'], ham:['hinge','curl'], tri:['long']},
+  region(id, mu){ const R=GROWTH.R[mu]; if(!R) return null; for(const k in R) if(R[k].includes(id)) return k; return GROWTH.D[mu]; },
+  /* Regions of mu still missing, given the regions already trained ({mu: Set}). */
+  missing(mu, regs){ return (GROWTH.NEED[mu]||[]).filter(r=>!(regs[mu]&&regs[mu].has(r))); },
+  why:{2:'trains it at long lengths, which grew it more in trials', 1:'trains it at a stretch'}
+};
+
 /* ==================== SETS IN NUMBERS ====================
    Shared by every section, so the same set means the same thing everywhere. */
 window.Lift={
@@ -1362,10 +1384,16 @@ window.Lift={
   pct(eff){ const e4=1/(1+4/30); if(eff<=1) return 1; if(eff<4) return 1-(eff-1)*(1-e4)/3; return 1/(1+eff/30); },
   /* Estimated one-rep max. A set of 8 with 2 left counts as the 10 you could have done, so pushing closer to failure
      late in a block doesn't pass for getting stronger. */
-  e1rm(w, reps, rir){ if(!w||!reps||reps<1) return 0; const r=Number(rir); return w/Lift.pct(reps+(r>0? r : 0)); },
+  e1rm(w, reps, rir){ if(!w||!reps||reps<1) return 0; const r=Lift.trueRir(rir, reps); return w/Lift.pct(reps+(r>0? r : 0)); },
+  /* People misjudge how many reps they have left (Halperin et al. 2022). Muscle measures yours with a set taken to failure
+     now and then (bias: reps you really had minus reps you said), and every section corrects for it, by half on sets of 5
+     or fewer, where guesses are closer. */
+  bias: (()=>{ try{ return window.Prefs? Number(Prefs.get('rirBias',0))||0 : 0; }catch(e){ return 0; } })(),
+  trueRir(rir, reps){ if(rir==null||rir==='') return null; const r=Number(rir); if(!Number.isFinite(r)) return null;
+    return Math.max(0, r+(reps!=null&&reps<=5? Lift.bias/2 : Lift.bias)); },
   /* How much a set counts as a hard set: in full when it ends 0 to 3 reps short of failure, half at 4 or 5, not at
      all further off; unknown effort counts in full. Growth falls as sets end further from failure (Robinson et al. 2024). */
-  hard(rir){ if(rir==null||rir==='') return 1; const r=Number(rir); return !(r>3)? 1 : r<=5? 0.5 : 0; },
+  hard(rir, reps){ const r=Lift.trueRir(rir, reps); if(r==null) return 1; return !(r>3)? 1 : r<=5? 0.5 : 0; },
   /* How much a set adds to what its muscles have to recover from: more taken to failure, less when easy
      (Morán-Navarro et al. 2017), and half again for a movement new to you or not done in four weeks, since the
      first sessions of a movement cause the most damage and soreness (the repeated-bout effect). */
@@ -2023,7 +2051,7 @@ function weeklyVolume(){
       const work = en.sets.filter(s=>isWork(s)&&s.done);
       if(!work.length) continue;
       rawSets += work.length;
-      const n = work.reduce((x,s)=>x+Lift.hard(s.rir),0);   // easy sets count part or not at all
+      const n = work.reduce((x,s)=>x+Lift.hard(s.rir, s.reps),0);   // easy sets count part or not at all
       for(const m of (en.primary||[])){ direct[m]=(direct[m]||0)+n; frac[m]=(frac[m]||0)+n; }
       for(const m of (en.secondary||[])){ frac[m]=(frac[m]||0)+n*0.5; }
     }
@@ -2814,6 +2842,10 @@ function rirAccuracy(){
   return {n:cal.length, avg, sd, note, reliable: cal.length>=3 && sd<1.2, failEvery};
 }
 function rirBias(){ const a=rirAccuracy(); return (a.n>=3 && !a.failEvery)? a.avg : 0; }
+/* Every section corrects for how you judge reps in reserve (Lift.bias). */
+function shareBias(){ const b=Math.round(rirBias()*10)/10; if(Lift.bias!==b){ Lift.bias=b; Prefs.set({rirBias:b}); } }
+/* A calibration set every three weeks or so: offered on the last set of an isolation exercise, where going to failure is safe. */
+function calDue(){ const c=state.rirCal||[], last=c.length? c[c.length-1].date : 0; return Date.now()-last > 21*86400000; }
 function openRirCal(ei,si){
   const s=state.active.entries[ei].sets[si];
   window._rirCtx={ei,si,predicted:s.rir==null?0:s.rir};
@@ -2833,7 +2865,7 @@ function submitRirCal(){
   const extra=parseInt(($('#rircal-extra')||{}).value); if(isNaN(extra)||extra<0){ toast('Enter the extra reps'); return; }
   const rec={date:Date.now(), exId:state.active.entries[ctx.ei].exId, predictedRir:ctx.predicted, actualExtra:extra, error:extra-ctx.predicted};
   if(!state.rirCal) state.rirCal=[]; state.rirCal.push(rec);
-  save(); closeModal();
+  shareBias(); save(); closeModal();
   const a=rirAccuracy();
   toast(rec.error===0?'Spot on':(rec.error>0?'You had '+rec.error+' more in the tank':'You overshot by '+(-rec.error)));
 }
@@ -3193,27 +3225,30 @@ function emphasisMuscles(list){
   return [...set];
 }
 /* The classics first; the library's alternatives only when no classic fits. */
-function pickEx(muscle, comp, used, equip){
-  return pickFrom(state.exercises.filter(e=>!e.alt), muscle, comp, used, equip) || pickFrom(state.exercises.filter(e=>e.alt), muscle, comp, used, equip);
+function pickEx(muscle, comp, used, equip, regs){
+  return pickFrom(state.exercises.filter(e=>!e.alt), muscle, comp, used, equip, regs) || pickFrom(state.exercises.filter(e=>e.alt), muscle, comp, used, equip, regs);
 }
-function pickFrom(xs, muscle, comp, used, equip){
+function pickFrom(xs, muscle, comp, used, equip, regs){
   let c=xs.filter(e=> e.primary.includes(muscle) && e.comp===!!comp && equip.includes(e.equipment));
   if(!c.length) c=xs.filter(e=> e.primary.includes(muscle) && equip.includes(e.equipment));
   if(!c.length) c=xs.filter(e=> e.primary.includes(muscle));
   if(!c.length) return null;
   const pref = comp? {Barbell:0,Dumbbell:1,Machine:2,Cable:3,Bodyweight:4} : {Cable:0,Machine:1,Dumbbell:2,Bodyweight:3,Barbell:4};
-  c.sort((a,b)=> (used[a.id]||0)-(used[b.id]||0) || (pref[a.equipment]??9)-(pref[b.equipment]??9) || a.name.localeCompare(b.name));
+  // a part of the muscle the block doesn't train yet, then one that trains it at long lengths (GROWTH)
+  const gain=e=> regs&&GROWTH.missing(muscle, regs).includes(GROWTH.region(e.id, muscle))? 1 : 0, long=e=>GROWTH.long[e.id]||0;
+  c.sort((a,b)=> (used[a.id]||0)-(used[b.id]||0) || gain(b)-gain(a) || long(b)-long(a) || (pref[a.equipment]??9)-(pref[b.equipment]??9) || a.name.localeCompare(b.name));
+  if(regs) c[0].primary.forEach(q=>{ const r=GROWTH.region(c[0].id, q); if(r) (regs[q]||(regs[q]=new Set())).add(r); });
   return c[0];
 }
 function generateDraft(o){
   const bp=SPLIT_BP[o.days]||SPLIT_BP[4];
   const equip=myEquip();
-  const used={}; const emph=emphasisMuscles(o.emphasis);
+  const used={}, regs={}; const emph=emphasisMuscles(o.emphasis);
   const setsFor=comp=> o.experience==='beginner'?(comp?3:2) : o.experience==='advanced'?(comp?4:3) : 3;
   const days=bp.map(d=>{
     const exercises=[];
     d.slots.forEach(([muscle,comp])=>{
-      const ex=pickEx(muscle,comp,used,equip); if(!ex) return;
+      const ex=pickEx(muscle,comp,used,equip,regs); if(!ex) return;
       if(exercises.some(x=>x.exId===ex.id)) return;
       used[ex.id]=(used[ex.id]||0)+1;
       let sets=setsFor(comp); if(emph.includes(muscle)) sets+=1;
@@ -3336,6 +3371,9 @@ function suggestLoad(exId, entry, comp, deload){
   if(!prev || prev.weight==null) return {weight:null, note:null};
   const eq=entry.equipment, step=fromDisp(loadStep(eq));
   if(deload) return {weight:roundLoad(prev.weight*0.9, eq), note:'~10% lighter for the deload'};
+  // back after a break: strength holds for two or three weeks, then slips (Bosquet et al. 2013), and comes back quickly
+  const away=prev.date? (Date.now()-prev.date)/86400000 : 0;
+  if(away>=14){ const f=away>=28? 0.9 : 0.95; return {weight:roundLoad(prev.weight*f, eq), note:'first time in '+Math.round(away/7)+' weeks &middot; ~'+Math.round((1-f)*100)+'% lighter to ease back in'}; }
   const trueRir = prev.rir==null? null : prev.rir + rirBias(); // correct for your RIR accuracy
   if(allTop) return {weight:roundLoad(prev.weight+step, eq), note:'+'+fmtW(step)+unit()+' &middot; every set reached the top of the range last time'};
   // stuck below the bottom of the range even near failure: the load is too heavy for this rep target
@@ -3371,6 +3409,8 @@ function startDayFrom(name, list, rir, deload, tg, link){
   if(link){ state.active.meso=link.meso; state.active.mesoName=link.mesoName; }
   else state.active.tgDay={rir, deload, exs:list.map(x=>x.ex)};   // so what Together trimmed can be put back
   const had=(tg&&tg.already)||{}, left=Object.assign({},had), from=(tg&&tg.from)||{}, skip=(tg&&tg.skip)||{}, cuts=[];
+  // two weeks or more since your last session here: a third fewer sets this time
+  const lastAt=state.history.length? state.history[state.history.length-1].date : 0, back=lastAt && Date.now()-lastAt>=14*86400000? Math.round((Date.now()-lastAt)/(7*86400000)) : 0;
   list.forEach(({ex, n:planned},idx)=>{
     let n=planned, why='';
     if(tg){
@@ -3380,11 +3420,15 @@ function startDayFrom(name, list, rir, deload, tg, link){
         if(cut>0){ n-=cut; ex.primary.forEach(p=>{ if(left[p]) left[p]=Math.max(0,left[p]-cut); });
           why=(tg.why&&tg.why[top]) || MUSCLES[top].n.toLowerCase()+' already got '+had[top]+' hard set'+(had[top]===1?'':'s')+' today in '+(from[top]||'another section'); }
       }
-      if(tg.short && n>2){ n=2; why=why? why+', and time is short' : 'time is short'; }
+      // short on time: paired as supersets below, keeping the sets (Iversen et al. 2021), up to three each
+      if(tg.short && n>3){ n=3; why=why? why+', and time is short' : 'time is short'; }
     }
+    if(n>0 && back && n>1){ const b=Math.max(1, Math.round(n*2/3)); if(b<n){ n=b; why=why? why+', and you’re easing back in' : 'first session in '+back+' weeks: easing back in'; } }
     if(n<planned) cuts.push({mi:idx, exId:ex.exId, name:ex.name, from:planned, to:n, why});
     if(n>0) state.active.entries.push(mesoEntry(ex, idx, n, rir, deload));
   });
+  if(tg&&tg.short) pairUp(state.active.entries);
+  warmUp(state.active.entries);
   if(cuts.length) state.active.trim={cuts};
   if(tg&&tg.readiness) state.active.readiness=tg.readiness;   // answered already, in Together's check-in
   save(); state.route='train'; render(); if(!(tg&&tg.readiness)) openReadiness();
@@ -3957,6 +4001,24 @@ function switchSession(id){
   save(); state.route='train'; render(); window.scrollTo(0,0);
   if(window.__hub) window.__hub.changed('lift');
 }
+/* Short on time: exercises paired back to back as supersets, each with one that works other muscles, so the sets
+   stay and the session takes about half as long (Iversen et al. 2021). */
+function pairUp(es){
+  const out=[], used=new Set(), hits=(a,b)=>a.primary.some(q=>b.primary.includes(q)||(b.secondary||[]).includes(q)) || b.primary.some(q=>(a.secondary||[]).includes(q));
+  es.forEach((a,i)=>{ if(used.has(i)) return; used.add(i); out.push(a);
+    const j=es.findIndex((b,k)=>k>i && !used.has(k) && !hits(a,b)); if(j<0) return;
+    used.add(j); const sg='ss-'+uid(); a.sg=sg; es[j].sg=sg; out.push(es[j]); });
+  es.splice(0, es.length, ...out);
+}
+/* Warm-up sets before the first heavy compound lift (Strength's warm-up setting covers both): the bar, then about half
+   and 70 percent of the working weight on a barbell; one set at about half on anything else. They don't count as work. */
+function warmUp(es){
+  if(!Prefs.get('warmups', true)) return;
+  const en=es.find(e=>{ const x=exById(e.exId); return x&&x.comp&&e.equipment!=='Bodyweight'&&e.sets[0]&&e.sets[0].weight>0; }); if(!en) return;
+  const top=toDisp(en.sets[0].weight), st=loadStep(en.equipment);
+  const ramp= en.equipment==='Barbell'? warmupRamp(top).filter(r=>r.w<top*0.8) : [{w:Math.round(top*0.5/st)*st, reps:8}].filter(r=>r.w>0);
+  ramp.slice().reverse().forEach(r=>en.sets.unshift(Object.assign(makeSet('warmup'), {weight:fromDisp(r.w), reps:r.reps})));
+}
 function startEmpty(){ state.active=null; ensureActive('Workout'); save(); state.route='train'; render(); openPicker(); }
 function startTemplate(tpl){
   state.active=null; ensureActive(tpl.name);
@@ -3991,6 +4053,9 @@ function toggleDone(ei,si){
   }
   save(); render();
   if(noW) toast('Logged with no weight. Type it in, and next time starts from it');
+  else if(s.done && isWork(s) && !(exById(en.exId)||{}).comp && !isHold(en.exId) && s.rir>=1 && en.sets.filter(isWork).every(x=>x.done) && calDue()){
+    const t=$('#toast'); t.innerHTML=MiloSecurity.html(`${I.gauge}<span>Check your reps in reserve: do as many more good reps as you can now.</span><button class="tbtn" data-act="rircal-open" data-ex="${ei}" data-set="${si}">Check</button>`);
+    t.classList.add('on','act'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('on','act'),8000); }
   if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
 }
 
@@ -5299,7 +5364,7 @@ function hubWork(since, until){
   const out=[], novel=Lift.novelty(state.history, w=>w.entries.map(e=>e.exId));
   state.history.forEach(w=>{ if(w.date<since||w.date>=until) return;
     w.entries.forEach(en=>{ const ss=en.sets.filter(s=>isWork(s)&&s.done); if(!ss.length) return; const nv=novel(w, en.exId);
-      out.push({key:en.exId, p:en.primary||[], s:en.secondary||[], n:ss.reduce((x,s)=>x+Lift.hard(s.rir),0), f:ss.reduce((x,s)=>x+Lift.tiring(s.rir,nv),0)}); }); });
+      out.push({key:en.exId, p:en.primary||[], s:en.secondary||[], n:ss.reduce((x,s)=>x+Lift.hard(s.rir,s.reps),0), f:ss.reduce((x,s)=>x+Lift.tiring(Lift.trueRir(s.rir,s.reps),nv),0)}); }); });
   return out;
 }
 function mesoDayInfo(m, d, w){
@@ -5335,7 +5400,7 @@ function hubStart(tg){
   return state.active? state.active.id : null;
 }
 /* Exercises Together can build a day from, with what each trains and its rep range. */
-function hubCatalog(){ const last=lastDone(); return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp,
+function hubCatalog(){ const last=lastDone(); return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp, long:GROWTH.long[e.id]||0,
   repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt, last:last[e.id]||0})); }
 /* When each exercise last had a ticked work set: {exId: date}. */
 function lastDone(){ const out={}; state.history.forEach(w=>w.entries.forEach(en=>{ if(en.sets.some(s=>isWork(s)&&s.done) && !(out[en.exId]>=w.date)) out[en.exId]=w.date; })); return out; }
@@ -5376,6 +5441,15 @@ if(window.__hub) window.__hub.reg('lift', {
   logBody(kg){ if(!(kg>20&&kg<400)) return false; const d=startOfToday(); let e=state.bodylog.find(b=>b.date===d);
     if(!e){ e={date:d}; state.bodylog.push(e); } e.weight=kg; state.bodylog.sort((a,c)=>a.date-c.date); save(); return true; },
   stamp:()=>histVer,
+  // for Together: how each muscle's lifts moved since a date, as the change in best estimated max from the first third of
+  // their sessions to the last, averaged over exercises done three times or more. Lighter weeks on purpose are left out.
+  trend(since){ const ex={}, out={}, n={};
+    state.history.forEach(w=>{ if(w.date<since||mesoDeload(w)) return;
+      w.entries.forEach(en=>{ const b=en.sets.filter(s=>isWork(s)&&s.done&&s.reps).reduce((x,s)=>Math.max(x,setScore(en.exId,s,w.date)),0);
+        if(b>0) (ex[en.exId]||(ex[en.exId]={p:en.primary||[], v:[]})).v.push(b); }); });
+    Object.values(ex).forEach(x=>{ if(x.v.length<3) return; const k=Math.max(1,Math.floor(x.v.length/3)), a=Math.max(...x.v.slice(0,k)), b=Math.max(...x.v.slice(-k));
+      x.p.forEach(mu=>{ out[mu]=(out[mu]||0)+(b-a)/a; n[mu]=(n[mu]||0)+1; }); });
+    Object.keys(out).forEach(mu=>{ out[mu]/=n[mu]; }); return out; },
   table(){ return {muscles:MUSCLES, groups:GROUPS}; },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
@@ -5386,6 +5460,7 @@ if(window.__hub) window.__hub.reg('lift', {
 /* While the rest bar shows, pad the page so nothing ends up hidden under it. */
 new MutationObserver(()=>$('#view').classList.toggle('resting',$('#resttimer').classList.contains('on'))).observe($('#resttimer'),{attributes:true, attributeFilter:['class']});
 load();
+shareBias();   // so the other sections correct for how you judge reps in reserve
 render();
 // Getting-started guidance is available from the shared guide.
 if(state.active && state.active.restEndsAt){ tickRest(); }
@@ -8289,7 +8364,7 @@ function hubWork(since, until){
     w.entries.forEach(e=>{ const L=LADDERS[e.ladderId], st=L&&L.steps[e.stepIdx]; if(!st||L.prep) return;
       const group=L.like||e.ladderId; if(st.k==='hold' && !COUNTED_HOLDS.includes(group)) return;
       const ss=e.sets.filter(x=>x.done!==false); if(!ss.length) return; const nv=novel(w, e.ladderId+'|'+e.stepIdx);
-      out.push({key:st.id, group, n:ss.reduce((x,s)=>x+Lift.hard(s.rir),0), f:ss.reduce((x,s)=>x+Lift.tiring(s.rir,nv),0)}); }); });
+      out.push({key:st.id, group, n:ss.reduce((x,s)=>x+Lift.hard(s.rir,s.v),0), f:ss.reduce((x,s)=>x+Lift.tiring(Lift.trueRir(s.rir,s.v),nv),0)}); }); });
   return out;
 }
 function hubPicks(ahead){
@@ -8774,7 +8849,9 @@ function currentE1(id){
   const lastT=ss.length? ss[ss.length-1].date : 0;
   if(L.seed && L.seed.date>=lastT) return L.seed.v;
   const recent=ss.filter(x=>x.date>=lastT-42*86400000).slice(-3);
-  if(recent.length) return Math.max(...recent.map(x=>x.best));
+  // back after a break: 5 percent lighter after two weeks away, 10 after four (Bosquet et al. 2013)
+  const away=(Date.now()-lastT)/86400000, f= away>=28? 0.9 : away>=14? 0.95 : 1;
+  if(recent.length) return Math.max(...recent.map(x=>x.best))*f;
   if(L.tm) return L.tm*100/state.settings.tmPct;
   return null;
 }
@@ -10119,7 +10196,7 @@ __root.addEventListener('click', e=>{
     case 'set-stackstep': { const k=isLb()?'stackStepLb':'stackStepKg'; state.settings[k]=+el.dataset.v; Prefs.set({[k]:+el.dataset.v}); save(); openSettings(); render(); break; }
     case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
     case 'set-tm': state.settings.tmPct=+el.dataset.v; save(); openSettings(); break;
-    case 'set-warm': state.settings.warmups=el.dataset.v==='1'; save(); openSettings(); break;
+    case 'set-warm': state.settings.warmups=el.dataset.v==='1'; Prefs.set({warmups:state.settings.warmups}); save(); openSettings(); break;
     case 'set-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); if(state.settings.sound){ primeAudio(); chime(); } save(); openSettings(); break;
     case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; Prefs.set({vibrate:state.settings.vibrate}); if(state.settings.vibrate) buzz(80); save(); openSettings(); break;
     case 'toggle-plate': { const p=parseFloat(el.dataset.v), key=isLb()?'platesLb':'platesKg', arr=state.settings[key], i=arr.indexOf(p);
@@ -10271,7 +10348,7 @@ function hubWork(since, until){
   const out=[], novel=Lift.novelty(state.history, h=>h.entries.map(e=>e.liftId)), rir=s=>s.rpe!=null? 10-s.rpe : s.trpe!=null? 10-s.trpe : null;
   state.history.forEach(h=>{ if(h.date<since||h.date>=until) return;
     h.entries.forEach(en=>{ if(!EX[en.liftId]) return; const ss=en.sets.filter(s=>s.done!==false&&s.kind!=='warm'); if(!ss.length) return; const nv=novel(h, en.liftId);
-      out.push({key:hubKey(en.liftId,en.vi), group:EX[en.liftId].a, n:ss.reduce((x,s)=>x+Lift.hard(rir(s)),0), f:ss.reduce((x,s)=>x+Lift.tiring(rir(s),nv),0)}); }); });
+      out.push({key:hubKey(en.liftId,en.vi), group:EX[en.liftId].a, n:ss.reduce((x,s)=>x+Lift.hard(rir(s),s.reps),0), f:ss.reduce((x,s)=>x+Lift.tiring(Lift.trueRir(rir(s),s.reps),nv),0)}); }); });
   return out;
 }
 function hubDay(D, d, week){
@@ -10626,22 +10703,28 @@ function buildPlan(T){
     covered=Object.assign({}, cov);
     const base=LIFT_TARGET[dose.lift][exp], keep=LIFT_TARGET.maintain[exp], lo=dose.lift==='maintain'? 1 : 2, T2=table(), cap=LIFT_CAP[dose.lift];
     // your focus for the muscle's group: more is half as much again, less is the keeping dose, skip leaves it to the rest
-    const targetOf=mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null, f=(T.mu&&T.mu[mu])||(g&&T.focus[g]);
-      return f==='skip'? 0 : f==='less'? Math.min(base, keep) : f==='more'? Math.round(base*1.5) : base; };
+    // each muscle's own dose, moved by how it responded last block (learnVolume)
+    const targetOf=mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null, f=(T.mu&&T.mu[mu])||(g&&T.focus[g]), b=Math.max(lo, base+((tg.adj||{})[mu]||0));
+      return f==='skip'? 0 : f==='less'? Math.min(b, keep) : f==='more'? Math.round(b*1.5) : b; };
     // muscles you left out, on their own or with their group: no exercise for another muscle aims at them if one doesn't have to
     const dropped=new Set(LIFT_MUSCLES.filter(mu=>targetOf(mu)===0)), aims=(e,mu)=>e.p.filter(q=>q!==mu&&dropped.has(q)).length;
     LIFT_MUSCLES.forEach(mu=>{ goal[mu]=targetOf(mu); });
     // groups you want more of first, then the most needed, then the big muscles, whose compounds also help the small ones
     const order=LIFT_MUSCLES.map(mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null; return {mu, need:targetOf(mu)-(cov[mu]||0), more:T.focus[g]==='more'}; })
-      .filter(x=>x.need>=lo).sort((a,b)=>(b.more-a.more) || (BIG.includes(b.mu)-BIG.includes(a.mu)) || (b.need-a.need));
+      .filter(x=>x.need>=lo || (GROWTH.NEED[x.mu] && dose.lift!=='maintain' && targetOf(x.mu)>0)).sort((a,b)=>(b.more-a.more) || (BIG.includes(b.mu)-BIG.includes(a.mu)) || (b.need-a.need));
     // up to four sets a muscle in one day; more days when the week needs more (twice a week at least, to grow)
     const natural=need=> dose.lift==='maintain'? 1 : Math.max(Math.min(2, ld.length), Math.min(ld.length, Math.ceil(need/4)));
     // one go at the week: each muscle in turn gets what it still needs after the exercises before it
     const run=(freqOf, room)=>{
       const C=Object.assign({}, cov), hit=dayHit.map(s=>new Set(s)), taken=days.map(()=>new Set()), used={}, out=days.map(()=>[]), at={}, skipped=[], lim=room===Infinity? Infinity : cap, turn={};
+      // the parts of each muscle the week trains (GROWTH.region), starting with Strength's lifts
+      const regs={}, addReg=(id,ps)=>ps.forEach(q=>{ const r=GROWTH.region(id,q); if(r) (regs[q]||(regs[q]=new Set())).add(r); });
+      days.forEach(d=>d.str.forEach(x=>{ const id=SAME_LIFT[x.id], e=id&&exOf[id]; if(e) addReg(id, e.p); }));
       let left=room;
       order.forEach(x=>{
-        const need=targetOf(x.mu)-(C[x.mu]||0); at[x.mu]=need; if(need<lo) return;
+        // a part of the muscle nothing else trains gets an exercise even when its sets are already covered
+        const need0=targetOf(x.mu)-(C[x.mu]||0), gap=dose.lift!=='maintain'&&targetOf(x.mu)>0&&GROWTH.missing(x.mu, regs).length>0;
+        const need= need0<lo&&gap? lo : need0; at[x.mu]=need; if(need<lo) return;
         const f=Math.min(ld.length, freqOf(x.mu, need)); if(f>left){ skipped.push(x.mu); return; }
         const n=Math.max(lo, Math.min(4, Math.round(need/f)));
         let got=0;
@@ -10652,14 +10735,18 @@ function buildPlan(T){
             // your picks take turns on its days, in the order you picked them
             const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[], k=turn[x.mu]||0, want=mine.length? mine[k%mine.length] : null;
             const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id));
-            const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
+            const miss=GROWTH.missing(x.mu, regs), gain=e=>miss.includes(GROWTH.region(e.id,x.mu))? 1 : 0;
+            // after your picks: a part of the muscle the week doesn't train yet (GROWTH), like a leg extension next to squats
+            const e=cat.filter(fits).sort((a,b)=> ((b.id===want)-(a.id===want)) || (mine.includes(b.id)-mine.includes(a.id)) || (gain(b)-gain(a)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
               // one you have logged before one you haven't, the most recent first: its weights carry on, and getting better
               // at an exercise is part of the progress, so changing it at random slows things down
               || ((b.last>0)-(a.last>0))
+              // then one that trains it at long lengths (GROWTH)
+              || ((b.long||0)-(a.long||0))
               // something you can load before bodyweight work, which is harder to progress, then variety across the days
               || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (b.last||0)-(a.last||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
             if(!e) return;
-            taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; turn[x.mu]=k+1;
+            taken[i].add(e.id); used[e.id]=(used[e.id]||0)+1; got++; turn[x.mu]=k+1; addReg(e.id, e.p);
             out[i].push(Object.assign({exId:e.id, mu:x.mu, sets:n, comp:e.comp}, x.more? {more:true} : {}));
             hit[i].add(x.mu); e.p.forEach(q=>{ if(q!==x.mu){ C[q]=(C[q]||0)+n; hit[i].add(q); } }); e.s.forEach(q=>{ C[q]=(C[q]||0)+n*0.5; }); });
         left-=got; if(!got) skipped.push(x.mu);
@@ -10816,6 +10903,25 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 /* The block's last week is lighter only when you seem to need it: two or more low check-ins in the last seven days.
    A planned deload week adds no muscle and can slightly slow lower-body strength gains (Coleman et al. 2024). */
 function lighterNow(){ const since=startOfToday()-6*DAY_MS; return ciAll().filter(c=>c.day>=since).map(readyOf).filter(r=>r&&r.ease).length>=2; }
+/* At the end of a block, each muscle's weekly sets for the next follow how it responded: people differ a lot in the
+   volume they grow best on, and in trained lifters adding to what they had been doing beat a standard dose (Scarpelli
+   et al. 2020). Its lifts stalled (estimated max up 0.5 percent or less) while it recovered well: two more sets. Its
+   lifts slipped (down 2 percent or more) while it stayed sore (5 of 10 or more) or a joint that loads it hurt: two fewer.
+   Progressing: the same. Kept within 4 fewer and 6 more than the standard dose. */
+function learnVolume(){
+  const P=tg.plan; if(!P||!P.at||!H.has('lift')) return;
+  const L=H.api('lift'), tr=L&&L.trend? L.trend(P.at) : {}, adj=Object.assign({}, tg.adj||{}), why={};
+  const cs=ciAll().filter(c=>c.day>=P.at);
+  const sore=mu=>{ const xs=cs.filter(c=>c.sore&&mu in c.sore).map(c=>c.sore[mu]); return xs.length? xs.reduce((a,b)=>a+b,0)/xs.length : null; };
+  const hurt=mu=>cs.some(c=>c.pain&&Object.keys(c.pain).some(j=>c.pain[j]>=3&&JOINTS[j]&&JOINTS[j].m.includes(mu)));
+  Object.keys(tr).forEach(mu=>{ const t=tr[mu], s=sore(mu), h=hurt(mu), cur=adj[mu]||0;
+    if(t<=0.005 && !h && (s==null||s<4)){ if(cur<6){ adj[mu]=Math.min(6,cur+2); why[mu]=['+2', 'stalled while recovering well']; } }
+    else if(t<=-0.02 && (h || (s!=null&&s>=5))){ if(cur>-4){ adj[mu]=Math.max(-4,cur-2); why[mu]=['−2', h? 'slipping, with a sore joint' : 'slipping while still sore']; } } });
+  tg.adj=adj; tg.adjWhy=why;
+}
+/* What learnVolume changed for this block, for the program card. */
+function adjLine(){ const w=tg.adjWhy||{}, ks=Object.keys(w); if(!ks.length) return '';
+  return `<p class="hint">Weekly sets changed from your last block: ${ks.map(mu=>`${esc(muscleName(mu))} ${w[mu][0]} (${w[mu][1]})`).join('; ')}.</p>`; }
 function ciAll(){ return (tg.checkins||[]).filter(c=>c&&!c.skip).sort((a,b)=>a.day-b.day); }
 function ciToday(){ const d=startOfToday(); return (tg.checkins||[]).find(c=>c.day===d)||null; }
 /* Mean of the wellness answers (needs three of the four), or null. */
@@ -11130,7 +11236,7 @@ function closeRun(){
 function moveOn(d){
   const W=weekOf(); tg.next=(d+1)%W.length;
   const n=nextIdx(W), P=plan(); let moved='';
-  if(n>=0 && n<=d){ if(P.week>=P.weeks){ tg.plan=null; moved=' That was the block’s last week: your next block is built from your latest numbers.'; }
+  if(n>=0 && n<=d){ if(P.week>=P.weeks){ learnVolume(); tg.plan=null; moved=' That was the block’s last week: your next block is built from your latest numbers.'; }
     else { P.week++; moved=` On to week ${P.week} of ${P.weeks}${P.week>=P.weeks? ', the last' : ''}.`; } }
   return {n, moved};
 }
@@ -11503,7 +11609,7 @@ function programCard(){
     <div class="parts">${R.map((m,k)=>`<div class="part"><div class="pn" style="background:${SEC[m].c};color:${SEC[m].ink}">${k+1}</div><div style="min-width:0">
       <div class="ph"><b>${SEC[m].n} &middot; ${DOSE_N[P.dose[m]]}</b><span>${daysOn(m)}</span></div><div class="pt">${cap(what[P.dose[m]])}: ${line[m]}.</div></div></div>`).join('')}</div>
     <p class="hint">${dl? 'This is the lighter week: fewer sets at an easier effort, so the next block starts fresh.' : 'Effort climbs each week. The last week turns lighter only if your check-ins say you need it. After it, Together builds the next block from your new numbers.'} Built from your order, ${plural(tg.days,'day')} and ${tg.mins? tg.mins+' minutes' : 'no time limit'}.</p>
-    ${tuneLine(P)}
+    ${tuneLine(P)}${adjLine()}
     <div class="row2" style="margin-top:12px"><button class="btn sm" data-a="t-edit">${IC.sliders} Customize this block</button><button class="btn sm ghost" data-a="t-new">${IC.play} Start a new block</button></div>
     ${`<div class="grp" style="margin-top:16px">Week ${wk} of ${P.weeks}</div>
     <div class="row3"><button class="tog" data-a="w-prev" ${wk<=1?'disabled':''} aria-label="Back to week ${Math.max(1,wk-1)}">${IC.back} Week ${Math.max(1,wk-1)}</button>
@@ -11973,7 +12079,7 @@ __root.addEventListener('click', e=>{
       // a day still running ends here, any session in it left open to finish
       closeRun();
       const P=plan();
-      if(a==='w-prev') P.week=Math.max(1, wk-1); else if(a==='w-next'){ if(last) tg.plan=null; else P.week=wk+1; } else P.week=wk;
+      if(a==='w-prev') P.week=Math.max(1, wk-1); else if(a==='w-next'){ if(last){ learnVolume(); tg.plan=null; } else P.week=wk+1; } else P.week=wk;
       // either way the week starts fresh, at Day 1
       tg.roundAt=Date.now(); tg.next=0; peekDay=null; pickOpen=false; save(); render(); window.scrollTo(0,0);
       toast(a==='w-next'&&last? `A new block starts: week 1 of ${BLOCK}, Day 1.` : `Week ${plan().week} of ${BLOCK} starts at Day 1.`, true); break; }

@@ -194,6 +194,13 @@
       const run=saved().run;
       check(run && run.parts[0].st==='done' && run.parts[1].st==='run' && win.__hub.current()===run.parts[1].m, 'finishing Strength starts the day’s next part straight away');
       win.__hub.api(run.parts[1].m).end(false); await pause(300); win.__hub.go('mix'); await pause(250); }
+    // exercise choice for growth: each part of a muscle trained, and long-length exercises first
+    { frame.remove(); frame=null;
+      reset({'milo.persist':'1', 'trainer.together':JSON.stringify({v:1, on:true, secs:['lift'], days:4, mins:null, prio:['lift'], kit:null, exp:'intermediate', log:[], checkins:[], next:0})});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      const by={}; saved().plan.days.forEach(d=>d.lift.forEach(x=>{ (by[x.mu]||(by[x.mu]=[])).push(x.exId); }));
+      check((by.quad||[]).includes('leg-extension') && (by.quad||[]).some(id=>id!=='leg-extension'), 'quads get a squat or press and a leg extension, which grows the part squats miss');
+      check((by.tri||[]).includes('overhead-ext') && !(by.tri||[]).includes('tricep-pushdown') && (by.ham||[]).includes('leg-curl'), 'triceps and hamstrings start from the exercises that train them at long lengths'); }
     // recommended Ladder goals: more goals than Ladder has room for get a keep-and-pause recommendation
     { const G={pullup1:['First strict pull-up','pull',4,1], pushup20:['20 strict push-ups','pushh',3,20], frontlever:['Full front lever, 5 s','frontlever',4,5], tuckplanche:['Tuck planche, 10 s','planche',1,10]};
       const four=Object.assign({}, ladder, {goals:Object.keys(G).map((k,i)=>({id:'rg'+i, key:k, n:G[k][0], l:G[k][1], r:G[k][2], std:G[k][3], sup:['core'], added:1, achieved:null}))});
