@@ -5367,7 +5367,28 @@ function hubSetup(days, gap, calPerWeek){
   if(days) genOpts.days=Math.max(genOpts.gap?1:3, Math.min(6,days));
   renderGenerator();
 }
+/* ---- For Together's day screen: an open session in the shape every trainer shares, and typing, ticking and finishing
+   it with this section's own rules (suggested weights, rest timer, records). */
+function onScreen(sid){ if(state.active&&state.active.id===sid) return true; if(!Parked.list(state).some(p=>p.id===sid)) return false; stopRest(); Parked.pick(state, sid); return true; }
+function hubLive(sid){
+  const a=Parked.all(state).find(x=>x.id===sid); if(!a) return null; const u=unit();
+  return {id:a.id, name:a.name, rest:a===state.active? a.restEndsAt : null, entries:a.entries.map(en=>{ const prev=lastPerf(en.exId), bw=isBW(en.exId);
+    return {name:en.name, note:en.overloadNote||'', w:(bw?'+':'')+u, r:isHold(en.exId)?'Secs':'Reps', e:'RIR',
+      sets:en.sets.map((s,si)=>{ const warm=s.type==='warmup', hint=repHint(en,s);
+        return {lbl: warm? 'W' : String(en.sets.slice(0,si).filter(isWork).length+1), warm, done:!!s.done,
+          w: s.weight!=null&&(s.weight||!bw)? String(fmtW(s.weight)) : '', wPh: prev&&prev.weight!=null? (bw?'+':'')+fmtW(prev.weight) : bw? 'BW' : '–',
+          r: s.reps!=null? String(s.reps) : '', rPh: hint!=null? '~'+hint : prev? String(prev.reps) : '–',
+          e: s.rir!=null? String(s.rir) : '', ePh: String(en.target.rir)}; })}; })};
+}
+function hubPut(sid, ei, si, f, v){
+  if(!onScreen(sid)) return false; const s=state.active.entries[ei]&&state.active.entries[ei].sets[si]; if(!s) return false;
+  if(f==='w') s.weight=fromDisp(v); else if(f==='r') s.reps= v===''? null : parseInt(v)||null; else s.rir= v===''? null : parseFloat(v);
+  save(); return true;
+}
 if(window.__hub) window.__hub.reg('lift', {
+  live:hubLive, put:hubPut,
+  tick(sid, ei, si){ if(!onScreen(sid)) return 'That session isn’t open any more'; if(!state.active.entries[ei]||!state.active.entries[ei].sets[si]) return null; toggleDone(ei, si); return null; },
+  finish(sid){ if(!onScreen(sid)) return false; finishWorkout(); return true; },
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['unit','sound','vibrate'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
   sheetOpen:()=>modalOn, running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
@@ -8325,7 +8346,28 @@ function hubInfo(){
   o.picks=hubPicks(0);
   return o;
 }
+/* ---- For Together's day screen: as in Muscle (hubLive there). */
+function onScreen(sid){ if(state.active&&state.active.id===sid) return true; if(!Parked.list(state).some(p=>p.id===sid)) return false; stopRest(); Parked.pick(state, sid); return true; }
+function liveTarget(e){ const st=stepsOf(e.ladderId)[e.stepIdx]; return e.target==null? st.v : e.target; }
+function hubLive(sid){
+  const a=Parked.all(state).find(x=>x.id===sid); if(!a) return null;
+  return {id:a.id, name:a.name, rest:a===state.active? a.restEndsAt : null, entries:a.entries.map(e=>{
+    const st=stepsOf(e.ladderId)[e.stepIdx], L=LADDERS[e.ladderId], practice=st.practice||L.practice, showRir=e.kind!=='hold'&&practice!=='balance'&&practice!=='power';
+    return {name:st.n, note:esc(L.n), w:null, r:e.kind==='hold'?'Secs':'Reps', e:showRir? 'RIR' : null, clean:e.clean===true,
+      setup: setupFields(st).length? setupValid(st, e.setup||{}) : null,
+      sets:e.sets.map((s,si)=>({lbl:String(si+1), done:!!s.done, w:'', r:s.v!=null? String(s.v) : '', rPh:String(liveTarget(e)), e:showRir? (s.rir!=null? String(s.rir) : '') : null, ePh:'RIR'})) }; })};
+}
 if(window.__hub) window.__hub.reg('cal', {
+  live:hubLive,
+  put(sid, ei, si, f, v){ if(!onScreen(sid)) return false; const s=state.active.entries[ei]&&state.active.entries[ei].sets[si]; if(!s) return false;
+    const n= v===''? null : parseInt(v); if(f==='r') s.v=isNaN(n)? null : n; else if(f==='e') s.rir=isNaN(n)? null : n; save(); return true; },
+  clean(sid, ei, on){ if(!onScreen(sid)) return false; const e=state.active.entries[ei]; if(!e) return false; e.clean=!!on; save(); return true; },
+  tick(sid, ei, si){ if(!onScreen(sid)) return 'That session isn’t open any more'; const e=state.active.entries[ei], s=e&&e.sets[si]; if(!s) return null;
+    if(!s.done){ const st=stepsOf(e.ladderId)[e.stepIdx], v= s.v==null? liveTarget(e) : s.v;
+      if(!Number.isFinite(v)||v<0) return 'Enter the reps or seconds you actually did';
+      if(!setupValid(st, e.setup||{})) return 'Fill in this exercise’s setup in Ladder first'; }
+    toggleDone(ei, si); return null; },
+  finish(sid){ if(!onScreen(sid)) return false; finishWorkout(); return true; },
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['sound','vibrate'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
   // Together ends a day's open session (id, or the one on screen): keep:true saves the sets you logged, false drops it (Take back still works)
@@ -10351,7 +10393,29 @@ function hubStartWith(spec){
   if(entries.some(en=>EX[en.liftId].k==='load' && en.sets.some(s=>s.kind!=='warm'&&s.w==null))) toast('Some weights are blank: pick a weight you could lift for the reps with one or two to spare');
   return state.active.id;
 }
+/* ---- For Together's day screen: as in Muscle (hubLive there). */
+function onScreen(sid){ if(state.active&&state.active.id===sid) return true; if(!Parked.list(state).some(p=>p.id===sid)) return false; stopRest(); Parked.pick(state, sid); return true; }
+function hubLive(sid){
+  const a=Parked.all(state).find(x=>x.id===sid); if(!a) return null;
+  return {id:a.id, name:a.name, rest:a===state.active? a.restEndsAt : null, entries:a.entries.map(en=>{ const X=EX[en.liftId]; let n=0;
+    return {name:exName(en.liftId,en.vi), note:en.label||'', w: X.k==='bw'? null : X.k==='added'? '+'+u() : u(), r:'Reps', e:'RPE',
+      sets:en.sets.map(s=>{ if(s.kind!=='warm') n++;
+        const lbl= s.kind==='warm'?'W': s.kind==='top'?'TOP': s.kind==='plus'?n+'+': s.kind==='bo'?'BO': String(n);
+        return {lbl, warm:s.kind==='warm', done:!!s.done, w:String(inW(s.w)), wPh: X.k==='added'?'+0':u(),
+          r: s.reps!=null? String(s.reps) : '', rPh: s.tr!=null? (s.trHi? s.tr+'-'+s.trHi : s.tr+(s.kind==='plus'?'+':'')) : '',
+          e: s.kind==='warm'? null : s.rpe!=null? String(s.rpe) : '', ePh: s.trpe!=null? String(s.trpe) : 'RPE'}; })}; })};
+}
 if(window.__hub) window.__hub.reg('str', {
+  live:hubLive,
+  put(sid, ei, si, f, v){ if(!onScreen(sid)) return false; const s=state.active.entries[ei]&&state.active.entries[ei].sets[si]; if(!s) return false;
+    if(f==='w'){ s.w=fromDisp(v); s.edited=true; } else if(f==='r'){ const n=parseInt(v); s.reps=isNaN(n)? null : Math.max(0,n); }
+    else { const n=parseFloat(v); s.rpe=isNaN(n)? null : Math.max(1,Math.min(10,n)); }
+    save(); return true; },
+  tick(sid, ei, si){ if(!onScreen(sid)) return 'That session isn’t open any more'; const en=state.active.entries[ei], s=en&&en.sets[si]; if(!s) return null;
+    if(!s.done && EX[en.liftId].k==='load' && s.w==null) return 'Enter the weight first';
+    if(!s.done && s.reps==null && !s.tr) return 'Enter your reps first';
+    toggleDone(ei, si); return null; },
+  finish(sid){ if(!onScreen(sid)) return false; finishSession(); return true; },
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['unit','sound','vibrate','dbStepKg','dbStepLb','stackStepKg','stackStepLb'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
   // for Muscle: the top set of a lift from your latest Strength session with it, and a counter that moves whenever that may have changed
@@ -11047,7 +11111,7 @@ function startDay(d){
   const pats= order.includes('str')? I.str.next.slots.map(x=>AREA_PAT[x.area]) : [];
   const P=planDay(order, I, tg.short, {pats, carry:carryOver()});
   tg.run={day:d, date:startOfToday(), at:Date.now(), short:!!tg.short, pats, week:plan().week, parts:order.map(m=>({m, st:'todo', sid:null, drop:(P.parts.find(p=>p.m===m)||{}).drop||[]}))};
-  pickOpen=false; undos=[]; save(); startPart(0);
+  pickOpen=false; undos=[]; save(); startPart(0, true);
 }
 /* What Muscle should take off: hard sets per muscle already logged today in Strength and Ladder, and any
    exercise already done there. Worked out when Muscle starts, from what was actually logged. */
@@ -11065,15 +11129,16 @@ function liftTrim(run){
 }
 /* Called by the shell when a part of today's day is finished in its trainer: the next part starts there at once. Not
    after a part ended early (you may be stopping), or when the next part's trainer already has a session going. */
-H.advance=function(m){
+H.advance=function(m){   // (the next part opens on Together's day screen, with the rest)
   try{ refreshRun(); const run=tg.on&&tg.run; if(!run) return false;
     const just=run.parts.find(p=>p.m===m&&p.sid); if(!just||just.st!=='done') return false;
     const k=run.parts.findIndex(p=>p.st==='todo'); if(k<0) return false;
     const api=H.api(run.parts[k].m), i=api&&api.info(); if(!i||i.busy) return false;
-    startPart(k); return run.parts[k].st==='run';
+    startPart(k, true); return false;   // and the shell brings you back to the day screen
   }catch(e){ console.error('Together couldn’t start the next part', e); return false; }
 };
-function startPart(k){
+/* stay: start it here, on Together's day screen, rather than going to its trainer. */
+function startPart(k, stay){
   const run=tg.run, p=run&&run.parts[k]; if(!p||p.st!=='todo') return;
   const api=H.api(p.m); if(!api) return;
   const i=api.info();
@@ -11092,7 +11157,7 @@ function startPart(k){
     id= C&&C.picks&&C.picks.length? api.start({ids:C.picks.map(x=>x.id), sets, drop:(P.parts.find(x=>x.m==='cal')||{}).drop||[]}) : null; }
   else { const S=I.str; id= S&&S.next.slots.length? api.startWith({name, slots:S.next.slots.map(x=>({id:x.id, sc:x.sc}))}) : null; }
   if(!id){ toast(`${SEC[p.m].n} couldn’t start. It’s open so you can see why.`); api.open(); H.away(p.m,'run'); return; }
-  p.sid=id; p.st='run'; save(); H.away(p.m,'run'); strip();
+  p.sid=id; p.st='run'; save(); if(stay) render(); else H.away(p.m,'run'); strip();
 }
 /* A finish or an end taken back in its section reopens today's day it closed: the day is back on, with that
    part running again, and it is next up again. */
@@ -11195,7 +11260,7 @@ if(stripEl) stripEl.addEventListener('click', e=>{
   const a=b.dataset.tg;
   if(a==='home') H.go('mix');
   else if(a==='open'){ const api=H.api(b.dataset.m); if(api) api.open(); H.away(b.dataset.m,'run'); }
-  else if(a==='start') startPart(+b.dataset.k);
+  else if(a==='start'){ startPart(+b.dataset.k, true); H.go('mix'); }
 });
 
 /* ==================== VIEWS ==================== */
@@ -11207,7 +11272,7 @@ function partRow(p, k, st, day){
   const c=SEC[p.m], done=st==='done'||st==='ended', off=!p.ready||st==='skip';
   let body='';
   if(!p.ready) body=`<div class="pt">${p.why}</div><div class="pacts"><button class="btn sm" data-a="setup" data-m="${p.m}">Set it up</button></div>`;
-  else if(st==='run') body=`<div class="pstate run">${IC.play} In progress</div><div class="pacts"><button class="btn sm pri" data-a="open" data-m="${p.m}">Go to ${c.n} ${IC.arrow}</button></div>`;
+  else if(st==='run') body= liveHtml(p.m) || `<div class="pstate run">${IC.play} In progress</div><div class="pacts"><button class="btn sm pri" data-a="open" data-m="${p.m}">Go to ${c.n} ${IC.arrow}</button></div>`;
   else if(done) body=`<div class="pstate done">${IC.check} ${st==='ended'?'Ended early':'Done'}</div><div class="pacts"><button class="btn sm ghost" ${day!=null? `data-a="open-done" data-d="${day}" data-m="${p.m}"` : `data-a="open-part" data-k="${k}"`}>See or change it ${IC.arrow}</button></div>`;
   else if(st==='skip') body=`<div class="pstate skip">${IC.skip} Skipped</div>${day!=null? '' : `<div class="pacts"><button class="btn sm ghost" data-a="unskip" data-k="${k}">${IC.undo} Undo</button></div>`}`;
   else body=`${p.sub?`<div class="ps">${p.sub}</div>`:''}<div class="pt">${p.lines.join('<span class="sep"> &middot; </span>')}</div>${p.notes.map(note).join('')}
@@ -11215,6 +11280,36 @@ function partRow(p, k, st, day){
   return `<div class="part ${off?'off':''}"><div class="pn" style="background:${c.c};color:${c.ink}">${done? IC.check : k+1}</div>
     <div style="min-width:0"><div class="ph"><b>${c.n}${p.title? ' &middot; '+p.title : ''}</b><span>${p.ready&&(!st||st==='todo'||st==='peek')? 'about '+r5(p.mins)+' min' : ''}</span></div>${body}</div></div>`;
 }
+/* ==================== THE DAY ON ONE SCREEN ====================
+   A running part's exercises and sets, logged here. Each trainer keeps its own rules (its live, put, tick and finish):
+   suggested weights, what an empty box logs, the rest timer and its sound, records. Finishing goes through the
+   trainer's own finish, so what follows it shows there, and then the next part opens here. */
+function runPart(m){ const run=tg.run; return run&&run.parts.find(p=>p.m===m&&p.st==='run'&&p.sid)||null; }
+const restLeft=t=>{ const s=Math.max(0, Math.round((t-Date.now())/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+function liveHtml(m){
+  const p=runPart(m), api=p&&H.api(m), L=api&&api.live? api.live(p.sid) : null; if(!L) return '';
+  const c=SEC[m], rest=L.rest&&L.rest>Date.now();
+  return `<div class="lg">${rest? `<div class="lgrest" data-until="${L.rest}">${IC.play} Rest <b class="mono">${restLeft(L.rest)}</b></div>` : ''}
+    ${L.entries.map((x,ei)=>{ const cols=`grid-template-columns:2.4em ${x.w? 'minmax(0,1fr) ' : ''}minmax(0,1fr) ${x.e? 'minmax(0,1fr) ' : ''}2.8em`;
+      const inp=(f,si,v,ph,lbl)=>`<input class="lgin" inputmode="${f==='r'? 'numeric' : 'decimal'}" data-lg="${f}" data-m="${m}" data-ex="${ei}" data-set="${si}" value="${esc(v)}" placeholder="${esc(ph||'')}" aria-label="${esc(lbl)}">`;
+      return `<div class="lgex"><div class="lgn"><b>${esc(x.name)}</b>${x.note? `<span>${x.note}</span>` : ''}</div>
+        ${x.setup===false? `<div class="note warn">${IC.alert}<span>Record this one’s setup in ${c.n} before logging a set.</span></div>` : ''}
+        ${'clean' in x? `<label class="lgclean"><input type="checkbox" data-lgclean data-m="${m}" data-ex="${ei}"${x.clean? ' checked' : ''}> Clean form on upcoming sets</label>` : ''}
+        <div class="lgrow lgh" style="${cols}"><span>Set</span>${x.w? `<span>${esc(x.w)}</span>` : ''}<span>${x.r}</span>${x.e? `<span>${x.e}</span>` : ''}<span></span></div>
+        ${x.sets.map((s,si)=>`<div class="lgrow${s.done? ' done' : ''}${s.warm? ' warm' : ''}" style="${cols}"><span class="lgi">${esc(s.lbl)}</span>
+          ${x.w? inp('w',si,s.w,s.wPh,'Set '+s.lbl+' weight') : ''}${inp('r',si,s.r,s.rPh,'Set '+s.lbl+' '+x.r.toLowerCase())}${x.e? (s.e==null? '<span></span>' : inp('e',si,s.e,s.ePh,'Set '+s.lbl+' '+x.e)) : ''}
+          <button class="lgtick" data-a="lg-tick" data-m="${m}" data-ex="${ei}" data-set="${si}" aria-pressed="${s.done}" aria-label="Set ${esc(s.lbl)} done">${IC.check}</button></div>`).join('')}</div>`; }).join('')}
+    <div class="pacts"><button class="btn sm pri" data-a="lg-finish" data-m="${m}">${IC.flag} Finish ${c.n}</button><button class="btn sm ghost" data-a="open" data-m="${m}">More in ${c.n} ${IC.arrow}</button></div></div>`;
+}
+/* Typed values go to the trainer as you type, without redrawing, so the keyboard stays where it is. */
+__root.addEventListener('input', e=>{
+  const el=e.target.closest&&e.target.closest('[data-lg],[data-lgclean]'); if(!el) return;
+  const p=runPart(el.dataset.m), api=p&&H.api(p.m); if(!api) return;
+  if(el.hasAttribute('data-lgclean')){ if(api.clean) api.clean(p.sid, +el.dataset.ex, el.checked); return; }
+  if(api.put) api.put(p.sid, +el.dataset.ex, +el.dataset.set, el.dataset.lg, el.value);
+});
+setInterval(()=>{ const el=$('.lgrest'); if(!el) return; const t=+el.dataset.until;
+  if(t<=Date.now()) el.remove(); else { const b=el.querySelector('b'); if(b) b.textContent=restLeft(t); } }, 1000);
 /* Muscles the day trains, from its plan. */
 function dayMuscles(order, I){
   const s=new Set();
@@ -11970,7 +12065,13 @@ __root.addEventListener('click', e=>{
     case 'd-stop': remember('Together stopped'); tg.on=false; tg.run=null; draft=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Stopped. Each trainer carries on by itself.', true); break;
     case 'edit': draft=newDraft(); render(); window.scrollTo(0,0); break;
     case 'start-day': startDay(+el.dataset.d); break;
-    case 'part': startPart(k); break;
+    case 'part': startPart(k, true); break;
+    case 'lg-tick': { const p=runPart(el.dataset.m), api=p&&H.api(p.m); if(!api||!api.tick) break;
+      const err=api.tick(p.sid, +el.dataset.ex, +el.dataset.set); if(err) toast(err); render(); break; }
+    case 'lg-finish': { const p=runPart(el.dataset.m), api=p&&H.api(p.m), L=api&&api.live&&api.live(p.sid); if(!L) break;
+      if(!L.entries.some(x=>x.sets.some(s=>s.done&&!s.warm))){ toast(`Tick at least one set first, or end ${SEC[p.m].n} with End the day`); break; }
+      // its own finish, in its own screen, so what follows (records, a rung earned, how it felt) shows there; then back here
+      H.away(p.m,'run'); api.finish(p.sid); break; }
     case 'skip': if(tg.run&&tg.run.parts[k]){ remember(SEC[tg.run.parts[k].m].n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(SEC[tg.run.parts[k].m].n+' skipped.', true); } break;
     case 'unskip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='todo'; save(); render(); } break;
     case 'end-day': { if(!tg.run) break;

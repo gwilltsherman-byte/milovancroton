@@ -147,9 +147,12 @@
     check(st.active.entries.every(e=>e.sc && (e.sc.t==='rpe'||e.sc.t==='dp'||e.sc.t==='var')), 'each lift carries Together’s prescription');
     check(!st.program, 'Strength has no program of its own made for it');
     check(saved().run && saved().run.parts[0].m==='str', 'the day runs in your order, Strength first');
-    { const hub=win.__hub, strip=doc.getElementById('tgstrip'), other=hub.current()!=='mix', shown=!strip.hidden;
+    check(win.__hub.current()==='mix' && root.querySelectorAll('.lg [data-a="lg-tick"][data-m="str"]').length===JSON.parse(localStorage.getItem('strlog.v2')).active.entries.reduce((n,e)=>n+e.sets.length,0),
+      'the day stays on Together’s screen, with every Strength set to log right there');
+    { const hub=win.__hub, strip=doc.getElementById('tgstrip');
+      hub.go('str'); await pause(250); const shown=!strip.hidden;
       hub.go('mix'); await pause(250);
-      check(other && shown && strip.hidden, 'the day strip shows on the trainer tabs, not over Together’s own page'); }
+      check(shown && strip.hidden, 'the day strip shows on the trainer tabs, not over Together’s own page'); }
     // ending the day with a part still going: you choose what happens to its session
     root.querySelector('[data-a="end-day"]').click(); await pause(200);
     check(root.querySelector('[data-how="save"]') && root.querySelector('[data-how="leave"]') && root.querySelector('[data-how="drop"]'), 'ending the day with a part still going offers to save it, leave it open or drop it');
@@ -185,14 +188,18 @@
       { const c=root.querySelector('[data-a="ci-skip"]'); if(c){ c.click(); await pause(150); } }
       root.querySelector('[data-a="start-day"]').click(); await pause(500);
       const sr=doc.getElementById('m-str').shadowRoot;
-      sr.querySelectorAll('input[data-field="w"]').forEach(i=>{ if(!i.value){ i.value='40'; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true})); } }); await pause(150);
-      { const n=sr.querySelectorAll('[data-act="toggle-done"]').length; for(let i=0;i<n;i++){ const t=sr.querySelectorAll('[data-act="toggle-done"]')[i]; if(t){ t.click(); await pause(60); } } }
+      root.querySelectorAll('.lg input[data-lg="w"][data-m="str"]').forEach(i=>{ if(!i.value){ i.value='40'; i.dispatchEvent(new Event('input',{bubbles:true})); } }); await pause(150);
+      let restShown=false;
+      { const n=root.querySelectorAll('.lg [data-a="lg-tick"][data-m="str"]').length; for(let i=0;i<n;i++){ const t=root.querySelectorAll('.lg [data-a="lg-tick"][data-m="str"]')[i]; if(t){ t.click(); await pause(60); if(!i) restShown=!!root.querySelector('.lgrest'); } } }
       await pause(200);
-      sr.querySelector('[data-act="finish"]').click(); await pause(400);
+      const st=JSON.parse(localStorage.getItem('strlog.v2')).active;
+      check(st.entries.every(e=>e.sets.every(x=>x.done)) && st.entries[0].sets.some(x=>x.w===40), 'sets typed and ticked on the day screen are logged in Strength');
+      check(restShown, 'and its rest timer shows there');
+      root.querySelector('[data-a="lg-finish"][data-m="str"]').click(); await pause(400);
       for(let i=0;i<4;i++){ const c=sr.querySelector('#sheet.on [data-act="close-modal"], [role="dialog"][aria-modal="true"] [data-act="close-modal"]'); if(!c) break; c.click(); await pause(300); }
       await pause(400);
       const run=saved().run;
-      check(run && run.parts[0].st==='done' && run.parts[1].st==='run' && win.__hub.current()===run.parts[1].m, 'finishing Strength starts the day’s next part straight away');
+      check(run && run.parts[0].st==='done' && run.parts[1].st==='run' && win.__hub.current()==='mix' && !!root.querySelector(`.lg [data-m="${run.parts[1].m}"]`), 'finishing Strength brings you back to the day, with its next part started and ready to log');
       win.__hub.api(run.parts[1].m).end(false); await pause(300); win.__hub.go('mix'); await pause(250); }
     // recommended Ladder goals: more goals than Ladder has room for get a keep-and-pause recommendation
     { const G={pullup1:['First strict pull-up','pull',4,1], pushup20:['20 strict push-ups','pushh',3,20], frontlever:['Full front lever, 5 s','frontlever',4,5], tuckplanche:['Tuck planche, 10 s','planche',1,10]};
