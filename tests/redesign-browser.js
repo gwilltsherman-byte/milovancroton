@@ -294,6 +294,24 @@
       frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture)); localStorage.removeItem('strlog.v2'); localStorage.removeItem('trainer.shell.unit');
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
+    // back after a break: lighter loads and fewer sets; warm-ups before the first heavy lift; short on time pairs exercises
+    { frame.remove(); frame=null;
+      const fx=JSON.parse(JSON.stringify(fixture)), d=new Date(); d.setDate(d.getDate()-35); d.setHours(12,0,0,0);
+      fx.history=[{id:'old-bench',name:'Push',date:d.getTime(),durationSec:600,prs:[],entries:[{exId:'barbell-bench',name:'Barbell Bench Press',primary:['chest'],secondary:['tri','fdelt'],equipment:'Barbell',sets:[{type:'work',weight:80,reps:8,rir:2,done:true}]}]}];
+      fx.route='today'; localStorage.setItem('hyplog.v1',JSON.stringify(fx));
+      ({win,doc}=await load()); root=rootOf(doc,'lift');
+      const L=win.__hub.api('lift'), ok={readiness:{flag:'ok',text:'Ready'}};
+      L.startWith({name:'Back', exercises:[{exId:'barbell-bench',sets:3}]}, ok); await pause(250);
+      let a=JSON.parse(localStorage.getItem('hyplog.v1')).active, en=a.entries[0], work=en.sets.filter(s=>s.type!=='warmup');
+      check(work.length===2 && Math.abs(work[0].weight-72.5)<0.01 && /ease back in/.test(en.overloadNote),'Five weeks away: a third fewer sets, 10% lighter, and it says why');
+      check(en.sets.filter(s=>s.type==='warmup').length>=2 && en.sets[0].type==='warmup' && en.sets[0].weight<work[0].weight,'Warm-up sets come before the first heavy lift');
+      win.__hub.api('lift').end(false); await pause(250);
+      L.startWith({name:'Quick', exercises:[{exId:'barbell-bench',sets:3},{exId:'barbell-curl',sets:3},{exId:'lat-pulldown',sets:3}]}, Object.assign({short:true}, ok)); await pause(250);
+      a=JSON.parse(localStorage.getItem('hyplog.v1')).active;
+      check(a.entries[0].sg && a.entries[0].sg===a.entries[1].sg && !a.entries[1].primary.some(q=>a.entries[0].primary.includes(q)) && a.entries.every(e=>e.sets.filter(s=>s.type!=='warmup').length>=2),'Short on time pairs exercises for different muscles as supersets and keeps the sets');
+      frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture));
+      ({win,doc}=await load()); root=rootOf(doc,'lift'); }
+
     // how-tos are written instructions only: no drawings or animation
     { const how=(m,id)=>{ const r=rootOf(doc,m), b=doc.createElement('button'); b.dataset.act='howto'; b.dataset.id=id; b.hidden=true;
         r.getElementById('view').appendChild(b); b.click(); b.remove(); return r; };
