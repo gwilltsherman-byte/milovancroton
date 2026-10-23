@@ -10506,7 +10506,7 @@ function kit(){ if(tg.kit) return tg.kit;
   const k=!tg.on&&Prefs.get('kit',null); return Array.isArray(k)&&k.length? k.filter(x=>KIT.some(y=>y[0]===x)) : KIT.map(k=>k[0]); }
 /* What the plan is built from. A change to any of it builds a new block; changing which days a section is on only
    refills the days. */
-const GEN='g3';   // half sets for helping muscles, Muscle over more of your days when full, your picks spread evenly
+const GEN='g4';   // half sets for helping muscles, Muscle over more of your days when full, your picks spread evenly, why each was chosen
 function baseSig(){ return JSON.stringify([tg.secs, rankList(), tg.days, tg.mins, kit(), tg.exp||'intermediate']); }
 function plan(){
   // the order sets each section's dose, so the program keeps the order it was built with: a suggestion that would
@@ -10603,6 +10603,8 @@ function buildPlan(T){
   if(dose.lift && ld.length){
     const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], eq=Object.keys(KIT_LIFT).filter(k=>kit().includes(k)).map(k=>KIT_LIFT[k]).concat('Bodyweight');
     cat.forEach(e=>{ exOf[e.id]=e; });
+    // the exercises you set for each day: no other muscle takes one of them there
+    const setOn=days.map((d,i)=>new Set(Object.values(T.perDay||{}).map(m=>m[i]).filter(Boolean)));
     const cov={}, dayHit=days.map(()=>new Set()), addCov=(mm,n,i)=>{ mm.p.forEach(q=>{ cov[q]=(cov[q]||0)+n; if(i!=null) dayHit[i].add(q); }); (mm.s||[]).forEach(q=>{ cov[q]=(cov[q]||0)+n*0.5; }); };
     days.forEach((d,i)=>d.str.forEach(x=>addCov(H.muscles(x.key, x.a), x.sets, i)));
     let k=0; days.forEach((d,i)=>{ if(!d.cal) return; calPicks(d.cal.dose, k++).forEach(x=>addCov(ladMuscles(x), x.sets, i)); });
@@ -10643,18 +10645,23 @@ function buildPlan(T){
             // one you set for this day first; then your picks, the one used least this week first, each on the day it suits best
             const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[];
             const pin=pinOf(i);
-            const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id) || e.id===pin);
-            const miss=GROWTH.missing(x.mu, regs), gain=e=>miss.includes(GROWTH.region(e.id,x.mu))? 1 : 0;
-            // after your picks: a part of the muscle the week doesn't train yet (GROWTH), like a leg extension next to squats
-            const e=cat.filter(fits).sort((a,b)=> ((b.id===pin)-(a.id===pin)) || (mine.includes(b.id)-mine.includes(a.id)) || ((cnt[a.id]||0)-(cnt[b.id]||0)) || (gain(b)-gain(a)) || (aims(a,x.mu)-aims(b,x.mu)) || ((a.comp===iso)-(b.comp===iso)) || (a.p.filter(q=>q!==x.mu&&avoid.has(q)).length-b.p.filter(q=>q!==x.mu&&avoid.has(q)).length)
-              // one you have logged before one you haven't, the most recent first: its weights carry on, and getting better
-              // at an exercise is part of the progress, so changing it at random slows things down
-              || ((b.last>0)-(a.last>0))
-              // then one that trains it at long lengths (GROWTH)
-              || ((b.long||0)-(a.long||0))
-              // something you can load before bodyweight work, which is harder to progress, then variety across the days
-              || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (used[a.id]||0)-(used[b.id]||0) || (b.last||0)-(a.last||0) || (a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name))[0];
+            const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id) || e.id===pin) && (e.id===pin || !setOn[i].has(e.id));
+            const miss=GROWTH.missing(x.mu, regs), gain=e=>miss.includes(GROWTH.region(e.id,x.mu))? 1 : 0, spare=e=>e.p.filter(q=>q!==x.mu&&avoid.has(q)).length;
+            // the rules in order, each named so the plan can say which one chose the exercise (WHY). After your own choices:
+            // a part of the muscle the week doesn't train yet (GROWTH), like a leg extension next to squats; one you have logged
+            // before, the most recent first: its weights carry on, and getting better at an exercise is part of the progress, so
+            // changing it at random slows things down; one that trains it at long lengths (GROWTH); something you can load before
+            // bodyweight work, which is harder to progress; then variety across the days
+            const rules=[['set',(a,b)=>(b.id===pin)-(a.id===pin)], ['mine',(a,b)=>mine.includes(b.id)-mine.includes(a.id)], ['even',(a,b)=>(cnt[a.id]||0)-(cnt[b.id]||0)],
+              ['gain',(a,b)=>gain(b)-gain(a)], ['aims',(a,b)=>aims(a,x.mu)-aims(b,x.mu)], ['fit',(a,b)=>(a.comp===iso)-(b.comp===iso)], ['spare',(a,b)=>spare(a)-spare(b)],
+              ['logged',(a,b)=>(b.last>0)-(a.last>0)], ['long',(a,b)=>(b.long||0)-(a.long||0)], ['load',(a,b)=>(a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')],
+              ['vary',(a,b)=>(used[a.id]||0)-(used[b.id]||0)], ['recent',(a,b)=>(b.last||0)-(a.last||0)], ['tie',(a,b)=>(a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name)]];
+            const cs=cat.filter(fits).sort((a,b)=>{ for(const r of rules){ const v=r[1](a,b); if(v) return v; } return 0; }), e=cs[0];
             if(!e) return;
+            // why it won: the first rule that put it ahead of the next best
+            let why= cs.length<2? 'only' : (rules.find(r=>r[1](e,cs[1])<0)||['tie'])[0];
+            if(why==='set' && !((T.perDay||{})[x.mu]||{})[i]) why='held';
+            if(why==='fit') why= !iso? 'fit-big' : days[i].str.length>0? 'fit-heavy' : (C[x.mu]||0)>0? 'fit-worked' : 'fit-small';
             // more of your picks not used yet than days left: this day takes two, its sets split, the one better for growth getting more
             const rest=mine.filter(id=>id!==e.id && !cnt[id] && exOf[id] && fits(exOf[id])).map(id=>exOf[id])
               // one with no other day left to go to first (another muscle has it there), then the one that suits this day
@@ -10662,7 +10669,7 @@ function buildPlan(T){
             const e2= n>=2 && rest.length>sel.length-1-nth && out[i].length+1<lim? rest[0] : null, grow=g=>2*(g.long||0)+gain(g), top= e2&&grow(e2)>grow(e)? e2 : e;
             [e, e2].filter(Boolean).forEach(g=>{ const m= !e2? n : g===top? Math.ceil(n/2) : Math.floor(n/2);
               taken[i].add(g.id); used[g.id]=(used[g.id]||0)+1; got++; addReg(g.id, g.p); if(mine.includes(g.id)) cnt[g.id]=(cnt[g.id]||0)+1;
-              out[i].push(Object.assign({exId:g.id, mu:x.mu, sets:m, comp:g.comp}, x.more? {more:true} : {}));
+              out[i].push(Object.assign({exId:g.id, mu:x.mu, sets:m, comp:g.comp, why:g===e? why : 'split'}, x.more? {more:true} : {}));
               hit[i].add(x.mu); g.p.forEach(q=>{ if(q!==x.mu){ C[q]=(C[q]||0)+m; hit[i].add(q); } }); g.s.forEach(q=>{ C[q]=(C[q]||0)+m*0.5; }); }); });
         left-=got; if(!got) skipped.push(x.mu);
       });
@@ -11792,10 +11799,19 @@ const pickItem=(id, name, sub, on)=>`<button class="tpick topt${on?' on':''}" da
 /* Which of this week's days use each exercise for a muscle, in the block as you have it now, and what each day has. */
 function daysFor(mu){
   const P=buildPlan(tune.T), by={}, on=[];
-  P.days.forEach((d,i)=>{ const xs=d.lift.filter(x=>x.mu===mu); if(xs.length) on.push([i, xs.map(x=>x.exId)]); xs.forEach(x=>{ (by[x.exId]||(by[x.exId]=[])).push(i+1); }); });
+  P.days.forEach((d,i)=>{ const xs=d.lift.filter(x=>x.mu===mu); if(xs.length) on.push([i, xs.map(x=>x.exId), xs.map(x=>x.why)]); xs.forEach(x=>{ (by[x.exId]||(by[x.exId]=[])).push(i+1); }); });
   return {by, n:on.length, on, P};
 }
 const dayWords=ds=> ds.length>1? 'Days '+listText(ds.map(String)) : 'Day '+ds[0];
+/* Why the plan chose a day's exercise for a muscle (m, in lower case): the rule that put it ahead of the next best. */
+const WHY={held:'Kept as it was until you re-optimize', only:'The only exercise that fits this day', even:'Spreads your picks evenly over the week',
+  gain:m=>`Trains the part of ${m} the rest of your week misses`, aims:'Doesn’t aim at a muscle you left out',
+  'fit-heavy':'Isolation, as this day already has heavy lifting', 'fit-worked':m=>`Isolation, as ${m} is already worked elsewhere this week`,
+  'fit-small':'Isolation suits a smaller muscle', 'fit-big':m=>`A compound: nothing heavy this day, and ${m} is a big muscle`,
+  spare:'Spares muscles already worked this day', logged:'You’ve logged it before, so its weights carry on', long:'Trains it at long lengths, which grew muscle more in trials',
+  load:'You can add weight to it, so it’s easier to progress than bodyweight', vary:'Adds variety across your days', recent:'The one you logged most recently',
+  tie:'No better than the others here, so first by name', split:'More picks than days, so two share this day’s sets'};
+const whyText=(k, m)=>{ const w=WHY[k]; return typeof w==='function'? w(m) : w||''; };
 function pickList(){
   const K=tune.pick, mu=K.k, T=tune.T, L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], eq=kitEq(), q=(K.q||'').trim().toLowerCase();
   const all=cat.filter(e=>e.p.includes(mu)), mine=(T.ex[mu]||[]).filter(id=>all.some(e=>e.id===id)), D=daysFor(mu), pins=(T.perDay||{})[mu]||{}, day=K.day;
@@ -11815,18 +11831,18 @@ function pickList(){
   // choosing for one day: only the one you set for it is on
   const on=e=> day!=null? pins[day]===e.id : mine.includes(e.id);
   // each day this muscle lands on, with what it has there, to change one day on its own
-  const each= D.on.map(([i,ids])=>{ const nm=ids.map(id=>(all.find(x=>x.id===id)||{}).name).filter(Boolean);
-    return `<button class="trow tpick" data-a="t-day" data-d="${i}"><span class="tn"><b>Day ${i+1}</b><span>${ids.includes(pins[i])? 'Your pick for this day' : ids.some(id=>mine.includes(id))? (mine.length>1? 'From your picks' : 'Your pick') : 'Together’s pick'}</span></span>
+  const each= D.on.map(([i,ids,ws])=>{ const nm=ids.map(id=>(all.find(x=>x.id===id)||{}).name).filter(Boolean), why=[...new Set((ws||[]).map(w=>whyText(w, muscleName(mu).toLowerCase())).filter(Boolean))].join('. ');
+    return `<button class="trow tpick" data-a="t-day" data-d="${i}"><span class="tn"><b>Day ${i+1}</b><span>${ids.includes(pins[i])? 'Your pick for this day' : ids.some(id=>mine.includes(id))? (mine.length>1? 'From your picks' : 'Your pick') : 'Together’s pick'}</span>${why? `<span class="twhy">${esc(why)}</span>` : ''}</span>
       <span class="tval">${esc(nm.join(' + '))}</span>${IC.chev}</button>`; }).join('');
-  // the day you just set (or your only one) kept, and Together picking the other days again to go with it
-  const keep= K.last!=null&&pins[K.last]? K.last : Object.keys(pins).length===1? +Object.keys(pins)[0] : null, others=Object.keys(pins).length>1;
-  const held=Object.keys((T.hold||{})[mu]||{}).length>0;
-  const refit= keep!=null && (held||others) && D.on.length>1 && D.on.some(([i])=>i===keep)? `<button class="btn sm" data-a="t-refit" data-d="${keep}" style="margin-top:12px">${IC.sliders} Re-optimize the other days around Day ${keep+1}</button>
-    <p class="hint">The other days stay as they were until you do. This keeps Day ${keep+1} as you set it and lets Together arrange the other days to go with it${mine.length? ', from your picks' : ''}${others? ', clearing the other days you set' : ''}.</p>` : '';
+  // the days you haven't set, held as they were since you set one, arranged again to go with the days you set
+  const refit= Object.keys((T.hold||{})[mu]||{}).length && Object.keys(pins).length && D.on.length>1? `<button class="btn sm" data-a="t-refit" style="margin-top:12px">${IC.sliders} Re-optimize the days you haven’t set</button>
+    <p class="hint">Days you set stay exactly as you set them. The others stay as they were until you tap this; then Together arranges them to go with yours${mine.length? ', from your picks' : ''}.</p>` : '';
+  // why the list is in this order, when no exercise here has the evidence to rank above another
+  const flat= !all.some(e=>score(e)>0)? `<p class="hint">No trial has found that one of these grows ${esc(muscleName(mu).toLowerCase())} more than another, so they rank equal: ones you can add weight to first, then by name.</p>` : '';
   return (q? '' : day!=null? pickItem('', 'Let Together pick', `It picks for Day ${day+1} the way it does for the other days${mine.length? ', from your picks' : ''}.`, !pins[day])
       : pickItem('', 'Let Together pick', 'It picks for each day and varies them: isolation work when the day already has heavy lifting or the muscle is worked elsewhere that week, otherwise a compound for a big muscle.', !mine.length)
         + (each? `<div class="grp">Each day</div>${each}${refit}` : ''))
-    + (inKit.length? `<div class="grp">In your kit</div>`+inKit.map(e=>pickItem(e.id, esc(e.name), sub(e), on(e))).join('') : '')
+    + (inKit.length? `<div class="grp">In your kit</div>${q? '' : flat}`+inKit.map(e=>pickItem(e.id, esc(e.name), sub(e), on(e))).join('') : '')
     + (out.length? `<div class="grp">Needs equipment you didn’t choose</div>`+out.map(e=>pickItem(e.id, esc(e.name), sub(e), on(e))).join('') : '')
     + (q&&!inKit.length&&!out.length? `<p class="hint">Nothing that works ${esc(muscleName(mu).toLowerCase())} matches “${esc(K.q.trim())}”. Make it below.</p>` : '');
 }
@@ -11941,15 +11957,14 @@ __root.addEventListener('click', e=>{
     case 't-day-cancel': { const K=tune.pick, d=K.day; K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
       { const b=$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 't-back': closePick(); break;
-    case 't-refit': { const K=tune.pick, T=tune.T, d=+el.dataset.d, m=(T.perDay||{})[K.k]; if(!m||!m[d]) break;
-      // keep the day you set; the days held as they were and the other days you set clear, and Together arranges them
-      // around it, from your picks if you have any
+    case 't-refit': { const K=tune.pick, T=tune.T;
+      // the days you set stay as you set them; the days held as they were are arranged again around them, from your picks if you have any
       const was=new Map(daysFor(K.k).on.map(([i,ids])=>[i, ids.join()]));
-      T.perDay[K.k]={[d]:m[d]}; if(T.hold) delete T.hold[K.k]; K.last=d;
+      if(T.hold) delete T.hold[K.k];
       const l=$('#tlist'); if(l) l.innerHTML=MiloSecurity.html(pickList());
       const moved=daysFor(K.k).on.filter(([i,ids])=>was.get(i)!==ids.join()).map(([i])=>i+1);
-      toast(moved.length? `${dayWords(moved)} changed to go with your Day ${d+1} pick.` : `The other days already go best with your Day ${d+1} pick, so nothing changed.`);
-      { const b=$('[data-a="t-refit"]')||$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
+      toast(moved.length? `${dayWords(moved)} changed to go with the days you set.` : 'The other days already go best with the days you set, so nothing changed.');
+      { const b=$('[data-a="t-day"]'); if(b) b.focus({preventScroll:true}); } break; }
     case 't-choose': { const K=tune.pick, v=el.dataset.id, T=tune.T;
       if(K.t==='ex' && K.day!=null){
         // one day's exercise: set it, or hand the day back to Together, then back to the muscle's list
@@ -11957,7 +11972,7 @@ __root.addEventListener('click', e=>{
         // the muscle's other days stay as they are now, until you re-optimize them
         const hold={}; daysFor(K.k).on.forEach(([i,ids])=>{ if(i!==d && !m[i]) hold[i]=ids[0]; });
         if(Object.keys(hold).length) (T.hold||(T.hold={}))[K.k]=hold; else if(T.hold) delete T.hold[K.k];
-        if(v){ m[d]=v; K.last=d; } else delete m[d];
+        if(v) m[d]=v; else delete m[d];
         if(!Object.keys(m).length) delete all[K.k];
         K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
         { const b=$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
