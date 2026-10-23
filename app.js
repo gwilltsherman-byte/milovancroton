@@ -3220,7 +3220,7 @@ function pickFrom(xs, muscle, comp, used, equip){
 }
 function generateDraft(o){
   const bp=SPLIT_BP[o.days]||SPLIT_BP[4];
-  const equip=(state.settings.equipment&&state.settings.equipment.length)?state.settings.equipment:['Barbell','Dumbbell','Machine','Cable','Bodyweight'];
+  const equip=myEquip();
   const used={}; const emph=emphasisMuscles(o.emphasis);
   const setsFor=comp=> o.experience==='beginner'?(comp?3:2) : o.experience==='advanced'?(comp?4:3) : 3;
   const days=bp.map(d=>{
@@ -3278,7 +3278,7 @@ function pickGapFrom(xs, muscle, used, equip, avoid, taken){
   return c[0];
 }
 function generateGapDraft(o){
-  const G=gapPlan(), equip=(state.settings.equipment&&state.settings.equipment.length)?state.settings.equipment:['Barbell','Dumbbell','Machine','Cable','Bodyweight'];
+  const G=gapPlan(), equip=myEquip();
   const nd=Math.max(1,Math.min(6,o.days||2)), per=nd>=2? 2 : 1;          // each muscle twice a week when there are two days or more
   const targets=G.targets.slice(0, Math.max(2, Math.floor(nd*5/per)));   // about five exercises a day
   // top each muscle up toward a weekly total, counting what Strength and Ladder already give it
@@ -3302,7 +3302,7 @@ function generateGapDraft(o){
 }
 function renderGenerator(){
   const pills=(field,opts)=>`<div class="pillpick">${opts.map(([v,l])=>{ const on=Array.isArray(genOpts[field])?genOpts[field].includes(v):genOpts[field]===v; return `<button class="${on?'on':''}" data-act="gen-set" data-f="${field}" data-v="${v}">${l}</button>`; }).join('')}</div>`;
-  const eq=(state.settings.equipment||[]).join(', ')||'all';
+  const eq=state.settings.equipment&&state.settings.equipment.length? myEquip().join(', ') : 'all';
   const canGap=gapAvailable(), gap=canGap&&genOpts.gap, G=gap? gapPlan() : null, mn=k=>MUSCLES[k].n.toLowerCase();
   openModal(`
     <div class="sheet-grab"></div>
@@ -3329,7 +3329,10 @@ function genCreate(){
    stack (or a plate on a belt). Suggested weights land on it, so they are weights you can actually load. */
 function loadStep(eq){ const lb=unit()==='lb';
   if(eq==='Barbell'){ const p=availablePlates(); return 2*(p.length? p[p.length-1] : (lb? 2.5 : 1.25)); }
-  return eq==='Dumbbell'? (lb? 5 : 2) : (lb? 5 : 2.5); }
+  return eq==='Dumbbell'? stepOf('db') : eq==='Bodyweight'? (lb? 5 : 2.5) : stepOf('stack'); }
+/* Your dumbbell and machine jumps, shared with Strength's settings. */
+const STEP_DEF={dbStepKg:2, dbStepLb:5, stackStepKg:2.5, stackStepLb:5};
+function stepOf(k){ const key=k+'Step'+(unit()==='lb'? 'Lb' : 'Kg'); return Prefs.get(key, STEP_DEF[key]); }
 function roundLoad(kg, eq){ const st=loadStep(eq), v=toDisp(kg); return fromDisp(Math.max(0, Math.round(v/st)*st)); }
 function suggestLoad(exId, entry, comp, deload){
   const prev=lastPerf(exId);
@@ -4424,9 +4427,13 @@ function loadingDetail(){
 }
 function refreshLoading(){ const d=$('#loading-detail'); if(d) d.innerHTML=MiloSecurity.html(loadingDetail()); }
 
+/* Your equipment: what you picked here, or else the kit you gave Together or Strength (Prefs), or else everything. */
+const KIT_NAME={bar:'Barbell', db:'Dumbbell', machine:'Machine', cable:'Cable'};
+function myEquip(){ const own=state.settings.equipment; if(own&&own.length) return own;
+  const k=Prefs.get('kit',null); return Array.isArray(k)&&k.length? k.filter(x=>KIT_NAME[x]).map(x=>KIT_NAME[x]).concat('Bodyweight') : ['Barbell','Dumbbell','Machine','Cable','Bodyweight']; }
 /* ---- EXERCISE SWAP / SUBSTITUTION ---- */
 function swapCandidates(en){
-  const equip=state.settings.equipment||[];
+  const equip=myEquip();
   const ov=x=> x.primary.filter(m=>en.primary.includes(m)).length + x.secondary.filter(m=>en.secondary.includes(m)).length*0.5;
   return state.exercises.filter(e=> e.id!==en.exId && e.primary.some(m=>en.primary.includes(m)) && (equip.length? equip.includes(e.equipment):true))
     .sort((a,b)=> ov(b)-ov(a) || a.name.localeCompare(b.name)).slice(0,14);
@@ -4749,8 +4756,10 @@ function openSettings(){
         : `<div class="settings-row"><div><div class="sl">Bar weight</div><div class="sd">Standard Olympic bar.</div></div><b>45 lb</b></div>`}
       <div class="field" style="margin-top:12px"><label>Available plates (${s.unit}, per side)</label>
         <div class="pillpick">${(s.unit==='lb'?[45,35,25,15,10,5,2.5,1.25]:[25,20,15,10,5,2.5,1.25,0.5]).map(p=>`<button class="${(s.unit==='lb'?s.platesLb:s.platesKg).includes(p)?'on':''}" data-act="toggle-plate" data-v="${p}">${p}</button>`).join('')}</div></div>
+      <div class="field"><label>Dumbbell jumps</label><div class="pillpick">${(s.unit==='lb'?[2.5,5,10]:[1,2,2.5]).map(v=>`<button class="${stepOf('db')===v?'on':''}" data-act="set-step" data-k="db" data-v="${v}">${v} ${s.unit}</button>`).join('')}</div></div>
+      <div class="field"><label>Machine and cable jumps</label><div class="pillpick">${(s.unit==='lb'?[5,10,15]:[2.5,5,7]).map(v=>`<button class="${stepOf('stack')===v?'on':''}" data-act="set-step" data-k="stack" data-v="${v}">${v} ${s.unit}</button>`).join('')}</div></div>
       <div class="field"><label>My equipment <span class="faint" style="text-transform:none;letter-spacing:0">(for swap suggestions)</span></label>
-        <div class="pillpick">${['Barbell','Dumbbell','Machine','Cable','Bodyweight'].map(eq=>`<button class="${(s.equipment||[]).includes(eq)?'on':''}" data-act="toggle-equip" data-v="${eq}">${eq}</button>`).join('')}</div></div>
+        <div class="pillpick">${['Barbell','Dumbbell','Machine','Cable','Bodyweight'].map(eq=>`<button class="${myEquip().includes(eq)?'on':''}" data-act="toggle-equip" data-v="${eq}">${eq}</button>`).join('')}</div></div>
 
       <div class="section-label" style="margin-top:18px">Your data</div>
       <button class="actitem" data-act="export-data">${I.download}<span>Export all data (JSON)</span></button>
@@ -4925,6 +4934,7 @@ __root.addEventListener('click', e=>{
     case 'rest-add': if(state.active&&state.active.restEndsAt){ state.active.restEndsAt+=30000; state.active.restDuration+=30; save(); tickRest(); } break;
     case 'rest-skip': stopRest(); break;
     case 'set-unit': state.settings.unit=el.dataset.v; Prefs.set({unit:el.dataset.v}); save(); openSettings(); render(); break;
+    case 'set-step': Prefs.set({[el.dataset.k+'Step'+(unit()==='lb'?'Lb':'Kg')]:+el.dataset.v}); openSettings(); render(); break;
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
     case 'set-target': state.settings.target=+el.dataset.v; save(); openSettings(); render(); break;
     case 'toggle-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); if(state.settings.sound){ primeAudio(); chime(); } save(); openSettings(); break;
@@ -4932,7 +4942,10 @@ __root.addEventListener('click', e=>{
     case 'set-bar': state.settings.barKg=+el.dataset.v; save(); openSettings(); break;
     case 'open-plate-calc': openLoading(null); break;
     case 'toggle-plate': { const p=parseFloat(el.dataset.v); const key=state.settings.unit==='lb'?'platesLb':'platesKg'; const arr=state.settings[key]; const i=arr.indexOf(p); if(i>=0)arr.splice(i,1); else{ arr.push(p); arr.sort((a,b)=>b-a);} save(); openSettings(); break; }
-    case 'toggle-equip': { const eq=el.dataset.v; if(!state.settings.equipment)state.settings.equipment=[]; const arr=state.settings.equipment; const i=arr.indexOf(eq); if(i>=0){ if(arr.length>1) arr.splice(i,1); } else arr.push(eq); save(); openSettings(); break; }
+    case 'toggle-equip': { const eq=el.dataset.v; if(!state.settings.equipment||!state.settings.equipment.length)state.settings.equipment=myEquip().slice(); const arr=state.settings.equipment; const i=arr.indexOf(eq); if(i>=0){ if(arr.length>1) arr.splice(i,1); } else arr.push(eq);
+      // the same kit for Together and Strength: bars, dips and a belt aren't asked here, so they stay as they were
+      const rest=(Prefs.get('kit',null)||['pullup','dip','load']).filter(x=>!KIT_NAME[x]); Prefs.set({kit:Object.keys(KIT_NAME).filter(x=>arr.includes(KIT_NAME[x])).concat(rest)});
+      save(); openSettings(); break; }
     case 'export-data': exportData(); break;
     case 'copy-export': copyExport(); break;
     case 'reset-data': confirmReset(); break;
@@ -8608,7 +8621,7 @@ function defaultLifts(){ const o={}; Object.keys(EX).forEach(k=>{ o[k]={tm:null,
 function defaultState(){
   return { v:2, onboarded:false, route:'today',
     settings:{unit:Prefs.get('unit','kg'), theme:'system', barKg:20, platesKg:[25,20,15,10,5,2.5,1.25], platesLb:[45,35,25,10,5,2.5],
-      dbStepKg:2, dbStepLb:5, stackStepKg:5, stackStepLb:10, rest:180, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true), warmups:true, tmPct:90, bw:null},
+      dbStepKg:Prefs.get('dbStepKg',2), dbStepLb:Prefs.get('dbStepLb',5), stackStepKg:Prefs.get('stackStepKg',5), stackStepLb:Prefs.get('stackStepLb',10), rest:180, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true), warmups:true, tmPct:90, bw:null},
     setup:null, lifts:defaultLifts(), program:null, history:[], active:null, parked:[], repeat:null,
     progTab:'lifts', progLift:null, toolTab:'max' };
 }
@@ -10124,8 +10137,8 @@ __root.addEventListener('click', e=>{
     case 'set-unit': state.settings.unit=el.dataset.v; Prefs.set({unit:el.dataset.v}); save(); openSettings(); render(); break;
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
     case 'set-bar': state.settings.barKg=+el.dataset.v; save(); openSettings(); render(); break;
-    case 'set-dbstep': state.settings[isLb()?'dbStepLb':'dbStepKg']=+el.dataset.v; save(); openSettings(); render(); break;
-    case 'set-stackstep': state.settings[isLb()?'stackStepLb':'stackStepKg']=+el.dataset.v; save(); openSettings(); render(); break;
+    case 'set-dbstep': { const k=isLb()?'dbStepLb':'dbStepKg'; state.settings[k]=+el.dataset.v; Prefs.set({[k]:+el.dataset.v}); save(); openSettings(); render(); break; }
+    case 'set-stackstep': { const k=isLb()?'stackStepLb':'stackStepKg'; state.settings[k]=+el.dataset.v; Prefs.set({[k]:+el.dataset.v}); save(); openSettings(); render(); break; }
     case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
     case 'set-tm': state.settings.tmPct=+el.dataset.v; save(); openSettings(); break;
     case 'set-warm': state.settings.warmups=el.dataset.v==='1'; save(); openSettings(); break;
@@ -10340,7 +10353,7 @@ function hubStartWith(spec){
 }
 if(window.__hub) window.__hub.reg('str', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
-  syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['unit','sound','vibrate'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
+  syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['unit','sound','vibrate','dbStepKg','dbStepLb','stackStepKg','stackStepLb'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
   // for Muscle: the top set of a lift from your latest Strength session with it, and a counter that moves whenever that may have changed
   lastSet(id){ for(let i=state.history.length-1;i>=0;i--){ const h=state.history[i], en=h.entries.find(e=>e.liftId===id); if(!en) continue;
       const ss=en.sets.filter(s=>s.done!==false&&s.kind!=='warm'&&s.reps>0); if(!ss.length) continue;
@@ -12191,7 +12204,7 @@ render();
   }
   /* Prefs.set calls this: units, sound and vibration go to every trainer, loaded or only saved. */
   window.__prefs=function(o){
-    const keys=['unit','sound','vibrate'].filter(k=>k in o); if(!keys.length) return;
+    const keys=['unit','sound','vibrate','dbStepKg','dbStepLb','stackStepKg','stackStepLb'].filter(k=>k in o); if(!keys.length) return;
     MODS.forEach(m=>{ const api=apis[m]; if(api&&api.syncPrefs) api.syncPrefs(o); });
     MODS.forEach(m=>{ try{
       if(!KEYS[m]||apis[m]) return;
