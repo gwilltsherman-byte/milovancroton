@@ -226,9 +226,12 @@
             for(const x of pk){ root.querySelector(`[data-a="t-choose"][data-id="${x}"]`).click(); await pause(120); }
             const vals=()=>[...root.querySelectorAll('[data-a="t-day"] .tval')].map(v=>v.textContent), nm=x=>root.querySelector(`[data-a="t-choose"][data-id="${x}"] b`).textContent;
             check(pk.every(x=>vals().join('|').includes(nm(x))) && vals().some(v=>v.includes(' + ')), 'with more picks than days, every pick is used, two of them sharing a day');
+            const other=()=>[...root.querySelectorAll('[data-a="t-day"]')].filter(b=>b.dataset.d!==d).map(b=>b.querySelector('.tval').textContent.split(' + ')[0]).join('|'), was=other();
             at().click(); await pause(150);
             root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(150);
+            check(other()===was && !!root.querySelector(`[data-a="t-refit"][data-d="${d}"]`), 'setting one day leaves the other days as they were, with a button to re-optimize them');
             root.querySelector(`[data-a="t-refit"][data-d="${d}"]`).click(); await pause(150);
+            check(!root.querySelector('[data-a="t-refit"]') && /changed to go with|nothing changed/.test(root.querySelector('#toast').textContent), 'Re-optimize says what it changed, and the button goes once there is nothing left to do');
             check(at().textContent.includes('Your pick for this day') && [...root.querySelectorAll('[data-a="t-day"]')].filter(b=>b.dataset.d!==d).every(b=>b.textContent.includes('From your picks'))
               && pk.every(x=>root.querySelector(`[data-a="t-choose"][data-id="${x}"]`).getAttribute('aria-pressed')==='true') && pk.every(x=>vals().join('|').includes(nm(x))), 'Re-optimize keeps the day you set and arranges your picks on the other days around it');
             at().click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id=""]').click(); await pause(150);
