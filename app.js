@@ -11916,8 +11916,8 @@ __root.addEventListener('click', e=>{
       toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.${open.length? ' '+listText(open)+' is still open: finish or end it there.' : ''}` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, true); break; }
     case 't-cancel': tune=null; render(); window.scrollTo(0,0); break;
     case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, day:null, y:window.scrollY}; render(); pickTop(); break;
-    case 't-day': { const K=tune.pick; K.day=+el.dataset.d; K.q=''; render(); pickTop(); break; }
-    case 't-day-cancel': { const K=tune.pick, d=K.day; K.day=null; K.q=''; render(); window.scrollTo(0,0);
+    case 't-day': { const K=tune.pick; K.day=+el.dataset.d; K.q=''; K.dy=window.scrollY; render(); pickTop(); break; }
+    case 't-day-cancel': { const K=tune.pick, d=K.day; K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
       { const b=$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 't-back': closePick(); break;
     case 't-choose': { const K=tune.pick, v=el.dataset.id, T=tune.T;
@@ -11926,7 +11926,7 @@ __root.addEventListener('click', e=>{
         const all=T.perDay||(T.perDay={}), m=all[K.k]||(all[K.k]={}), d=K.day;
         if(v) m[d]=v; else delete m[d];
         if(!Object.keys(m).length) delete all[K.k];
-        K.day=null; K.q=''; render(); window.scrollTo(0,0);
+        K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
         { const b=$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
       if(K.t==='ex'){
         // a muscle's exercises: tap to add or take one off; they take turns in the order picked
