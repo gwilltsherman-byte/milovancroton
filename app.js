@@ -1708,15 +1708,6 @@ const TEMPLATES = [
   {id:'lower', name:'Lower Body', accent:'quad', items:[['back-squat',3],['romanian-deadlift',3],['leg-press',3],['lying-leg-curl',3],['hip-thrust',3],['seated-calf',4]]},
   {id:'full', name:'Full Body', accent:'quad', items:[['back-squat',3],['db-bench',3],['seated-cable-row',3],['lateral-raise',3],['db-curl',2],['tricep-pushdown',2],['standing-calf',3]]},
 ];
-const TIPS = [
-  {k:'effort', t:'Most working sets around 1&ndash;3 reps in reserve are enough. Training to failure isn\'t consistently better and adds fatigue.', c:'mod', l:'Effort'},
-  {k:'volume', t:'Weekly hard-set volume drives growth with diminishing returns. Around 10 direct sets per muscle a week is a good place to start, not a limit.', c:'high', l:'Volume'},
-  {k:'progression', t:'Progress reps first, then load. Adding reps within your range and adding weight build muscle about equally.', c:'mod', l:'Overload'},
-  {k:'rom', t:'Full, controlled, pain-free range of motion is a robust default. Lengthened partials are an option, not a rule.', c:'mod', l:'Range of motion'},
-  {k:'load', t:'Loads from light to heavy all build muscle when sets are challenging. Pick what you can execute consistently.', c:'high', l:'Load'},
-  {k:'rest', t:'Rest long enough that your next set is still strong. That’s often 2&ndash;3 minutes on big lifts and 1&ndash;2 on smaller ones.', c:'mod', l:'Rest'},
-  {k:'mechanism', t:'Soreness and "the pump" are sensations, not scorecards. Repeatable, challenging performance is the signal that matters.', c:'mod', l:'Mechanism'},
-];
 
 /* ==================== EVIDENCE LIBRARY ==================== */
 // Each card: t=title, c=confidence, s=finding, a=how to apply, src=[[citation,url]...]
@@ -2109,7 +2100,6 @@ function viewToday(){
   const totalDirect = Object.values(vol.direct).reduce((a,b)=>a+b,0);
   const open = Parked.all(state);
   const sessions7 = state.history.filter(w=>w.date>=daysAgo(6)).length + open.length;
-  const tip = TIPS[new Date().getDate() % TIPS.length];
 
   // sessions in progress are listed on the Train tab
   const resumeHtml = '';
@@ -2187,11 +2177,6 @@ function viewToday(){
       <div class="metric" data-act="sessions" role="button" tabindex="0"><div class="k"><span class="kt">All sessions</span></div><div class="v tnum">${state.history.length}</div></div>
     </div>
 
-    <div class="tip">
-      <div class="lbl">${I.info}<span>${tip.l}</span><span class="conf ${tip.c}" style="margin-left:auto">${confLabel(tip.c)}</span></div>
-      <p>${tip.t}</p>
-      <div style="margin-top:10px">${evChip(tip.k,'Read the evidence')}${'&nbsp;&nbsp;'}<button class="ev-chip" data-act="ev-lib" style="background:transparent;color:var(--muted)">${I.book} All principles</button></div>
-    </div>
 
     <div>
       <div class="section-label">Weekly muscle volume <span class="ln"></span><span class="faint" style="text-transform:none;letter-spacing:0;font-weight:600">hard sets, helpers at half &middot; rolling 7d</span></div>
@@ -2380,7 +2365,7 @@ function setRow(en, ei, s, si){
     ${isBW(en.exId)? `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight?fmtW(s.weight):''}" placeholder="${prev&&prev.weight?'+'+fmtW(prev.weight):'BW'}" aria-label="Set ${idxLabel} added weight, blank for bodyweight alone"></div>`
       : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev&&prev.weight!=null?fmtW(prev.weight):'&ndash;'}" aria-label="Set ${idxLabel} weight"></div>`}
     <div class="setwrap"><input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${idxLabel} reps"></div>
-    <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
+    <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${lastFailSet(en,si)? 0 : en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
     <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
     <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     ${tagBadge? `<div style="grid-column:1/7;padding:0 2px 2px">${tagBadge}</div>`:''}
@@ -2581,28 +2566,12 @@ function explainPlateau(exId){
   return {ex, hyps};
 }
 
-const COACH_Q = [
-  {id:'deload', label:'Should I take a deload?'},
-  {id:'volume', label:'Am I doing enough for a muscle?'},
-  {id:'effort', label:'Am I pushing hard enough?'},
-  {id:'balance', label:'Is my training balanced?'},
-];
-function openCoach(){
-  nav.reg('coach', openCoach);
-  openModal(`
-    <div class="sheet-grab"></div>
-    <div class="sheet-head"><h3>Coach</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
-    <div class="sheet-body">
-      <p class="muted" style="font-size:13px;line-height:1.5;margin:0 0 14px">Choose a question to see what your training logs show. Milo explains each answer using the same rules as its training plans.</p>
-      ${COACH_Q.map(q=>`<button class="ev-lib-item" data-act="coach-q" data-q="${esc(q.id)}"><div class="eli-n"><div class="t">${q.label}</div></div><span style="color:var(--faint)">${I.arrow}</span></button>`).join('')}
-    </div>`);
-}
 let coachSeq=0;
 function coachAnswer(inner){
   nav.reg('coach:'+(++coachSeq), ()=>coachAnswer(inner));
   openModal(`
     <div class="sheet-grab"></div>
-    <div class="sheet-head"><button class="iconbtn" data-act="open-coach" data-back aria-label="Back">${I.back}</button><h3 style="flex:1">Coach</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
+    <div class="sheet-head"><h3 style="flex:1">Coach</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">${inner}</div>`);
 }
 function coachDeloadAnswer(){
@@ -2932,7 +2901,6 @@ function progInsights(){
   return `
   <div class="stack">
     ${dl.suggest?`<div class="banner warn" data-act="coach-q" data-q="deload" style="cursor:pointer">${I.gauge}<span><b>Fatigue is building.</b> A deload might be worth it${dl.hasMeso?', tap to see why and add one':', tap to see why'}.</span><span style="margin-left:auto">${I.arrow}</span></div>`:''}
-    <button class="btn ghost block" data-act="open-coach">${I.gauge} Ask the coach</button>
     <div class="card pad">
       <div class="spread" style="margin-bottom:12px"><div class="section-label" style="margin:0">${I.grid}<span>Consistency</span></div>
         <span class="chip heat">${trainedWeeks} wk streak</span></div>
@@ -2987,12 +2955,8 @@ function progBody(){
   let deltaTxt='';
   if(ma.length>=2){ const d=ma[ma.length-1].v-ma[0].v; deltaTxt=`<span class="chip ${d>=0?'steel':''}" style="${d<0?'color:var(--warn)':''}">${d>=0?'+':''}${Math.round(d*10)/10} ${unit()} trend</span>`; }
   const chart = ma.length>1? `<div class="chartwrap">${lineChart(ma)}</div>` : `<div class="muted" style="font-size:13px;text-align:center;padding:20px">Log your weight a few times to see the trend.</div>`;
-  const mUnit = unit()==='lb'?'in':'cm';
-  const measRows = log.length? log.slice().reverse().slice(0,10).map(b=>{
-    const m=b.m||{}; const parts=[]; if(b.weight!=null)parts.push(fmtW(b.weight)+unit());
-    ['waist','chest','arm','thigh'].forEach(k=>{ if(m[k]!=null)parts.push(k[0].toUpperCase()+k.slice(1)+' '+m[k]+mUnit); });
-    return `<div class="hist-ex"><span>${fmtDate(b.date)}</span><span class="hx-s">${parts.join(' &middot; ')||'&ndash;'}</span></div>`;
-  }).join('') : '';
+  const measRows = log.filter(b=>b.weight!=null).reverse().slice(0,10).map(b=>
+    `<div class="hist-ex"><span>${fmtDate(b.date)}</span><span class="hx-s">${fmtW(b.weight)+unit()}</span></div>`).join('');
   return `
   <div class="stack">
     <div class="card pad">
@@ -3003,23 +2967,18 @@ function progBody(){
       ${chart}
       <p class="muted" style="font-size:11px;padding:0 2px">Daily scale weight bounces with water and food. The moving average is the real signal.</p>
     </div>
-    <button class="btn primary block" data-act="body-log">${I.plus} Log weight &amp; measurements</button>
+    <button class="btn primary block" data-act="body-log">${I.plus} Log weight</button>
     ${measRows?`<div class="card pad"><div class="section-label" style="margin:0 0 4px">Recent entries</div>${measRows}</div>`:''}
   </div>`;
 }
 function openBodyLog(){
   const last=state.bodylog.length?state.bodylog[state.bodylog.length-1]:null;
   bodyDraft={weight: last&&last.weight!=null? Math.round(toDisp(last.weight)*10)/10 : '', m:{}};
-  const mUnit=unit()==='lb'?'in':'cm';
   openModal(`
     <div class="sheet-grab"></div>
-    <div class="sheet-head"><h3>Log body stats</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
+    <div class="sheet-head"><h3>Log bodyweight</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="field"><label>Bodyweight (${unit()})</label><input type="text" inputmode="decimal" data-field="body-weight" value="${bodyDraft.weight}" placeholder="e.g. ${unit()==='lb'?'175':'80'}"></div>
-      <div class="section-label" style="margin:6px 4px 8px">Measurements <span class="faint" style="text-transform:none;letter-spacing:0;font-weight:600">(${mUnit}, optional)</span></div>
-      <div class="grid2">
-        ${['waist','chest','arm','thigh'].map(k=>`<div class="field" style="margin-bottom:10px"><label>${k}</label><input type="text" inputmode="decimal" data-field="body-${k}" placeholder="optional"></div>`).join('')}
-      </div>
       <button class="btn primary block" data-act="save-body" style="margin-top:6px">${I.check} Save for today</button>
       <p class="muted" style="font-size:11px;text-align:center;margin-top:10px">Best taken first thing in the morning, consistent conditions.</p>
     </div>`);
@@ -3027,14 +2986,11 @@ function openBodyLog(){
 function saveBody(){
   if(!bodyDraft) return;
   const wDisp=parseFloat(bodyDraft.weight);
-  const m={}; let hasM=false;
-  ['waist','chest','arm','thigh'].forEach(k=>{ const v=parseFloat(bodyDraft.m[k]); if(!isNaN(v)){ m[k]=Math.round(v*10)/10; hasM=true; } });
-  if(isNaN(wDisp) && !hasM){ toast('Enter a weight or a measurement'); return; }
+  if(isNaN(wDisp)){ toast('Enter your weight'); return; }
   const today=new Date(); today.setHours(0,0,0,0); const key=today.getTime();
   let entry=state.bodylog.find(b=>b.date===key);
   if(!entry){ entry={date:key}; state.bodylog.push(entry); }
-  if(!isNaN(wDisp)) entry.weight=fromDisp(wDisp);
-  if(hasM) entry.m=Object.assign(entry.m||{}, m);
+  entry.weight=fromDisp(wDisp);
   state.bodylog.sort((a,b)=>a.date-b.date);
   save(); closeModal(); render(); toast('Logged');
 }
@@ -3254,6 +3210,8 @@ function generateDraft(o){
       let sets=setsFor(comp); if(emph.includes(muscle)) sets+=1;
       exercises.push({exId:ex.id,name:ex.name,primary:ex.primary.slice(),secondary:ex.secondary.slice(),equipment:ex.equipment,comp:ex.comp,sets,repLow:ex.def.repLow,repHigh:ex.def.repHigh});
     });
+    // the muscles you want more of first: exercises done early in a session improve more (Simão et al. 2012)
+    exercises.sort((a,b)=>emph.some(q=>b.primary.includes(q))-emph.some(q=>a.primary.includes(q)));
     return {id:'d-'+uid(), name:d.name, exercises};
   });
   const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
@@ -3391,6 +3349,7 @@ function mesoEntry(ex, idx, nSets, rir, deload){
   const sug=suggestLoad(ex.exId, entry, ex.comp, deload);
   if(sug.weight!=null){ entry.sets.forEach(s=>{ s.weight=sug.weight; }); }
   entry.overloadNote=sug.note;
+  if(!ex.comp && !deload && rir<=1 && !isHold(ex.exId)){ entry.lastFail=true; entry.overloadNote=(sug.note? sug.note+' &middot; ' : '')+'last set to failure'; }
   return entry;
 }
 /* tg comes from the Together tab: hard sets already done today per muscle in other sections, exercises
@@ -4033,6 +3992,20 @@ function ssGroup(ei){
   if(end===start) return null;
   return {sg, start, end, total:end-start+1, index:ei-start, isLast:ei===end};
 }
+/* After a set you rated: 2 or more reps further from failure than planned, the next sets at that weight go up a step;
+   2 or more closer, or under the rep range, down a step. Adjusting load to how the sets actually go matched or beat
+   fixed loads in trials (Helms et al. 2018; Graham & Cleather 2021). */
+function adjustNext(en, si, s){
+  const nx=en.sets.find((x,k)=>k>si && isWork(x) && !x.done); if(!nx || (nx.weight!=null && nx.weight!==s.weight)) return null;
+  const r=Lift.trueRir(s.rir, s.reps), t=en.target.rir;
+  const d= r>=t+2? 1 : (r<=t-2 || (s.reps!=null && s.reps<en.target.repLow))? -1 : 0; if(!d) return null;
+  const w=roundLoad(s.weight+d*fromDisp(loadStep(en.equipment)), en.equipment); if(!(w>0) || Math.abs(w-s.weight)<1e-6) return null;
+  en.sets.forEach((x,k)=>{ if(k>si && isWork(x) && !x.done && (x.weight==null || x.weight===s.weight)) x.weight=w; });
+  return (d>0? 'Easier than planned' : 'Harder than planned')+': next set'+(en.sets.filter((x,k)=>k>si&&isWork(x)&&!x.done).length>1?'s':'')+' '+fmtW(w)+' '+unit();
+}
+/* In the hard weeks (1 rep or fewer in reserve), the last set of an isolation exercise goes to failure: it's safe there,
+   and sets closer to failure grow a little more (Robinson et al. 2024). */
+function lastFailSet(en, si){ if(!en.lastFail) return false; let k=-1; en.sets.forEach((x,i)=>{ if(isWork(x)) k=i; }); return si===k; }
 function toggleDone(ei,si){
   const en=state.active.entries[ei], s=en.sets[si];
   if(!s.done){   // an empty box logs the grey suggestion it shows
@@ -4040,11 +4013,13 @@ function toggleDone(ei,si){
     if(s.weight==null && prev) s.weight=prev.weight;
     if(s.reps==null){ const hint=repHint(en,s); if(hint!=null) s.reps=hint; else if(prev) s.reps=prev.reps; }
   }
+  const rated = s.rir!=null && s.rir!=='';
   s.done=!s.done;
-  let jumpTo=null, noW=false;
+  let jumpTo=null, noW=false, adj=null;
   if(s.done){
     noW= s.weight==null && !isBW(en.exId);
-    if(s.rir==null || s.rir==='') s.rir = state.active.entries[ei].target.rir;
+    if(s.rir==null || s.rir==='') s.rir = lastFailSet(en, si)? 0 : state.active.entries[ei].target.rir;
+    if(rated && isWork(s) && s.weight>0) adj=adjustNext(en, si, s);
     const g=ssGroup(ei);
     const rest = (g && !g.isLast)? 20 : (state.active.entries[ei].target.rest||120);
     startRest(rest);
@@ -4053,6 +4028,7 @@ function toggleDone(ei,si){
   }
   save(); render();
   if(noW) toast('Logged with no weight. Type it in, and next time starts from it');
+  else if(adj) toast(adj);
   else if(s.done && isWork(s) && !(exById(en.exId)||{}).comp && !isHold(en.exId) && s.rir>=1 && en.sets.filter(isWork).every(x=>x.done) && calDue()){
     const t=$('#toast'); t.innerHTML=MiloSecurity.html(`${I.gauge}<span>Check your reps in reserve: do as many more good reps as you can now.</span><button class="tbtn" data-act="rircal-open" data-ex="${ei}" data-set="${si}">Check</button>`);
     t.classList.add('on','act'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('on','act'),8000); }
@@ -4816,7 +4792,6 @@ function openSettings(){
       <div class="section-label" style="margin-top:18px">Your data</div>
       <button class="actitem" data-act="export-data">${I.download}<span>Export all data (JSON)</span></button>
       <button class="actitem" data-act="import-data">${I.upload}<span>Import data (JSON)</span></button>
-      <button class="actitem" data-act="load-sample">${I.grid}<span>Load sample data (replaces your log)</span></button>
       <button class="actitem danger" data-act="reset-data">${I.trash}<span>Erase everything</span></button>
       <p class="muted" style="font-size:11.5px;line-height:1.55;margin-top:14px">Everything is stored locally on this device. Nothing leaves your browser. This app logs your training. It isn’t medical advice. Stop and seek care for pain, dizziness, or unusual symptoms; never train through pain.</p>
       <div class="faint" style="font-size:11px;text-align:center;margin-top:14px">Hypertrophy Log &middot; evidence-led, honestly uncertain</div>
@@ -4971,7 +4946,6 @@ __root.addEventListener('click', e=>{
     case 'cd-muscle': { const r=el.dataset.role,m=el.dataset.m; const arr=customDraft[r]; const i=arr.indexOf(m); if(i>=0)arr.splice(i,1); else arr.push(m); renderCustomSheet($('#cdname').value); break; }
     case 'prog-tab': state.progressTab=el.dataset.t; save(); render(); break;
     case 'prog-ex-jump': state.progressTab='trends'; state.progressEx=el.dataset.id; save(); render(); break;
-    case 'open-coach': openCoach(); break;
     case 'metro-open': openMetronome(); break;
     case 'rircal-open': openRirCal(ei,si); break;
     case 'rircal-save': submitRirCal(); break;
@@ -5001,8 +4975,6 @@ __root.addEventListener('click', e=>{
     case 'export-data': exportData(); break;
     case 'copy-export': copyExport(); break;
     case 'reset-data': confirmReset(); break;
-    case 'load-sample': confirmSample(); break;
-    case 'load-sample-confirm': loadSampleData(); closeModal(); state.route='progress'; state.progressTab='insights'; render(); toast('Sample data loaded'); break;
     case 'ob-unit': state.settings.unit=el.dataset.v; Prefs.set({unit:el.dataset.v}); onboard(); break;
     case 'ob-done': state.onboarded=true; save(); closeModal(); render(); break;
     case 'ob-restore': closeModal(); if(window.__openBackup) window.__openBackup(); break;
@@ -5202,53 +5174,6 @@ function copyExport(){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(window._exportPayload||ta.value).then(done).catch(()=>{ try{document.execCommand('copy'); done();}catch(e){ toast('Couldn’t copy it. Select the text and copy it yourself',false);} });
   } else { try{document.execCommand('copy'); done();}catch(e){ toast('Couldn’t copy it. Select the text and copy it yourself',false);} }
-}
-function loadSampleData(){
-  const DAY=86400000, now=Date.now();
-  const tmpl=[
-    {name:'Push', ex:[['barbell-bench',['chest'],['fdelt','tri']],['incline-db-press',['chest','fdelt'],['tri']],['machine-lateral',['sdelt'],[]],['tricep-pushdown',['tri'],[]]]},
-    {name:'Pull', ex:[['lat-pulldown',['lat'],['bi','uback']],['chest-supported-row',['uback','lat'],['bi']],['face-pull',['rdelt'],['uback']],['incline-db-curl',['bi'],[]]]},
-    {name:'Legs', ex:[['back-squat',['quad','glute'],['ham']],['romanian-deadlift',['ham','glute'],['lback']],['leg-press',['quad','glute'],['ham']],['standing-calf',['calf'],[]]]},
-  ];
-  const baseW={'barbell-bench':60,'incline-db-press':22,'machine-lateral':11,'tricep-pushdown':25,'lat-pulldown':55,'chest-supported-row':50,'face-pull':18,'incline-db-curl':12,'back-squat':70,'romanian-deadlift':70,'leg-press':120,'standing-calf':60};
-  const hist=[]; let c=0;
-  for(let d=120; d>=0; d--){
-    const dow=new Date(now-d*DAY).getDay(); if(![1,2,4,5].includes(dow)) continue;
-    const day=tmpl[c%3]; c++; const prog=(120-d)/120;
-    const entries=day.ex.map(([id,prim,sec])=>{
-      const ex=exById(id), base=baseW[id]||40, w=Math.round((base*(1+prog*0.28))*2)/2 + (Math.random()<.25?2.5:0), sets=[];
-      for(let si=0;si<3;si++) sets.push({type:'work',weight:w,reps:Math.max(5,8-si+(Math.random()<.3?1:0)),rir:2,done:true});
-      return {exId:id,name:ex?ex.name:id,primary:prim.slice(),secondary:sec.slice(),equipment:ex?ex.equipment:'Barbell',target:{repLow:6,repHigh:10,rir:2,rest:150},sets};
-    });
-    hist.push({id:'demo-'+d, name:day.name, date:now-d*DAY+9*3600000, durationSec:3600, entries, prs:[]});
-  }
-  hist.sort((a,b)=>a.date-b.date);
-  const mesos=[];
-  for(let i=0;i<3;i++){
-    const sb=3+i, start=now-(108-i*36)*DAY, id='dm'+i;
-    const m={id:'demo-m'+i, name:'Block '+(i+1), totalWeeks:5, hasDeload:true, startRir:3, endRir:1, currentWeek:5, status:'complete', createdAt:start, done:{}, setPlan:{},
-      days:[{id, name:'Push', exercises:[
-        {exId:'barbell-bench',name:'Barbell Bench Press',primary:['chest'],secondary:['fdelt','tri'],equipment:'Barbell',comp:1,sets:sb,repLow:6,repHigh:10},
-        {exId:'incline-db-press',name:'Incline Dumbbell Press',primary:['chest','fdelt'],secondary:['tri'],equipment:'Dumbbell',comp:1,sets:sb,repLow:8,repHigh:12}]}]};
-    m.setPlan[id+':0']=Array.from({length:5},()=>sb); m.setPlan[id+':1']=Array.from({length:5},()=>sb);
-    m.done['1:'+id]={historyId:'x',ts:start,feedback:null}; m.done['4:'+id]={historyId:'y',ts:start+21*DAY,feedback:null};
-    mesos.push(m);
-  }
-  const body=[]; for(let d=120; d>=0; d-=5) body.push({date:Math.floor((now-d*DAY)/DAY)*DAY, weight:Math.round((80-(120-d)*0.012)*10)/10});
-  state.history=hist; state.mesos=mesos; state.bodylog=body;
-  state.rirCal=[]; state.active=null; state.parked=[];
-  save();
-}
-function confirmSample(){
-  openModal(`
-    <div class="sheet-grab"></div>
-    <div class="sheet-body">
-      <div style="text-align:center;padding:6px 0"><div class="logo" style="width:46px;height:46px;border-radius:14px;margin:0 auto 12px">${I.grid}</div>
-      <h2 class="disp" style="font-weight:800;font-size:20px;margin:0 0 6px">Load sample data?</h2>
-      <p class="muted" style="font-size:13.5px;margin:0 auto 18px;max-width:290px">Replaces your current log with a made-up 4-month history and a few finished blocks, so the charts and insights light up. Export first if you want to keep what you have.</p></div>
-      <button class="btn primary block" data-act="load-sample-confirm">Load it</button>
-      <button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Cancel</button>
-    </div>`, true);
 }
 function confirmReset(){
   openModal(`
@@ -9356,7 +9281,7 @@ function viewToday(){
       <button class="btn primary block" data-act="setup">${I.target} Set up my plan</button>
       <button class="btn ghost block" data-act="free" style="margin-top:8px">${I.plus} Just log a session</button></div>`;
   }
-  const keys=Object.keys(EVIDENCE), tk=keys[new Date().getDate()%keys.length], tip=EVIDENCE[tk];
+
   const prs=[]; state.history.slice().reverse().forEach(h=>(h.prs||[]).forEach(p=>prs.push(Object.assign({date:h.date},p))));
   const R=state.repeat, ids=R&&!R.plan? (R.lifts||[]).filter(id=>EX[id]) : [];
   const again= !a&&ids.length? `<div class="card pad"><div class="spread" style="align-items:flex-start"><div style="min-width:0"><div class="eyebrow">Ended early</div>
@@ -9376,8 +9301,6 @@ function viewToday(){
     ${state.setup?`<div><div class="section-label">${I.gauge}<span>Where you are</span><span class="ln"></span><button class="tinybtn" data-act="start-test" style="padding:5px 9px">Test</button></div>${board()}</div>`:''}
     ${prs.length?`<div class="card pad"><div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Recent records</span></div>
       ${prs.slice(0,5).map(p=>`<div class="lrow"><div class="li gold">${I.trophy}</div><div class="lb"><div class="a">${esc(exName(p.lift,p.vi))}</div><div class="b">${p.type==='e1RM'?'Estimated max':p.type} &middot; ${relDay(p.date)}</div></div><div class="lv">${prText(p)}</div></div>`).join('')}</div>`:''}
-    <div class="tip"><div class="lbl">${I.info}<span>${tip.t}</span><span class="conf ${tip.c}" style="margin-left:auto">${confShort(tip.c)}</span></div>
-      <p>${tip.a}</p><div style="margin-top:10px">${evChip(tk,'Why')}</div></div>
   </div>`;
 }
 function tileFor(id){
@@ -9848,15 +9771,15 @@ function progHistory(){
 }
 
 /* ==================== VIEWS: TOOLS ==================== */
-let calc={w:'', r:'5', rpe:''}, plateW='', warmW='', warmLift=null, attLift=null, attE='';
+let calc={w:'', r:'5', rpe:''}, plateW='', warmW='', warmLift=null;
 function loadIds(){ const c=chosen().filter(id=>EX[id].k==='load'); if(c.length) return c;
   const av=Object.keys(EX).filter(id=>EX[id].k==='load'&&EX[id].rank<10&&avail(id)); return av.length? av : ['squat','bench','deadlift','ohp']; }
 function viewTools(){
   const tab=state.toolTab;
-  const segs=[['max','Max'],['plates','Plates'],['warm','Warm-up'],['att','Attempts']].map(t=>
+  const segs=[['max','Max'],['plates','Plates'],['warm','Warm-up']].map(t=>
     `<button class="seg-tab ${tab===t[0]?'on':''}" data-act="tool-tab" data-t="${t[0]}">${t[1]}</button>`).join('');
   let b='';
-  if(tab==='max') b=toolMax(); else if(tab==='plates') b=toolPlates(); else if(tab==='warm') b=toolWarm(); else b=toolAttempts();
+  if(tab==='plates') b=toolPlates(); else if(tab==='warm') b=toolWarm(); else b=toolMax();
   return `<div class="seg-tabs">${segs}</div>${b}`;
 }
 function toolMax(){
@@ -9905,25 +9828,6 @@ function warmOut(w){
   return ramp.map((x,i)=>`<div class="ramp"><div class="n">${i+1}</div><div class="w">${fmtW(x.w)}<small> ${u()}</small></div><div class="x">&times; ${x.r}</div><div class="p">${loadNote(warmLift,x.w)}</div></div>`).join('')
     +`<div class="ramp att"><div class="n">${I.arrow}</div><div class="w">${fmtW(first)}<small> ${u()}</small></div><div class="x">work</div><div class="p">${loadNote(warmLift,first)}</div></div>
     <p class="muted" style="font-size:12px;line-height:1.5;margin:10px 2px 0">Rest a minute or two between the last few. Reps fall as the weight climbs so you arrive primed, not tired. ${evChip('warmup','Why')}</p>`;
-}
-function toolAttempts(){
-  const ids=loadIds(); if(!ids.includes(attLift)) attLift=ids[0];
-  const e0=currentE1(attLift), X=EX[attLift];
-  const e= attE!==''? fromDisp(attE) : e0;
-  const body=e? (()=>{
-    const att=[[.91,'Opener','A weight you could triple on a bad day'],[.96,'Second','Should move well; it sets up the third'],[1.01,'Third','Your max, or a little past it if the second flew']];
-    const opener=roundLoad(e*.91,X.eq);
-    const ramp=warmups(attLift, opener, true);
-    return `<div class="section-label" style="margin:0 0 4px">${I.flame}<span>Warm-up to the opener</span></div>
-      ${ramp.map((x,i)=>`<div class="ramp"><div class="n">${i+1}</div><div class="w">${fmtW(x.w)}<small> ${u()}</small></div><div class="x">&times; ${x.r}</div><div class="p">${loadNote(attLift,x.w)}</div></div>`).join('')}
-      <div class="section-label" style="margin:16px 0 4px">${I.target}<span>Attempts</span></div>
-      ${att.map(([p,n,d],i)=>{ const w=roundLoad(e*p,X.eq); return `<div class="ramp att"><div class="n">${i+1}</div><div class="w">${fmtW(w)}<small> ${u()}</small></div><div class="x">${Math.round(p*100)}%</div><div class="p">${n}: ${d}</div></div>`; }).join('')}
-      <p class="muted" style="font-size:12px;line-height:1.5;margin:10px 2px 0">Rest 3 to 5 minutes between attempts. If the opener is slow, repeat it or stop; there’s no prize for a grinder that hurts you. ${evChip('taper','Peaking')}</p>`; })()
-    : `<div class="muted" style="text-align:center;font-size:13px;padding:14px">No estimate for this exercise yet. Type one in above.</div>`;
-  return `<div class="card pad">
-    <div class="field"><label>Exercise</label><div class="pillpick">${ids.map(id=>`<button class="${attLift===id?'on':''}" data-act="att-lift" data-id="${id}">${EX[id].n}</button>`).join('')}</div></div>
-    <div class="field" style="margin:0"><label>Estimated max (${u()})</label><input class="mono" inputmode="decimal" data-field="att-e" value="${attE!==''?esc(attE):e0?inW(e0):''}" placeholder="from your log" style="font-size:20px"></div></div>
-  <div class="card pad" id="att-out" style="margin-top:12px">${body}</div>`;
 }
 
 /* ==================== HOW-TO ==================== */
@@ -10176,7 +10080,6 @@ __root.addEventListener('click', e=>{
     case 'ed-del': deleteEdit(); break;
     case 'tool-tab': state.toolTab=el.dataset.t; save(); render(); break;
     case 'warm-lift': warmLift=el.dataset.id; render(); break;
-    case 'att-lift': attLift=el.dataset.id; attE=''; render(); break;
 
     case 'prog-menu': openProgramMenu(); break;
     case 'prog-end': openModal(`<div class="sheet-grab"></div><div class="sheet-body"><div style="text-align:center;padding:4px 0 8px">
@@ -10238,14 +10141,13 @@ __root.addEventListener('input', e=>{
   if(f==='calc-w'||f==='calc-r'||f==='calc-rpe'){ calc[f.slice(5)]=el.value; const o=$('#calc-out'); if(o) o.innerHTML=MiloSecurity.html(calcOut()); return; }
   if(f==='plate-w'){ plateW=el.value; const o=$('#plate-out'), w=fromDisp(plateW); if(o) o.innerHTML=MiloSecurity.html(w?plateVisual(w):'<div class="muted" style="text-align:center;font-size:13px;padding:14px">Type a weight to see it loaded.</div>'); return; }
   if(f==='warm-w'){ warmW=el.value; const o=$('#warm-out'); if(o) o.innerHTML=MiloSecurity.html(warmOut(fromDisp(warmW))); return; }
-  if(f==='att-e'){ attE=el.value; return; }
   if(f==='bw'){ const w=fromDisp(el.value); state.settings.bw=w&&w>20?w:null; save(); return; }
 });
 /* re-render the pieces that depend on a typed value once the field is left */
 __root.addEventListener('change', e=>{
   const el=e.target.closest('[data-field]'); if(!el) return;
   const f=el.dataset.field;
-  if(f==='att-e'||f==='bw'){ render(); return; }
+  if(f==='bw'){ render(); return; }
   // a weight you type changes that set only: later sets and back-offs keep theirs
 });
 setInterval(()=>{ const a=state.active, el=__root.getElementById('elapsed');
@@ -10812,7 +10714,8 @@ function dayInfo(d, ahead){
     I.str={ready:slots.length>0, name:DOSE_N[P.dose.str]+' strength', weekName:wn, deload:dl,
       next:{name: heavy===slots.length? 'Heavy lifts' : heavy? 'Heavy and lighter lifts' : 'Lighter lifts', slots}}; }
   if(tg.secs.includes('lift')){ const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], rir=dl? 4 : LIFT_RIR[Math.min(week, LIFT_RIR.length)-1];
-    const exercises=day.lift.map(x=>{ const e=cat.find(c=>c.id===x.exId); return e? {exId:e.id, name:e.name, p:e.p.slice(), s:e.s.slice(), comp:e.comp,
+    // the muscles you want more of first: exercises done early in a session improve more (Simão et al. 2012)
+    const exercises=day.lift.slice().sort((a,b)=>(!!b.more)-(!!a.more)).map(x=>{ const e=cat.find(c=>c.id===x.exId); return e? {exId:e.id, name:e.name, p:e.p.slice(), s:e.s.slice(), comp:e.comp,
       sets:dl? Math.max(1,Math.round(x.sets/2)) : x.sets, reps:e.repLow+'&ndash;'+e.repHigh} : null; }).filter(Boolean);
     const T=table(), gs=[...new Set(exercises.flatMap(e=>e.p.map(q=>T&&T.muscles[q]? T.muscles[q].g : null)).filter(Boolean))];
     I.lift={ready:true, name:DOSE_N[P.dose.lift]+' muscle', week, weeks:P.weeks, deload:dl, target:LIFT_TARGET[P.dose.lift||'build'][tg.exp||'intermediate'],
