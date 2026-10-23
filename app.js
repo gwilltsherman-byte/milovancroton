@@ -11063,6 +11063,16 @@ function liftTrim(run){
   if(ease&&li&&li.next) new Set(li.next.exercises.flatMap(e=>e.p)).forEach(q=>{ already[q]=(already[q]||0)+ease; if(!why[q]) why[q]=`your check-in says you’re below your usual today (readiness ${C.ready.W.toFixed(1)} of 7)`; });
   return {already, from, skip, why, short:!!run.short, readiness: readinessFor(C)};
 }
+/* Called by the shell when a part of today's day is finished in its trainer: the next part starts there at once. Not
+   after a part ended early (you may be stopping), or when the next part's trainer already has a session going. */
+H.advance=function(m){
+  try{ refreshRun(); const run=tg.on&&tg.run; if(!run) return false;
+    const just=run.parts.find(p=>p.m===m&&p.sid); if(!just||just.st!=='done') return false;
+    const k=run.parts.findIndex(p=>p.st==='todo'); if(k<0) return false;
+    const api=H.api(run.parts[k].m), i=api&&api.info(); if(!i||i.busy) return false;
+    startPart(k); return run.parts[k].st==='run';
+  }catch(e){ console.error('Together couldn’t start the next part', e); return false; }
+};
 function startPart(k){
   const run=tg.run, p=run&&run.parts[k]; if(!p||p.st!=='todo') return;
   const api=H.api(p.m); if(!api) return;
@@ -12319,7 +12329,10 @@ render();
       if(api&&api.sheetOpen&&api.sheetOpen()) return;                                  // a follow-up sheet opened
       // still training, or a session started there since (a goal's placement test, say)
       if(why!=='left' && api&&api.info){ try{ const i=api.info(); if(i.busy && (b.kind==='run' || i.activeId!==b.act0)) return; }catch(e){} }
-      back=null; show('mix'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
+      back=null;
+      // a part of a Together day finished: the next part starts straight away, so the day runs as one session
+      if(b.kind==='run' && why!=='left' && window.__hub.advance && window.__hub.advance(m)) return;
+      show('mix'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
   }
   /* Muscles a Strength or Ladder set counts toward. Muscle's own table wins when it has the same exercise;
      otherwise the Strength area or the Ladder progression decides. [primary, secondary] */
