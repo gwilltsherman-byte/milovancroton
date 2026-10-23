@@ -72,6 +72,16 @@
     const ids=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean), picks=[ids[ids.length-1], ids[0]]; pickEx=picks[0];
     for(const id of picks){ root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(120); }
     check(picks.every(id=>root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).getAttribute('aria-pressed')==='true') && root.querySelector('.tday'), 'you can pick more than one exercise, and each shows its days');
+    // one day's exercise changed on its own, then handed back to Together
+    { const dr=root.querySelector('[data-a="t-day"]'), d=dr&&dr.dataset.d, pin=ids.find(id=>!picks.includes(id));
+      check(!!dr && !!pin, 'each day the muscle lands on is listed, to change on its own');
+      dr.click(); await pause(150);
+      check(root.textContent.includes('on Day '+(+d+1)) && !!root.querySelector('[data-a="t-day-cancel"]'), 'a day opens its own list');
+      root.querySelector(`[data-a="t-choose"][data-id="${pin}"]`).click(); await pause(150);
+      const row=()=>root.querySelector(`[data-a="t-day"][data-d="${d}"]`);
+      check(row() && row().textContent.includes('Your pick for this day') && !!root.querySelector('[data-a="t-back"]'), 'the day takes the exercise you chose, back in the muscle’s list');
+      row().click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id=""]').click(); await pause(150);
+      check(!row().textContent.includes('Your pick for this day'), 'and Let Together pick hands the day back'); }
     root.querySelector('[data-a="t-back"]').click(); await pause(150);
     check(root.textContent.includes('Customize this block') && root.querySelector(`[data-a="t-pick"][data-k="${k0}"]`).textContent.includes('your 2 picks'), 'Done goes back to the block, with your picks shown');
     // making your own exercise, which joins Muscle's library
