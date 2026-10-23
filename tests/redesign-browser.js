@@ -266,6 +266,28 @@
       frame.remove(); frame=null; localStorage.removeItem('proladder.v1'); localStorage.removeItem('strlog.v2');
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
+    // one choice for the app: units go to every trainer; Muscle and Strength share the lifts both have
+    { frame.remove(); frame=null;
+      const day=n=>{ const d=new Date(); d.setDate(d.getDate()-n); d.setHours(12,0,0,0); return d.getTime(); };
+      const bench=sets=>({exId:'barbell-bench',name:'Barbell Bench Press',primary:['chest'],secondary:['tri','fdelt'],equipment:'Barbell',sets});
+      const fx=JSON.parse(JSON.stringify(fixture)); fx.route='train';
+      fx.history.push({id:'mus-bench',name:'Push',date:day(6),durationSec:600,prs:[],entries:[bench([{type:'work',weight:80,reps:8,rir:2,done:true}])]});
+      fx.active={id:'share-str',name:'Push',startedAt:Date.now(),restEndsAt:null,restDuration:0,
+        entries:[Object.assign(bench([{type:'work',weight:null,reps:null,rir:null,done:false}]),{target:{repLow:6,repHigh:10,rir:2,rest:180},mi:0})]};
+      localStorage.setItem('hyplog.v1',JSON.stringify(fx));
+      localStorage.setItem('strlog.v2',JSON.stringify({v:2, onboarded:true, route:'today', settings:{unit:'kg', sound:true, vibrate:true}, active:null,
+        history:[{id:'str-bench',name:'Day A',date:day(1),entries:[{liftId:'bench',sets:[{kind:'work',w:100,reps:5,rpe:8,done:true}]}]}]}));
+      ({win,doc}=await load()); root=rootOf(doc,'lift');
+      await until(()=>root.querySelector('.excard'),'The session did not open');
+      check(root.querySelector('.excard').textContent.includes('Last: 100kg×5 @2 in Strength'),'Muscle starts the bench press from your newer Strength set, and says so');
+      const e1=win.__hub.api('str').lift('bench').e1;
+      check(Math.abs(e1-100/win.Lift.pct(7))<0.01,'Strength’s estimate uses its newest set, counting the 2 reps left');
+      const b=doc.createElement('button'); b.dataset.act='set-unit'; b.dataset.v='lb'; b.hidden=true; root.getElementById('view').appendChild(b); b.click(); b.remove();
+      await pause(300);
+      check(JSON.parse(localStorage.getItem('strlog.v2')).settings.unit==='lb' && win.Prefs.get('unit')==='lb','Pounds chosen in Muscle are Strength’s units too');
+      frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture)); localStorage.removeItem('strlog.v2'); localStorage.removeItem('trainer.shell.unit');
+      ({win,doc}=await load()); root=rootOf(doc,'lift'); }
+
     // how-tos are written instructions only: no drawings or animation
     { const how=(m,id)=>{ const r=rootOf(doc,m), b=doc.createElement('button'); b.dataset.act='howto'; b.dataset.id=id; b.hidden=true;
         r.getElementById('view').appendChild(b); b.click(); b.remove(); return r; };

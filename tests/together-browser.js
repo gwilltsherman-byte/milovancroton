@@ -177,6 +177,23 @@
     check(!!saved().run, 'the next day starts');
     root.querySelector('[data-a="t-new"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(300);
     check(!saved().run && saved().plan.week===1 && saved().next===0, 'a new block starts mid-day: the day ends and the block begins at Day 1');
+    // finishing a part moves straight on to the next one, so the day runs as one session
+    { const P2=saved().plan, d3=P2.kinds.findIndex(k=>k[0]==='str'&&k.length>1);
+      check(d3>=0, 'the week has a day that starts with Strength and has more after it');
+      root.querySelector('[data-a="pickday"]').click(); await pause(100);
+      root.querySelector(`[data-a="setnext"][data-d="${d3}"]`).click(); await pause(150);
+      { const c=root.querySelector('[data-a="ci-skip"]'); if(c){ c.click(); await pause(150); } }
+      root.querySelector('[data-a="start-day"]').click(); await pause(500);
+      const sr=doc.getElementById('m-str').shadowRoot;
+      sr.querySelectorAll('input[data-field="w"]').forEach(i=>{ if(!i.value){ i.value='40'; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true})); } }); await pause(150);
+      { const n=sr.querySelectorAll('[data-act="toggle-done"]').length; for(let i=0;i<n;i++){ const t=sr.querySelectorAll('[data-act="toggle-done"]')[i]; if(t){ t.click(); await pause(60); } } }
+      await pause(200);
+      sr.querySelector('[data-act="finish"]').click(); await pause(400);
+      for(let i=0;i<4;i++){ const c=sr.querySelector('#sheet.on [data-act="close-modal"], [role="dialog"][aria-modal="true"] [data-act="close-modal"]'); if(!c) break; c.click(); await pause(300); }
+      await pause(400);
+      const run=saved().run;
+      check(run && run.parts[0].st==='done' && run.parts[1].st==='run' && win.__hub.current()===run.parts[1].m, 'finishing Strength starts the day’s next part straight away');
+      win.__hub.api(run.parts[1].m).end(false); await pause(300); win.__hub.go('mix'); await pause(250); }
     // recommended Ladder goals: more goals than Ladder has room for get a keep-and-pause recommendation
     { const G={pullup1:['First strict pull-up','pull',4,1], pushup20:['20 strict push-ups','pushh',3,20], frontlever:['Full front lever, 5 s','frontlever',4,5], tuckplanche:['Tuck planche, 10 s','planche',1,10]};
       const four=Object.assign({}, ladder, {goals:Object.keys(G).map((k,i)=>({id:'rg'+i, key:k, n:G[k][0], l:G[k][1], r:G[k][2], std:G[k][3], sup:['core'], added:1, achieved:null}))});
