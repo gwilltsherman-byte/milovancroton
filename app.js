@@ -1330,15 +1330,13 @@ window.Parked={
     return true;
   },
   clock(ts){ return new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); },
-  /* Above the session on screen: each other open one, to switch to. n(s) counts a session's sets done. */
-  bars(st, n, esc, icon){ return Parked.list(st).map(p=>{ const k=n(p);
-    return `<div class="banner info" style="align-items:center">${icon}<span style="flex:1;min-width:0">Also open: <b>${esc(p.name)}</b> &middot; ${k} set${k===1?'':'s'}</span><button class="tinybtn" data-act="switch-session" data-id="${esc(p.id)}" style="flex:none">Switch</button></div>`; }).join(''); },
-  /* Ladder's and Strength's Today: a card for each session left open, to pick it back up. */
-  cards(st, n, esc){ return Parked.list(st).map(p=>{ const k=n(p);
-    return `<div class="card pad"><div class="spread"><div style="min-width:0"><div class="eyebrow">Also open</div>
-      <div style="font-weight:700;font-size:16px;margin-top:3px">${esc(p.name)}</div>
-      <div class="muted" style="font-size:12.5px;margin-top:2px">${k} set${k===1?'':'s'} done &middot; started ${Parked.clock(p.startedAt)}</div></div>
-      <button class="btn primary sm" data-act="switch-session" data-id="${esc(p.id)}">Resume</button></div></div>`; }).join(''); }
+  /* At the top of the Train tab when more than one session is open: each of them, the one on screen marked, the others
+     to switch to. n(s) counts a session's sets done; more is extra HTML at the bottom (a button to start another). */
+  panel(st, n, esc, more){ const all=Parked.all(st); if(!Parked.list(st).length) return '';
+    return `<div class="card pad" style="margin-bottom:14px"><div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--muted)">${all.length} sessions in progress</div>${all.map(p=>{ const k=n(p), here=p===st.active;
+      return `<div class="spread" style="padding:10px 0 0;gap:10px"><div style="min-width:0"><div style="font-weight:700;font-size:15px">${esc(p.name)}</div>
+        <div class="muted" style="font-size:12.5px;margin-top:2px">${k} set${k===1?'':'s'} done &middot; started ${Parked.clock(p.startedAt)}</div></div>
+        ${here? '<span class="muted" style="font-size:12.5px;font-weight:700;flex:none">On screen</span>' : `<button class="btn primary sm" data-act="switch-session" data-id="${esc(p.id)}" style="flex:none">Resume</button>`}</div>`; }).join('')}${more||''}</div>`; }
 };
 
 /* ==================== ONE CHOICE FOR THE WHOLE APP ====================
@@ -2067,25 +2065,13 @@ function render(){
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.dumbbell],['plan','Plan',I.calendar],['library','Library',I.book],['progress','Progress',I.chart]];
   $('#tabbar').innerHTML = MiloSecurity.html(tabs.map(t=>`
-    <button class="tab ${state.route===t[0]?'active':''}" data-act="nav" data-route="${t[0]}">
+    <button class="tab ${state.route===t[0]?'active':''}${t[0]==='train'&&Parked.all(state).length?' live':''}" data-act="nav" data-route="${t[0]}"${t[0]==='train'&&Parked.all(state).length?' aria-label="Train, session in progress"':''}>
       ${t[2]}<span>${t[1]}</span><span class="dot"></span>
     </button>`).join(''));
 }
 
 /* ==================== TODAY ==================== */
-/* An open session on Today: the one on screen, or one left open to come back to. */
 function setsDone(a){ return a.entries.reduce((x,e)=>x+e.sets.filter(s=>isWork(s)&&s.done).length,0); }
-function resumeRow(a){
-  const done = setsDone(a), on = a===state.active, many = Parked.list(state).length>0;
-  return `<div class="resume">
-      <div class="rico">${I.play}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:14.5px">${esc(a.name)}</div>
-        <div class="muted" style="font-size:12px;margin-top:1px">${done} set${done===1?'':'s'} logged &middot; ${many? 'started '+Parked.clock(a.startedAt) : 'in progress'}</div>
-      </div>
-      <button class="btn primary sm" data-act="${on?'nav':'switch-session'}" data-route="train" data-id="${esc(a.id)}">Resume</button>
-    </div>`;
-}
 /* A block day already open, on screen or left open: starting it again would log it twice. */
 function mesoDayOpen(m, dayId){ return Parked.all(state).some(a=>a.meso && a.meso.mesoId===m.id && a.meso.dayId===dayId && a.meso.week===m.currentWeek); }
 function viewToday(){
@@ -2097,7 +2083,8 @@ function viewToday(){
   const sessions7 = state.history.filter(w=>w.date>=daysAgo(6)).length + open.length;
   const tip = TIPS[new Date().getDate() % TIPS.length];
 
-  const resumeHtml = open.map(resumeRow).join('');
+  // sessions in progress are listed on the Train tab
+  const resumeHtml = '';
 
   const R=state.repeat;
   const repeatHtml = state.active || !R ? '' : `<div class="resume">
@@ -2157,8 +2144,8 @@ function viewToday(){
   return `
   <div class="stack">
     <div class="hero">
-      <h2>${open.length>1?'Sessions in progress':open.length?'Session in progress':am?'Your next session starts here.':'Build muscle, one session at a time.'}</h2>
-      <p class="sub">${open.length>1?'Pick one up, or start another alongside them.':open.length?'Pick up where you left off.':am?'Follow your block, log your sets, and give each muscle time to recover.':'Plan your next block or start with a session. Log your sets and see your training take shape.'}</p>
+      <h2>${am?'Your next session starts here.':'Build muscle, one session at a time.'}</h2>
+      <p class="sub">${am?'Follow your block, log your sets, and give each muscle time to recover.':'Plan your next block or start with a session. Log your sets and see your training take shape.'}</p>
       ${resumeHtml}
       ${repeatHtml}
       ${mesoCard}
@@ -2198,7 +2185,7 @@ function viewTrain(){
     return `<div class="stack"><div class="hero">
       <h2>${parked.length===1?'A session is still open':parked.length+' sessions are still open'}</h2>
       <p class="sub">Pick one up, or start another.</p>
-      ${parked.map(resumeRow).join('')}
+      ${Parked.panel(state, setsDone, esc)}
       <div class="grid2" style="margin-top:12px;gap:12px">
         <button class="btn ghost block" data-act="start-empty">${I.plus} Free session</button>
         <button class="btn ghost block" data-act="open-templates">${I.layers} Templates</button>
@@ -2234,7 +2221,7 @@ function viewTrain(){
     </div>
     <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
   </div>
-  ${Parked.bars(state, setsDone, esc, I.layers)}
+  ${Parked.panel(state, setsDone, esc)}
   ${readi}
   ${a.trim? `<div class="banner info" style="align-items:flex-start">${I.layers}<span style="flex:1;min-width:0"><b>Trimmed for Together.</b> ${a.trim.cuts.map(c=>esc(c.name)+' '+(c.to? c.from+'&rarr;'+c.to+' sets' : 'left out')+(c.why? ' ('+esc(c.why)+')':'')).join('; ')}.</span><button class="tinybtn" data-act="trim-undo" style="flex:none">Put back</button></div>` : ''}
   ${a.note
@@ -7441,12 +7428,8 @@ function testsDue(){ const ids=[...new Set(activeGoals().map(g=>g.l))].filter(id
 function viewToday(){
   const a=state.active, goals=activeGoals();
   let hero;
-  if(a){
-    hero=`<div class="hero"><div class="eyebrow">Session in progress</div><h2>${esc(a.name)}</h2>
-      <p class="sub">${a.entries.length} exercise${a.entries.length===1?'':'s'} loaded. Pick up where you left off.</p>
-      <button class="btn primary block" data-act="nav" data-route="train">${I.flag} Back to session</button>
-      <button class="btn ghost block" data-act="park-today" style="margin-top:8px">${I.plus} Start another</button></div>`;
-  } else if(goals.length){
+  // a session in progress is on the Train tab
+  if(goals.length){
     const P=todayPlan(), xs=orderIds(P.map(x=>x.id)).map(id=>P.find(x=>x.id===id));
     // goals that wait their turn today: name the ones the next session brings
     const {mains}=planIds(), waiting=mains.filter(id=>!P.some(x=>x.id===id)), next=todayPlan(1).filter(x=>waiting.includes(x.id)).map(x=>x.id);
@@ -7474,7 +7457,7 @@ function viewToday(){
   const sets7=setsIn(7), sessions7=new Set(state.history.filter(w=>w.date>=daysAgo(6)).map(w=>dayStart(w.date))).size;
   const achieved=state.goals.filter(g=>g.achieved).length;
   const recentAdv=state.advances.slice().reverse().slice(0,3);
-  return `<div class="stack">${again}${hero}${Parked.cards(state, setsDone, esc)}${a? '' : unlockCard()}
+  return `<div class="stack">${again}${hero}${a? '' : unlockCard()}
     ${due.length?`<button class="banner brass" data-act="test-go" data-ids="${due.join(',')}" style="width:100%;text-align:left;margin:0">${I.test}
       <span><b>${due.some(id=>lastTestFor(id))?'Time for a progress check.':'Test where you are.'}</b> One all-out set on ${due.map(id=>esc(curStep(id).n)).join(' and ')} keeps your plan honest.</span><span style="margin-left:auto">${I.arrow}</span></button>`:''}
     ${goals.length?`<div><div class="section-label">${I.target}<span>Your goals</span><span class="ln"></span><button class="tinybtn" data-act="goal-add" style="padding:5px 9px">${I.plus} Add</button></div>${goals.map(goalCard).join('')}</div>`:''}
@@ -7689,7 +7672,7 @@ function deleteCustomLadder(id){
 /* ==================== VIEWS: TRAIN ==================== */
 function viewTrain(){
   const a=state.active;
-  if(!a && Parked.list(state).length) return `<div class="stack">${Parked.cards(state, setsDone, esc)}
+  if(!a && Parked.list(state).length) return `<div class="stack">${Parked.panel(state, setsDone, esc)}
     <div class="grid2"><button class="btn ghost block" data-act="builder">${I.plus} Start another</button><button class="btn ghost block" data-act="nav" data-route="today">${I.home} Today</button></div></div>`;
   if(!a) return `<div class="empty"><div class="ei">${I.bar}</div>
     <h3>No session running</h3><p>${activeGoals().length?'Start today&rsquo;s goal session, or pick exactly what you want to train.':'Pick the exercises you want to train today.'}</p>
@@ -7705,7 +7688,7 @@ function viewTrain(){
       <button class="setmenu" data-act="session-menu" aria-label="Session options">${I.dots}</button>
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
     </div>
-    ${Parked.bars(state, setsDone, esc, I.copy)}
+    ${Parked.panel(state, setsDone, esc, `<button class="btn ghost block" data-act="park-today" style="margin-top:12px">${I.plus} Start another</button>`)}
     ${a.entries.map((e,ei)=>exCard(e,ei)).join('')}
     <button class="btn ghost block" data-act="pick-ex" style="margin-top:4px">${I.plus} Add exercise</button>
     <button class="btn ghost block" data-act="end-open" style="margin-top:8px">${I.flag} End without finishing</button>`;
@@ -7991,7 +7974,7 @@ function render(){
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['goals','Goals',I.target],['progress','Progress',I.chart],['library','Library',I.book]];
-  $('#tabbar').innerHTML=MiloSecurity.html(tabs.map(t=>`<button class="tab ${state.route===t[0]?'active':''}" data-act="nav" data-route="${t[0]}">${t[2]}<span>${t[1]}</span><span class="dot"></span></button>`).join(''));
+  $('#tabbar').innerHTML=MiloSecurity.html(tabs.map(t=>`<button class="tab ${state.route===t[0]?'active':''}${t[0]==='train'&&Parked.all(state).length?' live':''}" data-act="nav" data-route="${t[0]}">${t[2]}<span>${t[1]}</span><span class="dot"></span></button>`).join(''));
 }
 
 /* ==================== ACTIONS ==================== */
@@ -8078,7 +8061,7 @@ __root.addEventListener('click', e=>{
     case 'test-quit': {const r=testCtx&&testCtx.results,q=testCtx&&testCtx.advance;testCtx=null;closeModal();render();if(q&&!q.manual)offerAdvance(q.list,q.index+1,q.rec);else if(r&&r.length)toast('Saved what you tested');break;}
 
     /* sessions */
-    case 'start-plan': if(A){ state.route='train'; render(); break; } beginSession(defaultPicks()); break;
+    case 'start-plan': confirmStart(()=>beginSession(defaultPicks())); break;
     case 'builder': openBuilder(); break;
     case 'park-start': { const fn=pendingStart; pendingStart=null; closeModal(); parkActive(); if(fn) fn(); break; }
     case 'replace-start': { const fn=pendingStart; pendingStart=null; closeModal(); dropActive(); if(fn) fn(); break; }
@@ -9282,13 +9265,8 @@ function saveStart(){
 function viewToday(){
   const a=state.active, P=state.program, D=progDef();
   let hero;
-  if(a){
-    const done=a.entries.reduce((n,e)=>n+e.sets.filter(s=>s.done&&s.kind!=='warm').length,0);
-    hero=`<div class="hero"><div class="eyebrow">Session in progress</div><h2>${esc(a.name)}</h2>
-      <p class="sub">${done} working set${done===1?'':'s'} done. Pick up where you left off.</p>
-      <button class="btn primary block" data-act="nav" data-route="train">${I.play} Back to the session</button>
-      <button class="btn ghost block" data-act="park-today" style="margin-top:8px">${I.plus} Start another</button></div>`;
-  } else if(D){
+  // a session in progress is on the Train tab
+  if(D){
     const d=nextDayIdx(), day=D.days[d], R=state.repeat, again=R&&R.plan&&R.plan.day===d&&R.plan.cycle===P.cycle&&R.plan.week===P.week;
     const lines=day.slots.map(([id,sc])=>`<button class="nx" data-act="howto" data-id="${id}"><span>${esc(exName(id))}</span><b class="mono">${slotSummary(id,sc,P.week,D.model)}</b><i>${AREAS[EX[id].a].n} &middot; ${chipText(id,sc,P.week,D.model)}</i></button>`).join('');
     hero=`<div class="hero"><div class="eyebrow">${esc(D.n)} &middot; ${D.weeks?'Week '+P.week+' of '+D.weeks:'Session '+(Object.keys(P.done).length+1)}</div>
@@ -9316,7 +9294,7 @@ function viewToday(){
       <div class="metric" data-act="sessions" role="button" tabindex="0"><div class="k"><span>Sessions</span><span class="q">7d</span></div><div class="v">${week.length}</div></div>
       <div class="metric" data-act="sessions" role="button" tabindex="0"><div class="k"><span>All sessions</span></div><div class="v">${state.history.length}</div></div>
     </div>`;
-  return `<div class="stack">${again}${hero}${Parked.cards(state, setsDone, esc)}
+  return `<div class="stack">${again}${hero}
     ${metrics}
     ${state.setup?`<div><div class="section-label">${I.gauge}<span>Where you are</span><span class="ln"></span><button class="tinybtn" data-act="start-test" style="padding:5px 9px">Test</button></div>${board()}</div>`:''}
     ${prs.length?`<div class="card pad"><div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Recent records</span></div>
@@ -9357,7 +9335,7 @@ function board(){
 /* ==================== VIEWS: TRAIN ==================== */
 function viewTrain(){
   const a=state.active;
-  if(!a && Parked.list(state).length) return `<div class="stack">${Parked.cards(state, setsDone, esc)}
+  if(!a && Parked.list(state).length) return `<div class="stack">${Parked.panel(state, setsDone, esc)}
     <button class="btn ghost block" data-act="nav" data-route="today">${I.plus} Start another</button></div>`;
   if(!a) return `<div class="empty"><div class="ei">${I.bar}</div><h3>No session running</h3>
     <p>${state.program&&progDef()?'Start the next day of your plan, or log a free session.':'Set up a plan for prescribed loads, or log a free session.'}</p>
@@ -9374,7 +9352,7 @@ function viewTrain(){
       <button class="setmenu" data-act="session-menu" aria-label="Session options">${I.dots}</button>
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
     </div>
-    ${Parked.bars(state, setsDone, esc, I.copy)}
+    ${Parked.panel(state, setsDone, esc, `<button class="btn ghost block" data-act="park-today" style="margin-top:12px">${I.plus} Start another</button>`)}
     ${a.note?`<div class="banner info" data-act="session-note" style="cursor:pointer">${I.note}<span>${esc(a.note)}</span></div>`:''}
     ${a.entries.map((en,ei)=>exCard(en,ei)).join('')}
     <button class="btn ghost block" data-act="pick-lift" style="margin-top:4px">${I.plus} Add an exercise</button>
@@ -10017,7 +9995,7 @@ function render(){
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['program','Plan',I.cal],['progress','Progress',I.chart],['tools','Tools',I.calc]];
-  $('#tabbar').innerHTML=MiloSecurity.html(tabs.map(t=>`<button class="tab ${state.route===t[0]?'active':''}" data-act="nav" data-route="${t[0]}">${t[2]}<span>${t[1]}</span><span class="dot"></span></button>`).join(''));
+  $('#tabbar').innerHTML=MiloSecurity.html(tabs.map(t=>`<button class="tab ${state.route===t[0]?'active':''}${t[0]==='train'&&Parked.all(state).length?' live':''}" data-act="nav" data-route="${t[0]}">${t[2]}<span>${t[1]}</span><span class="dot"></span></button>`).join(''));
 }
 
 /* ==================== ACTIONS ==================== */
