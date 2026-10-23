@@ -211,7 +211,25 @@
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
       const by={}; saved().plan.days.forEach(d=>d.lift.forEach(x=>{ (by[x.mu]||(by[x.mu]=[])).push(x.exId); }));
       check((by.quad||[]).includes('leg-extension') && (by.quad||[]).some(id=>id!=='leg-extension'), 'quads get a squat or press and a leg extension, which grows the part squats miss');
-      check((by.tri||[]).includes('overhead-ext') && !(by.tri||[]).includes('tricep-pushdown') && (by.ham||[]).includes('leg-curl'), 'triceps and hamstrings start from the exercises that train them at long lengths'); }
+      check((by.tri||[]).includes('overhead-ext') && !(by.tri||[]).includes('tricep-pushdown') && (by.ham||[]).includes('leg-curl'), 'triceps and hamstrings start from the exercises that train them at long lengths');
+      // re-optimize the other days around a day you set, on a muscle trained on two days or more; then hand the day back
+      { root.querySelector('[data-a="t-edit"]').click(); await pause(150);
+        root.querySelector('[data-a="t-pick"][data-t="ex"][data-k="tri"]').click(); await pause(150);
+        check(['overhead-ext','seated-db-tri-ext'].includes(root.querySelector('[data-a="t-choose"]:not([data-id=""])').dataset.id) && root.textContent.includes('Grew it more in trials'), 'the library lists the exercises best for growth first, and says why');
+        root.querySelector('[data-a="t-back"]').click(); await pause(150);
+        const rows=()=>[...root.querySelectorAll('[data-a="t-pick"][data-t="ex"]')].map(b=>b.dataset.k); let done=false;
+        for(const k of rows()){ root.querySelector(`[data-a="t-pick"][data-t="ex"][data-k="${k}"]`).click(); await pause(150);
+          const ds=[...root.querySelectorAll('[data-a="t-day"]')];
+          if(ds.length>1 && !done){ const d=ds[1].dataset.d, at=()=>root.querySelector(`[data-a="t-day"][data-d="${d}"]`); ds[1].click(); await pause(150);
+            const id=[...root.querySelectorAll('[data-a="t-choose"]')].map(b=>b.dataset.id).filter(Boolean).pop();
+            root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(150);
+            root.querySelector(`[data-a="t-refit"][data-d="${d}"]`).click(); await pause(150);
+            check(at().textContent.includes('Your pick for this day') && [...root.querySelectorAll('[data-a="t-day"]')].filter(b=>b.dataset.d!==d).every(b=>b.textContent.includes('Together’s pick')),
+              'Re-optimize keeps the day you set and lets Together pick the other days around it');
+            at().click(); await pause(150); root.querySelector('[data-a="t-choose"][data-id=""]').click(); await pause(150); done=true; }
+          root.querySelector('[data-a="t-back"]').click(); await pause(150); if(done) break; }
+        check(done, 'a muscle trained on two days or more is there to re-optimize');
+        root.querySelector('[data-a="t-cancel"]').click(); await pause(150); } }
     // recommended Ladder goals: more goals than Ladder has room for get a keep-and-pause recommendation
     { const G={pullup1:['First strict pull-up','pull',4,1], pushup20:['20 strict push-ups','pushh',3,20], frontlever:['Full front lever, 5 s','frontlever',4,5], tuckplanche:['Tuck planche, 10 s','planche',1,10]};
       const four=Object.assign({}, ladder, {goals:Object.keys(G).map((k,i)=>({id:'rg'+i, key:k, n:G[k][0], l:G[k][1], r:G[k][2], std:G[k][3], sup:['core'], added:1, achieved:null}))});
