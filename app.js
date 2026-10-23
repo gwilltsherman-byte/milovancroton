@@ -10468,8 +10468,9 @@ function cleanTune(T){
   // a muscle's exercises: one or several, which Together puts on the days each suits best (one, from older saves)
   Object.entries(rec(T.ex)).forEach(([m,v])=>{ const ids=[...new Set((Array.isArray(v)? v : [v]).filter(idOk))].slice(0, PICKS_MAX); if(LIFT_MUSCLES.includes(m) && ids.length) o.ex[m]=ids; });
   // perDay: an exercise you set for one day of the week (0 is Day 1); hold: the muscle's other days as they were when you
-  // set one, kept until you re-optimize them or change your picks
-  ['perDay','hold'].forEach(k=>Object.entries(rec(T[k])).forEach(([m,v])=>{ const d={}; Object.entries(rec(v)).forEach(([i,id])=>{ if(/^[0-6]$/.test(i) && idOk(id)) d[i]=id; });
+  // set one (its exercise, and the one sharing its sets if it had two), kept until you re-optimize them or change your picks
+  ['perDay','hold'].forEach(k=>Object.entries(rec(T[k])).forEach(([m,v])=>{ const d={}; Object.entries(rec(v)).forEach(([i,id])=>{ if(!/^[0-6]$/.test(i)) return;
+      if(k==='perDay'){ if(idOk(id)) d[i]=id; } else { const ids=(Array.isArray(id)? id : [id]).filter(idOk).slice(0,2); if(ids.length) d[i]=ids; } });
     if(LIFT_MUSCLES.includes(m) && Object.keys(d).length) o[k][m]=d; }));
   Object.entries(rec(T.lift)).forEach(([a,v])=>{ if(STR_ORDER.includes(a) && idOk(v)) o.lift[a]=v; });
   Object.entries(rec(T.off)).forEach(([a,v])=>{ if(STR_ORDER.includes(a) && v===true) o.off[a]=true; });
@@ -10506,7 +10507,7 @@ function kit(){ if(tg.kit) return tg.kit;
   const k=!tg.on&&Prefs.get('kit',null); return Array.isArray(k)&&k.length? k.filter(x=>KIT.some(y=>y[0]===x)) : KIT.map(k=>k[0]); }
 /* What the plan is built from. A change to any of it builds a new block; changing which days a section is on only
    refills the days. */
-const GEN='g4';   // half sets for helping muscles, Muscle over more of your days when full, your picks spread evenly, why each was chosen
+const GEN='g5';   // half sets for helping muscles, Muscle over more of your days when full, your picks spread evenly, why each was chosen
 function baseSig(){ return JSON.stringify([tg.secs, rankList(), tg.days, tg.mins, kit(), tg.exp||'intermediate']); }
 function plan(){
   // the order sets each section's dose, so the program keeps the order it was built with: a suggestion that would
@@ -10635,7 +10636,7 @@ function buildPlan(T){
         const need= need0<lo&&gap? lo : need0; at[x.mu]=need; if(need<lo) return;
         const f=Math.min(ld.length, freqOf(x.mu, need)); if(f>left){ skipped.push(x.mu); return; }
         const n=Math.max(lo, Math.min(4, Math.round(need/f)));
-        let got=0; const cnt={}, pinOf=i=>((T.perDay||{})[x.mu]||{})[i]||((T.hold||{})[x.mu]||{})[i]||null;
+        let got=0; const cnt={}, own=i=>((T.perDay||{})[x.mu]||{})[i]||null, held=i=>((T.hold||{})[x.mu]||{})[i]||null, pinOf=i=>own(i)||(held(i)||[])[0]||null;
         choose(f, ld.length, sel=>spacing(sel.map(j=>ld[j]),D)*2 + sel.reduce((c,j)=>c + out[ld[j]].length*3 + (hit[ld[j]].has(x.mu)? 4 : 0) + (out[ld[j]].length>=lim? 1e4 : 0),0))
           // a day you set an exercise for (or one held as it was) goes first, so the other days fit around it
           .sort((a,b)=>!!pinOf(ld[b]) - !!pinOf(ld[a]))
@@ -10660,13 +10661,15 @@ function buildPlan(T){
             if(!e) return;
             // why it won: the first rule that put it ahead of the next best
             let why= cs.length<2? 'only' : (rules.find(r=>r[1](e,cs[1])<0)||['tie'])[0];
-            if(why==='set' && !((T.perDay||{})[x.mu]||{})[i]) why='held';
+            if(why==='set' && !own(i)) why='held';
             if(why==='fit') why= !iso? 'fit-big' : days[i].str.length>0? 'fit-heavy' : (C[x.mu]||0)>0? 'fit-worked' : 'fit-small';
             // more of your picks not used yet than days left: this day takes two, its sets split, the one better for growth getting more
             const rest=mine.filter(id=>id!==e.id && !cnt[id] && exOf[id] && fits(exOf[id])).map(id=>exOf[id])
               // one with no other day left to go to first (another muscle has it there), then the one that suits this day
               .sort((a,b)=>sel.slice(nth+1).filter(q=>!taken[ld[q]].has(a.id)).length-sel.slice(nth+1).filter(q=>!taken[ld[q]].has(b.id)).length || ((a.comp===iso)-(b.comp===iso)));
-            const e2= n>=2 && rest.length>sel.length-1-nth && out[i].length+1<lim? rest[0] : null, grow=g=>2*(g.long||0)+gain(g), top= e2&&grow(e2)>grow(e)? e2 : e;
+            // a day you set keeps just your exercise, and a day held as it was keeps what it had
+            const h2=held(i)&&held(i)[1], fixed=own(i)||held(i);
+            const e2= !(n>=2 && out[i].length+1<lim)? null : fixed? (!own(i)&&h2&&h2!==e.id&&exOf[h2]&&fits(exOf[h2])? exOf[h2] : null) : rest.length>sel.length-1-nth? rest[0] : null, grow=g=>2*(g.long||0)+gain(g), top= e2&&grow(e2)>grow(e)? e2 : e;
             [e, e2].filter(Boolean).forEach(g=>{ const m= !e2? n : g===top? Math.ceil(n/2) : Math.floor(n/2);
               taken[i].add(g.id); used[g.id]=(used[g.id]||0)+1; got++; addReg(g.id, g.p); if(mine.includes(g.id)) cnt[g.id]=(cnt[g.id]||0)+1;
               out[i].push(Object.assign({exId:g.id, mu:x.mu, sets:m, comp:g.comp, why:g===e? why : 'split'}, x.more? {more:true} : {}));
@@ -11814,7 +11817,7 @@ const WHY={held:'Kept as it was until you re-optimize', only:'The only exercise 
 const whyText=(k, m)=>{ const w=WHY[k]; return typeof w==='function'? w(m) : w||''; };
 function pickList(){
   const K=tune.pick, mu=K.k, T=tune.T, L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], eq=kitEq(), q=(K.q||'').trim().toLowerCase();
-  const all=cat.filter(e=>e.p.includes(mu)), mine=(T.ex[mu]||[]).filter(id=>all.some(e=>e.id===id)), D=daysFor(mu), pins=(T.perDay||{})[mu]||{}, day=K.day;
+  const all=cat.filter(e=>e.p.includes(mu)), mine=(T.ex[mu]||[]).filter(id=>all.some(e=>e.id===id)), D=daysFor(mu), pins=(T.perDay||{})[mu]||{}, day=K.day, held=Object.keys((T.hold||{})[mu]||{}).length>0;
   const match=e=>!q || e.name.toLowerCase().includes(q) || e.equipment.toLowerCase().includes(q);
   // best for growth first, from what grew muscle more in trials: training it at long lengths (GROWTH.long), then a part of
   // the muscle the rest of your week misses (GROWTH.region). Most exercises were never compared, so they rank equal, loadable first
@@ -11824,7 +11827,7 @@ function pickList(){
   const why=e=> e.long===2? 'Grew it more in trials: long lengths' : e.long===1? 'Trains it at a stretch' : fills(e)? 'Grows a part your week misses' : '';
   // what it is, and the days it lands on this week: yours, or Together's while you let it pick
   const sub=e=>{ const also=e.p.filter(x=>x!==mu).map(x=>muscleName(x).toLowerCase()), on=D.by[e.id], k=mine.indexOf(e.id);
-    const when= on? `<em class="tday">${dayWords(on)}</em>` : k>=0? `<em class="tday off">No room for it this week</em>` : '';
+    const when= on? `<em class="tday">${dayWords(on)}</em>` : k>=0? `<em class="tday off">${held? 'Not on a day yet: re-optimize to fit it in' : 'No room for it this week'}</em>` : '';
     return (when? when+' &middot; ' : '')+(why(e)? [why(e)] : []).concat([e.comp? 'Compound' : 'Isolation', esc(e.equipment)]).concat(also.length? ['also '+esc(listText(also))] : [], e.custom? ['Yours'] : []).join(' &middot; '); };
   const ord=(a,b)=>score(b)-score(a) || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (b.custom-a.custom) || a.name.localeCompare(b.name);
   const inKit=all.filter(e=>eq.includes(e.equipment)&&match(e)).sort(ord), out=all.filter(e=>!eq.includes(e.equipment)&&match(e)).sort(ord);
@@ -11970,7 +11973,7 @@ __root.addEventListener('click', e=>{
         // one day's exercise: set it, or hand the day back to Together, then back to the muscle's list
         const all=T.perDay||(T.perDay={}), m=all[K.k]||(all[K.k]={}), d=K.day;
         // the muscle's other days stay as they are now, until you re-optimize them
-        const hold={}; daysFor(K.k).on.forEach(([i,ids])=>{ if(i!==d && !m[i]) hold[i]=ids[0]; });
+        const hold={}; daysFor(K.k).on.forEach(([i,ids])=>{ if(i!==d && !m[i]) hold[i]=ids.slice(0,2); });
         if(Object.keys(hold).length) (T.hold||(T.hold={}))[K.k]=hold; else if(T.hold) delete T.hold[K.k];
         if(v) m[d]=v; else delete m[d];
         if(!Object.keys(m).length) delete all[K.k];

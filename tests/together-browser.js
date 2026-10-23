@@ -227,13 +227,14 @@
             const vals=()=>[...root.querySelectorAll('[data-a="t-day"] .tval')].map(v=>v.textContent), nm=x=>root.querySelector(`[data-a="t-choose"][data-id="${x}"] b`).textContent;
             check(pk.every(x=>vals().join('|').includes(nm(x))) && vals().some(v=>v.includes(' + ')), 'with more picks than days, every pick is used, two of them sharing a day');
             check([...root.querySelectorAll('[data-a="t-day"]')].every(b=>(b.querySelector('.twhy')||{}).textContent), 'each day says why it has its exercise');
-            const other=()=>[...root.querySelectorAll('[data-a="t-day"]')].filter(b=>b.dataset.d!==d).map(b=>b.querySelector('.tval').textContent.split(' + ')[0]).join('|'), was=other();
+            const other=()=>[...root.querySelectorAll('[data-a="t-day"]')].filter(b=>b.dataset.d!==d).map(b=>b.querySelector('.tval').textContent).join('|'), was=other();
             at().click(); await pause(150);
             root.querySelector(`[data-a="t-choose"][data-id="${id}"]`).click(); await pause(150);
             check(other()===was && !!root.querySelector('[data-a="t-refit"]'), 'setting one day leaves the other days as they were, with a button to re-optimize them');
+            check(at().querySelector('.tval').textContent===nm(id), 'a day you set has just the exercise you set, even with more picks than days');
             root.querySelector('[data-a="t-refit"]').click(); await pause(150);
             check(!root.querySelector('[data-a="t-refit"]') && /changed to go with|nothing changed/.test(root.querySelector('#toast').textContent), 'Re-optimize says what it changed, and the button goes once there is nothing left to do');
-            check(at().textContent.includes('Your pick for this day') && at().textContent.includes(nm(id)), 'Re-optimize never changes the day you set');
+            check(at().textContent.includes('Your pick for this day') && at().querySelector('.tval').textContent===nm(id), 'Re-optimize never changes the day you set, or adds to it');
             // a second day you set: both stay as you set them, and your picks stay picked
             const d0=[...root.querySelectorAll('[data-a="t-day"]')].map(b=>b.dataset.d).find(x=>x!==d), id2=ids.find(x=>!pk.includes(x)&&x!==id), at0=()=>root.querySelector(`[data-a="t-day"][data-d="${d0}"]`);
             at0().click(); await pause(150); root.querySelector(`[data-a="t-choose"][data-id="${id2}"]`).click(); await pause(150);
