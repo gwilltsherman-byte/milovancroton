@@ -49,6 +49,8 @@ function ladder() {
   context.Prefs = context.window.Prefs;
   context.Lift = context.window.Lift;
   context.SAME_LIFT = context.window.SAME_LIFT;
+  // the shared engine: typed numbers, calendar days, kit and bodyweight
+  ['Num', 'Day', 'Kit', 'Body'].forEach(k => { context[k] = context.window[k]; });
   vm.runInContext(`(function(__root) { ${app.slice(bodyStart, end)}
     state = defaultState();
     globalThis.ladderTest = {

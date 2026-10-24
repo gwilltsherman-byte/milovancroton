@@ -20,7 +20,8 @@ test('a set left short of failure counts the reps you had left', () => {
 });
 
 test('sets far from failure count part of a hard set, or none', () => {
-  assert.deepEqual([null, 0, 3, 4, 5, 6, 8].map(L.hard), [1, 1, 1, 0.5, 0.5, 0, 0]);
+  // in full to 3 reps short, then less in a straight line to nothing at 7 short
+  assert.deepEqual([null, 0, 3, 4, 5, 6, 8].map(r => L.hard(r)), [1, 1, 1, 0.75, 0.5, 0.25, 0]);
 });
 
 test('sets to failure and new movements leave more to recover from', () => {
@@ -31,13 +32,13 @@ test('sets to failure and new movements leave more to recover from', () => {
   assert.deepEqual([novel(h[0], 'a'), novel(h[1], 'a'), novel(h[1], 'b'), novel(h[2], 'a')], [true, false, true, true]);
 });
 
-test('reps in reserve are corrected by how you judge them, by half on low-rep sets', () => {
+test('reps in reserve are corrected by how you judge them, by at most 1 on low-rep sets', () => {
   L.bias = 2;
   try {
     assert.equal(L.trueRir(1, 8), 3);
     assert.equal(L.trueRir(1, 3), 2);
-    assert.equal(L.e1rm(100, 8, 0).toFixed(2), L.pct(10) && (100 / L.pct(10)).toFixed(2), 'a set called at failure had 2 more in it');
-    assert.equal(L.hard(2, 10), 0.5, 'called 2 short, really 4 short: half a hard set');
+    assert.equal(L.e1rm(100, 8, 0).toFixed(2), (100 / L.pct(8)).toFixed(2), 'a set called at failure is never corrected');
+    assert.equal(L.hard(2, 10), 0.75, 'called 2 short, really 4 short: three quarters of a hard set');
   } finally { L.bias = 0; }
 });
 
