@@ -82,9 +82,9 @@ for (const [tz, spring, autumn] of [['Europe/London', [2026, 2, 29], [2026, 9, 2
   });
 }
 
-test('each kind of exercise has a smooth, falling reps-to-max curve, the same up to 6 reps', () => {
+test('each kind of exercise has a smooth, falling reps-to-max curve; only the leg press has its own', () => {
   const {Lift: L} = engine();
-  for (const cls of ['upper', 'lower', 'iso']) {
+  for (const cls of ['upper', 'lower', 'iso', 'sled']) {
     let prev = L.pct(1, cls);
     assert.equal(prev, 1);
     for (let e = 1.01; e <= 40; e += 0.01) {
@@ -93,17 +93,37 @@ test('each kind of exercise has a smooth, falling reps-to-max curve, the same up
       assert.ok(prev - p < 0.01, `${cls} has no jump at ${e}`);
       prev = p;
     }
-    for (const e of [1, 2, 3.5, 4, 5, 6]) assert.equal(L.pct(e, cls), L.pct(e), `${cls} matches the default to 6 reps`);
+    // no flat stretch where most sets are: a rep more is a real step down in load
+    for (let e = 6; e < 13; e += 0.5) assert.ok(L.pct(e, cls) - L.pct(e + 1, cls) >= 0.015, `${cls} falls at least 1.5% a rep at ${e}`);
   }
+  for (const cls of ['lower', 'iso']) for (let e = 1; e <= 40; e += 0.25) assert.equal(L.pct(e, cls), L.pct(e), `${cls} is the main table, which Epley matches`);
   assert.equal(L.pct(10).toFixed(4), (1 / (1 + 10 / 30)).toFixed(4), 'upper is Epley');
-  assert.equal(L.pct(13.1, 'lower').toFixed(3), '0.800');
-  assert.equal(L.pct(19, 'lower').toFixed(3), '0.700');
-  assert.equal(L.pct(8, 'iso').toFixed(3), '0.800');
-  assert.equal(L.pct(11, 'iso').toFixed(3), '0.700');
-  assert.ok(L.pct(12, 'lower') > L.pct(12), 'a leg press set of 12 is a bigger share of the max than a bench set of 12');
+  assert.equal(L.pct(13.1, 'sled').toFixed(3), '0.800', 'leg press: 13.1 reps at 80%');
+  assert.equal(L.pct(19, 'sled').toFixed(3), '0.700', 'and 19.0 at 70%');
+  assert.ok(L.pct(12, 'sled') > L.pct(12), 'a leg press set of 12 is a bigger share of the max than a bench set of 12');
   assert.deepEqual([L.cls({comp: true, primary: ['quad']}), L.cls({comp: false, primary: ['quad']}), L.cls({comp: 1, primary: ['chest']}),
-    L.cls({lower: true}), L.cls({}), L.cls('iso'), L.cls('nonsense'), L.cls(null)], ['lower', 'iso', 'upper', 'lower', 'upper', 'iso', 'upper', 'upper']);
-  assert.ok(L.e1rm(100, 12, 0, 'lower') < L.e1rm(100, 12, 0), 'Epley overstates the max from a long lower-body set');
+    L.cls({lower: true}), L.cls({}), L.cls('iso'), L.cls('sled'), L.cls('nonsense'), L.cls(null)], ['lower', 'iso', 'upper', 'lower', 'upper', 'iso', 'sled', 'upper', 'upper']);
+  // the leg press curve is for the leg press and sleds like it, not squats, hinges or lunges (Nuzzo et al. 2024)
+  const muscle = (id, name, eq, primary, comp) => L.cls({id, name, equipment: eq, primary, comp});
+  assert.deepEqual([muscle('leg-press', 'Leg Press', 'Machine', ['quad', 'glute'], 1), muscle('hack-squat', 'Hack Squat', 'Machine', ['quad'], 1),
+    muscle('smith-squat', 'Smith Machine Squat', 'Machine', ['quad', 'glute'], 1), muscle('back-squat', 'Barbell Back Squat', 'Barbell', ['quad', 'glute'], 1),
+    muscle('romanian-deadlift', 'Romanian Deadlift', 'Barbell', ['ham', 'glute'], 1), muscle('leg-press-calf', 'Leg Press Calf Raise', 'Machine', ['calf'], 0)],
+  ['sled', 'sled', 'lower', 'lower', 'lower', 'iso']);
+  assert.equal(L.cls({n: 'Leg Press', h: 'leg-press', lower: true}), 'sled', "Strength's leg press");
+  assert.equal(L.cls({n: 'Back Squat', h: 'back-squat', lower: true}), 'lower');
+  assert.ok(L.e1rm(100, 12, 0, 'sled') < L.e1rm(100, 12, 0), 'Epley overstates the max from a long leg press set');
+  assert.equal(L.e1rm(100, 10, 2, 'lower'), L.e1rm(100, 10, 2), 'a squat set means the same max in Muscle and Strength');
+});
+
+test('predicted reps after a small load change stay close for every kind', () => {
+  const {Lift: L} = engine();
+  // Muscle's predictReps: the reps at a new load with the same effort as last time
+  const predict = (w, r, rir, nw, cls) => Math.max(1, Math.round(L.reps(L.e1rm(w, r, rir, cls), nw, L.trueRir(rir, r, cls), cls)));
+  for (const cls of ['lower', 'iso', 'sled']) for (const [w, r, rir, nw] of [[100, 10, 2, 102.5], [100, 8, 2, 105], [100, 6, 2, 95], [100, 12, 1, 102.5], [140, 5, 2, 142.5]]) {
+    const a = predict(w, r, rir, nw, cls), b = predict(w, r, rir, nw, 'upper');
+    assert.ok(Math.abs(a - b) <= 1, `${cls} ${w}x${r} @${rir} then ${nw}: ${a} against ${b}`);
+  }
+  assert.equal(predict(100, 10, 2, 102.5, 'lower'), 9, 'all sets at the top, add 2.5 kg: about 9');
 });
 
 test('only sets near failure and of 12 reps or fewer count toward the max', () => {
@@ -123,6 +143,10 @@ test('the reps-in-reserve correction: per kind, recent checks first, pulled towa
   assert.equal(L.model([chk(2, 0)], now).c, 0, 'a check with no kind is single-joint');
   assert.equal(L.model(Array(40).fill(chk(9, 0)), now).i, 3, 'never more than 3');
   assert.equal(L.model(Array(40).fill(chk(-9, 0)), now).i, -3);
+  // a check on a set called at failure can only show reps left over, so it is left out, as the card says
+  const at0 = {date: now, predictedRir: 0, actualExtra: 2, error: 2};
+  assert.deepEqual(JSON.parse(JSON.stringify(L.model([at0, at0, at0], now))), {c: 0, i: 0, nc: 0, ni: 0}, 'every set called at 0: nothing to correct');
+  assert.equal(L.model([at0, {date: now, predictedRir: 2, actualExtra: 4, error: 2}], now).i, 0.5, 'only the other checks count');
 
   L.use({c: 2, i: -1});
   try {
@@ -183,6 +207,17 @@ test('the estimated max shrugs off one odd session and says how sure it is', () 
   assert.ok(one.hi - one.lo >= 9.9, 'one session: about one rep either way, twice');
   const rated = L.estimate([{date: 0, e1: 100, rated: true}, {date: DAY, e1: 110, rated: false}]);
   assert.ok(rated.value < 105, 'a rated set counts more than an unrated one');
+  // two sessions: no telling which one is odd, so neither is pulled toward the other
+  const two = L.estimate([{date: 0, e1: 100, rated: true}, {date: 3 * DAY, e1: 150, rated: true}]);
+  const back = L.estimate([{date: 0, e1: 150, rated: true}, {date: 3 * DAY, e1: 100, rated: true}]);
+  assert.ok(two.value > 120 && two.value < 130 && back.value > 120 && back.value < 130, `averaged: ${two.value.toFixed(1)}, ${back.value.toFixed(1)}`);
+  assert.ok(two.hi - two.lo > 40, 'and it says how unsure it is');
+  // unrated sessions left out
+  const un = [0, 1, 2, 3].map(i => ({date: i * 7 * DAY, e1: 100 * Math.pow(1.05, i)}));
+  assert.equal(L.estimate(un, {unrated: 0}), null, 'nothing that counts: no estimate');
+  assert.equal(L.estimate(un.concat({date: 30 * DAY, e1: 90, rated: true}), {unrated: 0}).value, 90);
+  assert.equal(L.trend(un, {unrated: 0}).state, 'unknown', 'nothing that counts: no trend, not a false flat');
+  assert.equal(L.trend(un).state, 'up');
 });
 
 test('a trend is called only beyond the noise', () => {
@@ -262,11 +297,32 @@ test('dumbbells come from a real rack: no 22 or 24 kg, never 0', () => {
 
 test('the next loadable weight, and when the jump is too big', () => {
   const {Kit} = engine();
-  assert.deepEqual({...Kit.next(60, 2.5, 'bar', 'kg')}, {kg: 62.5, big: false});
+  assert.deepEqual({...Kit.next(60, 2.5, 'bar', 'kg')}, {kg: 62.5, big: false, max: false, min: false});
   Kit.set({platesKg: [25, 20, 10, 5]});
-  assert.deepEqual({...Kit.next(60, 2.5, 'bar', 'kg')}, {kg: 70, big: true}, 'smallest plate 5 kg: the next step is 10');
-  assert.deepEqual({...Kit.next(100, 5, 'bar', 'kg')}, {kg: 110, big: false});
+  assert.deepEqual({...Kit.next(60, 2.5, 'bar', 'kg')}, {kg: 70, big: true, max: false, min: false}, 'smallest plate 5 kg: the next step is 10');
+  assert.deepEqual({...Kit.next(100, 5, 'bar', 'kg')}, {kg: 110, big: false, max: false, min: false});
   assert.equal(Kit.round(64, 'bar', 'down', 'kg'), 60); assert.equal(Kit.round(61, 'bar', 'up', 'kg'), 70);
+  // at the end of your kit it says so, rather than passing off the same weight as the next one
+  assert.deepEqual({...Kit.next(20, -2.5, 'bar', 'kg')}, {kg: 20, big: false, max: false, min: true}, 'nothing under the bar');
+  Kit.set({platesKg: [20], plateCount: {kg: {20: 1}}});
+  assert.deepEqual({...Kit.next(60, 2.5, 'bar', 'kg')}, {kg: 60, big: false, max: true, min: false}, 'one pair of 20s: 60 is the most');
+  Kit.set({platesKg: null, plateCount: null, dbRackKg: [2, 4, 6, 8, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30]});
+  assert.deepEqual({...Kit.next(30, 2, 'db', 'kg')}, {kg: 30, big: false, max: true, min: false}, 'the heaviest dumbbells you have');
+  assert.equal(Kit.next(27.5, 2, 'db', 'kg').max, false);
+});
+
+test('every jump setting moves a dumbbell up and down at every point of the rack', () => {
+  for (const step of [1, 2, 2.5]) {
+    const {Kit} = engine({'trainer.shell.dbStepKg': String(step)});
+    let w = Kit.round(1, 'db', 'near', 'kg');
+    const path = [w];
+    for (let i = 0; i < 30; i++) { const n = Kit.next(w, step, 'db', 'kg').kg; assert.ok(n > w, `jump ${step}: up from ${w}`); w = n; path.push(w); }
+    for (let i = path.length - 1; i > 0; i--) assert.equal(Kit.next(path[i], -step, 'db', 'kg').kg < path[i], true, `jump ${step}: down from ${path[i]}`);
+    if (step === 1) assert.deepEqual(path.slice(8, 13), [9, 10, 12.5, 15, 17.5], 'past 10 kg, the rack goes up in 2.5');
+  }
+  const lb = engine({'trainer.shell.dbStepLb': '5'}).Kit;
+  let w = lb.round(5 * 0.45359237, 'db', 'near', 'lb');
+  for (let i = 0; i < 20; i++) { const n = lb.next(w, 5 * 0.45359237, 'db', 'lb').kg; assert.ok(n > w); w = n; }
 });
 
 test('plates for each side use the plates you have, their counts and collars', () => {
@@ -295,13 +351,22 @@ test('any bar in either unit', () => {
   assert.equal(Kit.BARS.length, 6);
 });
 
-test("the kit starts from Strength's settings, else Muscle's, so nothing changes on upgrade", () => {
+test("the kit starts from what you set in Strength or Muscle, so nothing changes on upgrade", () => {
   const strength = JSON.stringify({settings: {platesKg: [20, 10, 5], platesLb: [45, 10], barKg: 15}});
   const muscle = JSON.stringify({settings: {platesKg: [25, 2.5], barKg: 10}});
   let E = engine({'strlog.v2': strength, 'hyplog.v1': muscle});
   assert.deepEqual([...E.Kit.get('kg').plates], [20, 10, 5]); assert.equal(E.Kit.get('kg').bar, 15); assert.deepEqual([...E.Kit.get('lb').plates], [45, 10]);
   E = engine({'hyplog.v1': muscle});
   assert.deepEqual([...E.Kit.get('kg').plates], [25, 2.5]); assert.equal(E.Kit.get('kg').bar, 10);
+  // Strength opened once saves its defaults; what you set in Muscle still wins, one setting at a time
+  const strDefault = JSON.stringify({settings: {barKg: 20, platesKg: [25, 20, 15, 10, 5, 2.5, 1.25], platesLb: [45, 35, 25, 10, 5, 2.5]}});
+  E = engine({'strlog.v2': strDefault, 'hyplog.v1': JSON.stringify({settings: {barKg: 15, platesKg: [20, 10, 5, 2.5], platesLb: [45, 25, 10, 5, 2.5, 1.25]}})});
+  assert.equal(E.Kit.get('kg').bar, 15); assert.deepEqual([...E.Kit.get('kg').plates], [20, 10, 5, 2.5]); assert.deepEqual([...E.Kit.get('lb').plates], [45, 25, 10, 5, 2.5, 1.25]);
+  assert.equal(E.Kit.step('bar', 'kg'), 5, "Muscle's 2.5 kg plates, two at a time");
+  E = engine({'strlog.v2': JSON.stringify({settings: {barKg: 15}}), 'hyplog.v1': JSON.stringify({settings: {platesKg: [20, 10, 5]}})});
+  assert.equal(E.Kit.get('kg').bar, 15, "Strength's bar"); assert.deepEqual([...E.Kit.get('kg').plates], [20, 10, 5], "and Muscle's plates, which Strength never saved");
+  E = engine({'strlog.v2': JSON.stringify({settings: {platesKg: [25, 20, 15, 10, 5, 2.5, 1.25]}}), 'hyplog.v1': JSON.stringify({settings: {platesKg: [1.25, 2.5, 25, 20, 15, 10, 5]}})});
+  assert.deepEqual([...E.Kit.get('kg').plates], [25, 20, 15, 10, 5, 2.5, 1.25], 'the same plates in another order are still the defaults');
   E = engine({'trainer.shell.dbStepKg': '2.5', 'trainer.shell.stackStepKg': '5'});
   assert.equal(E.Kit.step('db', 'kg'), 2.5); assert.equal(E.Kit.step('stack', 'kg'), 5, 'the jumps you chose are kept');
   E = engine();
@@ -326,4 +391,43 @@ test('one bodyweight log: the 7-day average and its trend, Strength’s weight u
   E.ctx.window.__hub = {has: () => true, api: () => ({bodyLog: () => [{date: 1, kg: 70}], logBody: (kg, ts) => { saved.push([kg, ts]); return true; }})};
   assert.equal(E.Body.at(5), 70, 'the log is read through Muscle');
   assert.equal(E.Body.log(71, 99), true); assert.deepEqual(saved, [[71, 99]]);
+});
+
+// Muscle's and Strength's own kit helpers, run from app.js with the engine's Kit.
+function muscleKit(E, unit) {
+  const a = app.indexOf('function kitEq(eq, kg)'), b = app.indexOf('function suggestLoad(', a);
+  return new Function('Kit', 'unit', 'KG_PER_LB', app.slice(a, b) + '; return {kitEq, roundLoad, lighter};')(E.Kit, () => unit, 0.45359237);
+}
+function strengthKit(E, EX) {
+  const a = app.indexOf("function roundLoad(kg, eq){ return Kit.round(kg, eq, 'near', u()); }"), b = app.indexOf('function platesFor(', a);
+  return new Function('Kit', 'u', 'EX', 'isLb', 'fromDisp', 'stepDisp', 'eqOf', app.slice(a, b) + '; return {upLoad, lighter, roundLoad};')(
+    E.Kit, () => 'kg', EX, () => false, v => v, eq => E.Kit.step(eq, 'kg'), id => EX[id].k === 'added' ? 'added' : EX[id].eq || 'none');
+}
+
+test('a bar picked in the other unit still counts as the bar in Muscle', () => {
+  for (const [unit, n, bu] of [['kg', 45, 'lb'], ['lb', 20, 'kg']]) {
+    const E = engine({'trainer.shell.unit': JSON.stringify(unit)}), M = muscleKit(E, unit);
+    E.Kit.setBar(n, bu, unit);
+    const bar = E.Kit.round(0, 'bar', 'near', unit);
+    assert.equal(M.kitEq('Barbell', bar), 'bar', `${n} ${bu} bar in ${unit}`);
+    assert.ok(Math.abs(M.roundLoad(bar, 'Barbell') - bar) < 1e-4, `the empty bar stays the empty bar: ${M.roundLoad(bar, 'Barbell')}`);
+    assert.ok(Math.abs(M.roundLoad(bar - 0.004, 'Barbell') - bar) < 1e-4, 'and so does what it shows as');
+  }
+  const M = muscleKit(engine(), 'kg');
+  assert.equal(M.kitEq('Barbell', 15), 'plate', 'under the bar: plates alone, as before');
+});
+
+test('deloads and resets always come out lighter, and progressions heavier, on a dumbbell rack', () => {
+  const E = engine(), M = muscleKit(E, 'kg');
+  assert.equal(M.lighter(12.5, 0.9, 'Dumbbell'), 10, '11.25 rounds back up to 12.5, so the next one down');
+  assert.equal(M.lighter(15, 0.95, 'Dumbbell'), 12.5);
+  assert.equal(M.lighter(2, 0.9, 'Dumbbell'), 2, 'nothing lighter than the lightest');
+  assert.equal(M.lighter(100, 0.9, 'Barbell'), 90, 'the default bar as before');
+  assert.equal(M.lighter(62.5, 0.9, 'Barbell'), 57.5);
+  const S1 = engine({'trainer.shell.dbStepKg': '1'}), S = strengthKit(S1, {db: {eq: 'db', k: 'load'}, squat: {eq: 'bar', k: 'load', lower: true}});
+  let w = 6; const path = [w];
+  for (let i = 0; i < 7; i++) { w = S.upLoad(w, 'db').kg; path.push(w); }
+  assert.deepEqual(path, [6, 7, 8, 9, 10, 12.5, 15, 17.5], "Strength's 1 kg dumbbell jumps don't stall at 10 kg");
+  assert.equal(S.lighter(12.5, 0.9, 'db'), 10, "Strength's reset after three misses");
+  assert.equal(strengthKit(engine(), {squat: {eq: 'bar', k: 'load', lower: true}}).upLoad(100, 'squat').kg, 100 + 5, 'the barbell as before (incKg 5 for lower body)');
 });

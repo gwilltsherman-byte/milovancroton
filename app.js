@@ -1385,11 +1385,14 @@ window.Lift=(function(){
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const pref=(k,d)=>{ try{ return window.Prefs? window.Prefs.get(k,d) : d; }catch(e){ return d; } };
   const epley=eff=> eff<=1? 1 : eff<4? 1-(eff-1)*(1-E4)/3 : 1/(1+eff/30);
-  /* [reps to failure, share of max] past 6 reps. Only summary figures of Nuzzo et al. 2024 could be checked (not the full
-     tables), so the curves are fitted to those: the leg press, 13.1 reps at 80% and 19.0 at 70%, for lower-body compounds;
-     single-joint exercises have no table of their own there, so they follow the all-exercise table: 8 reps at 80%, 11 at
-     70%, 15 at 65% and about 19.5 at 60%. */
-  const CURVE={lower:[[6,1/1.2],[13.1,0.8],[19,0.7]], iso:[[6,1/1.2],[8,0.8],[11,0.7],[15,0.65],[19.5,0.6]]};
+  /* [reps to failure, share of max] for the leg press and sled machines like it (a hack squat). Nuzzo et al. 2024 (Sports
+     Med 54:303-321) gave the bench press and the leg press tables of their own, since their curves stood apart, and say
+     the main table holds for every other exercise. Only summary figures could be checked, not the full tables: the leg
+     press, 13.1 reps at 80% and 19.0 at 70%, which lie almost on one straight line with a single at 100%; and the main
+     table, about 19.5 reps at 60%, where Epley gives 20. So the leg press follows these points, and every other
+     exercise keeps Epley. (8 reps at 80% and 11 at 70% are the older textbook table the paper replaced.) */
+  const CURVE={sled:[[1,1],[13.1,0.8],[19,0.7]]}, KINDS=['upper','lower','iso','sled'];
+  const SLED=/leg[- ]?press|hack[- ]?squat/i;
   /* The reps-in-reserve corrections in use, in reps: c for compounds, i for single-joint. Muscle saves them as Prefs
      'rirModel'; an install that only has the older single number ('rirBias', measured on single-joint sets) uses it for those. */
   let cur=(()=>{ const m=pref('rirModel',null); if(m&&typeof m==='object') return {c:Number(m.c)||0, i:Number(m.i)||0};
@@ -1398,22 +1401,24 @@ window.Lift=(function(){
     for(const x of o){ s+=x[1]; if(s>=half-1e-12) return x[0]; } return o[o.length-1][0]; };
   const L={
     /* The share of your one-rep max a set takes, from its reps plus the reps you had left. cls is the kind of exercise
-       (Lift.cls). 'upper', the default, is Epley with a straight line from 1 to 4 reps, where Epley runs high; it stays
-       for barbell presses and pulls. The exercise is what most changes how many reps a load allows (Nuzzo et al. 2024: 952
-       tests in 269 studies), so 'lower' and 'iso' keep that curve to 6 reps, then follow the points above in straight
-       lines, and Epley's shape past the last one. */
+       (Lift.cls). The exercise is what most changes how many reps a load allows (Nuzzo et al. 2024: 952 tests in 269
+       studies). Every kind but 'sled' uses Epley, with a straight line from 1 to 4 reps where Epley runs high; 'sled'
+       follows the leg press points above in straight lines, and Epley's shape past the last one. */
     pct(eff, cls){
       const P=CURVE[cls]; if(!P||!(eff>P[0][0])) return epley(eff);
       for(let i=1;i<P.length;i++) if(eff<=P[i][0]){ const a=P[i-1], b=P[i]; return a[1]+(b[1]-a[1])*(eff-a[0])/(b[0]-a[0]); }
       const z=P[P.length-1]; return epley(eff-z[0]+30*(1/z[1]-1));
     },
-    /* The kind of exercise: 'iso' for single-joint, 'lower' for a lower-body compound, else 'upper'. o: {compound, lower},
-       an exercise from Muscle ({comp, primary}) or Strength ({lower}; its lifts are all compounds), or a kind already. */
+    /* The kind of exercise: 'iso' for single-joint, 'sled' for a leg press or hack squat, 'lower' for another lower-body
+       compound, else 'upper'. o: {compound, lower, sled}, an exercise from Muscle ({id, name, comp, primary}) or Strength
+       ({n, h, lower}; its lifts are all compounds), or a kind already. The kind picks the curve above and which
+       reps-in-reserve correction a set takes. */
     cls(o){
-      if(typeof o==='string') return CURVE[o]? o : 'upper';
+      if(typeof o==='string') return KINDS.includes(o)? o : 'upper';
       if(!o) return 'upper';
       const comp= o.compound!=null? !!o.compound : o.comp!=null? !!o.comp : true;
       if(!comp) return 'iso';
+      if(o.sled!=null? !!o.sled : [o.id, o.h, o.name, o.n].some(v=>typeof v==='string'&&SLED.test(v))) return 'sled';
       const low= o.lower!=null? !!o.lower : (o.primary||o.p||[]).some(m=>m==='quad'||m==='ham'||m==='glute');
       return low? 'lower' : 'upper';
     },
@@ -1428,11 +1433,12 @@ window.Lift=(function(){
        to failure: the reps you really had minus the reps you called), and model works the corrections out from those
        checks: one for compounds, one for single-joint exercises (a check with no kind is single-joint: all Muscle offered
        at first). Recent checks count more (half as much after 90 days), and a correction is pulled toward none until it
-       rests on several checks (n/(n+3)), and kept within 3 reps. Returns {c, i, nc, ni}: the corrections, and how many
-       checks (weighted by age) each rests on. */
+       rests on several checks (n/(n+3)), and kept within 3 reps. A check on a set called at 0 is left out: it can only
+       show reps left over, never too few (and a set logged with no effort is checked as 0), and a set called at 0 is
+       never corrected. Returns {c, i, nc, ni}: the corrections, and how many checks (weighted by age) each rests on. */
     model(recs, now){
       now=now==null? Date.now() : now; const H=90*DAY, acc={c:[0,0], i:[0,0]};
-      (recs||[]).forEach(x=>{ const e=Number(x&&x.error); if(!Number.isFinite(e)) return;
+      (recs||[]).forEach(x=>{ const e=Number(x&&x.error); if(!Number.isFinite(e)||(x.predictedRir!=null&&Number(x.predictedRir)===0)) return;
         const a=acc[x.cls&&x.cls!=='iso'? 'c' : 'i'], w=Math.pow(0.5, Math.max(0, now-(Number(x.date)||0))/H); a[0]+=w; a[1]+=w*e; });
       const one=a=>Math.round(clamp(a[1]/(a[0]+3),-3,3)*100)/100, n=a=>Math.round(a[0]*100)/100;
       return {c:one(acc.c), i:one(acc.i), nc:n(acc.c), ni:n(acc.i)};
@@ -1489,18 +1495,21 @@ window.Lift=(function(){
     load(o){ o=o||{}; const share=o.share==null? 1 : Number(o.share)||0, add=Number(o.added)||0, as=Number(o.assist)||0, bw=Number(o.bw);
       if(share>0 && !(bw>0)) return null; return Math.max(0, (share>0? bw*share : 0)+add-as); },
     /* Your estimated max from recent sessions: points [{date, e1, rated}], one per session (rated: it had an RPE or RIR).
-       Recent sessions count more (half as much 3 weeks on), unrated ones half as much, and a session far from the rest
-       (beyond 2.5 spreads of the weighted median) is pulled in, so one odd day moves it little. An average, not the best
-       of a few: the best of rounded loads ratchets upward on its own. Returns {value, lo, hi, n, last}, lo to hi about 2
-       standard errors (a session's noise taken as at least one rep, about 2.5%), or null with no points.
-       opts: half (days, 21), unrated (weight, 0.5), max (sessions used, 8). */
+       Recent sessions count more (half as much 3 weeks on), unrated ones half as much, and from 3 sessions on, one far
+       from the rest (beyond 2.5 spreads of the weighted median) is pulled in, so one odd day moves it little; with only 2
+       there is no telling which is odd, so they are averaged as they are. An average, not the best of a few: the best of
+       rounded loads ratchets upward on its own. Returns {value, lo, hi, n, last}, lo to hi about 2 standard errors (a
+       session's noise taken as at least one rep, about 2.5%), or null with no points that count.
+       opts: half (days, 21), unrated (weight, 0.5; 0 leaves unrated sessions out), max (sessions used, 8). */
     estimate(points, opts){
-      const o=opts||{}, H=(o.half||21)*DAY, U=o.unrated==null? 0.5 : o.unrated;
-      const P=(points||[]).filter(p=>p&&p.e1>0&&Number.isFinite(p.e1)&&Number.isFinite(p.date)).sort((a,b)=>a.date-b.date).slice(-(o.max||8));
+      const o=opts||{}, H=(o.half||21)*DAY, U=o.unrated==null? 0.5 : Math.max(0, Number(o.unrated)||0);
+      const P=(points||[]).filter(p=>p&&p.e1>0&&Number.isFinite(p.e1)&&Number.isFinite(p.date)&&(p.rated||U>0)).sort((a,b)=>a.date-b.date).slice(-(o.max||8));
       if(!P.length) return null;
       const last=P[P.length-1].date, w=P.map(p=>Math.pow(0.5,(last-p.date)/H)*(p.rated? 1 : U));
-      const med=wmedian(P.map(p=>p.e1), w), mad=1.4826*wmedian(P.map(p=>Math.abs(p.e1-med)), w), cut=2.5*Math.max(mad, 0.025*med);
-      const x=P.map(p=>clamp(p.e1, med-cut, med+cut)), W=w.reduce((a,b)=>a+b,0);
+      let x=P.map(p=>p.e1);
+      if(P.length>=3){ const med=wmedian(x, w), mad=1.4826*wmedian(x.map(v=>Math.abs(v-med)), w), cut=2.5*Math.max(mad, 0.025*med);
+        x=x.map(v=>clamp(v, med-cut, med+cut)); }
+      const W=w.reduce((a,b)=>a+b,0);
       const value=x.reduce((a,v,i)=>a+v*w[i],0)/W, vr=x.reduce((a,v,i)=>a+w[i]*(v-value)*(v-value),0)/W;
       const neff=W*W/w.reduce((a,b)=>a+b*b,0), se=Math.max(Math.sqrt(vr), 0.025*value)/Math.sqrt(neff);
       return {value, lo:value-2*se, hi:value+2*se, n:P.length, last};
@@ -1508,10 +1517,11 @@ window.Lift=(function(){
     /* Whether a lift is going up: a weighted straight line through the log of the last 4 to 8 sessions' estimates (points
        as for estimate). slope is the change per week, as a fraction. It is 'up' or 'down' only beyond the noise: about 2
        standard errors (Student's t, wider with few sessions), and never under 2% over 4 weeks, which is about one rep.
-       Fewer than 4 sessions, or all on one day: 'unknown'. Returns {slope, se, state, n}. opts: max (8), unrated (0.5). */
+       Fewer than 4 sessions that count, or all on one day: 'unknown'. Returns {slope, se, state, n}. opts: max (8),
+       unrated (weight, 0.5; 0 leaves unrated sessions out). */
     trend(points, opts){
-      const o=opts||{}, U=o.unrated==null? 0.5 : o.unrated, WK=7*DAY;
-      const P=(points||[]).filter(p=>p&&p.e1>0&&Number.isFinite(p.e1)&&Number.isFinite(p.date)).sort((a,b)=>a.date-b.date).slice(-(o.max||8)), n=P.length;
+      const o=opts||{}, U=o.unrated==null? 0.5 : Math.max(0, Number(o.unrated)||0), WK=7*DAY;
+      const P=(points||[]).filter(p=>p&&p.e1>0&&Number.isFinite(p.e1)&&Number.isFinite(p.date)&&(p.rated||U>0)).sort((a,b)=>a.date-b.date).slice(-(o.max||8)), n=P.length;
       const none={slope:0, se:null, state:'unknown', n};
       if(n<4) return none;
       const t=P.map(p=>(p.date-P[0].date)/WK), y=P.map(p=>Math.log(p.e1)), w0=P.map(p=>p.rated? 1 : U), s0=w0.reduce((a,b)=>a+b,0), w=w0.map(v=>v*n/s0);
@@ -1567,7 +1577,7 @@ window.Day=(function(){
 
 /* ==================== YOUR KIT ====================
    Shared by Muscle and Strength: one model of the weights you can load, so a weight either one suggests is one you can
-   set up. Kept in Prefs (trainer.shell.*); the first time, plates and bar come from Strength's settings, or else Muscle's,
+   set up. Kept in Prefs (trainer.shell.*); the first time, plates and bar come from the trainer you set them in (seed),
    so nobody's numbers change on the way in. Weights go in and come out in kg; plates and steps are in the unit you use
    (u: 'kg' or 'lb'; the app's unit when left out). equip: 'bar' (the main barbell), 'trap' and 'ez' (their own bars),
    'plate' (plates with no bar counted: a landmine, a T-bar), 'db' (dumbbells), 'stack' (machine or cable pins), 'added'
@@ -1585,15 +1595,18 @@ window.Kit=(function(){
   function pref(k){ const now=Date.now(); if(now-gotAt>500){ got={}; gotAt=now; } if(k in got) return got[k];
     let v; try{ v=window.Prefs? window.Prefs.get(k, null) : null; }catch(e){ v=null; } return got[k]= v==null? DEF[k] : v; }
   function unit(u){ if(u==='kg'||u==='lb') return u; try{ return window.Prefs&&window.Prefs.get('unit','kg')==='lb'? 'lb' : 'kg'; }catch(e){ return 'kg'; } }
+  /* The first time: plates in each unit and the bar, each on its own, from whichever trainer you changed it in (Strength's
+     when you changed both), so opening Strength once, which saves its defaults, doesn't overwrite what you set in Muscle. */
   let seeded=false;
   function seed(){
     if(seeded) return; seeded=true;
     try{
-      if(localStorage.getItem('trainer.shell.platesKg')!=null) return;
-      let s=null; ['strlog.v2','hyplog.v1'].some(k=>{ try{ const o=JSON.parse(localStorage.getItem(k)||'null'); s=o&&o.settings||null; }catch(e){ s=null; } return !!s; });
-      if(!s) return;
-      ['platesKg','platesLb'].forEach(k=>{ const a=Array.isArray(s[k])? s[k].map(Number).filter(p=>p>0) : []; if(a.length) localStorage.setItem('trainer.shell.'+k, JSON.stringify(a)); });
-      if(num(s.barKg,0)) localStorage.setItem('trainer.shell.barKg', JSON.stringify(num(s.barKg,20)));
+      const ks=['platesKg','platesLb','barKg'].filter(k=>localStorage.getItem('trainer.shell.'+k)==null); if(!ks.length) return;
+      const src=['strlog.v2','hyplog.v1'].map(k=>{ try{ const o=JSON.parse(localStorage.getItem(k)||'null'); return o&&o.settings||null; }catch(e){ return null; } }).filter(Boolean);
+      const tidy=(k,v)=> k==='barKg'? (num(v,0)||null) : Array.isArray(v)? v.map(Number).filter(p=>p>0).sort((a,b)=>b-a) : [];
+      ks.forEach(k=>{ const got=src.map(s=>tidy(k, s[k])).filter(v=>k==='barKg'? v!=null : v.length);
+        const pick=got.find(v=>JSON.stringify(v)!==JSON.stringify(DEF[k]))||got[0];
+        if(pick!=null) localStorage.setItem('trainer.shell.'+k, JSON.stringify(pick)); });
     }catch(e){}
   }
   /* A dumbbell rack: {list, step}, the weights in the list (lightest first), then on in steps of step past the last.
@@ -1668,11 +1681,14 @@ window.Kit=(function(){
     else v=Math.max(0, grid(d, step(equip, K.u), mode));
     return fromU(v, K.u);
   }
-  /* The next weight you can load at or above kg+incKg (at or below it when incKg is negative): {kg, big}. big is true when
-     that jump is more than twice incKg, so the caller can add reps first instead. */
+  /* The next weight you can load at or above kg+incKg (at or below it when incKg is negative): {kg, big, max, min}. big is
+     true when that jump is more than twice incKg, so the caller can add reps first instead. max is true when nothing you
+     have is that heavy (kg is then the heaviest you can load, which may be no more than now), min when nothing is that
+     light (kg is the lightest). */
   function next(kg, incKg, equip, u){
-    const from=Number(kg)||0, inc=Number(incKg)||0, to=round(from+inc, equip, inc<0? 'down' : 'up', u);
-    return {kg:to, big: to!=null && Math.abs(to-from)>2*Math.abs(inc)+1e-6};
+    const from=Number(kg)||0, inc=Number(incKg)||0, want=from+inc, to=round(want, equip, inc<0? 'down' : 'up', u);
+    return {kg:to, big: to!=null && Math.abs(to-from)>2*Math.abs(inc)+1e-6,
+      max: to!=null && inc>0 && to<want-1e-4, min: to!=null && inc<0 && to>want+1e-4};
   }
   /* Plates for each side of a bar loaded to kg: [{p, c}] heaviest first ([] for the bar alone), from the plates you have
      and their counts, with any collars on. null when that can't be made exactly. bar: 'bar' (the default), 'trap', 'ez',
@@ -2259,7 +2275,7 @@ function toDisp(kg){ if(kg==null||kg==='') return ''; const v = unit()==='lb'? k
 function fromDisp(v){ const n=Num.parse(v); return n==null? null : unit()==='lb'? n*KG_PER_LB : n; }
 function fmtW(kg){ if(kg==null) return '&ndash;'; const v=toDisp(kg); return (Math.round(v*10)/10)+''; }
 /* The kind of exercise (Lift.cls): its reps-to-max curve and which reps-in-reserve correction it takes. */
-function clsOf(exId){ const e=exById(exId); return Lift.cls(e? {comp:e.comp, primary:e.primary} : null); }
+function clsOf(exId){ const e=exById(exId); return Lift.cls(e? {id:e.id, name:e.name, comp:e.comp, primary:e.primary} : null); }
 function est1RM(kg,reps,rir,exId){ return Lift.e1rm(kg, reps, rir, clsOf(exId)); }
 /* Bodyweight exercises: the weight box is what you add, like a belt or a vest; left blank, it is your bodyweight alone.
    Where load and reps fold into one number, your logged bodyweight counts too, since you lift it on every rep. */
@@ -3651,14 +3667,18 @@ function genCreate(){
 
 /* Your kit is shared with Strength (Kit). A barbell exercise loads the bar from its own weight up; under that (a fixed
    barbell, a lighter bar) it goes in pairs of your smallest plates. Dumbbells come from your rack, a machine or cable in
-   its pin jumps, and weight on a belt for a bodyweight exercise in 2.5 kg or 5 lb. */
-function kitEq(eq, kg){ return eq==='Barbell'? (kg!=null && toDisp(kg)<Kit.bar('bar',unit())-1e-9? 'plate' : 'bar') : eq==='Dumbbell'? 'db' : eq==='Bodyweight'? 'bw' : 'stack'; }
+   its pin jumps, and weight on a belt for a bodyweight exercise in 2.5 kg or 5 lb. The weight is compared unrounded, so
+   a bar picked in the other unit (20.41 kg for 45 lb) still counts as the bar. */
+function kitEq(eq, kg){ return eq==='Barbell'? (kg!=null && (unit()==='lb'? kg/KG_PER_LB : kg)<Kit.bar('bar',unit())-0.01? 'plate' : 'bar') : eq==='Dumbbell'? 'db' : eq==='Bodyweight'? 'bw' : 'stack'; }
 /* The smallest step your kit takes, in the unit you use: the lightest pair of plates on a bar, a dumbbell jump, a pin on a
    stack (or a plate on a belt). Suggested weights land on what you can load. */
 function loadStep(eq){ return Kit.step(kitEq(eq), unit()); }
 /* Your dumbbell and machine jumps (k: 'db' or 'stack'), shared with Strength's settings. */
 function stepOf(k){ const K=Kit.get(unit()); return k==='db'? K.dbStep : K.stack; }
 function roundLoad(kg, eq){ return Kit.round(kg, kitEq(eq, kg), 'near', unit()); }
+/* A lighter weight than kg for a deload or an easier start: kg*f to the nearest you can load, or the next one down when that
+   rounds back to kg (11.25 kg on a rack of 10 and 12.5). kg when nothing you have is lighter. */
+function lighter(kg, f, eq){ const w=roundLoad(kg*f, eq); return w!=null && w<kg-1e-6? w : Kit.next(kg, -1e-3, kitEq(eq, kg-1e-3), unit()).kg; }
 function suggestLoad(exId, entry, comp, deload){
   const prev=lastPerf(exId);
   // bodyweight alone last time: the reps climb first; at the top of the range, add a little weight or take a harder version
@@ -3673,17 +3693,22 @@ function suggestLoad(exId, entry, comp, deload){
   }
   if(!prev || prev.weight==null) return {weight:null, note:null};
   const eq=entry.equipment, step=fromDisp(loadStep(eq));
-  if(deload) return {weight:roundLoad(prev.weight*0.9, eq), note:'~10% lighter for the deload'};
+  if(deload) return {weight:lighter(prev.weight, 0.9, eq), note:'~10% lighter for the deload'};
   // back after a break: strength holds for two or three weeks, then slips (Bosquet et al. 2013), and comes back quickly
   const away=prev.date? Day.diff(Date.now(), prev.date) : 0;
-  if(away>=14){ const f=away>=28? 0.9 : 0.95; return {weight:roundLoad(prev.weight*f, eq), note:'first time in '+Math.round(away/7)+' weeks &middot; ~'+Math.round((1-f)*100)+'% lighter to ease back in'}; }
+  if(away>=14){ const f=away>=28? 0.9 : 0.95; return {weight:lighter(prev.weight, f, eq), note:'first time in '+Math.round(away/7)+' weeks &middot; ~'+Math.round((1-f)*100)+'% lighter to ease back in'}; }
   const trueRir = Lift.trueRir(prev.rir, prev.reps, clsOf(exId)); // corrected for how you judge reps in reserve
-  if(allTop){ const up=Kit.next(prev.weight, step, kitEq(eq, prev.weight+step), unit()).kg; return {weight:up, note:'+'+fmtW(up-prev.weight)+unit()+' &middot; every set reached the top of the range last time'}; }
+  if(allTop){ const up=Kit.next(prev.weight, step, kitEq(eq, prev.weight+step), unit()).kg;
+    // nothing heavier to load: more reps instead
+    if(!(up>prev.weight+1e-6)) return {weight:prev.weight, note:'the heaviest you can load &middot; '+(hold? '+5 s' : '+1 rep')+' instead'};
+    return {weight:up, note:'+'+fmtW(up-prev.weight)+unit()+' &middot; every set reached the top of the range last time'}; }
   // stuck below the bottom of the range even near failure: the load is too heavy for this rep target
   const belowFloor = prev.reps!=null && prev.reps<entry.target.repLow && (trueRir==null || trueRir<=entry.target.rir+1);
   if(belowFloor){
     if(entry.equipment==='Bodyweight') return {weight:prev.weight, note:'heavy for '+entry.target.repLow+'&ndash;'+entry.target.repHigh+' reps &middot; add assistance to land in range'};
-    const dec=step*(comp?2:1); return {weight:roundLoad(Math.max(0,prev.weight-dec), eq), note:'&minus;'+fmtW(dec)+unit()+' &middot; last set landed under '+entry.target.repLow+' reps, so ease the load to get back in range'};
+    const dec=step*(comp?2:1), w=Kit.next(prev.weight, -dec, kitEq(eq, prev.weight-dec), unit()).kg;
+    if(!(w<prev.weight-1e-6)) return {weight:prev.weight, note:'the lightest you can load &middot; aim for '+entry.target.repLow+' reps'};
+    return {weight:w, note:'&minus;'+fmtW(prev.weight-w)+unit()+' &middot; last set landed under '+entry.target.repLow+' reps, so ease the load to get back in range'};
   }
   return {weight:prev.weight, note:'hold load &middot; aim for '+more};
 }
@@ -9042,6 +9067,11 @@ function eqOf(id){ const X=EX[id]; return X.k==='added'? 'added' : X.eq||'none';
 function stepDisp(eq){ return Kit.step(eq, u()); }
 /* round a load to something you can actually set up */
 function roundLoad(kg, eq){ return Kit.round(kg, eq, 'near', u()); }
+/* Progression moves to the next load you can set up at or past the jump (Kit.next), so a jump smaller than your rack's,
+   1 kg past 10 kg dumbbells, still goes up rather than rounding back down. A reset is kg*f to the nearest, or the next
+   one down when that rounds back to kg. */
+function upLoad(kg, id){ return Kit.next(kg, incKg(id), eqOf(id), u()); }
+function lighter(kg, f, eq){ const w=roundLoad(kg*f, eq); return w!=null && w<kg-1e-6? w : Kit.next(kg, -1e-3, eq, u()).kg; }
 function incKg(id){ const X=EX[id]; if(X.eq==='bar') return fromDisp(isLb()? (X.lower?10:5) : (X.lower?5:2.5)); if(X.k==='added') return fromDisp(isLb()?5:2.5); return fromDisp(stepDisp(X.eq)); }
 function platesFor(disp){
   const b=barDisp(); let per=(disp-b)/2; const res=[];
@@ -9082,15 +9112,17 @@ function plateVisual(kg){
 }
 
 /* ==================== STRENGTH MATHS ==================== */
-/* Share of your max you can lift for `eff` reps to failure. Epley from 4 reps up; below that it is
-   blended straight toward 100% at a single, which removes Epley's too-steep drop from 1 rep to 2.
-   Reps in reserve count as reps, so 5 reps at RPE 8 is treated as 7 to failure. */
-function pctOf(eff){ return Lift.pct(eff); }
-function e1(w, reps, rir){ return Lift.e1rm(w, reps, rir); }
-function loadFor(e1rm, reps, rpe){ return e1rm*pctOf(reps+Math.max(0,10-(rpe==null?10:rpe))); }
+/* Share of your max you can lift for `eff` reps to failure on lift id. Epley from 4 reps up; below that it is
+   blended straight toward 100% at a single, which removes Epley's too-steep drop from 1 rep to 2. The leg press has a
+   curve of its own (Lift.pct). Reps in reserve count as reps, so 5 reps at RPE 8 is treated as 7 to failure. */
+function pctOf(eff, id){ return Lift.pct(eff, clsOf(id)); }
+/* The kind of lift (Lift.cls), the same as Muscle gives the same exercise. No lift (the Max calculator): the default. */
+function clsOf(id){ return id&&EX[id]? Lift.cls(EX[id]) : undefined; }
+function e1(w, reps, rir, id){ return Lift.e1rm(w, reps, rir, clsOf(id)); }
+function loadFor(e1rm, reps, rpe, id){ return e1rm*pctOf(reps+Math.max(0,10-(rpe==null?10:rpe)), id); }
 function setRir(s){ if(s.rpe!=null) return Math.max(0,10-s.rpe); if(s.trpe!=null) return Math.max(0,10-s.trpe); return 0; }
 /* estimated max only means something for external loads */
-function setE1(s,id){ if(!s||!s.done||s.kind==='warm'||!s.w||!s.reps||s.reps>12||!EX[id]||EX[id].k!=='load') return 0; return e1(s.w,s.reps,setRir(s)); }
+function setE1(s,id){ if(!s||!s.done||s.kind==='warm'||!s.w||!s.reps||s.reps>12||!EX[id]||EX[id].k!=='load') return 0; return e1(s.w,s.reps,setRir(s),id); }
 function liftSessions(id){
   const out=[];
   state.history.forEach(h=>{ let best=0, top=null;
@@ -9106,7 +9138,7 @@ function muscleSessions(id){
   const M=H.api('lift'); if(!M||!M.sharedSets) return [];
   const k=M.stamp(); if(musMemo.k!==k) musMemo={k, v:{}};
   if(!musMemo.v[id]) musMemo.v[id]=M.sharedSets([ex]).map(w=>{ let best=0;
-    w.entries.forEach(e=>e.sets.forEach(s=>{ if(!s.weight||s.reps+(s.rir>0? s.rir : 0)>12) return; best=Math.max(best, Lift.e1rm(s.weight, s.reps, s.rir)); }));
+    w.entries.forEach(e=>e.sets.forEach(s=>{ if(!s.weight||s.reps+(s.rir>0? s.rir : 0)>12) return; best=Math.max(best, e1(s.weight, s.reps, s.rir, id)); }));
     return best>0? {date:w.date, best, from:'Muscle'} : null; }).filter(Boolean);
   return musMemo.v[id];
 }
@@ -9179,13 +9211,13 @@ function planSlot(id, sc, week, model){
     if(wk.bo){ const [p,r,n]=wk.bo; for(let i=0;i<n;i++) out.push({kind:'bo', w:tm?roundLoad(tm*p,eq):null, tr:r, trpe:null}); }
   } else if(sc.t==='top'){
     const wk=TOP_WEEKS[week-1]||TOP_WEEKS[0], e=currentE1(id);
-    const topW=e? roundLoad(loadFor(e,sc.reps,wk.rpe),eq) : null;
+    const topW=e? roundLoad(loadFor(e,sc.reps,wk.rpe,id),eq) : null;
     out.push({kind:'top', w:topW, tr:sc.reps, trpe:wk.rpe});
     const n=Math.max(1,Math.round(sc.n*wk.bo));
     for(let i=0;i<n;i++) out.push({kind:'bo', w:topW?roundLoad(topW*(1-sc.drop),eq):null, tr:sc.bor||sc.reps, trpe:null});
   } else if(sc.t==='rpe'){
     const dl=isDeload(model,week), rpe=dl? sc.rpe-2 : sc.rpe, n=dl? Math.max(2,sc.sets-1) : sc.sets;
-    const e=currentE1(id), w=e? roundLoad(loadFor(e,sc.reps,rpe),eq) : null;
+    const e=currentE1(id), w=e? roundLoad(loadFor(e,sc.reps,rpe,id),eq) : null;
     for(let i=0;i<n;i++) out.push({kind:'work', w, tr:sc.reps, trpe:rpe});
   }
   return out;
@@ -9405,14 +9437,16 @@ function progressEntry(en, notes, plan){
     } else notes.push(`<b>${nm}</b>: aim for ${sc.hi} on every set, then the next variation unlocks`);
   } else if(sc.t==='dp'){
     const used=work.length? Math.max(...work.map(s=>s.w||0)) : 0;
-    if(work.length>=sc.sets && work.every(s=>(s.reps||0)>=sc.hi)){ L.work=roundLoad(used+incKg(id),eq); notes.push(`<b>${nm}</b>: ${X.k==='added'?'+':''}${wu(L.work)} next time, back to ${sc.lo} reps`); }
+    if(work.length>=sc.sets && work.every(s=>(s.reps||0)>=sc.hi)){ const nx=upLoad(used, id);
+      if(nx.kg>used+1e-6){ L.work=nx.kg; notes.push(`<b>${nm}</b>: ${X.k==='added'?'+':''}${wu(L.work)} next time, back to ${sc.lo} reps`); }
+      else { L.work=roundLoad(used,eq); notes.push(`<b>${nm}</b>: ${X.k==='added'?'+':''}${wu(L.work)} is the heaviest you can load, so keep adding reps`); } }
     else { if(L.work==null||used>L.work) L.work=roundLoad(used,eq); notes.push(`<b>${nm}</b>: stay at ${X.k==='added'?(L.work?'+'+wu(L.work):'bodyweight'):wu(L.work)} and add reps toward ${sc.hi}`); }
   } else if(sc.t==='lp'){
     const used=work.length? Math.max(...work.map(s=>s.w||0)) : 0;
     const made=work.length>=sc.sets && work.every(s=>(s.reps||0)>=(s.tr||0));
-    if(made){ L.work=roundLoad((used||L.work)+incKg(id),eq); L.fails=0; notes.push(`<b>${nm}</b>: ${wu(L.work)} next time`); }
+    if(made){ L.work=upLoad(used||L.work, id).kg; L.fails=0; notes.push(`<b>${nm}</b>: ${wu(L.work)} next time`); }
     else { L.fails=(L.fails||0)+1; if(L.work==null) L.work=roundLoad(used,eq);
-      if(L.fails>=3){ L.work=roundLoad(L.work*0.9,eq); L.fails=0; notes.push(`<b>${nm}</b>: reset to ${wu(L.work)} after three misses, build back up`); }
+      if(L.fails>=3){ L.work=lighter(L.work,0.9,eq); L.fails=0; notes.push(`<b>${nm}</b>: reset to ${wu(L.work)} after three misses, build back up`); }
       else notes.push(`<b>${nm}</b>: stay at ${wu(L.work)} (miss ${L.fails} of 3)`); }
   } else if(sc.t==='wave'){
     if(!L.tm){ const e=currentE1(id); if(e){ L.tm=roundLoad(e*state.settings.tmPct/100,eq); notes.push(`<b>${nm}</b>: training max set to ${wu(L.tm)} from today`); } }
@@ -9438,7 +9472,7 @@ function endCycle(){
   const P=state.program, D=progDef(), changes=[];
   if(D && D.model==='wave'){
     [...new Set(D.days.flatMap(d=>d.slots.filter(([,sc])=>sc.t==='wave').map(([id])=>id)))].forEach(id=>{ const L=state.lifts[id], r=(P.log||{})[id], from=L.tm;
-      if(r && from && (r.reps||0)>=(r.tr||1)){ L.tm=roundLoad(L.tm+incKg(id),eqOf(id)); changes.push({id, from, to:L.tm, ok:true}); }
+      if(r && from && (r.reps||0)>=(r.tr||1)){ L.tm=upLoad(L.tm, id).kg; changes.push({id, from, to:L.tm, ok:true}); }
       else changes.push({id, from, to:from, ok:false, missed:!!r}); });
   } else if(D){
     chosen().filter(id=>EX[id].k==='load').forEach(id=>{ const from=(P.startE1||{})[id]||null, to=currentE1(id); changes.push({id, from, to, e1:true}); });
@@ -9596,10 +9630,10 @@ function saveStart(){
     if(X.k!=='load') return;
     const w=fromDisp(v.w), reps=Num.int(v.r), rpe=Num.parse(v.rpe);
     if(!w||!reps||reps<1||reps>12) return;
-    const est=e1(w,reps, rpe!=null? Math.max(0,10-Math.min(10,rpe)) : 0);
+    const est=e1(w,reps, rpe!=null? Math.max(0,10-Math.min(10,rpe)) : 0, id);
     L.seed={v:est, date:Date.now()};
     L.tm=roundLoad(est*state.settings.tmPct/100,eq);
-    L.work=roundLoad(loadFor(est,5,X.eq==='bar'?6:7),eq); L.fails=0;
+    L.work=roundLoad(loadFor(est,5,X.eq==='bar'?6:7,id),eq); L.fails=0;
   });
   stDraft={}; save(); closeModal(); state.route='program'; render(); window.scrollTo(0,0);
   toast(notes.length? notes.join('<br>') : 'Plan ready');
@@ -10657,7 +10691,7 @@ if(window.__hub) window.__hub.reg('str', {
   // for Muscle: the top set of a lift from your latest Strength session with it, and a counter that moves whenever that may have changed
   lastSet(id){ for(let i=state.history.length-1;i>=0;i--){ const h=state.history[i], en=h.entries.find(e=>e.liftId===id); if(!en) continue;
       const ss=en.sets.filter(s=>s.done!==false&&s.kind!=='warm'&&s.reps>0); if(!ss.length) continue;
-      const rir=s=>s.rpe!=null? Math.max(0,10-s.rpe) : null, sc=s=>s.w? Lift.e1rm(s.w, s.reps, rir(s)) : s.reps/1000;
+      const rir=s=>s.rpe!=null? Math.max(0,10-s.rpe) : null, sc=s=>s.w? e1(s.w, s.reps, rir(s), id) : s.reps/1000;
       const top=ss.reduce((a,b)=>sc(b)>sc(a)? b : a); return {weight:top.w||null, reps:top.reps, rir:rir(top), date:h.date}; }
     return null; },
   stamp:()=>strVer,
