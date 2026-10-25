@@ -76,17 +76,55 @@ test('weekly targets: about 8 new, 10–12 with some experience, 12–14 advance
   assert.ok([3, 4].includes(arms.bi - plain4.bi) && [3, 4].includes(arms.tri - plain4.tri) && arms.chest === plain4.chest);
 });
 
-test('no muscle gets more than the session cap in one session, and each is trained on about two days', () => {
-  const api = muscle(), cap = api.evaluate('SESSION_CAP');
-  assert.ok(cap >= 8 && cap <= 10);
+// A muscle's own sets in a session stay within the cap; what it also gets as a helper may take it a little past (to
+// SESSION_MAX), so a muscle full only from helping doesn't keep out an exercise another one needs. Every session stays
+// within DAY_MAX hard sets.
+test('no muscle gets more than the session cap of its own sets in one session, and each is trained on about two days', () => {
+  const api = muscle(), cap = api.evaluate('SESSION_CAP'), max = api.evaluate('SESSION_MAX'), dayMax = api.evaluate('DAY_MAX');
+  assert.ok(cap >= 8 && cap <= 10 && max <= cap + 2 && dayMax >= 20 && dayMax <= 24);
   for (const o of cases) {
     const d = plain(api.evaluate(`generateDraft(${JSON.stringify(o)})`));
-    perSession(api, d).forEach((S, i) => Object.entries(S).forEach(([mu, v]) => assert.ok(v <= cap + 1e-9, `${o.days}-day ${o.experience}, day ${i + 1}: ${mu} ${v} sets`)));
+    perSession(api, d).forEach((S, i) => Object.entries(S).forEach(([mu, v]) => assert.ok(v <= max + 1e-9, `${o.days}-day ${o.experience}, day ${i + 1}: ${mu} ${v} sets with helpers`)));
+    d.days.forEach((x, i) => {
+      const own = {}; x.exercises.forEach(e => e.primary.forEach(q => { own[q] = (own[q] || 0) + e.sets; }));
+      Object.entries(own).forEach(([mu, v]) => assert.ok(v <= cap, `${o.days}-day ${o.experience}, day ${i + 1}: ${mu} ${v} sets of its own`));
+      assert.ok(x.exercises.reduce((a, e) => a + e.sets, 0) <= dayMax, `${o.days}-day ${o.experience}, day ${i + 1}: too long`);
+    });
     for (const mu of ['chest', 'quad', 'lat', 'uback', 'ham']) {
       const on = d.days.filter(x => x.exercises.some(e => e.primary.includes(mu))).length;
       assert.ok(on >= 2, `${o.days}-day ${o.experience}: ${mu} on ${on} day(s)`);
     }
   }
+});
+
+/* Kits without machines or cables, and the back emphasis: no muscle a set or more short of its target, every region
+   covered. A muscle may go over where the only exercises for another one work it too (the glutes in squats and lunges
+   with dumbbells), by a few sets at most. */
+test('with dumbbells, or a barbell and dumbbells, and for every emphasis, the targets are met and every region covered', () => {
+  const api = muscle();
+  for (const kit of [['Dumbbell', 'Bodyweight'], ['Barbell', 'Dumbbell', 'Bodyweight'], []]) {
+    api.state().settings.equipment = kit;
+    for (const days of [3, 4, 5, 6]) for (const experience of ['intermediate', 'advanced']) for (const emphasis of [['balanced'], ['back'], ['glutes'], ['lower'], ['upper']]) {
+      const o = {days, experience, emphasis}, d = plain(api.evaluate(`generateDraft(${JSON.stringify(o)})`)), C = credit(api, d), at = `${kit.join('+') || 'full kit'}, ${days} days, ${experience}, ${emphasis}`;
+      for (const [mu, t] of Object.entries(d.targets)) {
+        assert.ok((C[mu] || 0) >= t - 1, `${at}: ${mu} gets ${C[mu]} for a target of ${t}`);
+        assert.ok((C[mu] || 0) <= t + 3, `${at}: ${mu} gets ${C[mu]} for a target of ${t}`);
+      }
+      const ids = d.days.flatMap(x => x.exercises.map(e => e.exId)), regs = {};
+      ids.forEach(id => ['quad', 'ham', 'tri'].forEach(mu => { const e = api.evaluate(`exById(${JSON.stringify(id)})`); if (e && e.primary.includes(mu)) (regs[mu] || (regs[mu] = new Set())).add(api.evaluate(`GROWTH.region(${JSON.stringify(id)}, ${JSON.stringify(mu)})`)); }));
+      for (const mu of ['quad', 'ham', 'tri']) assert.deepEqual([...api.evaluate(`GROWTH.missing(${JSON.stringify(mu)}, ${'{'}[${JSON.stringify(mu)}]: new Set(${JSON.stringify([...(regs[mu] || [])])})${'}'})`)], [], `${at}: ${mu}`);
+      assert.ok(d.days.every(x => x.exercises.reduce((a, e) => a + e.sets, 0) <= api.evaluate('DAY_MAX')), at + ': a session too long');
+    }
+  }
+});
+
+test('a week that won’t fit in its sessions aims lower and says so', () => {
+  const api = muscle();
+  const three = plain(api.evaluate(`generateDraft({days:3, experience:'advanced', emphasis:['balanced']})`)), asked = plain(api.evaluate(`weeklyTargets({days:3, experience:'advanced'})`));
+  assert.ok(three.targets.chest < asked.chest, 'aims lower');
+  assert.match(three.fit, /^3 days fit about \d+ sets a week a muscle; pick 4 days for more\.$/);
+  const four = plain(api.evaluate(`generateDraft({days:4, experience:'intermediate', emphasis:['balanced']})`));
+  assert.equal(four.fit, null, 'the usual block fits as asked');
 });
 
 test('every part of a muscle is covered: the quad that crosses the hip, the hamstrings’ curl, the triceps’ long head', () => {
@@ -107,7 +145,7 @@ test('a block picks the long-length versions and puts the big lifts first', () =
   assert.ok(!ids.includes('lying-leg-curl') || ids.includes('leg-curl'));
   assert.ok(ids.includes('lat-pulldown') || ids.includes('pullup') || ids.includes('chin-up'), 'lats get a vertical pull, not only rows');
   // with room for three curls, one of each: long (incline), short (preacher) and behind the body (Bayesian)
-  const arms = plain(api.evaluate(`generateDraft({days:4, experience:'intermediate', emphasis:['arms']})`)).days.flatMap(x => x.exercises.map(e => e.exId));
+  const arms = plain(api.evaluate(`generateDraft({days:5, experience:'intermediate', emphasis:['arms']})`)).days.flatMap(x => x.exercises.map(e => e.exId));
   assert.deepEqual(['incline-db-curl', 'preacher-curl', 'bayesian-curl'].filter(id => arms.includes(id)), ['incline-db-curl', 'preacher-curl', 'bayesian-curl'], arms.join());
   for (const x of d.days) {
     const comp = x.exercises.map(e => !!e.comp), firstIso = comp.indexOf(false);

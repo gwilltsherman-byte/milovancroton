@@ -3649,7 +3649,10 @@ function startMeso(id){ const m=mesoById(id); if(!m) return; state.mesos.forEach
    their own; traps, forearms, lower back, adductors and neck get what the rest gives them. Each muscle is trained on
    about two days a week, at most SESSION_CAP sets a session, where more adds little and leaves you tired. */
 const TARGET_SHARE={chest:1, lat:1, uback:1, quad:1, ham:1, glute:1, sdelt:1, bi:0.8, tri:0.8, calf:0.8, rdelt:0.6, abs:0.6, fdelt:0.6};
-const SESSION_CAP=9;
+const SESSION_CAP=9, SESSION_MAX=11;   // a muscle's own sets in a session; with what it gets as a helper
+/* Hard sets in one session: about 24, near an hour and a quarter at these rests. A week that won't fit aims lower for the
+   muscles of the days that overflow, and says so. */
+const DAY_MAX=24;
 function weeklyTargets(o){
   const days=o.days||4, x=o.experience||'intermediate';
   const base= x==='beginner'? 8 : (x==='advanced'? 12 : 10)+(days>=5? 2 : days===4? 1 : 0);
@@ -3671,6 +3674,10 @@ const DAY_PLAN={
   6:[['Push A','push'],['Pull A','pull'],['Legs A','legs'],['Push B','push'],['Pull B','pull'],['Legs B','legs']]};
 const DAY_FITS={full:null, upper:['chest','lat','uback','fdelt','sdelt','rdelt','bi','tri','trap','fore'], lower:['quad','ham','glute','adductor','calf','abs','obli','lback'],
   push:['chest','fdelt','sdelt','tri'], pull:['lat','uback','rdelt','bi','trap','fore'], legs:['quad','ham','glute','adductor','calf','abs','obli','lback']};
+/* A muscle whose week won't fit on two days of its own kind at SESSION_CAP a session, with no third, takes single-joint
+   work on a day of another kind: the quads on a push day, the hamstrings and glutes on a pull day, the legs on an upper day,
+   side delts on a leg day. */
+const DAY_SPARE={push:['quad'], pull:['ham','glute'], upper:['quad','ham','glute'], lower:['sdelt'], legs:['sdelt']};
 /* Muscles in the order a block fills them: the big lifts first, so what they give the smaller muscles on the side counts
    before those get exercises of their own. A muscle in COMP_LED starts each of its days with a compound; one in COMP_ONCE
    has one compound in the week (a hip hinge, a hip thrust, a press), and its other day can start with single-joint work. */
@@ -3697,19 +3704,26 @@ const PRIORITY={
 function rankIn(mu){ const L=PRIORITY[mu]||[]; return e=>{ const i=L.indexOf(e.id); return i>=0? i : e.custom? 60 : e.alt? 100 : 50; }; }
 function generateDraft(o){
   const nd=DAY_PLAN[o.days]? o.days : 4, equip=myEquip(), logged=lastDone(), emph=emphasisMuscles(o.emphasis);
-  const T=weeklyTargets(Object.assign({}, o, {days:nd})), maxP=o.experience==='advanced'? 5 : 4;
+  const T0=weeklyTargets(Object.assign({}, o, {days:nd})), maxP=o.experience==='advanced'? 5 : 4;
   const pool=state.exercises.filter(e=>equip.includes(e.equipment));
+  // the week for targets T; full: hold each session to DAY_MAX
+  const build=(T, full)=>{
   const days=DAY_PLAN[nd].map(([name,type])=>({name, type, items:[]})), N=days.length;
   const fits=(mu,d)=>{ const f=DAY_FITS[days[d].type]; return !f || f.includes(mu); };
   const wt=(e,mu)=> e.primary.includes(mu)? 1 : e.secondary.includes(mu)? 0.5 : 0;
-  // weekly credit C and each day's S, helpers at half
-  const credit=()=>{ const C={}, S=days.map(()=>({}));
-    days.forEach((d,i)=>d.items.forEach(it=>{ it.ex.primary.concat(it.ex.secondary).forEach(m=>{ const v=it.sets*wt(it.ex,m); C[m]=(C[m]||0)+v; S[i][m]=(S[i][m]||0)+v; }); }));
-    return {C,S}; };
-  // how many sets of e day d has room for under the session cap
-  const room=(e,d,S)=>Math.min(...e.primary.concat(e.secondary).map(m=>Math.floor((SESSION_CAP-(S[d][m]||0))/wt(e,m)+1e-9)));
+  // weekly credit C and each day's S, helpers at half, and P, each day's sets of the muscle's own
+  const credit=()=>{ const C={}, S=days.map(()=>({})), P=days.map(()=>({}));
+    days.forEach((d,i)=>d.items.forEach(it=>{ it.ex.primary.concat(it.ex.secondary).forEach(m=>{ const v=it.sets*wt(it.ex,m); C[m]=(C[m]||0)+v; S[i][m]=(S[i][m]||0)+v; });
+      it.ex.primary.forEach(m=>{ P[i][m]=(P[i][m]||0)+it.sets; }); }));
+    return {C,S,P}; };
+  /* How many sets of e day d has room for: its main muscles up to SESSION_CAP of their own, and every muscle up to
+     SESSION_MAX with what it gets as a helper (hc), so a muscle that is full only from helping (the glutes in a day of
+     squats) doesn't keep out an exercise another muscle still needs (a Nordic curl). */
+  const room=(e,d,X,hc)=>{ const H= hc==null? SESSION_MAX : hc;
+    return Math.min(...e.primary.map(m=>Math.floor(Math.min(SESSION_CAP-(X.P[d][m]||0), H-(X.S[d][m]||0))+1e-9)),
+      ...e.secondary.map(m=>Math.floor((H-(X.S[d][m]||0))/0.5+1e-9))); };
   // the days each muscle is trained on: two (three when its target won't fit in two), spread apart, on the days with least so far
-  const load=days.map(()=>0), on={};
+  const load=days.map(()=>0), on={}, spare={};
   const combos=(a,k)=> k===0? [[]] : a.flatMap((x,i)=>combos(a.slice(i+1),k-1).map(c=>[x].concat(c)));
   BLOCK_ORDER.forEach(mu=>{ if(!(T[mu]>0)) return;
     const cand=days.map((_,i)=>i).filter(i=>fits(mu,i)); if(!cand.length) return;
@@ -3717,6 +3731,10 @@ function generateDraft(o){
     const near=c=>c.filter((x,i)=>c.some((y,j)=>j!==i && (Math.abs(x-y)===1 || Math.abs(x-y)===N-1))).length;
     const best=combos(cand,k).map(c=>({c, v:c.reduce((a,i)=>a+load[i],0)+near(c)*2})).sort((a,b)=>a.v-b.v)[0].c;
     on[mu]=best; best.forEach(i=>{ load[i]+=T[mu]/k; });
+    if(T[mu]>2*SESSION_CAP-2 && best.length<3){
+      const x=days.map((_,i)=>i).filter(i=>!best.includes(i) && (DAY_SPARE[days[i].type]||[]).includes(mu)).sort((a,b)=>load[a]-load[b] || near(best.concat(a))-near(best.concat(b)))[0];
+      if(x!=null){ on[mu]=best.concat(x); spare[mu]=x; load[x]+=T[mu]/3; }
+    }
   });
   const regs={}, used={};
   const addItem=(d,e,n)=>{ const it={ex:e, sets:n}; days[d].items.push(it); used[e.id]=(used[e.id]||0)+1;
@@ -3734,28 +3752,31 @@ function generateDraft(o){
     return c.map(e=>({e, v:v(e)})).sort((a,b)=>a.v-b.v || a.e.name.localeCompare(b.e.name)).map(x=>x.e);
   };
   const compIn=mu=>days.some(d=>d.items.some(it=>it.ex.comp && it.ex.primary.includes(mu)));
-  // each muscle's sets, day by day: what it still needs that day, in one to three exercises
+  // each muscle's sets, day by day: what it still needs that day, in one to three exercises; a day of another kind last,
+  // with what its own days couldn't take, in single-joint work
   BLOCK_ORDER.forEach(mu=>{ const D=on[mu]; if(!D) return;
+    const main=D.length-(spare[mu]!=null? 1 : 0);
     D.forEach(d=>{
+      const isSpare=spare[mu]===d;
       for(let k=0;k<3;k++){
-        const {C,S}=credit(), off=days.reduce((a,_,i)=>a+(D.includes(i)? 0 : (S[i][mu]||0)),0);
+        const X=credit(), {C,S}=X, off=days.reduce((a,_,i)=>a+(D.includes(i)? 0 : (S[i][mu]||0)),0);
         // a muscle in COMP_LED gets its own compound on each of its days while it needs anything, not only the help a
         // pulldown gives the upper back
-        const need=(T[mu]-off)/D.length-(S[d][mu]||0), first=!days[d].items.some(it=>it.ex.primary.includes(mu));
-        if(need<1 && !(first && need>0 && COMP_LED.includes(mu))) break;
-        const want= first && (COMP_LED.includes(mu) || (COMP_ONCE.includes(mu) && !compIn(mu)))? true : null;
+        const need= isSpare? T[mu]-(C[mu]||0) : Math.min((T[mu]-off)/main, SESSION_CAP)-(S[d][mu]||0), first=!days[d].items.some(it=>it.ex.primary.includes(mu));
+        if(need<1 && !(!isSpare && first && need>0 && COMP_LED.includes(mu))) break;
+        const want= isSpare? false : first && (COMP_LED.includes(mu) || (COMP_ONCE.includes(mu) && !compIn(mu)))? true : null;
         const n0=Math.min(maxP, Math.max(2, Math.round(need)));
-        const e=picks(mu, d, want, C).find(x=>room(x,d,S)>=2); if(!e) break;
-        addItem(d, e, Math.min(n0, room(e,d,S)));
+        const e=picks(mu, d, want, C).find(x=>room(x,d,X)>=2); if(!e) break;
+        addItem(d, e, Math.min(n0, room(e,d,X)));
       }
     });
   });
   // a part of a muscle still missed (the quad that crosses the hip, the hamstrings' curl, the triceps' long head) pulls in
   // an exercise that trains it, on the muscle's day with the most room
   Object.keys(on).forEach(mu=>GROWTH.missing(mu, regs).forEach(r=>{
-    const ids=(GROWTH.R[mu]&&GROWTH.R[mu][r])||[], {S}=credit();
+    const ids=(GROWTH.R[mu]&&GROWTH.R[mu][r])||[], X=credit(), {S}=X;
     const c=pool.filter(e=>ids.includes(e.id)).sort((a,b)=>(GROWTH.long[b.id]||0)-(GROWTH.long[a.id]||0) || ids.indexOf(a.id)-ids.indexOf(b.id));
-    for(const e of c){ const d=on[mu].slice().sort((a,b)=>(S[a][mu]||0)-(S[b][mu]||0)).find(i=>!days[i].items.some(it=>it.ex.id===e.id) && room(e,i,S)>=2);
+    for(const e of c){ const d=on[mu].slice().sort((a,b)=>(S[a][mu]||0)-(S[b][mu]||0)).find(i=>!days[i].items.some(it=>it.ex.id===e.id) && room(e,i,X,Infinity)>=2);
       if(d!=null){ addItem(d, e, 2); break; } }
   }));
   /* Then single changes, each kept only if it brings the week closer: a set more or less, an exercise dropped or added, a
@@ -3765,7 +3786,7 @@ function generateDraft(o){
   const score=()=>{ const {C}=credit(); let v=0;
     Object.keys(T).forEach(m=>{ const x=Math.abs((C[m]||0)-T[m]); v+=Math.max(0,x-1)*10+x*0.1; });
     const tot=days.map(d=>d.items.reduce((a,it)=>a+it.sets,0)), mean=tot.reduce((a,b)=>a+b,0)/N;
-    tot.forEach(t=>{ v+=(t-mean)*(t-mean)*0.01; });
+    tot.forEach(t=>{ v+=(t-mean)*(t-mean)*0.01 + (full? Math.max(0, t-DAY_MAX)*12 : 0); });
     days.forEach(d=>d.items.forEach(it=>{ if(it.ex.comp && it.sets<3) v+=0.25*(3-it.sets); }));
     return v; };
   // the only exercise in the block for a part of a muscle stays
@@ -3776,18 +3797,18 @@ function generateDraft(o){
   // and a day keeps the compound that leads a muscle in COMP_LED
   const leads=(x,i)=>x.ex.comp && x.ex.primary.some(q=>COMP_LED.includes(q) && !days[i].items.some(y=>y!==x && y.ex.comp && y.ex.primary.includes(q)));
   for(let it=0; it<500; it++){
-    const {C,S}=credit(), v0=score(); let best=null;
+    const X=credit(), {C}=X, v0=score(); let best=null;
     const tryMove=(apply, undo)=>{ apply(); const v=score(); undo(); if(v<v0-1e-9 && (!best || v<best.v-1e-9)) best={v, apply}; };
     days.forEach((d,i)=>d.items.forEach((x,j)=>{
-      if(x.sets<maxP && room(x.ex,i,S)>=1) tryMove(()=>{ x.sets++; }, ()=>{ x.sets--; });
+      if(x.sets<maxP && room(x.ex,i,X)>=1) tryMove(()=>{ x.sets++; }, ()=>{ x.sets--; });
       if(x.sets>2) tryMove(()=>{ x.sets--; }, ()=>{ x.sets++; });
       else if(!sole(x) && !leads(x,i)) tryMove(()=>{ d.items.splice(j,1); }, ()=>{ d.items.splice(j,0,x); });
       const mu=x.ex.primary[0], D=on[mu]||[];
       D.forEach(k=>{ if(k===i) return;
         // one set to the same muscle's exercise on another of its days
-        if(x.sets>2) days[k].items.forEach(y=>{ if(y.ex.primary[0]===mu && y.sets<maxP && room(y.ex,k,S)>=1) tryMove(()=>{ x.sets--; y.sets++; }, ()=>{ x.sets++; y.sets--; }); });
+        if(x.sets>2) days[k].items.forEach(y=>{ if(y.ex.primary[0]===mu && y.sets<maxP && room(y.ex,k,X)>=1) tryMove(()=>{ x.sets--; y.sets++; }, ()=>{ x.sets++; y.sets--; }); });
         // the whole exercise to another of the muscle's days, if it fits there and the muscle keeps its days
-        if(!leads(x,i) && !days[k].items.some(y=>y.ex.id===x.ex.id) && x.ex.primary.every(q=>fits(q,k)) && room(x.ex,k,S)>=x.sets){
+        if(!leads(x,i) && !days[k].items.some(y=>y.ex.id===x.ex.id) && x.ex.primary.every(q=>fits(q,k)) && room(x.ex,k,X)>=x.sets){
           const go=()=>{ d.items.splice(j,1); days[k].items.push(x); }, back=()=>{ days[k].items.pop(); d.items.splice(j,0,x); };
           const before=x.ex.primary.map(daysOf); go(); const ok=x.ex.primary.every((q,qi)=>daysOf(q)>=Math.min(before[qi],2)); back();
           if(ok) tryMove(go, back);
@@ -3796,10 +3817,35 @@ function generateDraft(o){
     }));
     Object.keys(on).forEach(mu=>{ if((C[mu]||0)>T[mu]-1) return;
       on[mu].forEach(i=>{ if(days[i].items.filter(x=>x.ex.primary.includes(mu)).length>=3) return;
-        const e=picks(mu, i, null, C).find(x=>room(x,i,S)>=2); if(!e) return;
-        tryMove(()=>{ days[i].items.push({ex:e, sets:2}); }, ()=>{ days[i].items.pop(); }); }); });
+        picks(mu, i, spare[mu]===i? false : null, C).filter(x=>room(x,i,X)>=2 && (spare[mu]!==i || !x.comp)).slice(0,3)
+          .forEach(e=>tryMove(()=>{ days[i].items.push({ex:e, sets:2}); }, ()=>{ days[i].items.pop(); })); }); });
     if(!best) break;
     best.apply();
+  }
+  return days; };
+  /* Built as asked first. When a session comes out longer than DAY_MAX, the muscles trained on it aim lower, by the share
+     it is over, and the week is built again holding every session to DAY_MAX; a muscle still more than a set short then
+     aims for what it got. */
+  let T=T0, days=build(T0, false);
+  const total=d=>d.items.reduce((a,it)=>a+it.sets,0);
+  if(days.some(d=>total(d)>DAY_MAX)){
+    const f={};
+    days.forEach(d=>{ const t=total(d); if(t>DAY_MAX) d.items.forEach(it=>it.ex.primary.forEach(q=>{ f[q]=Math.min(f[q]||1, DAY_MAX/t); })); });
+    T=Object.assign({}, T0); Object.keys(f).forEach(q=>{ if(T[q]>0) T[q]=Math.max(1, Math.round(T0[q]*f[q])); });
+    days=build(T, true);
+    const C=daysCredit(days.map(d=>({exercises:d.items.map(it=>({exId:it.ex.id, primary:it.ex.primary, secondary:it.ex.secondary, sets:it.sets}))})), (d,e)=>e.sets);
+    Object.keys(T).forEach(q=>{ if(T[q]>0 && (C[q]||0)<T[q]-1) T[q]=Math.round(C[q]||0); });
+  }
+  // what didn't fit, in a line: the usual target of the big muscles that aim lower (those you picked aim higher still)
+  const cut=Object.keys(T0).filter(q=>T[q]<T0[q]);
+  let fit=null;
+  if(cut.length){
+    const big=cut.filter(q=>TARGET_SHARE[q]===1), plainCut=big.filter(q=>!emph.includes(q)), xs=(plainCut.length? plainCut : big.length? big : cut).map(q=>T[q]);
+    const x=xs.slice().sort((a,b)=>xs.filter(v=>v===b).length-xs.filter(v=>v===a).length || b-a)[0];
+    const UP=['chest','lat','uback','fdelt','sdelt','rdelt','bi','tri'], LOW=['quad','ham','glute','calf','adductor','abs'];
+    const where= cut.every(q=>UP.includes(q))? 'for the upper body' : cut.every(q=>LOW.includes(q))? 'for the lower body' : 'a muscle';
+    fit=nd+' days fit about '+x+' sets a week '+where+(plainCut.length && cut.some(q=>emph.includes(q))? ', more for the ones you picked' : '')
+      +(DAY_PLAN[nd+1]? '; pick '+(nd+1)+' days for more' : '')+'.';
   }
   // big lifts first: barbell compounds, other compounds, single-joint work, then the core; the muscles you want more of
   // first within each
@@ -3813,7 +3859,7 @@ function generateDraft(o){
   // no planned lighter week: a week off mid-block added no muscle and slowed lower-body strength gains (Coleman et al. 2024,
   // a week off rather than a lighter week); the app offers one when lifts go down while you're worn out. Effort starts 2
   // short of failure, not 3, and climbs from there.
-  return {name:nd+'-Day '+label+'Block', totalWeeks:o.weeks||4, hasDeload:false, startRir:2, endRir:o.experience==='beginner'?1:0, days:out, targets:T};
+  return {name:nd+'-Day '+label+'Block', totalWeeks:o.weeks||4, hasDeload:false, startRir:2, endRir:o.experience==='beginner'?1:0, days:out, targets:T, fit};
 }
 let genOpts={days:4, experience:'intermediate', emphasis:['balanced'], weeks:4, gap:false};
 function openGenerator(){
@@ -4327,7 +4373,7 @@ function viewBuilder(){
     <div><div class="section-label">Training days <span class="ln"></span></div>${daysHtml}
       <button class="btn ghost block" data-act="b-add-day" style="margin-top:4px">${I.plus} Add day</button></div>
     ${b.days.some(d=>d.exercises.length)? `<div class="card pad"><div class="section-label" style="margin:0 0 6px">Weekly sets per muscle <span class="ln"></span><span class="faint" style="text-transform:none;letter-spacing:0;font-weight:600">helpers at half${b.targets?' &middot; target':''}</span></div>
-      ${weeklySetsHtml(daysCredit(b.days, (d,e)=>e.sets), b.targets)}</div>` : ''}
+      ${weeklySetsHtml(daysCredit(b.days, (d,e)=>e.sets), b.targets)}${b.fit? `<p class="muted" style="font-size:12px;line-height:1.5;margin:8px 0 0">${esc(b.fit)}</p>` : ''}</div>` : ''}
     <button class="btn primary block" data-act="b-save">${I.check} Save &amp; start mesocycle</button>
     <button class="btn ghost block" data-act="b-save-draft">Save as draft</button>
   </div>`;
