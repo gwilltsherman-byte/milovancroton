@@ -11576,7 +11576,7 @@ const MOVES=[['hinge',/deadlift|\brdl\b|romanian|good ?morning|pull-?through|rac
   ['squat',/squat|leg press|hack/], ['lunge',/lunge|split squat|step-?up|bulgarian/],
   ['knee',/leg extension|leg curl|sissy|nordic|glute-ham|hamstring progression|sliding leg curl/], ['jump',/jump|plyo|bound/],
   ['bentrow',/barbell row|pendlay|t-bar|meadows|bent-?over/], ['row',/\brows?\b|row progression/], ['vpull',/pull-?ups?\b|chin-?ups?\b|pulldown|muscle-?up/],
-  ['press',/bench|chest press|push-?ups?\b|floor press|incline (machine |barbell )?press/], ['dip',/\bdips?\b/],
+  ['press',/bench|chest press|push-?ups?\b|floor press|incline (machine |barbell |dumbbell |db )?press/], ['dip',/\bdips?\b/],
   ['vpush',/overhead|shoulder press|arnold|push press|pike|landmine press|military|handstand push/], ['curl',/curl/],
   ['straight',/straight-arm|pullover|lever|planche|flag/], ['hand',/handstand|arm balance|\bcrow\b/]];
 function movesOf(name){
@@ -12863,6 +12863,8 @@ __root.addEventListener('click', e=>{
       if(!draft.secs.length) break;
       const changed= draft.days!==tg.days || draft.secs.join()!==tg.secs.join(), was=tg.on&&tg.plan? baseSig() : null;
       if(tg.on) remember('changes to the set-up');
+      // a first set-up starts the count of blocks at none, so later changes can't make the first one look finished
+      if(!tg.on && tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
       tg.secs=draft.secs.slice(); tg.days=draft.days; tg.mins=draft.mins; tg.prio=(draft.prio||autoOrder(ALL, skillGoal())).slice(); tg.on=true;
       tg.kit= draft.kit&&draft.kit.length<KIT.length? draft.kit.slice() : null; tg.exp=draft.exp||'intermediate';
       // weekdays you picked (the suggested ones are kept as none), life stage, and the health check, kept on this phone
@@ -12881,7 +12883,7 @@ __root.addEventListener('click', e=>{
     case 'edit': draft=newDraft(); render(); window.scrollTo(0,0); break;
     case 'start-day': startDay(+el.dataset.d); break;
     case 'part': startPart(k); break;
-    case 'skip': if(tg.run&&tg.run.parts[k]){ remember(SEC[tg.run.parts[k].m].n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(SEC[tg.run.parts[k].m].n+' skipped.', true); } break;
+    case 'skip': if(tg.run&&tg.run.parts[k]){ const n=partName(tg.run.parts[k]); remember(n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(n+' skipped.', true); } break;
     case 'unskip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='todo'; save(); render(); } break;
     case 'end-day': { if(!tg.run) break;
       const how=el.dataset.how, going=tg.run.parts.filter(p=>p.st==='run');

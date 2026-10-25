@@ -237,7 +237,7 @@ test('joint pain changes the movements that load the joint, Strength included', 
   const loads = (name, j) => T.call('loads', {name}, j), lad = (gid, j) => T.call('loads', {gid}, j);
   for (const n of ['Barbell Row', 'Deadlift', 'Romanian Deadlift', 'Good Morning', 'Back Squat', 'Front Squat']) assert.ok(loads(n, 'back'), `${n} loads the lower back`);
   for (const n of ['Leg Press', 'Chest-Supported Row', 'Bench Press', 'Leg Extension', 'Bulgarian Split Squat']) assert.ok(!loads(n, 'back'), `${n} spares the lower back`);
-  for (const n of ['Bench Press', 'Overhead Press', 'Push-up', 'Dips']) assert.ok(loads(n, 'wrist'), `${n} loads the wrist`);
+  for (const n of ['Bench Press', 'Incline Dumbbell Press', 'Overhead Press', 'Push-up', 'Dips']) assert.ok(loads(n, 'wrist'), `${n} loads the wrist`);
   for (const n of ['Back Squat', 'Leg Press', 'Walking Lunge', 'Leg Extension', 'Leg Curl', 'Box Jump']) assert.ok(loads(n, 'knee'), `${n} loads the knee`);
   for (const n of ['Calf Raise', 'Deadlift', 'Bench Press']) assert.ok(!loads(n, 'knee'), `${n} spares the knee`);
   for (const n of ['Overhead Press', 'Dips', 'Bench Press', 'Pull-up', 'Lat Pulldown']) assert.ok(loads(n, 'shoulder'), `${n} loads the shoulder`);
