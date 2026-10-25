@@ -3828,8 +3828,8 @@ function generateDraft(o){
   }
   return days; };
   /* Built as asked first. When a session comes out longer than DAY_MAX, the muscles trained on it aim lower, by the share
-     it is over, and the week is built again holding every session to DAY_MAX; a muscle still more than a set short then
-     aims for what it got. */
+     it is over, and the week is built again holding every session to DAY_MAX; a muscle of a full session still more than a
+     set short then aims for what it got (one your kit has no exercise for keeps its target, and shows short). */
   let T=T0, days=build(T0, false);
   const total=d=>d.items.reduce((a,it)=>a+it.sets,0);
   if(days.some(d=>total(d)>DAY_MAX)){
@@ -3838,7 +3838,7 @@ function generateDraft(o){
     T=Object.assign({}, T0); Object.keys(f).forEach(q=>{ if(T[q]>0) T[q]=Math.max(1, Math.round(T0[q]*f[q])); });
     days=build(T, true);
     const C=daysCredit(days.map(d=>({exercises:d.items.map(it=>({exId:it.ex.id, primary:it.ex.primary, secondary:it.ex.secondary, sets:it.sets}))})), (d,e)=>e.sets);
-    Object.keys(T).forEach(q=>{ if(T[q]>0 && (C[q]||0)<T[q]-1) T[q]=Math.round(C[q]||0); });
+    Object.keys(T).forEach(q=>{ if(T[q]>0 && (C[q]||0)<T[q]-1 && pool.some(e=>e.primary.includes(q))) T[q]=Math.round(C[q]||0); });
   }
   // what didn't fit, in a line: the usual target of the big muscles that aim lower (those you picked aim higher still)
   const cut=Object.keys(T0).filter(q=>T[q]<T0[q]);
