@@ -667,8 +667,13 @@ test('rep steps train in a range with reps in reserve, and move on only at the t
   const api = ladder(), state = api.getState();
   assert.equal(api.evaluate('rungText("dip",3)'), '3 x 3&ndash;10');
   assert.equal(api.evaluate('rungText("pull",4)'), '3 x 1&ndash;8');
+  assert.equal(api.evaluate('rungText("wrist",0)'), '2 x 15', 'prep keeps its fixed target');
+  assert.equal(api.evaluate('rungTarget("wrist",0)'), 15);
+  assert.equal(api.evaluate('rungText("plyopush",0)'), '3 x 8', 'so does power work');
+  assert.equal(api.evaluate('rungText("hsdrill",1)'), '3 x 6', 'and balance drills');
   placed(api, 'pull', 4);
   assert.equal(api.evaluate('rungTarget("pull",4)'), 1, 'nothing logged: the bottom of the range');
+  assert.equal(api.evaluate('entryFor("pull",4).first'), true, 'and the first session asks for what you can do');
   state.tests.push({date: Date.now() - day, ladderId: 'pull', stepIdx: 4, v: 6, setup: {}, clean: true});
   assert.equal(api.evaluate('rungTarget("pull",4)'), 5, 'a test of 6 starts at 5, a rep in reserve');
   const at = (reps, rirs) => { state.history = [withRir(record('pull', 4, reps, {target: 5, date: Date.now() - day}), rirs)]; return api.evaluate('rungTarget("pull",4)'); };

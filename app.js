@@ -6935,8 +6935,8 @@ function rungRank(id,i,g){ return pathFor(id,g).indexOf(i); }
 function curStep(id){ return stepsOf(id)[curIdx(id)]; }
 function unitS(st){ return st.k==='hold'?'s':''; }
 function goalText(st){ return `${st.sets} x ${st.v}${unitS(st)}`; }
-/* A step's target as a range for rep steps: from its entry check to its target (TODAY'S DOSE). */
-function rungText(id,i){ const st=stepsOf(id)[i], lo=Math.min(entryMinimum(id,i),st.v); return st.k!=='hold'&&lo<st.v? `${st.sets} x ${lo}&ndash;${st.v}` : goalText(st); }
+/* A step's target as a range for strength rep steps: from its entry check to its target (TODAY'S DOSE). */
+function rungText(id,i){ const st=stepsOf(id)[i], lo=Math.min(entryMinimum(id,i),st.v); return ranged(id,i)&&lo<st.v? `${st.sets} x ${lo}&ndash;${st.v}` : goalText(st); }
 function isSkill(id){ return !!LADDERS[id].skill; }
 function practiceOf(id,i){const L=LADDERS[id];return stepsOf(id)[i==null?curIdx(id):i].practice||L.practice||(L.like&&LADDERS[L.like]&&LADDERS[L.like].practice)||'strength';}
 function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||entryCheck(st); }
@@ -7010,14 +7010,17 @@ function needStandard(id,i){ let v=0; activeGoals().forEach(g=>goalNeeds(g).forE
   return v||stepsOf(id)[i].v; }
 
 /* ==================== TODAY'S DOSE ====================
-   Rep steps train in a range: from the entry check (about 40% of the target) up to the target, or up to a goal's higher
-   standard. Today's reps start where you are, about one rep short of failure, and go up when every set reached them
-   with a rep or more in reserve; a set called at 0 in reserve says that was all you had, so the reps stay. Reps in
-   reserve left blank count as fine: you did what was asked. A step already trained at its target stays there.
-   Holds keep their time target and grow 5 s once it is met on two days at least 20 hours apart; under the target they
-   are trained as a total time, in as many pieces as it takes.
+   Strength rep steps train in a range: from the entry check (about 40% of the target) up to the target, or up to a goal's
+   higher standard. Today's reps start where you are, about one rep short of failure, and go up when every set reached
+   them with a rep or more in reserve; a set called at 0 in reserve says that was all you had, so the reps stay. Reps in
+   reserve left blank count as fine: you did what was asked. With nothing logged yet, the first session starts at the
+   bottom and asks for what you can do with a rep or two left, so the next one starts there.
+   Holds, and the reps of prep, balance and power work (no reps in reserve there: quality is the measure), keep their
+   target and grow 5 s or a rep once it is met on two days at least 20 hours apart; holds under the target are trained
+   as a total time, in as many pieces as it takes.
    Weighted steps progress by load once the reps reach the top: about 2.5 kg (5 lb) more and two reps fewer. Assisted
    steps progress by help: one level less once the reps, or the time, reach the top. */
+function ranged(id,i){ const st=stepsOf(id)[i]; return !!st&&st.k!=='hold'&&!isPrep(id)&&practiceOf(id,i)==='strength'; }
 function repRange(id,i){ const st=stepsOf(id)[i]; return {lo:Math.min(entryMinimum(id,i), st.v), hi:Math.max(st.v, desiredStandard(id,i))}; }
 const clamp=(v,lo,hi)=>Math.max(lo, Math.min(hi, v));
 /* The latest session with this exercise in the last 42 days: its entry and the sets that say where you are (clean ones
@@ -7030,13 +7033,14 @@ function lastOn(id,i){
       if(sets.length) out={date:w.date, e, sets}; }); });
   return out;
 }
-/* {target, setup, why}: today's reps or seconds, the help or added weight to use, and why it changed. */
+/* {target, setup, why, first}: today's reps or seconds, the help or added weight to use, why it changed, and whether
+   nothing is logged yet to start from. */
 function dose(id,i,role){
   const st=stepsOf(id)[i], f=setupField(st), setup=lastSetupFor(id,i);
   if(role==='maintenance') return {target:needStandard(id,i), setup, why:''};
-  if(st.k==='hold') return holdDose(id,i,setup);
+  if(!ranged(id,i)) return fixedDose(id,i,setup);
   const {lo,hi}=repRange(id,i), last=lastOn(id,i);
-  if(!last){ const b=bestClean(id,i); return {target:clamp(b? b-1 : lo, lo, hi), setup, why:''}; }
+  if(!last){ const b=bestClean(id,i); return {target:clamp(b? b-1 : lo, lo, hi), setup, why:'', first:!b}; }
   const t=last.e.target||st.v, ests=last.sets.map(s=>s.v+(s.rir==null? 0 : Math.max(0,s.rir)));
   const met=last.sets.every(s=>s.v>=t), spent=last.sets.some(s=>s.rir===0);
   const target= met&&!spent? Math.max(t+1, Math.min(...ests)-1) : last.sets.some(s=>s.v>=t)? t : Math.max(...ests)-1;
@@ -7045,7 +7049,7 @@ function dose(id,i,role){
     if(nv!=null&&nv!==val) return {target:clamp(hi-2,lo,hi), setup:{[f.key]:nv}, why:moveWhy(st,nv,hi)}; }
   return {target:clamp(target,lo,hi), setup, why:''};
 }
-function holdDose(id,i,setup){
+function fixedDose(id,i,setup){
   const st=stepsOf(id)[i], f=setupField(st), limit=desiredStandard(id,i), rid=rungId(id,i), since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st));
   const cur=f? setupVal(st,setup) : null, met=new Map(); let target=st.v;
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
@@ -7057,7 +7061,7 @@ function holdDose(id,i,setup){
     target=Math.max(target,Math.min(limit,t));
   }));
   const twice=apart(met.get(target)||[])>=2;
-  if(twice&&target<limit) target+=5;
+  if(twice&&target<limit) target+=st.k==='hold'? 5 : 1;
   else if(twice&&f&&cur!=null){ const nv=nextVal(st,cur); if(nv!=null&&nv!==cur) return {target:st.v, setup:{[f.key]:nv}, why:moveWhy(st,nv,target)}; }
   return {target:Math.min(limit,target), setup, why:''};
 }
@@ -7756,7 +7760,7 @@ const BLOCK_MIN=8;
 function isBlock(st){ return !!st&&BLOCK_IDS.includes(st.id); }
 function newEntry(id,i,n,target,d,role){ const st=stepsOf(id)[i], blk=isBlock(st);
   const e={ladderId:id,stepIdx:i,kind:st.k,target,setup:Object.assign({},d&&d.setup||{}),clean:true,sets:Array.from({length:blk?1:n},makeSet)};
-  if(role) e.role=role; if(d&&d.why) e.why=d.why;
+  if(role) e.role=role; if(d&&d.why) e.why=d.why; if(d&&d.first) e.first=true;
   if(blk) e.block={min:BLOCK_MIN, start:null};
   else if(st.k==='hold'&&!isPrep(id)) e.total=target*n;
   return e; }
@@ -8423,7 +8427,8 @@ function doseLine(e,ei,st,target){
   if(e.block){ const hits=done.filter(s=>s.v>=target).length, best=done.reduce((m,s)=>Math.max(m,s.v||0),0);
     return line(`Attempts for ${e.block.min} min. ${done.length? `Best ${best} s &middot; ${hits} of ${st.sets} at ${target} s` : `Aim for ${st.sets} holds of ${target} s`} &middot; <span data-block-left="${ei}">${blockLeft(e)}</span>`); }
   if(e.total) return line(`${done.reduce((t,s)=>t+(s.v||0),0)} of ${e.total} s total. As many holds as it takes.`);
-  if(e.kind!=='hold'&&!isPrep(e.ladderId)){ const {lo,hi}=repRange(e.ladderId,e.stepIdx); if(lo<hi) return line(`Range ${lo}&ndash;${hi}. A rep more next time when every set has 1 or more in reserve.`); }
+  if(ranged(e.ladderId,e.stepIdx)){ const {lo,hi}=repRange(e.ladderId,e.stepIdx); if(lo<hi) return line(e.first&&!done.length? `First time: as many as you can with 1 or 2 left, from ${lo} to ${hi}.`
+    : `Range ${lo}&ndash;${hi}. A rep more next time when every set has 1 or more in reserve.`); }
   return '';
 }
 function blockLeft(e){ const end=blockEnd(e); if(end===Infinity) return 'starts with your first attempt'; const s=Math.round((end-Date.now())/1000);
