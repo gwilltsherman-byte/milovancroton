@@ -11247,7 +11247,9 @@ function buildPlan(T){
         if(x){ x.sets--; return true; }
         if(d.lift.length>2){ let j=-1; d.lift.forEach((y,k)=>{ if(!y.more) j=k; }); d.lift.splice(j<0? d.lift.length-1 : j, 1); return true; } return false; },
       cal:()=>{ if(d.cal&&d.cal.dose!=='maintain'){ d.cal.dose= d.cal.dose==='build'? 'moderate' : 'maintain'; return true; } return false; },
-      str:()=>{ const x=d.str.find(x=>!x.heavy&&x.sets>2)||d.str.find(x=>x.heavy&&x.sets>3); if(x){ x.sets--; return true; } return false; },
+      // lighter lifts first; then a heavy one the week trains again, before a lift done once a week, like the deadlift
+      str:()=>{ const often=x=>days.filter(y=>y.str.some(z=>z.id===x.id)).length;
+        const x=d.str.find(x=>!x.heavy&&x.sets>2)||d.str.filter(x=>x.heavy&&x.sets>3).sort((a,b)=>often(b)-often(a))[0]; if(x){ x.sets--; return true; } return false; },
     };
     for(let guard=0; guard<40 && mins()>B+5; guard++){ if(!R.slice().reverse().some(m=>W[i].includes(m)&&step[m]())) break; }
   });

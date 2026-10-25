@@ -321,7 +321,16 @@
       const sw=root.querySelector('[data-a="swap-yes"]');
       check(!!sw && /instead of/.test(sw.closest('.note').textContent), 'a sore lower back offers a gentler swap for the day');
       sw.click(); await pause(200);
-      check(saved().swap && saved().swap.ids.length>0 && !root.querySelector('[data-a="swap-yes"]'), 'the swap is taken for today'); }
+      check(saved().swap && saved().swap.ids.length>0 && !root.querySelector('[data-a="swap-yes"]'), 'the swap is taken for today');
+      // a yes given mid-block, in a save that also starts a new block: that block ends and counts, and the new one is gentle
+      const mid=saved(), now=Date.now(); mid.screen=null; mid.blocks=0; mid.plan.at=now-3*86400000;
+      mid.log=[{date:now-3600000, start:now-7200000, day:0, parts:[['str','done','x1']]}];
+      frame.remove(); frame=null; localStorage.setItem('trainer.together', JSON.stringify(mid));
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      await tap('[data-a="edit"]'); await tap('[data-a="d-days"][data-v="3"]'); await tap('[data-a="d-q"][data-v="0"]');
+      await tap('[data-a="d-save"]'); await tap('[data-a="t-save"]');
+      const t2=saved();
+      check(t2.blocks===1 && t2.screen.blk===1 && t2.plan.week===1 && root.textContent.includes('This block stays gentle'), 'a yes given with a change that starts a new block makes that new block gentle'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;
