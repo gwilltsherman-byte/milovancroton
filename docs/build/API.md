@@ -1,4 +1,4 @@
-# Wave 0 shared engine: API
+# Shared engine and cross-section API
 
 All of these live in the shared region of `app.js`, after `window.GROWTH` and before `TAKE BACK`, each under its own
 marker: `SETS IN NUMBERS` (Lift), `NUMBERS PEOPLE TYPE` (Num), `DAYS` (Day), `YOUR KIT` (Kit), `BODYWEIGHT` (Body).
@@ -92,10 +92,7 @@ also mirrored into each trainer's `settings` (the shell's `__prefs` and both `sy
 | `Kit.barIs(n, bu, u?)` | as above | whether that is the bar in use | pill highlighting |
 | `Kit.set(o)` | any of the Prefs keys above | saves through `Prefs.set` (so trainers mirror plates/bar/steps) | `Kit.set({plateCount:{kg:{'25':2}}, collarKg:2.5})` |
 
-Not built yet (wave 1 Strength): settings UI for plate counts, micro plates (0.25 kg; 1 and 0.5 lb are just plate
-values in the lists), collars, trap/EZ bar weights, dumbbell rack lists; per-exercise bar types in Strength's EX
-(e.g. `bar:'trap'`) and using `Kit.next(...).big` to progress reps first (item 40). Strength's `incKg` still has its
-fixed barbell increments.
+Wave 1 added the settings UI for plate counts, collars, trap/EZ bar weights and dumbbell racks. Strength uses `Kit.next(...).big` to prefer reps before an oversized load jump. The shared model remains the source of loadable weights.
 
 ## Body: one bodyweight log
 
@@ -138,9 +135,19 @@ instead of the saved one (tests, or Muscle itself).
   and RPE prescriptions), so a set means the same max in Muscle and Strength (they differ from before only for the leg
   press). New `upLoad(kg, id)` = `Kit.next(kg, incKg(id), eqOf(id))` for double progression (holds with "the heaviest you
   can load, so keep adding reps" when `.kg` doesn't move), linear progression and the wave training-max bump; new
-  `lighter(kg, f, eq)` for the three-miss reset. `.big` is not used yet (wave 1, item 40).
+  `lighter(kg, f, eq)` for the three-miss reset. `.big` is used by the wave-1 progression logic to prefer reps for an oversized jump.
 - Ladder: `daysAgo`, `relDay` → Day; set, test, standard, custom-ladder and setup inputs → Num.
 - Together: lighter-week window, readiness baseline, pain streak, carry-over day windows, check-in body prompt, weekly
   sets window → Day; check-in bodyweight → `Num.parse` and `Body.log`.
 - Shared/shell: `MiloDesign.week` count end, backup "N days ago" → Day; `__prefs` passes `platesKg`, `platesLb`,
   `barKg` on to trainers.
+
+## Session and outcomes (waves 2–5)
+
+- `MiloSession.syncShell(root)` keeps global navigation out of an active workout in either focus or list view. `elapsed(active)` returns an elapsed label, or the start date for sessions open at least twelve hours; it never changes saved timestamps.
+- Muscle and Strength expose `outcomes()`, `setOutcomes(goals)`, and `goalSets(exerciseId)` through the hub. Goals are additive `outcomeGoals` arrays in each existing trainer payload, including backup and undo. Together's `openOutcomes(owner)` opens their shared goal form.
+- Together owns `conditioning` with `target`, `style`, `active` and `log`. Its `cond` hub adapter provides session status and records but has no trainer DOM host; callers must not use the trainer-only `H.away('cond')` route.
+- `condPlacement` uses chosen weekdays, remaining session time and heavy-day guards. Priority participates in the plan signature, so changing Conditioning rank invalidates its allocation.
+- `condEquivalent` counts vigorous minutes twice and moderate once. For 2-minute alternating intervals, it counts the completed hard/easy segments separately, including an incomplete final segment. The logged intensity can override the planned one.
+- Outcome projections aggregate by calendar day and require four days with a clear upward trend and a recent observation. Repeated sets on one day do not create independent trend evidence. The projection is an estimate, not a completion guarantee.
+- Conditioning is not a resistance-training set. CSV exports remain set-oriented; complete backups include activities and outcome goals.
