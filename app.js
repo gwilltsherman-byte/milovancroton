@@ -3965,10 +3965,10 @@ function suggestHelp(exId, entry, prev, allTop, deload){
   if(allTop){
     if(!(a>0)) return {weight:0, note:'top of the range with no help &middot; time to try Pull-Ups'};
     const w=Math.max(0, Kit.next(a, -step, 'stack', unit()).kg);
-    return {weight:w, note:'&minus;'+fmtW(a-w)+unit()+' help &middot; every set reached the top of the range last time'}; }
+    return {weight:w, note:fmtW(a-w)+unit()+' less help &middot; every set reached the top of the range last time'}; }
   const r=Lift.trueRir(prev.rir, prev.reps, clsOf(exId));
   if(prev.reps!=null && prev.reps<entry.target.repLow && (r==null || r<=entry.target.rir+1)){ const w=Kit.next(a, step, 'stack', unit()).kg;
-    return {weight:w, note:'+'+fmtW(w-a)+unit()+' help &middot; last set landed under '+entry.target.repLow+' reps'}; }
+    return {weight:w, note:fmtW(w-a)+unit()+' more help &middot; last set landed under '+entry.target.repLow+' reps'}; }
   return {weight:a, note:'same help &middot; aim for +1 rep toward '+entry.target.repHigh};
 }
 /* An exercise of a block or Together day as a session entry: rir is the week's, and the exercise's own comes from its kind

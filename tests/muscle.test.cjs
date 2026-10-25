@@ -227,3 +227,54 @@ test('how a muscle’s lifts went comes from the estimated max of its best sets 
   assert.equal(api.evaluate(`musclePerf(${JSON.stringify(rec('b', Date.now(), 80, 8))}, 'chest')`), 'same');
   assert.equal(api.evaluate(`musclePerf(${JSON.stringify(rec('b', Date.now(), 80, 6))}, 'chest')`), 'down');
 });
+
+/* ---- during a session ---- */
+test('ticking a set with an empty reps box logs the bottom of the range, marked as assumed', () => {
+  const api = muscle(), S = api.state();
+  S.active = {id: 'a1', name: 'T', startedAt: Date.now(), entries: [{exId: 'leg-extension', name: 'Leg Extension', primary: ['quad'], secondary: [], equipment: 'Machine',
+    target: {repLow: 10, repHigh: 15, rir: 2, rest: 90}, sets: [{type: 'work', weight: 40, reps: null, rir: null, done: false}]}]};
+  try { api.evaluate('toggleDone(0,0)'); } catch (e) { /* the screen isn't there; the set is changed before it draws */ }
+  const s = plain(S.active.entries[0].sets[0]);
+  assert.equal(s.done, true); assert.equal(s.reps, 10); assert.equal(s.assumed, true);
+});
+
+test('the reps-in-reserve check is offered on the last set of the first isolation exercise and logged to failure', () => {
+  const api = muscle(), S = api.state();
+  const en = (id, name, n) => ({exId: id, name, primary: ['quad'], secondary: [], equipment: 'Machine', target: {repLow: 10, repHigh: 15, rir: 2, rest: 90},
+    sets: Array.from({length: n}, () => ({type: 'work', weight: 40, reps: null, rir: null, done: false}))});
+  S.active = {id: 'a1', name: 'T', startedAt: Date.now(), entries: [en('leg-press', 'Leg Press', 3), en('leg-extension', 'Leg Extension', 3)]};
+  assert.equal(api.evaluate('calSet(state.active.entries[0], 0)'), -1, 'not on a compound');
+  assert.equal(api.evaluate('calSet(state.active.entries[1], 1)'), 2, 'the last set of the isolation exercise');
+  const set = S.active.entries[1].sets[2]; set.reps = 12; set.rir = 2; set.calx = 3;
+  const msg = api.evaluate('recordCheck(state.active.entries[1], state.active.entries[1].sets[2])');
+  const rec = plain(S.rirCal[S.rirCal.length - 1]);
+  assert.equal(rec.cls, 'iso'); assert.equal(rec.predictedRir, 2); assert.equal(rec.actualExtra, 3); assert.equal(rec.error, 1);
+  assert.equal(set.reps, 15); assert.equal(set.rir, 0);
+  assert.match(msg, /1 more/);
+  assert.equal(api.evaluate('calSet(state.active.entries[1], 1)'), -1, 'once checked, not again for a while');
+});
+
+test('one check-in a day: answered or skipped here or in Together, a session does not ask again', () => {
+  const api = muscle();
+  assert.equal(api.evaluate('askedToday()'), false);
+  api.state().readyDay = api.evaluate('Day.key()');
+  assert.equal(api.evaluate('askedToday()'), true);
+  const other = muscle();
+  other.evaluate(`localStorage.setItem('trainer.together', JSON.stringify({checkins:[{day:Day.start(), at:Date.now(), skip:true}]}))`);
+  assert.equal(other.evaluate('askedToday()'), true, 'skipped in Together counts');
+});
+
+test('warm-up sets go before the first loaded compound of each part of the body, not only the first', () => {
+  const api = muscle();
+  const en = (id, w) => { const x = api.evaluate(`exById(${JSON.stringify(id)})`); return {exId: id, name: x.name, primary: x.primary, secondary: x.secondary, equipment: x.equipment,
+    target: {repLow: 6, repHigh: 10, rir: 2}, sets: [0, 1, 2].map(() => ({type: 'work', weight: w}))}; };
+  const es = [en('back-squat', 100), en('barbell-bench', 80), en('incline-db-press', 30), en('barbell-row', 70), en('leg-extension', 50)];
+  api.state().active = {entries: es};
+  api.evaluate('warmUp(state.active.entries)');
+  const warm = plain(api.state().active.entries).map(e => e.sets.filter(s => s.type === 'warmup').map(s => s.weight));
+  assert.ok(warm[0].length >= 2 && warm[0][0] === 20, 'the first lift starts from the bar: ' + warm[0]);
+  assert.ok(warm[1].length >= 1 && warm[1].every(w => w > 20 && w < 80), 'the bench after squats gets ramp sets too: ' + warm[1]);
+  assert.equal(warm[2].length, 0, 'a second push is warm already');
+  assert.ok(warm[3].length >= 1, 'the first pull gets ramp sets');
+  assert.equal(warm[4].length, 0, 'single-joint work has none');
+});
