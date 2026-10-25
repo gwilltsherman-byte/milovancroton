@@ -109,7 +109,11 @@
     const st=sum.textContent;
     check(/Sessions: 3/.test(st) && st.includes('Main lifts') && st.includes('Bench Press') && st.includes('Back Squat') && st.includes('estimated max'), 'Share a summary lists the four weeks’ sessions and each main lift’s estimated max and best set');
     check(st.includes('Hard sets a week, per muscle') && st.includes('moved up to Weighted pull-up') && st.includes('=SUM(A1)'), 'it has weekly sets per muscle, Ladder rungs and your notes, as text');
+    const sq=win.__hub.api('str').lift('squat').e1, w1=x=>String(Math.round(x*10)/10)+' kg';
+    check(st.includes('Back Squat: estimated max '+w1(sq)+';'), 'a Strength lift’s estimated max is Strength’s own');
+    check(doc.documentElement.classList.contains('print-sum'), 'while the summary is open, printing prints it alone');
     doc.getElementById('sum-done').click();
+    check(!doc.documentElement.classList.contains('print-sum'), 'and once it is closed, printing prints the page again');
 
     // importing from Strong, with a preview, a changed match, and Undo
     const fin=doc.getElementById('yd-fin'), dt=new win.DataTransfer();
@@ -133,12 +137,42 @@
     await until(()=>imp.textContent.includes('Added'),'the import did not finish');
     await pause(300);
     const L=saved('hyplog.v1'), S=saved('strlog.v2'), legs=S.history.find(h=>h.from==='strong'&&h.name==='Leg Day');
-    check(L.history.length===before.lift+2 && S.history.length===before.str+1 && imp.textContent.includes('Added 3 sessions'), 'Import adds the workouts as past sessions in Muscle and Strength');
+    check(L.history.length===before.lift+2 && S.history.length===before.str+1 && imp.textContent.includes('Added 2 workouts (4 sets).'), 'Import adds the workouts as past sessions in Muscle and Strength, and counts them as workouts');
     check(legs && legs.entries[0].liftId==='squat' && legs.entries[0].sets.length===2 && legs.entries[0].sets[1].w===100 && legs.entries[0].sets[1].rpe===8 && legs.entries[0].sets[0].kind==='warm'
       && new Date(legs.date).getHours()===17, 'sets keep their weights, RPE and warm-ups, at the workout’s time (5:30 pm)');
     check(L.history.some(h=>h.from==='strong'&&h.entries.some(e=>e.exId==='cable-lateral')) && imp.textContent.includes('1 exercise already in Milo'), 'an exercise already logged that day is left out, and says so');
     imp.querySelector('[data-imp="undo"]').click(); await pause(300);
     check(saved('hyplog.v1').history.length===before.lift && saved('strlog.v2').history.length===before.str && !saved('hyplog.v1').history.some(h=>h.from), 'Undo takes exactly the imported sessions out again');
+    doc.getElementById('imp-cancel').click();
+    // the same file again, twice: the second time nothing is new, so nothing is offered
+    const pick=(text,name)=>{ const d=new win.DataTransfer(); d.items.add(new win.File([text],name||'strong.csv',{type:'text/csv'})); fin.files=d.files; fin.dispatchEvent(new win.Event('change')); };
+    pick(strong); await until(()=>imp.open,'the preview did not open again');
+    doc.getElementById('imp-go').click(); await until(()=>imp.textContent.includes('Added 2 workouts'),'the second import did not finish');
+    doc.getElementById('imp-cancel').click(); await pause(100);
+    check(!doc.getElementById('yd-undo').hidden && doc.getElementById('yd-msg').textContent==='Imported 2 workouts.', 'after the sheet closes, the backup sheet still offers to undo the import');
+    pick(strong); await until(()=>imp.open,'the preview did not open a third time');
+    check(imp.textContent.includes('2 workouts were imported before') && doc.getElementById('imp-go').disabled && doc.getElementById('imp-go').textContent==='Nothing to import',
+      'importing the same file again says it was imported before and offers nothing to import');
+    doc.getElementById('imp-cancel').click();
+    doc.getElementById('yd-undo').click(); await pause(300);
+    check(saved('hyplog.v1').history.length===before.lift && saved('strlog.v2').history.length===before.str && doc.getElementById('yd-undo').hidden, 'Undo in the backup sheet takes it out again');
+
+    // years of history: as much as still loads goes in, newest first, and Milo says what was left out
+    const EXS=['Squat (Barbell)','Bench Press (Barbell)','Deadlift (Barbell)','Overhead Press (Barbell)','Lat Pulldown (Cable)','Leg Extension (Machine)','Lateral Raise (Dumbbell)','Bicep Curl (Barbell)'];
+    const big=['Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE'], t0=new Date(2023,0,2,18,0);
+    for(let w=0;w<2*52;w++) for(let d=0;d<4;d++){ const day=new Date(t0.getFullYear(), t0.getMonth(), t0.getDate()+w*7+d*2), ds=day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0')+' 6:00:00 pm';
+      for(let e=0;e<6;e++){ const ex=EXS[(d*2+e)%EXS.length]; big.push(`${ds},"Workout ${d+1}",1h 5m,"${ex}",W,40,10,0,0,"","",`); for(let k=1;k<=3;k++) big.push(`${ds},"Workout ${d+1}",1h 5m,"${ex}",${k},80,8,0,0,"","",8`); } }
+    pick(big.join('\n'),'strong-2-years.csv'); await until(()=>imp.open,'the big preview did not open',200);
+    for(let i=0;i<20;i++){ const b=imp.querySelector('[data-imp="sec"][data-v="lift"][aria-pressed="false"]'); if(!b) break; b.click(); }   // all of it to Muscle
+    check(imp.textContent.includes('416 workouts and 9984 sets') && /more history than Milo can keep in Muscle, so the oldest \d+ sessions are left out/.test(imp.textContent), 'the preview says when there is more history than Milo can keep');
+    doc.getElementById('imp-go').click(); await until(()=>imp.textContent.includes('Added'),'the big import did not finish',400);
+    const rawL=localStorage.getItem('hyplog.v1'), BL=JSON.parse(rawL), kept=BL.history.filter(h=>h.from==='strong');
+    let loads=false; try{ MiloSecurity.parseSection(rawL,'hyplog.v1'); MiloSecurity.data({'hyplog.v1':rawL}); loads=true; }catch(e){}
+    check(loads && BL.history.some(h=>h.id==='m-1') && kept.length>100 && kept.length<416, 'what goes in still loads and backs up, beside your own sessions');
+    check(Math.min(...kept.map(h=>h.date))>new Date(2023,0,2).getTime() && Math.max(...kept.map(h=>h.date))===Math.max(...win.MiloSecurity.workouts(big.join('\n')).sessions.map(x=>x.start))
+      && imp.textContent.includes('Added '+kept.length+' workouts') && /the oldest \d+ sessions are left out/.test(imp.textContent), 'the newest workouts go in, and the result says the oldest were left out');
+    imp.querySelector('[data-imp="undo"]').click(); await pause(300);
+    check(saved('hyplog.v1').history.length===before.lift, 'and Undo takes them out again');
     doc.getElementById('imp-cancel').click();
     // a file from neither app is refused with a reason
     const dt2=new win.DataTransfer(); dt2.items.add(new win.File(['a,b\n1,2'],'x.csv',{type:'text/csv'})); fin.files=dt2.files; fin.dispatchEvent(new win.Event('change'));
@@ -193,8 +227,16 @@
     await pause(300);
     const left=Object.keys(localStorage).filter(k=>/^(hyplog|strlog|proladder|trainer\.together)/.test(k)||['milo.before','milo.backup','milo.caltime','trainer.shell.unit'].includes(k));
     check(!left.length && localStorage.getItem(FOREIGN)==='yours', 'Erase everything removes every Milo key, with undo and unreadable copies, and leaves other apps’ keys');
-    const tabs=[...doc.querySelectorAll('.seg')].filter(b=>!b.hidden).map(b=>b.dataset.m).join(',');
-    check(tabs==='mix' && !sessionStorage.getItem('milo.erase'), 'and Milo starts again as on its first run');
+    const tabs=()=>[...doc.querySelectorAll('.seg')].filter(b=>!b.hidden).map(b=>b.dataset.m).join(',');
+    check(tabs()==='mix' && !sessionStorage.getItem('milo.erase'), 'and Milo starts again as on its first run');
+
+    // someone new coming from Strong: their sections show as soon as the import is done, without a reload
+    doc.getElementById('bkbtn').click();
+    const fin2=doc.getElementById('yd-fin'), dt3=new win.DataTransfer(); dt3.items.add(new win.File([strong],'strong.csv',{type:'text/csv'})); fin2.files=dt3.files; fin2.dispatchEvent(new win.Event('change'));
+    const imp2=doc.getElementById('imp'); await until(()=>imp2.open,'the import preview did not open on a fresh start');
+    doc.getElementById('imp-go').click(); await until(()=>imp2.textContent.includes('Added'),'the fresh import did not finish');
+    doc.getElementById('imp-cancel').click(); doc.getElementById('bk-done')?.click(); await pause(100);
+    check(tabs()==='mix,lift,str', 'after an import on a fresh start, Muscle and Strength show straight away');
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;

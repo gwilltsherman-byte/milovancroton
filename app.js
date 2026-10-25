@@ -13306,15 +13306,18 @@ window.MiloData=(function(){
     const C=coachData(); sumText=D.text(C);
     $('sum-range').textContent='The four weeks from '+D.range(C);
     $('sum-body').innerHTML=MiloSecurity.html(D.summary(C).map(p=>'<section><h3>'+esc(p.h)+'</h3><ul>'+p.lines.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul></section>').join(''));
-    say('sum-msg',''); open($('sum'));
+    say('sum-msg',''); open($('sum')); printSum(true);
   });
+  // while the summary is open, printing prints it alone (shell.css); any other time the page prints as it is
+  const printSum=on=>document.documentElement.classList.toggle('print-sum', on);
+  $('sum').addEventListener('close',()=>printSum(false));
   $('sum-print').addEventListener('click',()=>window.print());
   $('sum-share').addEventListener('click',async()=>{
     try{ if(navigator.share){ await navigator.share({title:'Training summary', text:sumText}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
     try{ await navigator.clipboard.writeText(sumText); say('sum-msg','Summary copied as text, ready to paste into a message.'); }
     catch(e){ say('sum-msg','Couldn’t share or copy it here. Print it instead.',true); }
   });
-  $('sum-done').addEventListener('click',()=>close($('sum')));
+  $('sum-done').addEventListener('click',()=>{ close($('sum')); printSum(false); });
 
   /* ---- Importing from Strong or Hevy ----
      The file is read and checked in MiloSecurity.workouts. Each exercise name gets Milo's closest exercise (MiloData.guess),
@@ -13409,7 +13412,8 @@ window.MiloData=(function(){
   // after the sheet closes, the backup sheet keeps a way to take the last import back
   function paintUndo(){ $('yd-undo').hidden=!lastImport; }
   $('imp-cancel').addEventListener('click',()=>close($('imp')));
-  $('imp').addEventListener('close',()=>{ if(imp&&imp.done&&imp.done.added) say('yd-msg','Imported '+plural(imp.done.workouts,'workout')+'.'); imp=null; paintUndo(); });
+  // (the event comes a moment after the sheet closes: by then another file may have opened it again)
+  $('imp').addEventListener('close',()=>{ if($('imp').open) return; if(imp&&imp.done&&imp.done.added) say('yd-msg','Imported '+plural(imp.done.workouts,'workout')+'.'); imp=null; paintUndo(); });
   $('yd-undo').addEventListener('click',()=>{ undoImport(lastImport); say('yd-msg','Import undone.'); });
 
   /* ---- The app badge ----

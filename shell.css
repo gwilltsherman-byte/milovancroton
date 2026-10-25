@@ -104,12 +104,12 @@ button,a,input,textarea{touch-action:manipulation}
 .sum section{margin:0 0 14px}
 .sum ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;overflow-wrap:anywhere}
 .shtoast button{margin-left:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--sh-edge);background:var(--sh-well);color:var(--sh-ink);font:inherit;font-weight:700;cursor:pointer}
-/* The coach summary prints on its own, in black on white. */
+/* While it is open, the coach summary prints on its own, in black on white (the class is set while it is open). */
 @media print{
-  body{background:#fff!important}
-  body>*:not(#sum){display:none!important}
-  #sum{position:static;display:block;width:auto;max-width:none;max-height:none;overflow:visible;margin:0;padding:0;border:0;box-shadow:none;background:#fff;color:#000}
-  #sum::backdrop{display:none}
-  #sum .noprint{display:none!important}
-  #sum p,#sum .last{color:#000}
+  .print-sum body{background:#fff!important}
+  .print-sum body>*:not(#sum){display:none!important}
+  .print-sum #sum{position:static;display:block;width:auto;max-width:none;max-height:none;overflow:visible;margin:0;padding:0;border:0;box-shadow:none;background:#fff;color:#000}
+  .print-sum #sum::backdrop{display:none}
+  .print-sum #sum .noprint{display:none!important}
+  .print-sum #sum p,.print-sum #sum .last{color:#000}
 }
