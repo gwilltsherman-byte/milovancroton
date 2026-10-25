@@ -12542,7 +12542,7 @@ function toast(m, canUndo){ const t=$('#toast'), own=canUndo&&typeof canUndo==='
 
 /* ==================== STATE ==================== */
 let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null, undos=[], endAsk=false;
-let page='today', first=null, offer=null;   // the page the shell shows, the first-run answers, the health check offered before Day 1
+let page='today', first=null;   // the page the shell shows and the first-run program choices
 function load(){
   let t=null, raw=null; try{ raw=localStorage.getItem(TG_KEY); t=raw? MiloSecurity.parseSection(raw, TG_KEY) : null; }catch(e){ Safe.rescue(TG_KEY, raw, e); }
   t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, prio:null, kit:null, exp:'intermediate', tune:null, plan:null, next:0, run:null, short:false, log:[], checkins:[], roundAt:0,
@@ -12596,7 +12596,7 @@ function load(){
   // someone who trained only one section, and never Together, keeps that section as their program
   if(!t.on && !t.type && !t.plan && !(t.log||[]).length){ try{ const had=ALL.filter(m=>{ const x=localStorage.getItem({lift:'hyplog.v1', str:'strlog.v2', cal:'proladder.v1'}[m]); return !!x && x.indexOf('"history":[{')>=0; });
     if(had.length===1) t.type=had[0]; }catch(e){} }
-  // Today's first-run cards: the health check offered once before the first workout, Tune your program until closed
+  // Retain the legacy health-offer flag in old saves; startup no longer asks the questionnaire.
   t.offered=!!t.offered; t.tuned=!!t.tuned;
   return t;
 }
@@ -13980,7 +13980,7 @@ function heroNext(W){
   return `<section class="card">
     <div class="spread"><span class="eyebrow">Next up &middot; Day ${d+1} of ${D}</span>${ready?`<span class="chip">${IC.clock} about ${r5(P.mins)} min</span>`:''}</div>
     <div class="h2">${dayTitle(order)}</div>
-    ${offer&&offer.d===d? offerHtml(d) : `<div style="margin-top:12px"><button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button></div>`}
+    <div style="margin-top:12px"><button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button></div>
     ${ready? `<p class="hint" style="margin:8px 0 0">Warm up: 5 easy minutes, then the prescribed warm-up sets.</p>` : ''}
     <details class="rules copyfold" data-fold="workout"><summary>Workout details</summary><div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div></details>
     ${dayExtras(W, d, order, I).concat(dayNotes(order, I, P, C)).map(note).join('')}
@@ -14735,15 +14735,6 @@ function viewFirst(){
     <button class="btn ghost block" data-a="f-backup">I have a backup</button>
   </section></div>`;
 }
-/* Before the first workout, once: the health check as an optional 30 seconds. A yes never stops you. */
-function offerHtml(d){
-  const y=offer.yes;
-  return `<div class="offer" id="offer"><p class="lead" style="margin-top:10px"><b>A 30-second health check first?</b> Seven yes-or-no questions. It’s optional, and a yes never stops you. Tap any that apply.</p>
-    <button class="btn ghost block" data-a="o-skip" data-d="${d}" style="margin:8px 0">Start without the check</button>
-    <div class="tlist">${PARQ.map((q,i)=>`<button class="tpick topt${y.includes(i)?' on':''}" data-a="o-q" data-v="${i}" aria-pressed="${y.includes(i)}"><span class="tn"><b>${q}</b></span>${y.includes(i)? IC.check : ''}</button>`).join('')}</div>
-    ${y.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: your first block stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
-    <button class="btn pri block" data-a="o-start" data-d="${d}" style="margin-top:12px">${IC.play} Start Day ${d+1}</button></div>`;
-}
 /* Today leads with the way back to every running session, including a part of its own day. */
 function sessionCard(){
   const open=ALL.filter(m=>{ if(!H.has(m)) return false; const i=infoOf(m); return !!(i&&i.busy); });
@@ -14860,7 +14851,7 @@ function viewLibraryAll(){
    running a part of today's day. */
 H.reg('mix', {
   openOutcomes(m){goalForm={kind:'max',m:['lift','str'].includes(m)?m:'str'};page='progress';render();},
-  go(p){ page=PAGE_H[p]? p : 'today'; if(p==='today'){ offer=null; } render(); window.scrollTo(0,0); },
+  go(p){ page=PAGE_H[p]? p : 'today'; render(); window.scrollTo(0,0); },
   redraw(){ render(); },
   type:progType, on:()=>!!tg.on,
   setType(t){ if(t===progType()) return;
@@ -14937,11 +14928,6 @@ __root.addEventListener('click', e=>{
       const rec={day:startOfToday(), at:Date.now(), w:{}, sore:{}, x:{}, cw:2, quick:q[0]}; WELL.forEach(([k])=>{ rec.w[k]=q[2]; });
       tg.checkins=(tg.checkins||[]).filter(c=>c.day!==rec.day).concat([rec]).sort((a,b)=>a.day-b.day).slice(-400);
       save(); render(); toast('Check-in saved'); break; }
-    // the health check offered once before Day 1
-    case 'o-q': { const v=+el.dataset.v, y=offer.yes, i=y.indexOf(v); if(i>=0) y.splice(i,1); else y.push(v); render(); { const b=$(`[data-a="o-q"][data-v="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
-    case 'o-start': case 'o-skip': { const d=+el.dataset.d;
-      if(a==='o-start') tg.screen={at:Date.now(), yes:offer.yes.slice().sort((x,z)=>x-z), blk:screenBlk()};
-      tg.offered=true; offer=null; save(); startDay(d); break; }
     case 'tune-go': if(H.dest) H.dest('today'); page='today'; { const A=H.api('mix'); if(A) A.setup(el.dataset.v); } break;
     case 'tune-done': tg.tuned=true; save(); render(); break;
     case 'inst-go': if(window.__install) window.__install.prompt().then(()=>render()); break;
@@ -15076,10 +15062,7 @@ __root.addEventListener('click', e=>{
     case 'd-cancel': draft=null; render(); break;
     case 'd-stop': remember('Together stopped'); tg.on=false; tg.run=null; draft=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Stopped. Each trainer carries on by itself.', true); break;
     case 'edit': draft=newDraft(); render(); window.scrollTo(0,0); break;
-    case 'start-day': { const d=+el.dataset.d;
-      // before the very first workout, the health check is offered once (optional, about 30 seconds)
-      if(!tg.screen && !tg.offered){ offer={d, yes:[]}; render(); { const o=$('#offer'); if(o){ o.scrollIntoView({block:'nearest'}); const b=o.querySelector('button'); if(b) b.focus({preventScroll:true}); } } break; }
-      startDay(d); break; }
+    case 'start-day': startDay(+el.dataset.d); break;
     case 'part': startPart(k); break;
     case 'skip': if(tg.run&&tg.run.parts[k]){ const n=partName(tg.run.parts[k]); remember(n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(n+' skipped.', true); } break;
     case 'unskip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='todo'; save(); render(); } break;

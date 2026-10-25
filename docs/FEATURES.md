@@ -36,7 +36,7 @@ Recent conditioning activities can be opened from Progress. For planned 2-minute
 
 ## Check-in and safety
 
-The optional health screen follows the general approach of PAR-Q+. A positive answer suggests professional advice and a gentler block. It does not diagnose a condition or certify readiness.
+Starting a workout opens training directly, without a first-run questionnaire. The optional health screen in Settings follows the general approach of PAR-Q+. A positive answer suggests professional advice and a gentler block. It does not diagnose a condition or certify readiness.
 
 Daily check-ins support quick or detailed answers. Wellness is compared with your own baseline. Soreness, illness and joint pain influence planning alongside performance; missing answers are not counted as bad recovery.
 

@@ -6,7 +6,7 @@ Milo starts with a full gym and 60 minutes per training day. Change equipment, p
 
 ## Today
 
-Start the next day. The optional health screen helps set a gentler first block when appropriate. The daily check-in is also optional; skipped answers are not treated as poor recovery.
+Tap Start Day to open the workout directly. The daily check-in remains optional; skipped answers are not treated as poor recovery. An optional health check is available in Settings.
 
 Together runs skills, heavy lifting, other Ladder work, Muscle, then conditioning. When a section finishes, continue to the next part or leave it for later.
 

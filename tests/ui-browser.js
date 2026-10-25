@@ -23,7 +23,7 @@
     await group('Fresh combined workout',async()=>{
       const {win,doc}=await seed();let root=rootOf(doc,'mix');
       for(const m of ['str','lift'])root.querySelector('[data-a="f-sec"][data-m="'+m+'"]').click();
-      root.querySelector('[data-a="f-go"]').click();root.querySelector('[data-a="start-day"]').click();root.querySelector('[data-a="o-skip"]').click();await pause(250);
+      root.querySelector('[data-a="f-go"]').click();root.querySelector('[data-a="start-day"]').click();await pause(250);
       root=rootOf(doc,'str');
       check(win.__hub.current()==='str'&&!!root.querySelector('.session-card'),'a fresh combined day opens the next-set card');
       check(win.getComputedStyle(doc.querySelector('.shellbar')).display==='none'&&win.getComputedStyle(doc.querySelector('.sidebar')).display==='none','starting from Together immediately hides the shell in focus mode');
