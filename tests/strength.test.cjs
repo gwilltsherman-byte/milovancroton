@@ -461,20 +461,26 @@ test('new to it: three weeks at RPE 7 at most, no set to failure, a starting tes
   S.fn.saveStart();
   const L = S.T.state.lifts.bench;
   assert.equal(L.work, 40);
-  assert.ok(Math.abs(L.seed.v - S.Lift.e1rm(40, 8, 0, 'upper')) < 1e-9, 'reps left blank: the 8');
+  // reps and RPE left blank: the 8, with the 3 or more left the test asked for (it was scored all-out, about 8% low)
+  assert.ok(Math.abs(L.seed.v - S.Lift.e1rm(40, 8, 3, 'upper')) < 1e-9, 'reps left blank: the 8, at RPE 7');
 });
 
 test('an RPE check now and then on a set short of failure goes to Muscle’s record as a compound check (F6)', () => {
   const S = strength();
-  plan(S, {model: 'topset', choice: {chest: 'bench', legs: 'squat'}, exp: 'exp'});
-  S.T.state.lifts.bench.seed = {v: 100, date: S.now - DAY, rated: true};
-  S.T.state.lifts.squat.seed = {v: 140, date: S.now - DAY, rated: true};
-  assert.ok(!S.fn.checkable('squat') && !S.fn.checkable('deadlift') && S.fn.checkable('bench'));
+  plan(S, {model: 'topset', choice: {chest: 'bench', shoulders: 'ohp', back: 'dbrow', legs: 'squat'}, exp: 'exp', days: 2});
+  for (const [id, v] of [['bench', 100], ['ohp', 60], ['dbrow', 50], ['squat', 140]]) S.T.state.lifts[id].seed = {v, date: S.now - DAY, rated: true};
+  // never where a missed rep can pin you: a barbell squat, a pull from the floor, a free barbell bench of any kind
+  for (const id of ['squat', 'deadlift', 'bench', 'pbench', 'cgbench']) assert.ok(!S.fn.checkable(id), id);
+  for (const id of ['dbbench', 'sbench', 'ohp', 'dbrow', 'mchest']) assert.ok(S.fn.checkable(id), id);
   S.fn.startProgramDay(0);
-  const en = S.T.state.active.entries.find(e => e.liftId === 'bench'), ei = S.T.state.active.entries.indexOf(en);
-  const si = en.sets.findIndex(s => s.chk);
-  assert.ok(si >= 0 && en.sets[si].kind === 'bo', 'one back-off set asks for the check');
-  assert.ok(!S.T.state.active.entries.find(e => e.liftId === 'squat').sets.some(s => s.chk));
+  const A = S.T.state.active, marked = A.entries.filter(e => e.sets.some(s => s.chk));
+  assert.deepEqual(marked.map(e => e.liftId), ['dbrow'], 'one set, on dumbbells before a barbell press');
+  const en = marked[0], ei = A.entries.indexOf(en), si = en.sets.findIndex(s => s.chk);
+  assert.equal(en.sets[si].kind, 'bo', 'a back-off set asks for the check');
+  // the set itself says to have safeties or a spotter, before it is done
+  S.T.state.route = 'train'; S.fn.render();
+  const row = S.T.run("$('#view').innerHTML").match(/RPE check: at \d+ reps[^<]*/);
+  assert.ok(row && /Only with safeties set or a spotter/.test(row[0]), row && row[0]);
   const s = en.sets[si]; s.reps = 8;   // 5 to the planned stop, 3 more
   S.fn.toggleDone(ei, si);
   const els = new Map([['chk-call', {value: '2'}], ['chk-extra', {value: '3'}]]);
@@ -482,9 +488,175 @@ test('an RPE check now and then on a set short of failure goes to Muscle’s rec
   S.fn.saveCheck(ei, si);
   assert.equal(S.cals.length, 1);
   assert.equal(S.cals[0].predictedRir, 2); assert.equal(S.cals[0].actualExtra, 3); assert.equal(S.cals[0].reps, 5);
-  assert.equal(S.cals[0].cls, 'upper'); assert.equal(S.cals[0].from, 'Strength');
+  assert.equal(S.cals[0].cls, 'upper'); assert.equal(S.cals[0].from, 'Strength'); assert.equal(S.cals[0].exId, 'dbrow');
   assert.equal(s.reps, 8); assert.equal(s.rpe, 10);
   // not again for three weeks
   S.T.state.active = null; S.fn.startProgramDay(0);
   assert.ok(!S.T.state.active.entries.some(e => e.sets.some(x => x.chk)));
+});
+
+test('an estimate that starts low rises for a lifter who rates honestly: a set rated too easy counts as a floor, only upward', () => {
+  // Before: from 90 with a true max of 100, every prescribed set was rated RPE 4 or easier, left out as too easy, and the
+  // estimate stayed at 90.0 for 36 sessions.
+  for (const start of [85, 90]) {
+    const S = strength();
+    plan(S, {model: 'topset', choice: {chest: 'bench'}, exp: 'exp'});
+    S.T.state.lifts.bench.seed = {v: start, date: S.now - DAY, rated: true};
+    const seen = [];
+    for (let i = 0; i < 36; i++) {
+      train(S, s => { const max = canDo(S, 100, s.w); s.reps = Math.min(s.tr, max); s.rpe = Math.min(10, Math.max(1, 10 - (max - s.reps))); }, i % 3 === 2 ? 3 : 2);
+      seen.push(S.fn.currentE1('bench'));
+    }
+    assert.ok(seen[35] > 97 && Math.max(...seen) < 101, `from ${start}: ${seen[11].toFixed(1)} after 12, ${seen[35].toFixed(1)} after 36`);
+  }
+  // an easy set never pulls a good estimate down
+  const S = strength(), {setE1} = S.fn;
+  plan(S, {model: 'topset', choice: {chest: 'bench'}, exp: 'exp'});
+  S.T.state.lifts.bench.seed = {v: 100, date: S.now - 2 * DAY, rated: true};
+  S.T.state.history.push({id: 'e', name: 'A', date: S.now - DAY, entries: [{liftId: 'bench', sets: [{kind: 'work', w: 60, reps: 6, rpe: 3, done: true}]}], prs: []});
+  assert.equal(setE1(S.T.state.history[0].entries[0].sets[0], 'bench'), 0, 'too easy to count as a set');
+  assert.equal(S.fn.currentE1('bench'), 100);
+  // and the new lifter's test left at "easy for 8" no longer starts them about 8% low
+  assert.ok(S.Lift.e1rm(40, 8, 3, 'upper') > S.Lift.e1rm(40, 8, 0, 'upper') * 1.07);
+});
+
+test('a cycle end is judged again only on its own program’s plus sets: a new set-up starting at cycle 1 doesn’t count (item 44)', () => {
+  const S = strength();
+  plan(S, {model: 'wave', days: 3, choice: {chest: 'bench'}});
+  S.T.state.lifts.bench.tm = 80;
+  const perf = s => { const max = canDo(S, 100, s.w); s.reps = s.kind === 'plus' ? max : Math.min(s.tr, max); if (s.kind === 'plus') s.rpe = 10; };
+  for (let c = 0; c < 2; c++) for (let w = 0; w < 4; w++) for (let d = 0; d < 3; d++) train(S, perf, d === 2 ? 3 : 2);
+  assert.equal(S.T.state.lifts.bench.tm, 85);
+  assert.ok(S.T.state.history.every(h => h.plan.prog === S.T.state.program.startedAt), 'each session knows its program');
+  S.T.state.setup.days = 2; S.fn.resetProgram();
+  for (let w = 0; w < 2; w++) for (let d = 0; d < 2; d++) train(S, perf, d === 1 ? 5 : 2);
+  assert.equal(S.T.state.lifts.bench.tm, 85);
+  // saving the first session unchanged, or deleting and putting back an old one, changes nothing
+  S.fn.openEditSession(S.T.state.history[0].id); S.fn.saveEdit();
+  assert.equal(S.T.state.lifts.bench.tm, 85, 'before: 82.5');
+  const gone = S.T.state.history[2]; S.T.state.history = S.T.state.history.filter(h => h !== gone); S.fn.replay(gone);
+  S.T.run('insertRec')(gone); S.fn.replay(gone);
+  assert.equal(S.T.state.lifts.bench.tm, 85);
+});
+
+test('a starting test of every kind stands when an older session is changed: added weight, variations, loads (item 44)', () => {
+  const S = strength();
+  plan(S, {model: 'linear', choice: {chest: 'bench', lats: 'wpull', legs: 'legchain'}});
+  Object.assign(S.T.state.lifts.bench, {work: 60}); Object.assign(S.T.state.lifts.wpull, {work: 5});
+  const first = train(S, s => { s.reps = s.tr; }).rec;
+  train(S, s => { s.reps = s.tr; });
+  // a retest: +20 on the pull-up for 5, the bench at 100 x 5 @ 8, and a harder single-leg squat
+  const box = (id, k, v) => ({dataset: {id, num: k}, value: v});
+  S.T.run('__root').querySelectorAll = () => [box('wpull', 'bw', '12'), box('wpull', 'add', '20'), box('bench', 'w', '100'), box('bench', 'r', '5'), box('bench', 'rpe', '8')];
+  S.T.run('__root').addEventListener = () => {};
+  S.fn.saveStart();
+  S.T.state.lifts.legchain.var = 2; S.T.state.lifts.legchain.seed = {date: S.now, var: 2};   // as the variation picker saves it
+  const was = plain({bench: S.T.state.lifts.bench.work, wpull: S.T.state.lifts.wpull.work, legs: S.T.state.lifts.legchain.var});
+  assert.deepEqual(was, {bench: 95, wpull: 20, legs: 2});
+  S.wait(1);
+  S.fn.openEditSession(first.id); S.T.run('edit.rec.entries[0].sets[edit.rec.entries[0].sets.length-1].reps=4'); S.fn.saveEdit();
+  assert.deepEqual(plain({bench: S.T.state.lifts.bench.work, wpull: S.T.state.lifts.wpull.work, legs: S.T.state.lifts.legchain.var}), was, 'before: the pull-up went back to +5');
+});
+
+test('a session finished before these notes were kept moves nothing when it is changed, deleted or put back (item 44)', () => {
+  const S = strength();
+  plan(S, {model: 'wave', days: 3, choice: {chest: 'bench', back: 'row', legs: 'squat'}});
+  Object.assign(S.T.state.lifts.bench, {tm: 90, work: 70}); Object.assign(S.T.state.lifts.row, {tm: 70, work: 60}); S.T.state.lifts.squat.tm = 120;
+  const perf = s => { s.reps = s.kind === 'plus' ? s.tr + 8 : (s.tr || 5); if (s.kind === 'plus') s.rpe = 10; };
+  train(S, perf); const old = S.T.state.history[0]; delete old.lifts; delete old.cyc; delete old.plan.prog;   // as the old app saved it
+  for (let i = 0; i < 11; i++) train(S, perf);
+  const now = () => plain(['bench', 'row', 'squat'].map(id => [S.T.state.lifts[id].tm, S.T.state.lifts[id].work]));
+  const was = now();
+  for (let k = 0; k < 2; k++) S.fn.replay(plain(old));
+  assert.deepEqual(now(), was, 'before: working weights wiped and the training max raised again on every replay');
+  S.fn.openEditSession(old.id); S.T.run('edit.rec.entries[0].sets[edit.rec.entries[0].sets.length-1].reps=3'); S.fn.saveEdit();
+  assert.deepEqual(now(), was);
+  S.fn.openEditSession(old.id); S.T.run('renderEdit()');
+  assert.ok(S.T.run("$('#sheet').innerHTML").includes('Next time’s weights stay as they are'));
+  S.fn.openEditSession(S.T.state.history[5].id); S.T.run('renderEdit()');
+  assert.ok(S.T.run("$('#sheet').innerHTML").includes('records and next time’s weights'), 'the edit sheet says saving works them out again');
+});
+
+test('the end of a cycle reads the session that ended it, before it is saved', () => {
+  const S = strength();
+  plan(S, {model: 'topset', days: 3, choice: {chest: 'bench'}, exp: 'exp'});
+  S.T.state.lifts.bench.seed = {v: 100, date: S.now - DAY, rated: true};
+  S.T.run('showReview=(rec,notes,cycle)=>{ globalThis.__cyc=cycle; }');
+  for (let w = 0; w < 4; w++) for (let d = 0; d < 3; d++) { S.fn.render(); train(S, s => { s.reps = s.tr; s.rpe = (w === 3 && d === 2) ? 10 : 7; }, d === 2 ? 3 : 2); }
+  const c = S.T.run('globalThis.__cyc'), now = S.fn.currentE1('bench');
+  assert.ok(Math.abs(c[0].to - now) < 1e-9 && Math.abs(S.T.state.program.startE1.bench - now) < 1e-9, `${c[0].to} and ${S.T.state.program.startE1.bench}, now ${now}`);
+});
+
+test('the set shows what is asked: a capped plus set has no plus, and the RPE an untouched box saves is the one counted (items 10 and 48)', () => {
+  const S = strength();
+  plan(S, {model: 'wave', days: 3, choice: {chest: 'bench'}, exp: 'new'});
+  Object.assign(S.T.state.lifts.bench, {tm: 60, seed: {v: 70, date: S.now - DAY}});
+  S.fn.startProgramDay(0); S.T.state.route = 'train'; S.fn.render();
+  const en = S.T.state.active.entries[0], pi = en.sets.findIndex(s => s.kind === 'plus');
+  assert.match(en.label, /RPE 7 max/);
+  const row = S.T.run("$('#view').innerHTML").match(/<div class="setrow k-plus[\s\S]*?aria-label="Reps">/)[0];
+  assert.ok(!/\d\+</.test(row) && !/placeholder="\d\+"/.test(row), row);
+  en.sets[pi].reps = 9; S.fn.toggleDone(0, pi);
+  assert.ok(!S.T.run("$('#toast').innerHTML").includes('plus set'), 'no "reps on the plus set" for a set capped at RPE 7');
+  // 8 reps on a set of 6 at RPE 7, the box left: saved and shown as RPE 9, which is what the estimate counts
+  const T = strength();
+  plan(T, {model: 'topset', choice: {chest: 'bench'}, exp: 'exp'});
+  T.T.state.lifts.bench.seed = {v: 100, date: T.now - DAY, rated: true};
+  T.fn.startProgramDay(2);
+  const e2 = T.T.state.active.entries[0], i = e2.sets.findIndex(s => s.kind === 'work' && s.tr === 6 && s.trpe === 7);
+  e2.sets[i].reps = 8; T.fn.toggleDone(0, i);
+  assert.equal(e2.sets[i].rpe, 9); assert.equal(e2.sets[i].ra, true);
+  assert.equal(10 - T.fn.setEffort(e2.sets[i]).rir, e2.sets[i].rpe);
+  // typing the reps again works it out from the target, not from the saved value
+  T.T.run('__root').addEventListener = () => {};
+  e2.sets[i].reps = 7; e2.sets[i].rpe = T.T.run('assumedRpe')(e2.sets[i]);
+  assert.equal(e2.sets[i].rpe, 8);
+});
+
+test('a starting test saved before bodyweight counted is read in its own units, so split squat numbers don’t collapse (item 45)', () => {
+  const body = [{date: Date.UTC(2025, 8, 1), kg: 80.5}];
+  const S = strength({body});
+  plan(S, {model: 'topset', choice: {legs: 'dbsplit'}, exp: 'exp'});
+  // the old app: 20 kg dumbbells x 8 @ 8 saved as the dumbbell alone, and a training max in the same units
+  Object.assign(S.T.state.lifts.dbsplit, {seed: {v: S.Lift.e1rm(20, 8, 2, 'lower'), date: S.now - 9 * DAY}, tm: 24});
+  const alone = S.fn.currentE1('dbsplit'), shown = S.T.run("shownE1('dbsplit', currentE1('dbsplit'))");
+  assert.ok(shown > 25 && shown < 45, `shown ${shown.toFixed(1)}: before, 0`);
+  // one session of 20 x 6 @ 8 after it: the old test now agrees with it, where it dragged the estimate to 6.5 kg
+  S.T.state.history.push({id: 'o', name: 'A', date: S.now - 2 * DAY, entries: [{liftId: 'dbsplit', sets: [{kind: 'work', w: 20, reps: 6, rpe: 8, done: true}]}], prs: []});
+  S.T.run('strVer++');
+  const sess = S.fn.setE1(S.T.state.history[0].entries[0].sets[0], 'dbsplit', S.now - 2 * DAY), est = S.fn.currentE1('dbsplit');
+  assert.ok(Math.abs(est / sess - 1) < 0.06 && Math.abs(alone / sess - 1) < 0.08, `${est.toFixed(1)} against ${sess.toFixed(1)}`);
+  const w = S.fn.planSlot('dbsplit', {t: 'rpe', sets: 3, reps: 5, rpe: 8}, 1, 'topset')[0].w;
+  assert.ok(w >= 17.5 && w <= 25, `a weight to use (${w})`);
+  // an old training max alone, the same
+  const T = strength({body}); Object.assign(T.T.state.lifts.dbsplit, {tm: 24});
+  assert.ok(T.T.run("shownE1('dbsplit', currentE1('dbsplit'))") > 20);
+  // a program from before: its block starts in the same units
+  T.T.state.program = {cycle: 1, week: 1, done: {}, next: 0, log: {}, startedAt: T.now, startE1: {dbsplit: 26.7}};
+  assert.ok(T.T.run('startE1s(state.program)').dbsplit > 120 && T.T.state.program.tot === 1);
+});
+
+test('small things: a back extension with nothing held, the main split squat day, the bodyweight note, collars (items 45, 46, 38)', () => {
+  const S = strength({body: [{date: Date.UTC(2026, 0, 1), kg: 80}]});
+  plan(S, {model: 'wave', choice: {hips: 'backext', legs: 'dbsplit'}});
+  S.fn.startProgramDay(0);
+  const en = S.T.state.active.entries.find(e => e.liftId === 'backext'), ei = S.T.state.active.entries.indexOf(en), si = en.sets.findIndex(s => s.kind !== 'warm');
+  en.sets[si].w = 0; en.sets[si].reps = 10; en.sets[si].rpe = 8; S.fn.toggleDone(ei, si);
+  assert.equal(en.sets[si].done, true, 'bodyweight back extensions can be ticked');
+  assert.ok(S.fn.setE1(en.sets[si], 'backext') > 0, 'and count, as 60% of your bodyweight');
+  // the split squat's wave day is its main one, not lighter volume
+  const D = S.fn.progDef(), sc = D.days[0].slots.find(([id]) => id === 'dbsplit')[1];
+  assert.ok(!S.T.run('schemeText')('dbsplit', sc, 1, 'wave').includes('lighter volume'));
+  assert.ok(S.T.run('schemeText')('dbsplit', S.fn.schemeFor('dbsplit', 2, 'wave'), 1, 'wave').includes('lighter volume'));
+  // "Logged Sep 15", not "Logged sep 15"
+  const B = strength({body: [{date: Date.UTC(2025, 8, 15, 12), kg: 80}]});
+  plan(B, {model: 'linear', choice: {chest: 'bench'}});
+  B.T.state.route = 'progress'; B.T.state.progTab = 'standards'; B.fn.render();
+  const note = B.T.run("$('#view').innerHTML").match(/Logged ([^,]*),/)[1];
+  assert.equal(note, B.T.run('fmtDate')(Date.UTC(2025, 8, 15, 12)));
+  // collars set in kg show as they are in pounds, and a pull from the floor starts on full plates with collars on
+  const K = strength({prefs: {collarKg: 2.5}});
+  assert.equal(K.fn.warmups('deadlift', 140, true)[0].w, 65, '20 kg bar, 20 kg plates and 2.5 kg collars');
+  K.T.state.settings.unit = 'lb'; K.T.run('openSettings()');
+  assert.ok(K.T.run("$('#sheet').innerHTML").match(/class="on" data-act="set-collar" data-v="[\d.]+">5\.5 lb/), 'the collar in use, 5.5 lb, not None');
 });

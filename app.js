@@ -9444,13 +9444,11 @@ function makeEntry(id, planned, sc, label){
 /* Now and then (every three weeks at most), one set in a session asks for an RPE check: call your reps left at the
    planned stop, keep going to failure, and say how many more you got. It shows how well you judge reps left on heavy
    sets (Muscle keeps the record, and every section allows for it: Lift.calibrate). Only on lifts you can safely take to
-   failure: not squats, pulls from the floor or a free barbell bench, where a missed rep can pin you; dumbbells and
-   machines first. On a set planned 1 to 3 reps short. Not in a new lifter's first weeks, which keep every set short of
-   failure. */
+   failure: not barbell squats, pulls from the floor or a free barbell bench, where a missed rep can pin you; dumbbells
+   and machines first, and the set itself says to have safeties set or a spotter. On a set planned 1 to 3 reps short. Not
+   in a new lifter's first weeks, which keep every set short of failure. */
 function calDue(){ const H=window.__hub; return !!(H&&H.has) && !introOn() && !(state.calLast && Date.now()-state.calLast<21*864e5); }
 function checkable(id){ const X=EX[id]; return !!X && X.k==='load' && !X.floor && !(X.eq==='bar'&&(X.lower||X.mv==='bench')); }
-/* Where a missed rep can come down on you, the check asks for safeties or a spotter on the set itself. */
-function checkSafe(id){ const X=EX[id]; return !!X && X.eq!=='stack'; }
 function markCheck(entries){
   if(!calDue()) return;
   const order=entries.filter(en=>checkable(en.liftId)).sort((a,b)=>(EX[a.liftId].eq==='bar')-(EX[b.liftId].eq==='bar'));
@@ -10099,7 +10097,7 @@ function setRow(en,ei,s,si,isNext,n){
   const wcell= X.k==='bw'? `<div class="nil mono bwcell">BW</div>`
     : `<input class="sinput" inputmode="decimal" data-field="w" data-ex="${ei}" data-set="${si}" value="${inW(s.w)}" placeholder="${X.k==='added'?'+0':u()}" aria-label="Weight">`;
   // an RPE logged from the target (the box was left untouched) shows apart from one you typed
-  const chk= s.chk&&!s.done? `<button class="pl chk" data-act="chk-why" data-ex="${ei}" data-set="${si}">${I.gauge} RPE check: at ${s.tr} reps, call your reps left, then keep going to failure${checkSafe(en.liftId)?'. Only with safeties set or a spotter':''}</button>` : '';
+  const chk= s.chk&&!s.done? `<button class="pl chk" data-act="chk-why" data-ex="${ei}" data-set="${si}">${I.gauge} RPE check: at ${s.tr} reps, call your reps left, then keep going to failure. Only with safeties set or a spotter</button>` : '';
   return `<div class="setrow k-${s.kind} ${s.done?'done':''} ${isNext?'next':''}">
     <div class="sidx">${lbl}</div>
     ${wcell}
