@@ -108,7 +108,8 @@ test('barbell presses grip with the thumbs round the bar, and benching alone use
   for (const id of ['barbell-bench', 'close-grip-bench', 'pause-bench', 'incline-bench', 'ohp', 'push-press', 'smith-press', 'skullcrusher']) assert.match(text(id), /thumbs? wrapped round/i, id);
   for (const id of ['barbell-bench', 'close-grip-bench', 'pause-bench', 'incline-bench']) assert.match(howto[id].note, /on every set/, id);
   for (const id of ['back-squat', 'pause-squat', 'front-squat']) assert.match(howto[id].note, /safety pins/, id);
-  for (const id of ['barbell-bench', 'ohp', 'back-squat', 'front-squat', 'deadlift', 'leg-press', 'hip-thrust']) assert.match(howto[id].note, /High blood pressure/, id);
+  // every heavy main lift Strength can program, the dumbbell and loaded-bodyweight ones included
+  for (const id of ['barbell-bench', 'ohp', 'back-squat', 'front-squat', 'deadlift', 'leg-press', 'hip-thrust', 'db-bench', 'machine-chest-press', 'db-shoulder-press', 'weighted-dip', 'weighted-pullup', 'bulgarian-split-squat', 'db-rdl']) assert.match(howto[id].note, /High blood pressure/, id);
 });
 
 test('handstand and weighted-step instructions match the Ladder', () => {
@@ -119,4 +120,15 @@ test('handstand and weighted-step instructions match the Ladder', () => {
   assert.match(text('weighted-pullup'), /3 sets of 8 strict pull-ups/);
   assert.match(text('weighted-chin-up'), /3 sets of 10 strict chin-ups/);
   assert.match(text('weighted-dip'), /3 sets of 10 strict dips/);
+  // the Ladder's own rung cues say the same as the instructions and the 3 x 10 gates before them
+  const cues = [...app.matchAll(/\{id:'(weighted-(?:dip|chin-up|pullup))',[^\n]*?cue:'((?:[^'\\]|\\.)*)'/g)].map(m => [m[1], m[2]]);
+  assert.ok(cues.length >= 3, 'rung cues found');
+  for (const [id, cue] of cues) assert.doesNotMatch(cue, /fifteen|\bten\b|\b15\b/i, id);
+  for (const [id, cue] of cues.filter(([id]) => id !== 'weighted-pullup')) assert.match(cue, /3 sets of 10 strict/, id);
+});
+
+test('evidence lists show each card’s advice once, with one full stop', () => {
+  for (const [lib, E] of Object.entries(all)) for (const [k, e] of Object.entries(E)) assert.match(e.a, /[^.]\.$/, `${lib}.${k}`);
+  // every advice field is one sentence that ends in a full stop, so a list row that adds one shows two
+  assert.doesNotMatch(app, /\$\{e\.a[^}]*\}\./);
 });
