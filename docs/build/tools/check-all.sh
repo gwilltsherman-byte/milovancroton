@@ -17,5 +17,9 @@ SRV=$!
 sleep 1
 node "$HERE/run-suites.cjs" "$PORT" "$@" || status=1
 kill $SRV 2>/dev/null
+if [ "$#" -eq 0 ]; then
+  echo "== installed-app upgrade"
+  node "$HERE/check-upgrade.cjs" || status=1
+fi
 echo "== overall: $([ $status -eq 0 ] && echo PASS || echo FAIL)"
 exit $status
