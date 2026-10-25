@@ -5,13 +5,15 @@
   frame.title = 'Ladder test session'; frame.style.cssText = 'width:390px;height:720px;border:1px solid #777';
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   function check(ok, message) { if (!ok) throw new Error(message); results.push('PASS ' + message); }
-  async function loadFrame(ready = '[data-act="toggle-done"]') {
+  // ?m=cal opens Ladder's session when one is going, else Ladder on Progress; route opens one of its pages through the hub
+  async function loadFrame(ready = '[data-act="toggle-done"]', route) {
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('App loading timed out')), 10000);
       frame.onload = () => { clearTimeout(timeout); resolve(); };
       frame.src = '../index.html?m=cal&ladder-regression=' + Date.now();
       if (!frame.parentNode) document.body.appendChild(frame);
     });
+    if (route) { const hub = frame.contentWindow.__hub; hub.go('cal'); hub.api('cal').go(route); }
     for (let i = 0; i < 100; i++) {
       const root = frame.contentDocument.getElementById('m-cal')?.shadowRoot;
       if (root?.querySelector(ready)) return root;
@@ -55,7 +57,7 @@
       rung:{pull:2, pushh:3}, placed:{pull:true, pushh:true}, history:[], tests:[], active:null,
       goals:[{id:'goal-a', key:'pullup1', n:'First strict pull-up', l:'pull', r:4, std:1, sup:[], added:1, achieved:null},
         {id:'goal-b', key:'pushup20', n:'20 strict push-ups', l:'pushh', r:3, std:20, sup:[], added:1, achieved:null}]}));
-    root = await loadFrame('.goal-full');
+    root = await loadFrame('.goal-full', 'goals');
     const heads = () => [...root.querySelectorAll('.goal-head')], bodies = () => [...root.querySelectorAll('.goal-body')];
     check(heads().length === 2 && heads().every(h => h.getAttribute('aria-expanded') === 'false') && bodies().every(b => b.hidden), 'several goals start folded to their summaries');
     heads()[1].click();

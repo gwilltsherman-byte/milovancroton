@@ -14096,7 +14096,7 @@ function viewSetup(){
     <div style="margin-top:20px"><button class="btn pri block" data-a="d-save" ${d.secs.length? '' : 'disabled'}>${IC.arrow} ${tg.on?'Save':'Build my week'}</button></div>
     ${d.secs.length? '' : `<p class="hint" style="text-align:center">Pick at least one.</p>`}
     ${tg.on? `<button class="btn ghost block" data-a="d-cancel" style="margin-top:8px">Cancel</button>
-      <button class="btn ghost block danger" data-a="d-stop" style="margin-top:4px">Stop the program</button>` : ''}
+      <button class="btn ghost block danger" data-a="d-stop" style="margin-top:4px">Stop the program</button>` : `<button class="btn ghost block" data-a="d-cancel" style="margin-top:8px">Cancel</button>`}
   </section></div>`;
 }
 /* ==================== YOUR BLOCK ====================
@@ -14350,7 +14350,7 @@ const FIRST_LINE={lift:'Build muscle', str:'Lift heavier', cal:'Calisthenics ski
 const localUnit=()=>/-(US|LR|MM)\b/i.test(String(navigator.language||''))? 'lb' : 'kg';
 const PAGE_H={today:'Today', train:'Train', progress:'Progress', library:'Library'};
 function progType(){ return !tg.on && ALL.includes(tg.type)? tg.type : 'mix'; }
-function newFirst(){ return {secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit()}; }
+function newFirst(){ return {secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit(), auto:true}; }
 /* First run: what you train, how many days, and units. Everything else starts from a full gym, an hour and some
    training behind you, and is yours to change once the first session is done. */
 function viewFirst(){
@@ -14493,12 +14493,12 @@ function viewLibraryAll(){
 H.reg('mix', {
   go(p){ page=PAGE_H[p]? p : 'today'; if(p==='today'){ offer=null; } render(); window.scrollTo(0,0); },
   redraw(){ render(); },
-  type:progType,
+  type:progType, on:()=>!!tg.on,
   setType(t){ if(t===progType()) return;
     if(t==='mix'){ tg.type=null; tg.on=tg.secs.length>0; }
     else if(ALL.includes(t)){ if(tg.run) closeRun(); tg.on=false; tg.type=t; }
     save(); H.changed('mix'); render(); },
-  setup(field){ page='today'; if(!tg.on){ render(); return; } draft=newDraft(); tune=null; render();
+  setup(field){ page='today'; draft=newDraft(); tune=null; render();
     const el=$('#su-'+field); if(!el) { window.scrollTo(0,0); return; }
     const det=el.querySelector('details'); if(det) det.open=true;
     el.scrollIntoView({block:'start'}); const b=el.querySelector('button,input'); if(b) b.focus({preventScroll:true}); },
@@ -14522,7 +14522,8 @@ function draw(){
   if(page==='train') html=viewTrainHub();
   else if(page==='progress') html=viewProgressAll();
   else if(page==='library') html=viewLibraryAll();
-  else { if(!tg.on && !draft && !first) first=newFirst(); if(tg.on) first=null;
+  // the first run picks the sections you have training in (an import, say) until you pick for yourself
+  else { if(!tg.on && !draft && (!first||first.auto)) first=newFirst(); if(tg.on) first=null;
     html= draft? viewSetup() : !tg.on? viewFirst() : tune? (tune.pick? viewPick() : viewTune()) : viewMain(); }
   $('#view').innerHTML= MiloSecurity.html(html);
   const h=__root.querySelector('.appbar h1'); if(h) h.textContent=PAGE_H[page];
@@ -14538,9 +14539,9 @@ __root.addEventListener('click', e=>{
   const a=el.dataset.a, k=+el.dataset.k;
   switch(a){
     // first run: what you train, days a week, units, then build
-    case 'f-sec': { const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
-    case 'f-days': first.days=+el.dataset.v; render(); { const b=$(`[data-a="f-days"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
-    case 'f-unit': first.unit=el.dataset.v==='lb'? 'lb' : 'kg'; render(); { const b=$(`[data-a="f-unit"][data-v="${first.unit}"]`); if(b) b.focus({preventScroll:true}); } break;
+    case 'f-sec': { first.auto=false; const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'f-days': first.auto=false; first.days=+el.dataset.v; render(); { const b=$(`[data-a="f-days"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
+    case 'f-unit': first.auto=false; first.unit=el.dataset.v==='lb'? 'lb' : 'kg'; render(); { const b=$(`[data-a="f-unit"][data-v="${first.unit}"]`); if(b) b.focus({preventScroll:true}); } break;
     case 'f-backup': if(window.__openSettings) window.__openSettings('restore'); break;
     case 'f-go': { const f=first; if(!f||!f.secs.length) break;
       if(tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
@@ -15153,6 +15154,7 @@ render();
   function tgSaved(){ try{ return JSON.parse(localStorage.getItem('trainer.together')||'null'); }catch(e){ return null; } }
   /* The program type: 'mix' (Together, the default) or the one section you train on its own. */
   function progType(){ const A=apis.mix; if(A&&A.type) return A.type(); const t=tgSaved(); return t&&!t.on&&KEYS[t.type]? t.type : 'mix'; }
+  function tgOn(){ const A=apis.mix; if(A&&A.on) return A.on(); const t=tgSaved(); return !!(t&&t.on); }
   /* A section with a session open: its live state once it has started, else what it saved (read once: nothing else writes it). */
   function runningIn(m){ try{
     if(inited[m]&&apis[m]&&apis[m].info){ const i=apis[m].info(); return !!(i.busy || (i.open||[]).length); }
@@ -15221,7 +15223,7 @@ render();
     const h=hostOf(m); if(h) h.classList.toggle('training', r==='train');
     if(routing || m!==active) return;
     const d=destOf(m, r);
-    if(m!=='mix' && d==='today' && r==='today' && progType()!==m && !(back&&back.m===m)){
+    if(m!=='mix' && d==='today' && r==='today' && tgOn() && progType()!==m && !(back&&back.m===m)){
       const A=apis[m]; if(A&&A.sheetOpen&&A.sheetOpen()){ homeAfter=m; return; }
       setTimeout(()=>{ if(active===m && routes[m]==='today' && !(apis[m].sheetOpen&&apis[m].sheetOpen())) goDest('today', {focus:false}); }, 0); return; }
     if(d!==dest){ dest=d; paintNav(); } else if(dest==='today') paintSub();
@@ -15298,7 +15300,7 @@ render();
   function checkBack(m, why){
     // a section that went back to its own Today while a sheet was open: Together's Today, now that it's closed
     if(why==='closed' && homeAfter===m){ homeAfter=null;
-      setTimeout(()=>{ if(active===m && routes[m]==='today' && !back && !(apis[m].sheetOpen&&apis[m].sheetOpen()) && progType()!==m) goDest('today'); }, 90); }
+      setTimeout(()=>{ if(active===m && routes[m]==='today' && !back && !(apis[m].sheetOpen&&apis[m].sheetOpen()) && tgOn() && progType()!==m) goDest('today'); }, 90); }
     if(!back||back.m!==m||active!==m) return;
     setTimeout(()=>{ const b=back; if(!b||b.m!==m||active!==m) return;
       const api=apis[m];

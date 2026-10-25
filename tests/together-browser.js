@@ -16,21 +16,26 @@
     for(let i=0;i<100;i++){ const r=frame.contentDocument&&frame.contentDocument.getElementById('m-mix'); if(r&&r.shadowRoot&&r.shadowRoot.getElementById('view')&&r.shadowRoot.getElementById('view').children.length) return {win:frame.contentWindow, doc:frame.contentDocument}; await pause(50); }
     throw new Error('Together did not start');
   }
-  const tabs=doc=>[...doc.querySelectorAll('.seg')].filter(b=>!b.hidden).map(b=>b.dataset.m).join(',');
+  const place=doc=>(doc.querySelector('.seg[aria-current="page"]')||{dataset:{}}).dataset.d;
   const saved=()=>JSON.parse(localStorage.getItem('trainer.together'));
+  // Start Day: before the first workout the health check is offered once, and skipping it starts the day
+  async function startDay(root){ root.querySelector('[data-a="start-day"]').click(); await pause(150); const sk=root.querySelector('[data-a="o-skip"]'); if(sk) sk.click(); }
   const ladder={v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:2, pushh:3, core:1, row:1}, placed:{pull:true, pushh:true, core:true, row:true, scap:true},
     history:[], tests:[], active:null, goals:[{id:'goal-a', key:'pullup1', n:'First strict pull-up', l:'pull', r:4, std:1, sup:['row','core'], added:1, achieved:null}]};
   try {
-    // a new person sees only Together, and it is where the app opens
+    // a new person opens on Today, at a first run of two taps
     reset({'milo.persist':'1'});
     let {win,doc}=await load();
-    check(tabs(doc)==='mix' && doc.querySelector('.seg.on').dataset.m==='mix', 'a new person opens on Together, with no other tabs');
     let root=doc.getElementById('m-mix').shadowRoot;
-    root.querySelector('[data-a="d-sec"][data-m="str"]').click();
-    check(!root.querySelector('[data-a="d-save"]').disabled, 'one kind of training is enough to build a program');
-    root.querySelector('[data-a="d-save"]').click(); await pause(300);
-    check(tabs(doc)==='mix,str', 'the trainer you choose appears as a tab');
-    check(root.textContent.includes('Make this block yours') && !!root.querySelector('[data-a="t-pick"][data-t="lift"][data-k="legs"]'), 'a new block opens for you to customize first');
+    check(place(doc)==='today' && !!root.querySelector('[data-a="f-go"]') && !root.querySelector('[data-a="d-mins"]'), 'a new person opens on Today, at a first run that asks only what, how often and units');
+    root.querySelector('[data-a="f-sec"][data-m="str"]').click();
+    check(!root.querySelector('[data-a="f-go"]').disabled, 'one kind of training is enough to build a program');
+    root.querySelector('[data-a="f-go"]').click(); await pause(300);
+    const go=root.querySelector('[data-a="start-day"]');
+    check(!!go && go.textContent.includes('Start Day 1') && go.getBoundingClientRect().bottom<=800 && !root.textContent.includes('Make this block yours'), 'Build goes straight to Today, with Start Day 1 above the fold and no page forced open');
+    check(saved().mins===60 && saved().exp==='intermediate' && !saved().kit, 'the first run assumes a full gym, an hour and some training behind you');
+    root.querySelector('[data-a="t-new"]').click(); await pause(200);
+    check(root.textContent.includes('Make this block yours') && !!root.querySelector('[data-a="t-pick"][data-t="lift"][data-k="legs"]') && !root.querySelector('[data-a="t-discard"]'), 'customizing a block is a link, and with no changes it has one Start');
     root.querySelector('[data-a="t-save"]').click(); await pause(300);
     let P=saved().plan;
     check(P && P.dose.str==='build' && P.week===1 && P.weeks===5, 'Strength alone gets a building dose in a five-week block');
@@ -41,7 +46,7 @@
     // all three, ranked by the suggestion: Strength builds, Ladder moderate, Muscle maintains
     reset({'milo.persist':'1', 'proladder.v1':JSON.stringify(ladder), 'trainer.together':JSON.stringify({v:1, on:true, secs:['lift','str','cal'], days:4, mins:0})});
     ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
-    check(tabs(doc)==='mix,lift,str,cal', 'all three chosen trainers show as tabs');
+    check(place(doc)==='today' && !!root.querySelector('[data-a="start-day"]'), 'with all three chosen, Today shows the next day');
     P=saved().plan;
     check(P.dose.str==='build' && P.dose.cal==='moderate' && P.dose.lift==='maintain', 'the order sets the dose: build, moderate, maintain');
     const cov=new Set(P.days.flatMap(d=>d.lift.map(x=>x.mu)));
@@ -122,7 +127,14 @@
     // a new block starts again at week 1
     const t=saved(); t.plan.week=3; localStorage.setItem('trainer.together', JSON.stringify(t));
     ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
-    root.querySelector('[data-a="t-edit"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(250);
+    root.querySelector('[data-a="t-edit"]').click(); await pause(150);
+    check(!root.querySelector('[data-a="t-save"]') && !!root.querySelector('[data-a="t-cancel"]'), 'with nothing changed, customizing has one Done button');
+    root.querySelector('[data-a="t-focus"][data-g="Legs"][data-v="less"]').click(); await pause(150);
+    check(!!root.querySelector('[data-a="t-save"]') && !!root.querySelector('[data-a="t-discard"]'), 'with a change, it offers to save it or discard it');
+    root.querySelector('[data-a="t-discard"]').click(); await pause(150);
+    check(!root.querySelector('[data-a="t-save"]') && !!root.querySelector('[data-a="t-cancel"]'), 'Discard changes puts the block back as it was');
+    root.querySelector('[data-a="t-focus"][data-g="Legs"][data-v="less"]').click(); await pause(150);
+    root.querySelector('[data-a="t-save"]').click(); await pause(250);
     check(saved().plan.week===3, 'changes mid-block keep you on the same week');
     root.querySelector('[data-a="t-new"]').click(); await pause(150);
     check(root.textContent.includes('New block'), 'Start a new block opens the new block to customize');
@@ -152,7 +164,7 @@
     const d=P.kinds.findIndex(k=>k.includes('str'));
     root.querySelector('[data-a="pickday"]').click(); await pause(100);
     root.querySelector(`[data-a="setnext"][data-d="${d}"]`).click(); await pause(150);
-    root.querySelector('[data-a="start-day"]').click(); await pause(500);
+    await startDay(root); await pause(500);
     const st=JSON.parse(localStorage.getItem('strlog.v2'));
     check(st.active && st.active.plan===null && st.active.entries.length===P.days[d].str.length, 'Strength starts the lifts Together planned, not tied to a Strength program');
     check(st.active.entries.every(e=>e.sc && (e.sc.t==='rpe'||e.sc.t==='dp'||e.sc.t==='var')), 'each lift carries Together’s prescription');
@@ -172,7 +184,7 @@
       check(d2>=0, 'the week has a second Strength day');
       root.querySelector('[data-a="pickday"]').click(); await pause(100);
       root.querySelector(`[data-a="setnext"][data-d="${d2}"]`).click(); await pause(150);
-      root.querySelector('[data-a="start-day"]').click(); await pause(500);
+      await startDay(root); await pause(500);
       const S=JSON.parse(localStorage.getItem('strlog.v2')), part=saved().run.parts.find(p=>p.m==='str');
       check(S.active.id!==old && S.parked.map(p=>p.id).join()===old && part.st==='run' && part.sid===S.active.id, 'a part starts with a session already open in its trainer, and that one stays open beside it');
       win.__hub.go('mix'); await pause(250);
@@ -184,7 +196,7 @@
       check(ended && !JSON.parse(localStorage.getItem('strlog.v2')).parked.length, 'the one left open ends by name too'); }
     // a new block, even mid-day
     win.__hub.api('str').end(false); await pause(200); win.__hub.go('mix'); await pause(250);
-    root.querySelector('[data-a="start-day"]').click(); await pause(500); win.__hub.go('mix'); await pause(250);
+    await startDay(root); await pause(500); win.__hub.go('mix'); await pause(250);
     check(!!saved().run, 'the next day starts');
     root.querySelector('[data-a="t-new"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(300);
     check(!saved().run && saved().plan.week===1 && saved().next===0, 'a new block starts mid-day: the day ends and the block begins at Day 1');
@@ -194,12 +206,13 @@
       root.querySelector('[data-a="pickday"]').click(); await pause(100);
       root.querySelector(`[data-a="setnext"][data-d="${d3}"]`).click(); await pause(150);
       { const c=root.querySelector('[data-a="ci-skip"]'); if(c){ c.click(); await pause(150); } }
-      root.querySelector('[data-a="start-day"]').click(); await pause(500);
+      await startDay(root); await pause(500);
       const sr=doc.getElementById('m-str').shadowRoot;
       sr.querySelectorAll('input[data-field="w"]').forEach(i=>{ if(!i.value){ i.value='40'; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true})); } }); await pause(150);
       { const n=sr.querySelectorAll('[data-act="toggle-done"]').length; for(let i=0;i<n;i++){ const t=sr.querySelectorAll('[data-act="toggle-done"]')[i]; if(t){ t.click(); await pause(60); } } }
       await pause(200);
       sr.querySelector('[data-act="finish"]').click(); await pause(400);
+      { const nx=sr.querySelector('#sheet.on [data-act="tg-next"]'); check(!!nx && /^Next: /.test(nx.textContent.trim()), 'the finish screen’s main button is the next part'); nx.click(); await pause(300); }
       for(let i=0;i<4;i++){ const c=sr.querySelector('#sheet.on [data-act="close-modal"], [role="dialog"][aria-modal="true"] [data-act="close-modal"]'); if(!c) break; c.click(); await pause(300); }
       await pause(400);
       const run=saved().run;
@@ -254,7 +267,9 @@
       frame.remove(); frame=null;   // first, so its exit save can't write over the new data
       reset({'milo.persist':'1', 'proladder.v1':JSON.stringify(four)});
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      win.__hub.api('mix').setup('secs'); await pause(100);
       root.querySelector('[data-a="d-sec"][data-m="cal"]').click(); root.querySelector('[data-a="d-save"]').click(); await pause(300);
+      root.querySelector('[data-a="t-edit"]').click(); await pause(200);
       const rec=root.querySelector('.trec'), C=win.__hub.api('cal'), lg=()=>JSON.parse(localStorage.getItem('proladder.v1')).goals.length;
       check(rec && /Recommended: (one goal|two goals) at a time/.test(rec.textContent) && rec.querySelector('[data-a="t-rec-keep"]'), 'with more goals than Ladder has room for, Together recommends which to keep');
       check(/each gets about \d+ sets? a week/.test(rec.textContent) && /each would get about \d+/.test(rec.textContent), 'it says how many sets each goal gets now, and kept to its recommendation');
@@ -270,9 +285,11 @@
       frame.remove(); frame=null;
       reset({'milo.persist':'1', 'proladder.v1':JSON.stringify(Object.assign({}, ladder, {goals:[]}))});
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      win.__hub.api('mix').setup('secs'); await pause(100);
       root.querySelector('[data-a="d-sec"][data-m="cal"]').click(); root.querySelector('[data-a="d-save"]').click(); await pause(300);
+      root.querySelector('[data-a="t-edit"]').click(); await pause(200);
       check(root.querySelector('.trec [data-a="t-rec-add"]') && root.querySelector('.trec').textContent.includes('Best fit'), 'with no goals, the block recommends some to start with');
-      root.querySelector('[data-a="t-save"]').click(); await pause(300);
+      root.querySelector('[data-a="t-cancel"]').click(); await pause(300);
       const add=root.querySelector('.trec [data-a="t-rec-add"]'), key=add&&add.dataset.k;
       check(!!add && root.querySelector('.trec').textContent.includes('Recommended to start'), 'and so does the main page, until there is one');
       add.click(); await pause(400);
@@ -283,8 +300,8 @@
     // Together keeps to exercises you have logged, so their weights carry on
     { frame.remove(); frame=null; reset({'milo.persist':'1'});
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      win.__hub.api('mix').setup('secs'); await pause(100);
       root.querySelector('[data-a="d-sec"][data-m="lift"]').click(); root.querySelector('[data-a="d-save"]').click(); await pause(300);
-      root.querySelector('[data-a="t-save"]').click(); await pause(300);
       const cat=win.__hub.api('lift').catalog(), xs=saved().plan.days.flatMap(d=>d.lift), taken=new Set(xs.map(x=>x.exId));
       // another exercise just for the same muscle, of the same kind and equipment, that this block didn't choose
       const other=x=>{ const a=cat.find(e=>e.id===x.exId); return a && cat.find(e=>e.id!==a.id && !taken.has(e.id) && e.p.length===1 && e.p[0]===x.mu && e.comp===a.comp && e.equipment===a.equipment); };
@@ -302,6 +319,7 @@
     { frame.remove(); frame=null; reset({'milo.persist':'1'});
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
       const tap=async sel=>{ root.querySelector(sel).click(); await pause(120); };
+      win.__hub.api('mix').setup('secs'); await pause(100);
       await tap('[data-a="d-sec"][data-m="str"]'); await tap('[data-a="d-days"][data-v="2"]');
       await tap('[data-a="d-wd"][data-v="3"]');
       check(root.querySelectorAll('[data-a="d-wd"].on').length===2, 'two training days a week at least');
@@ -309,11 +327,13 @@
       check(root.querySelector('[data-a="d-days"][data-v="2"]').classList.contains('on'), 'the number of days follows the weekdays you tap');
       await tap('[data-a="d-stage"][data-v="older"]'); await tap('[data-a="d-q"][data-v="0"]');
       check(root.textContent.includes('Check with a doctor or physio'), 'a yes on the health check suggests seeing a professional, without blocking anything');
-      await tap('[data-a="d-save"]'); await tap('[data-a="t-save"]');
+      await tap('[data-a="d-save"]');
       const t=saved();
       check(t.days===2 && t.wd.join()==='5,6' && t.stage==='older' && t.screen.yes.join()==='0', 'weekdays, life stage and the health check are kept');
       check(root.textContent.includes('Sat and Sun') && root.textContent.includes('This block stays gentle'), 'back-to-back weekdays are named, and the block stays gentle');
       check(!!root.querySelector('.redflag') && root.querySelector('.redflag').textContent.includes('chest pain'), 'the day shows when to stop and get help');
+      check(!!root.querySelector('.ciline [data-a="ci-q"]'), 'the check-in is one line, How do you feel');
+      await tap('[data-a="ci-edit"]');
       await tap('[data-a="ci-ill"][data-v="sick"]');
       check(!root.querySelector('#cisave').disabled, 'Unwell today is enough for a check-in');
       await tap('[data-a="ci-pain"][data-v="1"]'); await tap('[data-a="ci-add-pain"][data-k="back"]'); await tap('#cisave');
@@ -328,7 +348,7 @@
       frame.remove(); frame=null; localStorage.setItem('trainer.together', JSON.stringify(mid));
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
       await tap('[data-a="edit"]'); await tap('[data-a="d-days"][data-v="3"]'); await tap('[data-a="d-q"][data-v="0"]');
-      await tap('[data-a="d-save"]'); await tap('[data-a="t-save"]');
+      await tap('[data-a="d-save"]');
       const t2=saved();
       check(t2.blocks===1 && t2.screen.blk===1 && t2.plan.week===1 && root.textContent.includes('This block stays gentle'), 'a yes given with a change that starts a new block makes that new block gentle'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';

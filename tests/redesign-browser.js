@@ -28,9 +28,13 @@
   async function load(){
     if(frame) frame.remove();
     frame=document.createElement('iframe'); frame.title='Isolated redesign regression app';
-    frame.src='../index.html?m=lift&redesign-regression='+Date.now();
+    frame.src='../index.html?redesign-regression='+Date.now();
     document.getElementById('preview').appendChild(frame);
-    await until(()=>typeof frame.contentWindow.__go==='function' && frame.contentDocument.getElementById('m-lift')?.shadowRoot?.getElementById('view')?.children.length,'App did not start');
+    await until(()=>typeof frame.contentWindow.__go==='function' && frame.contentWindow.__hub,'App did not start');
+    // Muscle on the page it saved, through the one app's hub (its own navigation is hidden)
+    let saved=null; try{ saved=JSON.parse(localStorage.getItem('hyplog.v1')||'null'); }catch(e){}
+    const hub=frame.contentWindow.__hub; hub.go('lift'); hub.api('lift').go(saved&&saved.route||'today');
+    await until(()=>frame.contentDocument.getElementById('m-lift')?.shadowRoot?.getElementById('view')?.children.length,'Muscle did not render');
     return {win:frame.contentWindow,doc:frame.contentDocument};
   }
   const rootOf=(doc,module)=>doc.getElementById('m-'+module).shadowRoot;
@@ -61,9 +65,9 @@
       await until(()=>win.innerWidth===width && Number.parseFloat(doc.documentElement.style.getPropertyValue('--shell-bar-height'))===bar.offsetHeight,'Header height did not update');
       win.scrollTo(0,0);
       check([doc.querySelector('.milo-brand'),...doc.querySelectorAll('.shell-tools button')].every(el=>el.getBoundingClientRect().top>=59),'Header controls clear the iPhone status area at '+width+'px');
-      check(side.getBoundingClientRect().top>=bar.getBoundingClientRect().bottom-1,'Trainer tabs follow the full inset header at '+width+'px');
+      check(side.getBoundingClientRect().top>=bar.getBoundingClientRect().bottom-1 && Math.abs(side.getBoundingClientRect().bottom-win.innerHeight)<=1,'The navigation sits at the bottom, clear of the full inset header at '+width+'px');
       win.scrollTo(0,400); await pause(50);
-      check(side.getBoundingClientRect().top>=bar.getBoundingClientRect().bottom-1,'Sticky trainer tabs remain below the header while scrolling at '+width+'px');
+      check(Math.abs(side.getBoundingClientRect().bottom-win.innerHeight)<=1,'The bottom navigation stays put while scrolling at '+width+'px');
     }
     safeStyle.textContent=':root{--shell-safe-top:0px}';
     for(const width of [932,1100]){
@@ -83,17 +87,20 @@
     check(!!dialog(root)?.querySelector('[data-act="gen-create"]') && dialog(root).textContent.includes('Days per week'),'Today plan action opens the working program generator');
     closeDialog(root);
 
-    const toggle=doc.getElementById('theme-toggle');
-    check(!!toggle && doc.documentElement.dataset.theme==='dark','Global theme control respects the saved dark preference');
-    toggle.click();
-    check(light(doc),'Global theme control applies light appearance to every trainer');
+    check(doc.documentElement.dataset.theme==='dark','The app respects the saved dark preference');
+    doc.getElementById('setbtn').click();
+    const lightBtn=doc.querySelector('#set-body [data-s="theme"][data-v="light"]');
+    check(doc.getElementById('bk').open && !!lightBtn && doc.querySelector('#set-body [data-s="theme"][data-v="dark"]').getAttribute('aria-pressed')==='true','Settings shows the theme in use');
+    lightBtn.click(); doc.getElementById('bk-done').click();
+    check(light(doc),'The theme in Settings applies light appearance to every section');
 
     const routes={lift:['today','train','plan','library','progress'],str:['today','train','program','progress','tools'],cal:['today','train','goals','progress','library'],mix:[]};
+    const destOf=(m,r)=>r==='train'?'train':r==='progress'?'progress':r==='library'||r==='tools'?'library':'today';
     for(const [module,pages] of Object.entries(routes)){
-      doc.querySelector('.seg[data-m="'+module+'"]').click();
+      win.__hub.go(module);
       root=rootOf(doc,module);
       await pause(450);
-      check(!doc.getElementById('m-'+module).hidden && doc.querySelector('.seg[data-m="'+module+'"]').getAttribute('aria-selected')==='true','Trainer navigation selects '+module);
+      check(!doc.getElementById('m-'+module).hidden,'The hub shows '+module);
       check(!dialog(root) && !root.textContent.includes('This section failed to load'),'First visit to '+module+' renders without a blocking welcome or loading failure');
       for(const route of pages){
         const nav=root.querySelector('#tabbar [data-route="'+route+'"]');
@@ -101,9 +108,12 @@
         nav.click();
         const view=root.getElementById('view');
         check(view.children.length>0 && nav.getAttribute('data-route')===route && root.querySelector('#tabbar [aria-current="page"]')?.dataset.route===route,'Route renders and identifies the current page: '+module+'/'+route);
+        check(doc.querySelector('.seg[aria-current="page"]')?.dataset.d===destOf(module,route),'The one navigation marks the place for '+module+'/'+route);
         check(light(doc),'Light theme survives render: '+module+'/'+route);
       }
       if(module==='mix'){
+        check(!!root.querySelector('[data-a="f-go"]') && root.querySelectorAll('[data-a="f-sec"]').length===3,'A first run asks what you train, in two taps');
+        win.__hub.api('mix').setup('secs'); await pause(100);
         check(!!root.querySelector('[data-a="d-save"]'),'Together setup retains its schedule workflow');
         const order=()=>[...root.querySelectorAll('.prow b')].map(b=>b.textContent).join(' > ');
         root.querySelector('[data-a="d-sec"][data-m="lift"]').click(); root.querySelector('[data-a="d-sec"][data-m="str"]').click();
@@ -112,13 +122,14 @@
         check(order()==='Muscle > Strength' && root.getElementById('prio-l').parentElement.textContent.includes('Your order'),'Together lets you choose which section comes first');
         root.querySelector('[data-a="d-prio-reset"]').click();
         check(order()==='Strength > Muscle' && root.getElementById('prio-l').parentElement.textContent.includes('Suggested'),'Together goes back to the suggested order');
+        root.querySelector('[data-a="d-cancel"]').click();
       }
     }
     await pause(200);
     check(localStorage.getItem('trainer.shell.theme')==='light','Light preference survives deferred trainer saves');
     check(['hyplog.v1','strlog.v2','proladder.v1'].every(key=>JSON.parse(localStorage.getItem(key)).settings.theme==='light'),'Saved trainer settings agree with the global theme');
 
-    doc.querySelector('.seg[data-m="lift"]').click(); root=rootOf(doc,'lift');
+    win.__hub.go('lift'); root=rootOf(doc,'lift');
     root.querySelector('#tabbar [data-route="today"]').click();
     for(const key of ['Enter',' ']){
       const metric=root.querySelector('.metric[role="button"][data-act="sessions"]');

@@ -227,8 +227,9 @@
     await pause(300);
     const left=Object.keys(localStorage).filter(k=>/^(hyplog|strlog|proladder|trainer\.together)/.test(k)||['milo.before','milo.backup','milo.caltime','trainer.shell.unit'].includes(k));
     check(!left.length && localStorage.getItem(FOREIGN)==='yours', 'Erase everything removes every Milo key, with undo and unreadable copies, and leaves other apps’ keys');
-    const tabs=()=>[...doc.querySelectorAll('.seg')].filter(b=>!b.hidden).map(b=>b.dataset.m).join(',');
-    check(tabs()==='mix' && !sessionStorage.getItem('milo.erase'), 'and Milo starts again as on its first run');
+    // the first run on Today, with the sections that have training picked for you
+    const firstPicks=()=>{ const r=doc.getElementById('m-mix').shadowRoot; return r.querySelector('[data-a="f-go"]')? [...r.querySelectorAll('[data-a="f-sec"][aria-pressed="true"]')].map(b=>b.dataset.m).join(',') : null; };
+    check(firstPicks()==='' && doc.querySelector('.seg.on').dataset.d==='today' && !sessionStorage.getItem('milo.erase'), 'and Milo starts again as on its first run');
 
     // someone new coming from Strong, with a morning and an evening workout on one day: both go in whole, and their
     // sections show as soon as the import is done, without a reload
@@ -242,7 +243,7 @@
     check(imp2.textContent.includes('Added 2 workouts (4 sets).') && !imp2.textContent.includes('already in Milo') && saved('hyplog.v1').history.length===2 && saved('strlog.v2').history.length===2,
       'two workouts on one day go in whole: the second’s exercises are not taken for ones already in Milo');
     doc.getElementById('imp-cancel').click(); doc.getElementById('bk-done')?.click(); await pause(100);
-    check(tabs()==='mix,lift,str', 'after an import on a fresh start, Muscle and Strength show straight away');
+    check(firstPicks()==='lift,str', 'after an import on a fresh start, Muscle and Strength are picked on the first run straight away');
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;
