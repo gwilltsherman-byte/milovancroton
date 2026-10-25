@@ -3672,7 +3672,7 @@ const DAY_FITS={full:null, upper:['chest','lat','uback','fdelt','sdelt','rdelt',
 /* Muscles in the order a block fills them: the big lifts first, so what they give the smaller muscles on the side counts
    before those get exercises of their own. A muscle in COMP_LED starts each of its days with a compound; one in COMP_ONCE
    has one compound in the week (a hip hinge, a hip thrust, a press), and its other day can start with single-joint work. */
-const BLOCK_ORDER=['quad','ham','chest','uback','lat','glute','fdelt','sdelt','rdelt','tri','bi','calf','abs'];
+const BLOCK_ORDER=['quad','ham','chest','lat','uback','glute','fdelt','sdelt','rdelt','tri','bi','calf','abs'];
 const COMP_LED=['quad','chest','uback','lat'], COMP_ONCE=['ham','glute','fdelt'];
 /* Each muscle's exercises, best first: the ones that grew it more in trials, or train a part the others miss (GROWTH),
    then the dependable classics. Biceps take an incline curl and a preacher curl (long and short), then a curl behind the
@@ -3727,7 +3727,7 @@ function generateDraft(o){
     const taken=new Set(days[d].items.map(it=>it.ex.id)), rank=rankIn(mu), miss=GROWTH.missing(mu, regs);
     let c=pool.filter(e=>e.primary.includes(mu) && !taken.has(e.id));
     if(wantComp!=null){ const m=c.filter(e=>!!e.comp===wantComp); if(m.length) c=m; }
-    const v=e=> (miss.includes(GROWTH.region(e.id, mu))? -100 : 0) + rank(e) + 3*(used[e.id]||0)
+    const v=e=> (miss.includes(GROWTH.region(e.id, mu))? -100 : 0) + rank(e) + 4*(used[e.id]||0)
       + 10*e.primary.filter(q=>q!==mu && T[q]>0 && (C[q]||0)>=T[q]).length - (logged[e.id]? 8 : 0) - 2*(GROWTH.long[e.id]||0);
     return c.map(e=>({e, v:v(e)})).sort((a,b)=>a.v-b.v || a.e.name.localeCompare(b.e.name)).map(x=>x.e);
   };
@@ -3737,8 +3737,10 @@ function generateDraft(o){
     D.forEach(d=>{
       for(let k=0;k<3;k++){
         const {C,S}=credit(), off=days.reduce((a,_,i)=>a+(D.includes(i)? 0 : (S[i][mu]||0)),0);
-        const need=(T[mu]-off)/D.length-(S[d][mu]||0); if(need<1) break;
-        const first=!days[d].items.some(it=>it.ex.primary.includes(mu));
+        // a muscle in COMP_LED gets its own compound on each of its days while it needs anything, not only the help a
+        // pulldown gives the upper back
+        const need=(T[mu]-off)/D.length-(S[d][mu]||0), first=!days[d].items.some(it=>it.ex.primary.includes(mu));
+        if(need<1 && !(first && need>0 && COMP_LED.includes(mu))) break;
         const want= first && (COMP_LED.includes(mu) || (COMP_ONCE.includes(mu) && !compIn(mu)))? true : null;
         const n0=Math.min(maxP, Math.max(2, Math.round(need)));
         const e=picks(mu, d, want, C).find(x=>room(x,d,S)>=2); if(!e) break;

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=' 'sha256-8c3Jv5mCYCirj4lb0MWRF6e6ZQ3kp8cmpwpV2L0f2Jw='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=' 'sha256-YfAGknAUL7y77jOOltn9BekSl10hzSDWpjrxnLw+W6s='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -712,6 +712,31 @@ svg{width:18px; height:18px; flex:none}
 .banner svg{flex:none}
 .newex{margin-top:8px; font-size:12px; line-height:1.45; color:var(--muted); padding:8px 10px; border-radius:10px; background:var(--well); border:1px solid var(--border)}
 .newex b{color:var(--ink)}
+/* reps logged from the hint, not typed: they count, and look like a guess until you type the real count */
+.sinput.assumed{border-style:dashed; color:var(--muted); font-style:italic}
+.setrow.done .sinput.assumed{border-color:color-mix(in srgb, var(--good) 45%, var(--border))}
+/* the reps-in-reserve check, asked during the set */
+.calrow{grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:4px 1px 2px; padding:9px 10px; border-radius:10px;
+  background:var(--steel-soft); font-size:12px; line-height:1.45; color:var(--ink-2)}
+.calrow .calt{display:flex; align-items:flex-start; gap:7px; flex:1 1 210px; min-width:0}
+.calrow .calt svg{width:15px; height:15px; flex:none; margin-top:1px; color:var(--steel)}
+.calrow .calx{display:flex; align-items:center; gap:8px; margin-left:auto}
+.calrow .calx label{font-size:10px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); white-space:nowrap}
+.calrow .calx .sinput{width:58px; height:40px}
+/* weekly sets per muscle */
+.wkcard summary{list-style:none; display:flex; align-items:center; gap:8px}
+.wkcard summary::-webkit-details-marker{display:none}
+.wksets{display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:0 14px; margin-top:8px}
+.wks{display:flex; align-items:baseline; gap:3px; padding:6px 0; border-bottom:1px solid var(--border); font-size:12.5px}
+.wks span:first-child{flex:1; min-width:0; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.wks b{font-weight:700}
+.wks.off b{color:var(--heat-ink)}
+/* the swap sheet: exercises your kit lacks come last */
+.exlist-item.lacks .xi{opacity:.6}
+.exlist-item.lacks .xn .s b{color:var(--heat-ink); font-weight:600}
+.warmline{display:flex; align-items:flex-start; gap:9px; padding:10px 12px; margin-bottom:12px; border-radius:12px; background:var(--well); border:1px solid var(--border); font-size:12.5px; line-height:1.45; color:var(--ink-2)}
+.warmline svg{width:16px; height:16px; flex:none; margin-top:1px; color:var(--heat-ink)}
+.warmline .tinybtn{margin-left:auto; flex:none}
 
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 :focus-visible{outline:2px solid var(--heat); outline-offset:2px}
@@ -2166,7 +2191,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=bdcf75ff0dbd294308b0" integrity="sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=f1cdc9bf99826028ab8f" integrity="sha256-8c3Jv5mCYCirj4lb0MWRF6e6ZQ3kp8cmpwpV2L0f2Jw=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=61f0069270142fbcbbee" integrity="sha256-YfAGknAUL7y77jOOltn9BekSl10hzSDWpjrxnLw+W6s=" crossorigin="anonymous"></script>
 </body>
 </html>
 
