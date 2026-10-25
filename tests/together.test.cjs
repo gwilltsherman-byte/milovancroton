@@ -480,3 +480,36 @@ test('a yes on the health check given mid-block keeps the next block gentle too'
   T.call('blockEnds');
   assert.equal(T.evaluate('gentle()'), true, 'still gentle when that block began without training');
 });
+
+test('All Progress combines a lift across trainers and includes lifts trained only in Muscle', () => {
+  const T = together(), now = Date.now();
+  const points = n => [{date: now - 2 * DAY, e1: n, rated: true}, {date: now - DAY, e1: n + 2, rated: true}];
+  T.apis.lift = {
+    catalog: () => [{id: 'barbell-bench', name: 'Bench Press', comp: true}, {id: 'muscle-only', name: 'Muscle-only lift', comp: true}],
+    points: () => [{id: 'barbell-bench', p: ['chest'], pts: points(100)}, {id: 'muscle-only', p: ['back'], pts: points(70)}],
+  };
+  T.apis.str = {name: () => 'Bench Press', points: () => [{id: 'bench', a: 'chest', key: 'barbell-bench', pts: points(102)}]};
+  const merged = T.call('liftPoints', 0);
+  assert.equal(merged.find(x => x.id === 'barbell-bench').pts.length, 4);
+  const html = T.call('liftsCard');
+  assert.equal((html.match(/<b>Bench Press<\/b>/g) || []).length, 1);
+  assert.match(html, /Muscle-only lift/);
+});
+
+test('All Progress shows each program target, including muscles with no sets yet', () => {
+  const T = together();
+  T.apis.lift = {table: () => ({groups: ['Chest', 'Arms'], muscles: {chest: {n: 'Chest', g: 'Chest'}, bi: {n: 'Biceps', g: 'Arms'}}}), catalog: () => []};
+  T.reset({on: true, secs: ['lift'], days: 3});
+  T.call('plan').goal = {chest: 12, bi: 6};
+  const html = T.call('volCard', {lift: {target: 10}});
+  assert.match(html, /Chest: 0 of 12 hard sets/);
+  assert.match(html, /Biceps: 0 of 6 hard sets/);
+});
+
+test('the Progress week follows the locale and spans calendar days', () => {
+  const T = together();
+  T.evaluate("navigator.language='en-US'");
+  assert.equal(new Date(T.call('weekStart')).getDay(), 0);
+  T.evaluate("navigator.language='en-GB'");
+  assert.equal(new Date(T.call('weekStart')).getDay(), 1);
+});

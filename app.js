@@ -29,6 +29,7 @@ window.MiloDesign = {
       const stack=view.querySelector('.stack'), m=(root.host&&root.host.id||'').replace('m-','');
       if(stack){stack.classList.add('today-layout');stack.insertAdjacentHTML('beforeend',MiloSecurity.html(this.week(history)));
         const r=this.role(m); if(r){ stack.insertAdjacentHTML('afterbegin',MiloSecurity.html(r)); const b=stack.querySelector('[data-go]'); if(b) b.addEventListener('click',()=>window.__go&&window.__go('mix')); } }
+      if(window.__install&&window.__install.draw) window.__install.draw(root);
     }
     root.querySelectorAll('.tab').forEach(b=>{if(b.classList.contains('active'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   }
@@ -1863,6 +1864,133 @@ window.Safe=(function(){
 
 ;
 
+/* ==================== NEXT SET SESSION VIEW ====================
+   The focus card uses the same fields and actions as the list, so both views save precisely the same sets. */
+window.MiloSession=(()=>{
+  const views=new Map(), esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  const icon=(kind)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="${kind==='plus'?'M5 12h14M12 5v14':'M5 12h14'}"/></svg>`;
+  const ios=()=>/iP(ad|hone|od)/.test(navigator.userAgent)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+  const alertsAvailable=()=>!ios()&&'Notification' in window&&'serviceWorker' in navigator;
+  async function requestAlerts(){
+    if(!alertsAvailable()) return 'unavailable';
+    if(Notification.permission!=='default') return Notification.permission;
+    if(Prefs.get('restAlertsAsked',false)) return 'default';
+    Prefs.set({restAlertsAsked:true});
+    try{ return await Notification.requestPermission(); }catch(e){ return 'unavailable'; }
+  }
+  function restOver(root){
+    let live=root.querySelector('[data-rest-status]');
+    if(!live){ live=document.createElement('div'); live.className='session-sr'; live.dataset.restStatus=''; live.setAttribute('role','status'); live.setAttribute('aria-live','polite'); root.appendChild(live); }
+    live.textContent=''; setTimeout(()=>live.textContent='Rest over',20);
+    if(document.hidden&&alertsAvailable()&&Notification.permission==='granted'){
+      navigator.serviceWorker.getRegistration().then(r=>r&&r.showNotification('Rest over',{body:'Ready for your next set.',tag:'milo-rest'})).catch(()=>{});
+    }
+  }
+  function descriptor(el){ if(!el||!el.dataset) return null; const d={}; for(const k of ['act','field','ex','set','session']) if(el.dataset[k]!=null)d[k]=el.dataset[k]; return Object.keys(d).length?d:null; }
+  function find(root,d){ if(!d)return null; return [...root.querySelectorAll('button,input,textarea,select')].find(el=>Object.keys(d).every(k=>el.dataset[k]===d[k])&&el.getClientRects().length); }
+  function first(a){
+    for(let ei=0;ei<a.entries.length;ei++){
+      const entry=a.entries[ei]; if(!entry.sets.some(s=>!s.done))continue;
+      if(entry.sg){ let best=ei, count=entry.sets.filter(s=>s.done).length;
+        for(let j=ei+1;j<a.entries.length&&a.entries[j].sg===entry.sg;j++){ const e=a.entries[j], n=e.sets.filter(s=>s.done).length; if(e.sets.some(s=>!s.done)&&n<count){best=j;count=n;} } ei=best;
+      }
+      return {ei,si:a.entries[ei].sets.findIndex(s=>!s.done)};
+    } return null;
+  }
+  function active(c){ return c.st.route==='train'&&!!c.st.active; }
+  function focus(c){ return c.st.settings.sessionView!=='list'; }
+  function frame(c,on){
+    c.root.host.classList.toggle('session-focus',!!on);
+    if(!window.__hub||window.__hub.current()===c.m){ document.documentElement.classList.toggle('session-focus-active',!!on); if(window.__sessionMode)window.__sessionMode(!!on); }
+  }
+  function install(root){
+    const c={root,returnTo:null}; views.set(root,c);
+    root.addEventListener('click',e=>{ const el=e.target.closest('button,input,select,textarea'); if(el)c.returnTo=descriptor(el); },true);
+    root.addEventListener('focusin',e=>{ const d=descriptor(e.target); if(d)c.returnTo=d; });
+    root.addEventListener('click',e=>{
+      const b=e.target.closest('[data-session]'); if(!b)return;
+      const a=b.dataset.session;
+      if(a==='list'||a==='focus'){ c.st.settings.sessionView=a; c.save(); c.returnTo={session:a==='list'?'focus':'list'}; c.render(); window.scrollTo(0,0); }
+      else if(a==='done'){ const n=first(c.st.active); if(n)c.done(n.ei,n.si,c.side); }
+      else if(a==='step'){ const input=b.parentElement.querySelector('input'), n=Num.parse(input.value)||0, step=Number(b.dataset.step)||1;
+        const value=Math.round((n+step)*1000)/1000; input.value=input.dataset.field==='rpe'?Math.max(1,Math.min(10,value)):Math.max(0,value); input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true})); input.focus(); plates(c); }
+      else if(a==='effort'){ const input=c.root.querySelector('.session-card input[data-field="'+b.dataset.field+'"]'); if(input){ input.value=b.dataset.v; input.dispatchEvent(new Event('input',{bubbles:true})); b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); } }
+      else if(a==='skip'){ c.stop(); c.save(); c.returnTo=null; c.render(); }
+      else if(a==='add'){ const v=c.st.active; if(v&&v.restEndsAt){ v.restEndsAt+=30000; if(v.restDuration!=null)v.restDuration+=30; else v.restDur=(v.restDur||0)+30; c.save(); tick(c); } }
+    });
+    root.addEventListener('input',e=>{ if(e.target.closest('.session-card'))e.target.classList.remove('assumed'); if(e.target.matches('.session-card input[data-field="w"], .session-card input[data-field="weight"]'))plates(c); });
+    let down=null;
+    root.addEventListener('pointerdown',e=>{ if(e.isPrimary&&e.pointerType==='touch'&&!e.target.closest('input,button,textarea'))down={x:e.clientX,y:e.clientY,id:e.pointerId}; });
+    root.addEventListener('pointerup',e=>{ const d=down; down=null; if(d&&d.id===e.pointerId&&Math.abs(e.clientX-d.x)>70&&Math.abs(e.clientY-d.y)<40&&active(c)){ c.st.settings.sessionView=focus(c)?'list':'focus'; c.save(); c.render(); window.scrollTo(0,0); } });
+    root.addEventListener('pointercancel',()=>{down=null;});
+    return c;
+  }
+  function plates(c){
+    const out=c.root.querySelector('[data-session-plates]'); if(!out||!c.kit)return;
+    const inp=c.root.querySelector('.session-card input[data-field="'+c.kit.field+'"]'), n=inp&&Num.parse(inp.value);
+    const kg=n==null?null:c.kit.unit==='lb'? n/2.2046226218 : n;
+    const ps=kg==null?null:Kit.plates(kg,c.kit.bar||'bar',c.kit.unit);
+    out.innerHTML=MiloSecurity.html(ps===null?'':`<span>Per side</span><div class="session-plates" role="img" aria-label="${esc(ps.length?ps.map(p=>p.c+' × '+p.p+' '+c.kit.unit).join(', '):'Empty bar')}"><i class="session-bar"></i>${ps.flatMap(p=>Array.from({length:p.c},()=>`<i class="session-plate" style="height:${30+Math.min(40,p.p)}px">${p.p}</i>`)).join('')}</div>`);
+  }
+  function mount(root,m,st,render,save,meta,done,stop){
+    const c=views.get(root)||install(root); Object.assign(c,{m,st,render,save,meta,done,stop});
+    const view=root.getElementById('view'); if(!view)return;
+    const on=active(c)&&focus(c); root.host.classList.toggle('session-running',active(c)); frame(c,on);
+    if(!active(c))return;
+    const next=first(st.active), old=c.returnTo;
+    if(!on){
+      view.insertAdjacentHTML('afterbegin',MiloSecurity.html('<div class="session-switch"><button class="btn ghost" data-session="focus">Next set</button></div>'));
+      let target=find(root,old);
+      if(old&&old.act==='toggle-done'){
+        const buttons=[...view.querySelectorAll('[data-act="toggle-done"]')], button=buttons.find(b=>{ const e=st.active.entries[+b.dataset.ex]; return e&&!e.sets[+b.dataset.set].done; });
+        if(button){ const row=button.closest('.setrow'); target=row.querySelector('input')||button;
+          if(old.ex!==button.dataset.ex) setTimeout(()=>{ const y=row.getBoundingClientRect().top+window.scrollY-window.innerHeight/3; window.scrollTo({top:Math.max(0,y),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); },0); }
+      }
+      if(target)target.focus({preventScroll:true}); c.returnTo=null; return;
+    }
+    let row='', detail=null, setup='', name='All sets logged', target='Finish, or use List to change a set.', setText='';
+    if(next){
+      detail=meta(next.ei,next.si); c.kit=detail.kit||null; c.side=detail.side||null;
+      name=detail.name; target=detail.target; setText='Set '+(next.si+1)+' of '+st.active.entries[next.ei].sets.length+(detail.side?' · '+(detail.side==='l'?'Left':'Right'):'');
+      const btn=view.querySelector('[data-act="toggle-done"][data-ex="'+next.ei+'"][data-set="'+next.si+'"]'), original=btn&&btn.closest('.setrow');
+      if(original){ const copy=original.cloneNode(true); copy.querySelector('.sidx')?.remove(); copy.querySelector('[data-act="toggle-done"]')?.remove(); copy.querySelector('[data-act="set-menu"]')?.remove();
+        if(detail.side)copy.querySelector('input[data-field="'+(detail.side==='l'?'r':'l')+'"]')?.remove();
+        copy.querySelectorAll('input').forEach(input=>{
+          const field=input.dataset.field, numeric=Num.parse(input.value), ph=detail.values&&detail.values[field]!=null? detail.values[field] : Num.parse(String(input.placeholder).replace(/^~/,''));
+          if(numeric==null&&ph!=null){ input.value=ph; input.setAttribute('value',String(ph)); input.classList.add('assumed'); }
+          const label=input.getAttribute('aria-label')||field, wrap=document.createElement('label'); wrap.className='session-field';
+          const title=document.createElement('span'); title.textContent=label.replace(/^Set \d+ /,''); wrap.appendChild(title); input.replaceWith(wrap);
+          const box=document.createElement('div'); box.className='session-step'; wrap.appendChild(box);
+          const step=(field==='w'||field==='weight')? detail.step||1 : field==='rpe'?0.5:1;
+          box.innerHTML=MiloSecurity.html(`<button type="button" data-session="step" data-step="${-step}" aria-label="Decrease ${esc(label)}">${icon('minus')}</button>`);
+          box.appendChild(input); box.insertAdjacentHTML('beforeend',MiloSecurity.html(`<button type="button" data-session="step" data-step="${step}" aria-label="Increase ${esc(label)}">${icon('plus')}</button>`));
+        }); row=copy.outerHTML;
+      }
+      setup=detail.setup||'';
+    }
+    const strip=document.getElementById('tgstrip'), day=strip&&!strip.hidden?strip.querySelector('.tgs-main')?.textContent:'';
+    view.innerHTML=MiloSecurity.html(`<div class="session-top"><button class="btn ghost" data-session="list">List</button><div><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${fmt(Math.max(0,Math.floor((Date.now()-st.active.startedAt)/1000)))} elapsed</span></div><button class="btn primary" data-act="finish">Finish</button></div>
+      <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
+      <section class="session-rest" hidden><h2>Rest</h2><div class="session-clock" role="timer" aria-label="Rest remaining"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="session-track" cx="50" cy="50" r="45"/><circle data-session-arc cx="50" cy="50" r="45"/></svg><span data-session-time></span></div><p>Next: ${esc(name)}${setText?' · '+esc(setText):''}</p><div class="session-rest-actions"><button class="btn ghost" data-session="add">+30 s</button><button class="btn primary" data-session="skip">Skip rest</button></div></section></div>`);
+    plates(c); tick(c);
+    const restore=find(root,old)||view.querySelector('.session-rest:not([hidden]) button, .session-card:not([hidden]) .session-step input, .session-done');
+    if(restore)restore.focus({preventScroll:true}); c.returnTo=null;
+  }
+  function tick(c){
+    if(!active(c)||!focus(c)||c.root.host.hidden)return;
+    const a=c.st.active, rest=c.root.querySelector('.session-rest'), card=c.root.querySelector('.session-card'); if(!rest||!card)return;
+    const left=Math.max(0,Math.ceil(((a.restEndsAt||0)-Date.now())/1000)), resting=left>0;
+    const changed=rest.hidden===resting; rest.hidden=!resting; card.hidden=resting;
+    const time=rest.querySelector('[data-session-time]'); time.textContent=fmt(left);
+    const dur=a.restDuration||a.restDur||left, arc=rest.querySelector('[data-session-arc]'); arc.style.strokeDashoffset=String(283*(1-Math.min(1,left/Math.max(1,dur))));
+    if(changed){ const el=resting?rest.querySelector('button'):card.querySelector('.session-step input,button'); if(el)el.focus({preventScroll:true}); }
+    const day=c.root.querySelector('[data-session-day]'), strip=document.getElementById('tgstrip'); if(day&&strip&&!strip.hidden)day.textContent=strip.querySelector('.tgs-main')?.textContent||a.name;
+  }
+  setInterval(()=>views.forEach(tick),250);
+  return {mount,restOver,alertsAvailable,requestAlerts};
+})();
+
 const MOD_INIT = {
   lift: function(__root){
 
@@ -2531,6 +2659,20 @@ function render(){
   view.scrollTop = 0;
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   if(state.route==='library'){ const si=$('#libsearch'); if(si){ si.value=state.libSearch; } }
+  if(window.__routed) window.__routed('lift', state.route);
+  if(window.MiloSession) window.MiloSession.mount(__root,'lift',state,render,save,(ei,si)=>{
+    const e=state.active.entries[ei], x=exById(e.exId)||e, st=e.sets[si], prev=lastPerf(e.exId), eq=kitEq(x.equipment,st.weight), rir=lastFailSet(e,si)?0:e.target.rir;
+    return {name:e.name, target:(e.target.repLow===e.target.repHigh?e.target.repLow:e.target.repLow+'–'+e.target.repHigh)+' '+(isHold(e.exId)?'seconds':'reps')+' · '+rir+' in reserve', step:Kit.step(eq,unit()), effort:st.type==='warmup'?null:'rir', effortValue:st.rir==null?rir:st.rir,
+      kit:eq==='bar'?{field:'weight',unit:unit(),bar:'bar'}:null};
+  },(ei,si)=>{
+    const set=state.active.entries[ei].sets[si], field=f=>__root.querySelector('[data-field="'+f+'"][data-ex="'+ei+'"][data-set="'+si+'"]');
+    // An untouched suggestion must log the number still on the card, even after its weight changes.
+    const reps=field('reps'), weight=field('weight');
+    if(set.reps==null&&reps&&Num.int(reps.value)!=null){ set.reps=Num.int(reps.value); set.assumed=true; }
+    if(set.weight==null&&weight&&Num.parse(weight.value)!=null)set.weight=fromDisp(weight.value);
+    toggleDone(ei,si);
+  },stopRest);
+
 }
 
 function renderTabs(){
@@ -2789,7 +2931,7 @@ function exerciseCard(en, ei){
       ${ls?`<button class="tinybtn" data-act="fill-last" data-ex="${ei}">${I.copy} Same as last</button>`:''}
       ${bw||isAssisted(en.exId)? '' : `<button class="tinybtn" data-act="loading" data-ex="${ei}">${I.barbell} Loading</button>`}
       <button class="tinybtn" data-act="ex-swap" data-ex="${ei}">${I.swap} Swap</button>
-      ${en.sets.length>1?`<button class="tinybtn danger" data-act="del-last-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
+
     </div>
   </div>`;
 }
@@ -2809,8 +2951,8 @@ function setRow(en, ei, s, si){
     segHtml = s.segments.map((sg,gi)=>`
       <div class="seg">
         <div class="slbl">drop</div>
-        <input class="sinput" inputmode="decimal" data-field="segweight" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.weight!=null?fmtW(sg.weight):''}" placeholder="${unit()}" aria-label="Drop set weight">
-        <input class="sinput" inputmode="numeric" data-field="segreps" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.reps!=null?sg.reps:''}" placeholder="reps" aria-label="Drop set reps">
+        <input class="sinput" inputmode="decimal" data-field="segweight" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.weight!=null?fmtW(sg.weight):''}" placeholder="${unit()}" aria-label="Set ${si+1} drop ${gi+1} weight">
+        <input class="sinput" inputmode="numeric" data-field="segreps" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.reps!=null?sg.reps:''}" placeholder="reps" aria-label="Set ${si+1} drop ${gi+1} reps">
         <div></div><div></div>
         <button class="setopt" data-act="del-seg" data-ex="${ei}" data-set="${si}" data-seg="${gi}" aria-label="Remove drop">${I.x}</button>
       </div>`).join('');
@@ -2822,7 +2964,7 @@ function setRow(en, ei, s, si){
       : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev&&prev.weight!=null?fmtW(prev.weight):'&ndash;'}" aria-label="Set ${idxLabel} weight"></div>`}
     <div class="setwrap"><input class="sinput${s.assumed?' assumed':''}" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${idxLabel} reps${s.assumed?', assumed from the hint: type the real count':''}"${s.assumed?' title="Assumed from the hint. Type the real count if it was different."':''}></div>
     <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${calSet(en, ei)===si? '?' : lastFailSet(en,si)? 0 : en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
-    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
+    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-pressed="${s.done}" aria-label="${s.done?'Set '+(si+1)+' logged':'Log set '+(si+1)}">${I.check}</button>
     <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     ${tagBadge? `<div style="grid-column:1/7;padding:0 2px 2px">${tagBadge}</div>`:''}
     ${calSet(en, ei)===si? `<div class="calrow">
@@ -4888,7 +5030,7 @@ function toggleDone(ei,si){
   if(noW) toast('Logged with no weight. Type it in, and next time starts from it');
   else if(cal) toast(cal);
   else if(adj) toast(adj);
-  if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
+  if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
 }
 
 /* ---- REST TIMER ---- */
@@ -4939,7 +5081,7 @@ function tickRest(){
   el.classList.add('on');
   if(rem<=0 && !a.restDone){ // finished -- alert exactly once
     a.restDone=true;
-    chime(); buzz([140,70,140,70,200]);
+    chime(); buzz([140,70,140,70,200]); if(window.MiloSession) window.MiloSession.restOver(__root);
     el.classList.add('flash');
     setTimeout(()=>{ if(state.active) state.active.restEndsAt=null; el.classList.remove('on','flash'); save(); }, 2200);
   }
@@ -5604,6 +5746,9 @@ function addCustomEx(d){
   return ex;
 }
 
+/* A part of a Together day finished: the next part is the main button, so the day runs on (it starts on Done too). */
+function nextBtn(){ const n=window.__hub&&window.__hub.nextAfter? window.__hub.nextAfter('lift') : null;
+  return n? `<button class="btn primary block" data-act="tg-next" style="margin-top:18px">Next: ${esc(n)} ${I.arrow}</button>` : `<button class="btn primary block" data-act="close-modal" style="margin-top:18px">Done</button>`; }
 function showReview(rec, sets, vol){
   nav.reg('review', ()=>showReview(rec, sets, vol));
   const dur=fmtDur(rec.durationSec||0);
@@ -5625,7 +5770,7 @@ function showReview(rec, sets, vol){
         <div class="rstat"><div class="v mono" style="font-size:19px">${dur}</div><div class="k">Duration</div></div>
       </div>
       ${prHtml}
-      <button class="btn primary block" data-act="close-modal" style="margin-top:18px">Done</button>
+      ${nextBtn()}
     </div>`, true);
 }
 
@@ -5739,11 +5884,12 @@ __root.addEventListener('click', e=>{
   const gi=el.dataset.seg!=null?+el.dataset.seg:null;
   switch(act){
     case 'nav': state.route=el.dataset.route; save(); render(); break;
-    case 'open-settings': openSettings(); break;
+    case 'open-settings': if(window.__openSettings) window.__openSettings('lift'); else openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'ev-lib': openEvidenceLibrary(); break;
     case 'techniques': openTechniques(); break;
     case 'close-modal': closeModal(); break;
+    case 'tg-next': closeModal(); if(window.__hub&&window.__hub.next) window.__hub.next('lift'); break;
     case 'sheet-back': nav.back(); break;
     case 'scrim': break;
     case 'start-empty': closeModal(); confirmNewSession(()=>startEmpty()); break;
@@ -6284,6 +6430,24 @@ if(window.__hub) window.__hub.reg('lift', {
         if(best>0) (ex[en.exId]||(ex[en.exId]={id:en.exId, p:(en.primary||[]).slice(), pts:[]})).pts.push({date:w.date, e1:best, rated}); }); });
     return Object.values(ex); },
   table(){ return {muscles:MUSCLES, groups:GROUPS}; },
+  // for the shell's one navigation: a page of this section, a fresh draw, the library's search, how-tos and evidence
+  go(r){ state.route=['today','train','plan','library','progress'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  quick(){ if(!state.active) startEmpty(); },
+  search(q){ q=String(q||''); if(state.libSearch===q) return; state.libSearch=q; if(state.route==='library') render(); },
+  lib(){ return state.exercises.map(e=>({id:e.id, n:e.name, s:e.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(', ')+' · '+e.equipment})); },
+  howto(id){ exDetail(id); },
+  evidence(){ openEvidenceLibrary(); },
+  // this section's own options for the one Settings sheet: [{k, l, d, c:[[value, label]], v, multi, act}]
+  opts(){ const s=state.settings; return [
+    {k:'target', l:'Weekly volume marker', d:'A reference line for each muscle. A rough guide, not a limit.', c:[8,10,12,15].map(n=>[n,String(n)]), v:s.target},
+    {k:'equip', l:'Equipment for swap suggestions', c:['Barbell','Dumbbell','Machine','Cable','Bodyweight'].map(x=>[x,x]), v:myEquip(), multi:true},
+    {k:'platecalc', l:'Plate calculator', act:true}]; },
+  opt(k, v){ const s=state.settings;
+    if(k==='target'){ s.target=+v; save(); render(); }
+    else if(k==='equip'){ if(!s.equipment||!s.equipment.length) s.equipment=myEquip().slice(); const arr=s.equipment, i=arr.indexOf(v); if(i>=0){ if(arr.length>1) arr.splice(i,1); } else arr.push(v);
+      const rest=(Prefs.get('kit',null)||['pullup','dip','load']).filter(x=>!KIT_NAME[x]); Prefs.set({kit:Object.keys(KIT_NAME).filter(x=>arr.includes(KIT_NAME[x])).concat(rest)}); save(); }
+    else if(k==='platecalc') openLoading(null); },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -8581,6 +8745,7 @@ function afterAdvances(rec){ const done=checkGoals();
   if(done.length) celebrate(done,0,next); else next(); }
 function sessionDone(rec){
   tb.seal();
+  const next=window.__hub&&window.__hub.nextAfter&&window.__hub.nextAfter('cal');
   const n=rec.entries.reduce((m,e)=>m+e.sets.length,0);
   const near=activeGoals().filter(g=>rec.entries.some(e=>e.ladderId===g.l)).map(g=>{
     const path=pathFor(g.l,g), at=path.indexOf(curIdx(g.l));
@@ -8599,7 +8764,7 @@ function sessionDone(rec){
         </div>
       </div>
       ${near?`<div class="section-label" style="margin:0 3px 4px">Your goals <span class="ln"></span></div>${near}`:''}
-      <button class="btn primary block" data-act="close-modal" style="margin-top:14px">${I.check} Done</button>
+      <button class="btn primary block" data-act="${next?'session-next':'close-modal'}" style="margin-top:14px">${next?'Next: '+esc(next)+' →':I.check+' Done'}</button>
     </div>`);
 }
 /* rest timer */
@@ -8613,7 +8778,7 @@ function tickRest(){
   const a=state.active, el=$('#rest');
   if(!a||!a.restEndsAt||!el){ if(el) el.classList.remove('on'); return; }
   const left=Math.round((a.restEndsAt-Date.now())/1000);
-  if(left<=0){ el.classList.remove('on'); a.restEndsAt=null; save();
+  if(left<=0){ el.classList.remove('on'); a.restEndsAt=null; save(); if(window.MiloSession) window.MiloSession.restOver(__root);
     if(state.settings.vibrate&&navigator.vibrate) try{navigator.vibrate([120,70,120]);}catch(e){}
     toast('Rest done'); return; }
   el.classList.add('on');
@@ -9016,7 +9181,7 @@ function exCard(e,ei){
       <div class="sidx">${si+1}</div>
       ${side? `<div class="lr">${box(s,si,0)}${box(s,si,1)}</div>` : box(s,si,null)}
       ${third}
-      <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="${s.done?'Mark set incomplete':'Log set'}">${I.check}</button>
+      <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-pressed="${s.done}" aria-label="${s.done?'Set '+(si+1)+' logged':'Log set '+(si+1)}">${I.check}</button>
       <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     </div>${note?`<div class="muted" style="font-size:11px;line-height:1.4;padding:0 6px 6px 34px">${note}</div>`:''}`; }).join('');
   return `<div class="card excard">
@@ -9045,7 +9210,7 @@ function exCard(e,ei){
       <button class="tinybtn" data-act="add-set" data-ex="${ei}">${I.plus} Add set</button>
       <button class="tinybtn" data-act="fill-target" data-ex="${ei}">${I.copy} Fill target</button>
       <button class="tinybtn" data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}">${I.info} How to</button>
-      ${e.sets.length>1?`<button class="tinybtn danger" data-act="del-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
+
     </div>
   </div>`;
 }
@@ -9303,6 +9468,20 @@ function render(){
   renderTabs();
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   const a=state.active; if(a&&a.restEndsAt) tickRest();
+  if(window.__routed) window.__routed('cal', state.route);
+  if(window.MiloSession) window.MiloSession.mount(__root,'cal',state,render,save,(ei,si)=>{
+    const e=state.active.entries[ei], st=stepsOf(e.ladderId)[e.stepIdx], set=e.sets[si], f=setupField(st), target=e.target==null?st.v:e.target;
+    const side=perSide(st)?set.lr&&set.lr[0]!=null?'r':'l':null;
+    return {name:st.n, target:target+(e.kind==='hold'?' s hold':' reps')+(side?' each side':''), side,
+      effort:e.kind==='hold'||practiceOf(e.ladderId,e.stepIdx)==='balance'||practiceOf(e.ladderId,e.stepIdx)==='power'?null:'rir', effortValue:set.rir,
+      setup:(f?doseInput(e,ei,st,f):'')+`<label class="session-clean"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''}> Clean form, full range, no pain</label><div class="session-method">${esc(/negative|lowering|eccentric/i.test(st.id+' '+st.n)?'Lowering practice':f&&f.key!=='load'?'Assisted movement':'Strict movement')} · <button class="tinybtn" data-act="ex-menu" data-ex="${ei}">Change movement</button></div>`};
+  },(ei,si,side)=>{
+    const e=state.active.entries[ei], set=e.sets[si], st=stepsOf(e.ladderId)[e.stepIdx];
+    if(holdOn(ei,si)){ holdGo(ei,si); return; }
+    if(side==='l'){ const inp=__root.querySelector('input[data-field="l"]'), v=Num.int(inp&&inp.value); set.lr=[v==null?e.target==null?st.v:e.target:v,set.lr&&set.lr[1]!=null?set.lr[1]:null]; save(); render(); return; }
+    toggleDone(ei,si);
+  },stopRest);
+
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['goals','Goals',I.target],['progress','Progress',I.chart],['library','Library',I.book]];
@@ -9323,7 +9502,8 @@ __root.addEventListener('click', e=>{
     case 'goal-toggle': { const card=el.closest('.goal-full'), open=!card.classList.contains('open');
       goalOpen[el.dataset.id]=open; card.classList.toggle('open',open); el.setAttribute('aria-expanded',String(open)); card.querySelector('.goal-body').hidden=!open; break; }
     case 'close-modal': closeModal(); break;
-    case 'settings': openSettings(); break;
+    case 'settings': if(window.__openSettings) window.__openSettings('cal'); else openSettings(); break;
+    case 'session-next': closeModal(); if(window.__hub&&window.__hub.next)window.__hub.next('cal'); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'evidence-lib': openEvidenceLib(); break;
     case 'ladder': openLadder(el.dataset.id); break;
@@ -9706,6 +9886,18 @@ if(window.__hub) window.__hub.reg('cal', {
   removeGoal(id){ const g=state.goals.find(x=>x.id===id&&!x.achieved); if(!g) return false;
     gone[id]=g; state.goals=state.goals.filter(x=>x!==g); save(); render(); return true; },
   restoreGoal(id){ const g=gone[id]; if(!g||state.goals.some(x=>x.id===id)) return false; delete gone[id]; state.goals.push(g); save(); render(); return true; },
+  // for the shell's one navigation: a page of this section, a fresh draw, its ladders and how-tos, the evidence
+  go(r){ state.route=['today','train','goals','progress','library'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  lib(){ return LADDER_ORDER.filter(id=>LADDERS[id]).map(id=>({id, n:LADDERS[id].n, steps:LADDERS[id].steps.map(st=>st.n)})); },
+  howto(id, i){ if(!LADDERS[id]) return; if(i==null) openLadder(id); else openRungHow(id, i); },
+  evidence(){ openEvidenceLib(); },
+  opts(){ return [{k:'rest', l:'Rest between sets', c:[60,90,120,180].map(n=>[n,n+' s']), v:state.settings.rest},
+    {k:'redo-place', l:'Redo the where-are-you survey', act:true},
+    {k:'reset-rungs', l:'Reset all rungs to the start', act:true, ask:'Every ladder goes back to its first rung, and your goals ask where you are again. Your logged sessions stay.'}]; },
+  opt(k, v){ if(k==='rest'){ state.settings.rest=+v; save(); }
+    else if(k==='redo-place'){ state.placed={}; state.said={}; state.placing=null; save(); render(); toast('Done. Your goals will ask where you are again.'); }
+    else if(k==='reset-rungs'){ LADDER_ORDER.forEach(x=>state.rung[x]=0); state.placed={}; state.said={}; state.advances=[]; save(); render(); toast('Rungs reset'); } },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -10634,7 +10826,7 @@ function tickRest(){
   $('#restl').textContent=a.restWarm?'Warm-up rest':'Rest';
   $('#restv').textContent=left>0? fmtDur(left) : 'Go';
   $('#restbar').style.width=(a.restDur? (1-left/a.restDur)*100 : 100).toFixed(1)+'%';
-  if(left<=0 && !a.restDone){ a.restDone=true; chime(); buzz([140,70,140]); el.classList.add('flash');
+  if(left<=0 && !a.restDone){ a.restDone=true; chime(); buzz([140,70,140]); if(window.MiloSession) window.MiloSession.restOver(__root); el.classList.add('flash');
     setTimeout(()=>{ if(state.active&&state.active.restDone){ state.active.restEndsAt=null; save(); } el.classList.remove('on','flash'); },2500); }
 }
 setInterval(()=>{ if(state&&state.active&&state.active.restEndsAt) tickRest(); },250);
@@ -10833,7 +11025,8 @@ function showReview(rec, notes, cycle){
       <div class="metric"><div class="k">Time</div><div class="v" style="font-size:19px">${fmtDur(rec.durationSec)}</div></div>
     </div>
     ${prHtml}${topHtml}${noteHtml}${cycleHtml(cycle)}
-    <button class="btn primary block" data-act="close-modal" style="margin-top:18px">${I.check} Done</button></div>`);
+    ${(()=>{ const n=window.__hub&&window.__hub.nextAfter? window.__hub.nextAfter('str') : null;   // a part of a Together day: on to the next
+      return n? `<button class="btn primary block" data-act="tg-next" style="margin-top:18px">Next: ${esc(n)} ${I.arrow}</button>` : `<button class="btn primary block" data-act="close-modal" style="margin-top:18px">${I.check} Done</button>`; })()}</div>`);
 }
 function cycleHtml(cycle){
   if(!cycle||!cycle.length) return '';
@@ -11097,7 +11290,7 @@ function exCard(en,ei){
       <button class="tinybtn" data-act="add-set" data-ex="${ei}">${I.plus} Add set</button>
       ${X.k==='load'?`<button class="tinybtn" data-act="add-warm" data-ex="${ei}">${I.flame} Warm-ups</button>`:''}
       ${plated(en.liftId)?`<button class="tinybtn" data-act="plates-for" data-ex="${ei}">${I.bar} Plates</button>`:''}
-      ${en.sets.length>1?`<button class="tinybtn danger" data-act="rm-last" data-ex="${ei}">${I.trash} Remove last</button>`:''}
+
     </div></div>`;
 }
 function setRow(en,ei,s,si,isNext,n){
@@ -11109,15 +11302,15 @@ function setRow(en,ei,s,si,isNext,n){
   const showPl= X.k!=='bw' && !s.done && s.w!=null && (!prev || prev.done || Math.abs((prev.w||0)-s.w)>1e-6);
   const pl= showPl? `<div class="pl mono" id="pl-${ei}-${si}">${loadNote(en.liftId,s.w)}</div>` : '';
   const wcell= X.k==='bw'? `<div class="nil mono bwcell">BW</div>`
-    : `<input class="sinput" inputmode="decimal" data-field="w" data-ex="${ei}" data-set="${si}" value="${inW(s.w)}" placeholder="${X.k==='added'?'+0':u()}" aria-label="Weight">`;
+    : `<input class="sinput" inputmode="decimal" data-field="w" data-ex="${ei}" data-set="${si}" value="${inW(s.w)}" placeholder="${X.k==='added'?'+0':u()}" aria-label="Set ${si+1} weight">`;
   // an RPE logged from the target (the box was left untouched) shows apart from one you typed
   const chk= s.chk&&!s.done? `<button class="pl chk" data-act="chk-why" data-ex="${ei}" data-set="${si}">${I.gauge} RPE check: at ${s.tr} reps, call your reps left, then keep going to failure. Only with safeties set or a spotter</button>` : '';
   return `<div class="setrow k-${s.kind} ${s.done?'done':''} ${isNext?'next':''}">
     <div class="sidx">${lbl}</div>
     ${wcell}
-    <input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Reps">
-    ${s.kind==='warm'?'<div class="nil"></div>':`<input class="sinput rpe${s.ra?' auto':''}" inputmode="decimal" data-field="rpe" data-ex="${ei}" data-set="${si}" value="${s.rpe!=null?s.rpe:''}" placeholder="${s.trpe!=null?s.trpe:'RPE'}" aria-label="${s.ra?'RPE, logged from the target':'RPE'}">`}
-    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
+    <input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${si+1} reps">
+    ${s.kind==='warm'?'<div class="nil"></div>':`<input class="sinput rpe${s.ra?' auto':''}" inputmode="decimal" data-field="rpe" data-ex="${ei}" data-set="${si}" value="${s.rpe!=null?s.rpe:''}" placeholder="${s.trpe!=null?s.trpe:'RPE'}" aria-label="Set ${si+1} RPE${s.ra?', logged from the target':''}">`}
+    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-pressed="${s.done}" aria-label="${s.done?'Set '+(si+1)+' logged':'Log set '+(si+1)}">${I.check}</button>
     <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     ${pl}${chk}</div>`;
 }
@@ -11721,6 +11914,13 @@ function render(){
   renderTabs();
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   tickRest();
+  if(window.__routed) window.__routed('str', state.route);
+  if(window.MiloSession) window.MiloSession.mount(__root,'str',state,render,save,(ei,si)=>{
+    const e=state.active.entries[ei], st=e.sets[si], eq=eqOf(e.liftId);
+    return {name:exName(e.liftId,e.vi), values:{reps:st.reps==null?st.tr:st.reps}, target:(st.tr||'Your reps')+(st.trHi?'–'+st.trHi:'')+' reps'+(st.trpe!=null?' · RPE '+st.trpe:''), step:Kit.step(eq,u()), effort:st.kind==='warm'?null:'rpe', effortValue:st.rpe==null?st.trpe:st.rpe,
+      kit:plated(e.liftId)?{field:'w',unit:u(),bar:EX[e.liftId].bar||'bar'}:null};
+  },toggleDone,stopRest);
+
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['program','Plan',I.cal],['progress','Progress',I.chart],['tools','Tools',I.calc]];
@@ -11736,7 +11936,8 @@ __root.addEventListener('click', e=>{
   switch(act){
     case 'nav': state.route=el.dataset.route; save(); render(); window.scrollTo(0,0); break;
     case 'close-modal': closeModal(); break;
-    case 'settings': openSettings(); break;
+    case 'tg-next': closeModal(); if(window.__hub&&window.__hub.next) window.__hub.next('str'); break;
+    case 'settings': if(window.__openSettings) window.__openSettings('str'); else openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'evidence-lib': openEvidenceLib(); break;
     case 'howto': openHowto(el.dataset.id, el.dataset.vi); break;
@@ -12148,6 +12349,23 @@ if(window.__hub) window.__hub.reg('str', {
     startProgramDay(nextDayIdx()); return state.active? state.active.id : null; },
   setup(){ state.route='today'; render(); window.scrollTo(0,0); openSetup(); },
   open(){ state.route=Parked.all(state).length?'train':'today'; render(); window.scrollTo(0,0); },
+  // for the shell's one navigation: a page of this section, a fresh draw, its lifts and how-tos, the evidence
+  go(r){ state.route=['today','train','program','progress','tools'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  quick(){ if(!state.active) startFree(); },
+  lib(){ return Object.keys(EX).map(id=>{ const X=EX[id]; return {id, n:X.n, s:AREAS[X.a].n+' · '+kindText(id), chain:X.k==='bw'? X.chain.map(c=>c[1]) : null}; }); },
+  howto(id, vi){ openHowto(id, vi); },
+  evidence(){ openEvidenceLib(); },
+  opts(){ const s=state.settings; return [
+    {k:'warmups', g:'warm', l:'Warm-up sets', d:'A ramp of lighter sets up to the first heavy one.', c:[[1,'On'],[0,'Off']], v:s.warmups?1:0},
+    {k:'rest', l:'Rest after work sets', c:[[120,'2 min'],[180,'3 min'],[240,'4 min'],[300,'5 min']], v:s.rest},
+    {k:'tmPct', l:'Training max', d:'The share of your estimated max the plans work from.', c:[[85,'85%'],[90,'90%'],[95,'95%']], v:s.tmPct},
+    {k:'setup', l:'Strength’s own plan: areas and kit', act:true}]; },
+  opt(k, v){ const s=state.settings;
+    if(k==='warmups'){ s.warmups=String(v)==='1'; Prefs.set({warmups:s.warmups}); save(); render(); }
+    else if(k==='rest'){ s.rest=+v; save(); }
+    else if(k==='tmPct'){ s.tmPct=+v; save(); render(); }
+    else if(k==='setup'){ state.route='today'; render(); openSetup(); } },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -12283,6 +12501,7 @@ function toast(m, canUndo){ const t=$('#toast'), own=canUndo&&typeof canUndo==='
 
 /* ==================== STATE ==================== */
 let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null, undos=[], endAsk=false;
+let page='today', first=null, offer=null;   // the page the shell shows, the first-run answers, the health check offered before Day 1
 function load(){
   let t=null, raw=null; try{ raw=localStorage.getItem(TG_KEY); t=raw? MiloSecurity.parseSection(raw, TG_KEY) : null; }catch(e){ Safe.rescue(TG_KEY, raw, e); }
   t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, prio:null, kit:null, exp:'intermediate', tune:null, plan:null, next:0, run:null, short:false, log:[], checkins:[], roundAt:0,
@@ -12299,7 +12518,9 @@ function load(){
       o.sore={}; o.x={}; Object.keys(c.sore||{}).forEach(k=>{ if(num(c.sore[k],0,10)){ o.sore[k]=c.sore[k]; if(num(c.x&&c.x[k],0,500)) o.x[k]=c.x[k]; } });
       if(c.pain&&typeof c.pain==='object'){ o.pain={}; Object.keys(c.pain).forEach(k=>{ if(num(c.pain[k],0,10)) o.pain[k]=c.pain[k]; }); }
       // unwell today: a cold above the neck, or a fever or symptoms below it
-      if(c.ill==='cold'||c.ill==='sick'||c.ill==='no') o.ill=c.ill; }
+      if(c.ill==='cold'||c.ill==='sick'||c.ill==='no') o.ill=c.ill;
+      // a one-tap check-in (Rough, OK, Great): the same answer to all four questions
+      if(['rough','ok','great'].includes(c.quick)) o.quick=c.quick; }
     return o; }).sort((a,b)=>a.day-b.day).slice(-400);
   t.secs=ALL.filter(m=>(t.secs||[]).includes(m));
   // your priority: all three sections, first to last, or null for the suggested order
@@ -12328,6 +12549,13 @@ function load(){
   if(t.plan && t.plan.w5 && !(t.plan.w5.kind==='light'||t.plan.w5.kind==='top')) delete t.plan.w5;
   if(t.custom && (!Array.isArray(t.custom)||t.custom.length!==t.days)) t.custom=null;
   if(t.run && !(t.run.parts&&t.run.parts.length)) t.run=null;
+  // the program type: Together (type null) or one section trained on its own (Together off, type that section)
+  if(!ALL.includes(t.type) || t.on) t.type=null;
+  // someone who trained only one section, and never Together, keeps that section as their program
+  if(!t.on && !t.type && !t.plan && !(t.log||[]).length){ try{ const had=ALL.filter(m=>{ const x=localStorage.getItem({lift:'hyplog.v1', str:'strlog.v2', cal:'proladder.v1'}[m]); return !!x && x.indexOf('"history":[{')>=0; });
+    if(had.length===1) t.type=had[0]; }catch(e){} }
+  // Today's first-run cards: the health check offered once before the first workout, Tune your program until closed
+  t.offered=!!t.offered; t.tuned=!!t.tuned;
   return t;
 }
 function save(){ Safe.put(TG_KEY, JSON.stringify(tg)); }
@@ -13327,6 +13555,13 @@ H.advance=function(m){
     startPart(k); return run.parts[k].st==='run';
   }catch(e){ console.error('Together couldn’t start the next part', e); return false; }
 };
+/* For a section's finish screen: the next part's name when a part of today's day in m has just finished. */
+H.nextAfter=function(m){
+  try{ refreshRun(); const run=tg.on&&tg.run; if(!run) return null;
+    const just=run.parts.filter(p=>p.m===m&&p.sid).pop(); if(!just||just.st!=='done') return null;
+    const k=run.parts.findIndex(p=>p.st==='todo'); return k>=0? partName(run.parts[k]) : null;
+  }catch(e){ return null; }
+};
 function startPart(k){
   const run=tg.run, p=run&&run.parts[k]; if(!p||p.st!=='todo') return;
   const api=H.api(p.m); if(!api) return;
@@ -13441,7 +13676,7 @@ const stripEl=document.getElementById('tgstrip');
 function strip(){
   if(!stripEl) return;
   // Together's own page shows the day at the top, so the strip is for the other tabs
-  const run=tg.on&&tg.run&&H.current()!=='mix'&&tg.run;
+  const run=tg.on&&tg.run&&(H.current()!=='mix'||page!=='today')&&tg.run;
   if(!run){ if(!stripEl.hidden){ stripEl.hidden=true; stripEl.innerHTML=MiloSecurity.html(''); } stripSpace(); return; }
   const cur=run.parts.find(p=>p.st==='run'), nxt=run.parts.findIndex(p=>p.st==='todo'), here=H.current();
   let btn='';
@@ -13461,7 +13696,7 @@ function stripSpace(){
 if(stripEl) stripEl.addEventListener('click', e=>{
   const b=e.target.closest('[data-tg]'); if(!b) return;
   const a=b.dataset.tg;
-  if(a==='home') H.go('mix');
+  if(a==='home') H.dest('today');
   else if(a==='open'){ const api=H.api(b.dataset.m); if(api) api.open(); H.away(b.dataset.m,'run'); }
   else if(a==='start') startPart(+b.dataset.k);
 });
@@ -13631,8 +13866,10 @@ function ciSummary(rec){
 function ciCard(){
   if(!tg.on) return '';
   const rec=ciToday();
-  if(ciEdit || (!rec && !tg.run)){ if(!ciDraft) ciStart(); return ciForm(carryOver()); }
-  if(!rec) return `<section class="card"><div class="spread"><span class="eyebrow">Check-in</span><button class="tog" data-a="ci-edit">Check in now</button></div><p class="hint" style="margin-top:6px">Not done today. It still shapes the parts of the day you haven’t started.</p></section>`;
+  if(ciEdit){ if(!ciDraft) ciStart(); return ciForm(carryOver()); }
+  // one line, one tap; the full check-in (soreness, joints, feeling unwell) opens from it
+  if(!rec) return `<section class="card ciline" id="cicard"><div class="spread"><span class="h3" id="ci-q">How do you feel?</span><div class="pills" role="group" aria-labelledby="ci-q">${QUICK.map(([k,l])=>`<button data-a="ci-q" data-v="${k}">${l}</button>`).join('')}</div></div>
+    <button class="tog" data-a="ci-edit" aria-expanded="false" style="margin-top:8px">${IC.sliders} Full check-in: soreness, joints, unwell</button></section>`;
   return ciSummary(rec);
 }
 const SOURCES=[
@@ -13692,11 +13929,11 @@ function heroNext(W){
   return `<section class="card">
     <div class="spread"><span class="eyebrow">Next up &middot; Day ${d+1} of ${D}</span>${ready?`<span class="chip">${IC.clock} about ${r5(P.mins)} min</span>`:''}</div>
     <div class="h2">${dayTitle(order)}</div>
-    ${ready? `<p class="hint" style="margin:4px 0 0">Warm up first: about 5 minutes of easy movement. Each part adds its own ramp-up sets.</p>` : ''}
+    ${offer&&offer.d===d? offerHtml(d) : `<div style="margin-top:12px"><button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button></div>`}
+    ${ready? `<p class="hint" style="margin:8px 0 0">Warm up first: about 5 minutes of easy movement. Each part adds its own ramp-up sets.</p>` : ''}
     <div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div>
     ${dayExtras(W, d, order, I).concat(dayNotes(order, I, P, C)).map(note).join('')}
     ${RED_FLAGS}
-    <div style="margin-top:14px"><button class="btn pri block" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start the day</button></div>
     <div class="row2"><button class="tog ${tg.short?'on':''}" data-a="short" aria-pressed="${tg.short?'true':'false'}">${IC.clock} Short on time</button>
       <button class="tog ${pickOpen?'on':''}" data-a="pickday" aria-expanded="${pickOpen?'true':'false'}">Another day</button></div>
     ${pickOpen? `<div class="pills" style="margin-top:10px">${W.map((x,i)=>`<button class="${i===d?'on':''}" data-a="setnext" data-d="${i}" ${x.length?'':'disabled'}>Day ${i+1}</button>`).join('')}</div>` : ''}
@@ -13876,21 +14113,22 @@ function tuneLine(P){
 function daysOn(m){ const n=weekOf().filter(d=>d.includes(m)).length; return plural(n,'day')+' a week'; }
 function volCard(I){
   const T=table(); if(!T) return '';
-  const x=H.sets(Day.add(startOfToday(), -6), null, ALL), target=(I.lift&&I.lift.target)||10;
+  const x=H.sets(Day.add(startOfToday(), -6), null, ALL), goals=tg.on? (plan().goal||{}) : {}, target=(I.lift&&I.lift.target)||0;
+  const targetOf=k=>Object.prototype.hasOwnProperty.call(goals,k)? goals[k] : target;
   const used=ALL.filter(m=>Object.values(x.by).some(b=>b[m]));
-  let body='';
-  if(!x.total) body=`<p class="lead muted" style="font-size:13px">No hard sets in the last seven days yet. They show up here from all three sections as you train.</p>`;
-  else {
+  let body=!x.total? `<p class="lead muted" style="font-size:13px">No hard sets in the last seven days yet. They show up here from all three sections as you train.</p>` : '';
+  {
     // a set counts in full for the muscles it mainly works and half for those that help, as Muscle and the plan count
-    const max=Math.max(target*1.6, ...Object.values(x.frac));
+    const max=Math.max(1, target*1.6, ...Object.values(goals).map(n=>n*1.6), ...Object.values(x.frac));
     let helped=false;
     T.groups.forEach(g=>{
-      const ks=Object.keys(T.muscles).filter(k=>T.muscles[k].g===g && x.frac[k]>0);
+      const ks=Object.keys(T.muscles).filter(k=>T.muscles[k].g===g && (x.frac[k]>0 || targetOf(k)>0));
       if(!ks.length) return;
       body+=`<div class="grp">${esc(g)}</div>`+ks.map(k=>{ const b=x.by[k]||{}, help=x.frac[k]-(x.direct[k]||0); if(help>0) helped=true;
-        return `<div class="vrow"><div class="nm">${esc(T.muscles[k].n)}</div><div class="vbar">${ALL.map(m=>b[m]? `<i style="width:${b[m]/max*100}%;background:${SEC[m].c}"></i>` : '').join('')}${help>0? `<i class="help" style="width:${help/max*100}%"></i>` : ''}<b style="left:${target/max*100}%"></b></div><div class="vn">${Math.round(x.frac[k])}</div></div>`; }).join('');
+        const goal=targetOf(k), n=Math.round(x.frac[k]||0), label=T.muscles[k].n+': '+n+(goal>0? ' of '+goal : '')+' hard sets';
+        return `<div class="vrow" aria-label="${esc(label)}"><div class="nm">${esc(T.muscles[k].n)}</div><div class="vbar" aria-hidden="true">${ALL.map(m=>b[m]? `<i style="width:${b[m]/max*100}%;background:${SEC[m].c}"></i>` : '').join('')}${help>0? `<i class="help" style="width:${help/max*100}%"></i>` : ''}${goal>0? `<b style="left:${goal/max*100}%"></b>` : ''}</div><div class="vn">${n}${goal>0? ' / '+goal : ''}</div></div>`; }).join('');
     });
-    body+=`<div class="legend">${used.map(m=>`<span><i style="background:${SEC[m].c}"></i>${SEC[m].n}</span>`).join('')}${helped? '<span><i class="help"></i>Helping, half a set</span>' : ''}<span>Marker: ${target} sets</span></div>`;
+    body+=`<div class="legend">${used.map(m=>`<span><i style="background:${SEC[m].c}"></i>${SEC[m].n}</span>`).join('')}${helped? '<span><i class="help"></i>Helping, half a set</span>' : ''}${target||Object.values(goals).some(n=>n>0)? '<span>Marker: your weekly target</span>' : ''}</div>`;
   }
   return `<section class="card"><div class="spread"><div class="h3">Hard sets per muscle</div><span class="chip">Last 7 days</span></div>
     <p class="hint" style="margin-top:6px">Every section counts toward the same totals: a bench press in Strength counts for chest just like one in Muscle, and half a set for the triceps and front delts that help it. Muscle&rsquo;s Today uses these totals too.</p>${body}</section>`;
@@ -13990,7 +14228,7 @@ const STAGE_HINT={u18:'Technique first and nothing to failure: RPE 7 at most, wi
 /* The health check: a few yes-or-no questions, once, kept on this phone and changeable here. A yes never stops you. */
 function screenField(d){
   const yes=d.yes||[], open=!tg.on || !d.asked;
-  return `<div class="field"><details class="rules" ${open?'open':''}><summary><span><b>Health check</b> <span class="hint">${d.asked||yes.length? (yes.length? plural(yes.length,'yes') : 'No to all') : '7 questions, about a minute'}</span></span>${IC.chev}</summary>
+  return `<div class="field" id="su-screen"><details class="rules" ${open?'open':''}><summary><span><b>Health check</b> <span class="hint">${d.asked||yes.length? (yes.length? plural(yes.length,'yes') : 'No to all') : '7 questions, about a minute'}</span></span>${IC.chev}</summary>
     <p class="hint" style="margin:8px 0">Tap any that apply to you. Your answers stay on this phone.</p>
     <div class="tlist">${PARQ.map((q,i)=>`<button class="tpick topt${yes.includes(i)?' on':''}" data-a="d-q" data-v="${i}" aria-pressed="${yes.includes(i)}"><span class="tn"><b>${q}</b></span>${yes.includes(i)? IC.check : ''}</button>`).join('')}</div>
     ${yes.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: ${tg.on? 'this block' : 'your first block'} stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
@@ -14003,25 +14241,25 @@ function viewSetup(){
     <div class="eyebrow">${tg.on?'Change the set-up':'Your program'}</div>
     <div class="h2">${tg.on?'What you train':'What do you want to train?'}</div>
     <p class="lead">Pick one or more and rank them. Together builds one week from that: the right dose of each, sessions that fit your time, and one count of hard sets for every muscle. It uses your numbers from each trainer, never their own plans, and the trainers you pick appear as tabs.</p>
-    <div class="field"><label>Train</label>
+    <div class="field" id="su-secs"><label>Train</label>
       ${ALL.map(m=>`<button class="pick ${d.secs.includes(m)?'on':''}" data-a="d-sec" data-m="${m}" aria-pressed="${d.secs.includes(m)?'true':'false'}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
         <span class="pt2"><b>${SEC[m].n}</b><span>${statusLine(m)}</span></span></button>`).join('')}</div>
     ${prioField(d)}
-    <div class="field"><label>Days a week you can train</label><div class="pills">${[2,3,4,5,6,7].map(n=>`<button class="${d.days===n?'on':''}" data-a="d-days" data-v="${n}">${n}</button>`).join('')}</div>
+    <div class="field" id="su-days"><label>Days a week you can train</label><div class="pills">${[2,3,4,5,6,7].map(n=>`<button class="${d.days===n?'on':''}" data-a="d-days" data-v="${n}">${n}</button>`).join('')}</div>
       <div class="pills" role="group" aria-label="Which days" style="margin-top:8px">${WD.map((w,i)=>{ const on=dWd(d).includes(i); return `<button class="${on?'on':''}" data-a="d-wd" data-v="${i}" aria-pressed="${on}" aria-label="${WD_N[i]}">${w}</button>`; }).join('')}</div>
       <p class="hint" style="margin-top:6px">Tap the days you can train. Together spaces the hard work over them: heavy squats and hinges 48 hours apart, and straight-arm skills too.</p></div>
-    <div class="field"><label>Time for one session</label><div class="pills">${[[45,'45 min'],[60,'60 min'],[75,'75 min'],[90,'90 min'],[0,'No limit']].map(([v,l])=>`<button class="${d.mins===v?'on':''}" data-a="d-mins" data-v="${v}">${l}</button>`).join('')}</div></div>
-    ${d.secs.includes('str')||d.secs.includes('lift')? `<div class="field"><label id="kit-l">What you can train with</label><div class="pills" role="group" aria-labelledby="kit-l">${KIT.map(([k,l])=>`<button class="${dk.includes(k)?'on':''}" data-a="d-kit" data-v="${k}" aria-pressed="${dk.includes(k)?'true':'false'}">${l}</button>`).join('')}</div>
+    <div class="field" id="su-mins"><label>Time for one session</label><div class="pills">${[[45,'45 min'],[60,'60 min'],[75,'75 min'],[90,'90 min'],[0,'No limit']].map(([v,l])=>`<button class="${d.mins===v?'on':''}" data-a="d-mins" data-v="${v}">${l}</button>`).join('')}</div></div>
+    ${d.secs.includes('str')||d.secs.includes('lift')? `<div class="field" id="su-kit"><label id="kit-l">What you can train with</label><div class="pills" role="group" aria-labelledby="kit-l">${KIT.map(([k,l])=>`<button class="${dk.includes(k)?'on':''}" data-a="d-kit" data-v="${k}" aria-pressed="${dk.includes(k)?'true':'false'}">${l}</button>`).join('')}</div>
       <p class="hint" style="margin-top:6px">Bodyweight work is always on the list.</p></div>` : ''}
-    <div class="field"><label>Training so far</label><div class="pills">${EXP.map(([k,l])=>`<button class="${(d.exp||'intermediate')===k?'on':''}" data-a="d-exp" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="field" id="su-exp"><label>Training so far</label><div class="pills">${EXP.map(([k,l])=>`<button class="${(d.exp||'intermediate')===k?'on':''}" data-a="d-exp" data-v="${k}">${l}</button>`).join('')}</div>
       ${(d.exp||'intermediate')==='beginner'? `<p class="hint" style="margin-top:6px">Your first block is linear practice: easy effort, a little heavier each time, nothing to failure.</p>` : ''}</div>
-    <div class="field"><label id="stage-l">Life stage <span class="hint">(optional)</span></label><div class="pills" role="group" aria-labelledby="stage-l">${STAGES.map(([k,l])=>`<button class="${(d.stage||'')===k?'on':''}" data-a="d-stage" data-v="${k}" aria-pressed="${(d.stage||'')===k}">${l}</button>`).join('')}</div>
+    <div class="field" id="su-stage"><label id="stage-l">Life stage <span class="hint">(optional)</span></label><div class="pills" role="group" aria-labelledby="stage-l">${STAGES.map(([k,l])=>`<button class="${(d.stage||'')===k?'on':''}" data-a="d-stage" data-v="${k}" aria-pressed="${(d.stage||'')===k}">${l}</button>`).join('')}</div>
       ${d.stage? `<p class="hint" style="margin-top:6px">${STAGE_HINT[d.stage]}</p>` : ''}</div>
     ${screenField(d)}
     <div style="margin-top:20px"><button class="btn pri block" data-a="d-save" ${d.secs.length? '' : 'disabled'}>${IC.arrow} ${tg.on?'Save':'Build my week'}</button></div>
     ${d.secs.length? '' : `<p class="hint" style="text-align:center">Pick at least one.</p>`}
     ${tg.on? `<button class="btn ghost block" data-a="d-cancel" style="margin-top:8px">Cancel</button>
-      <button class="btn ghost block danger" data-a="d-stop" style="margin-top:4px">Stop the program</button>` : ''}
+      <button class="btn ghost block danger" data-a="d-stop" style="margin-top:4px">Stop the program</button>` : `<button class="btn ghost block" data-a="d-cancel" style="margin-top:8px">Cancel</button>`}
   </section></div>`;
 }
 /* ==================== YOUR BLOCK ====================
@@ -14097,8 +14335,10 @@ function viewTune(){
     <div class="h2">${tune.fresh? 'Make this block yours' : 'Customize this block'}</div>
     <p class="lead">${tune.fresh? 'Here is what this block holds. Change anything you like, then start it. Each part is still built into one week with the others, and every set counts once.' : 'Change anything you like. Together refills your days to match, and you stay on this week of the block.'}</p>
     ${R.map((m,k)=>`<div class="tpart"><div class="spread"><div class="h3">${k+1}. ${SEC[m].n}</div><span class="chip">${DOSE_N[P.dose[m]]}</span></div>${part[m]()}</div>`).join('')}
-    <div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start this block' : IC.check+' Save changes'}</button></div>
-    <button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">${tune.setup? 'Use it as it is' : tune.fresh? 'Keep my current block' : 'Cancel'}</button>
+    ${JSON.stringify(cleanTune(T))===JSON.stringify(cleanTune(tg.tune))? `<div style="margin-top:20px"><button class="btn pri block" data-a="${tune.fresh?'t-save':'t-cancel'}">${tune.fresh? IC.play+' Start this block' : IC.check+' Done'}</button></div>
+      ${tune.fresh? `<button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">Keep my current block</button>` : ''}`
+    : `<div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start with my changes' : IC.check+' Save my changes'}</button></div>
+      <button class="btn ghost block" data-a="t-discard" style="margin-top:8px">${IC.undo} Discard changes</button>`}
   </section></div>`;
 }
 /* ==================== RECOMMENDED LADDER GOALS ====================
@@ -14249,20 +14489,184 @@ function viewMain(){
   const u=undos[undos.length-1];
   return `<div class="stack">
     ${u? `<button class="undoline" data-a="undo">${IC.undo}<span>Undo: ${esc(u.label)}</span></button>` : ''}
-    ${ciCard()}
+    ${sessionCard()}
     ${tg.run? heroRun() : heroNext(W)}
+    ${ciCard()}
+    ${tuneCard()}
+    ${installCard()}
     ${missing.map(m=>`<section class="card"><div class="spread" style="align-items:flex-start"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n}</div>
       <p class="lead" style="margin-top:4px">${notReady(m,{})}</p></div>
       ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div>
       ${m==='cal'? recHtml(recModel(plan()), true) : ''}</section>`).join('')}
-    ${programCard()}
     ${weekCard(W, DM)}
-    ${volCard(dayInfo(Math.max(0,n)))}
-    ${recoveryCard()}
+    ${programCard()}
     ${rulesCard()}
     <button class="btn ghost block" data-a="edit">${IC.sliders} Change what you train, order, days or time</button>
   </div>`;
 }
+/* ==================== ONE APP: TODAY, TRAIN, PROGRESS, LIBRARY ====================
+   Together draws the pages that cover every section: Today (its day), Train when no single session is the one to
+   show, Progress's All and Library's All (and Strength, which has no library page of its own). The shell's navigation
+   picks the page (go); each section's own pages stay its own. */
+const QUICK=[['rough','Rough',2],['ok','OK',4],['great','Great',6]];
+const FIRST_LINE={lift:'Build muscle', str:'Lift heavier', cal:'Calisthenics skills, rung by rung'};
+const localUnit=()=>/-(US|LR|MM)\b/i.test(String(navigator.language||''))? 'lb' : 'kg';
+const PAGE_H={today:'Today', train:'Train', progress:'Progress', library:'Library'};
+function progType(){ return !tg.on && ALL.includes(tg.type)? tg.type : 'mix'; }
+function newFirst(){ return {secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit(), auto:true}; }
+/* First run: what you train, how many days, and units. Everything else starts from a full gym, an hour and some
+   training behind you, and is yours to change once the first session is done. */
+function viewFirst(){
+  const f=first;
+  return `<div class="stack"><section class="card first">
+    <div class="h2">What do you want to train?</div>
+    <div class="field" role="group" aria-label="Train">${ALL.map(m=>`<button class="pick ${f.secs.includes(m)?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${f.secs.includes(m)}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
+      <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`).join('')}</div>
+    <div class="field"><label id="f-days-l">Days a week</label><div class="pills" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
+    <div class="spread"><span class="hint" id="f-unit-l" style="margin:0">Weights in</span><div class="pills" role="group" aria-labelledby="f-unit-l">${['kg','lb'].map(v=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${v}</button>`).join('')}</div></div>
+    <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length?'':'disabled'}>${IC.arrow} Build my week</button></div>
+    <p class="hint" style="text-align:center">${f.secs.length? 'Starts from a full gym, an hour a session and some training behind you. Change any of it later.' : 'Pick at least one.'}</p>
+    <button class="btn ghost block" data-a="f-backup">I have a backup</button>
+  </section></div>`;
+}
+/* Before the first workout, once: the health check as an optional 30 seconds. A yes never stops you. */
+function offerHtml(d){
+  const y=offer.yes;
+  return `<div class="offer" id="offer"><p class="lead" style="margin-top:10px"><b>A 30-second health check first?</b> Seven yes-or-no questions. It’s optional, and a yes never stops you. Tap any that apply.</p>
+    <button class="btn ghost block" data-a="o-skip" data-d="${d}" style="margin:8px 0">Start without the check</button>
+    <div class="tlist">${PARQ.map((q,i)=>`<button class="tpick topt${y.includes(i)?' on':''}" data-a="o-q" data-v="${i}" aria-pressed="${y.includes(i)}"><span class="tn"><b>${q}</b></span>${y.includes(i)? IC.check : ''}</button>`).join('')}</div>
+    ${y.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: your first block stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
+    <button class="btn pri block" data-a="o-start" data-d="${d}" style="margin-top:12px">${IC.play} Start Day ${d+1}</button></div>`;
+}
+/* Today leads with the way back to every running session, including a part of its own day. */
+function sessionCard(){
+  const open=ALL.filter(m=>{ if(!H.has(m)) return false; const i=infoOf(m); return !!(i&&i.busy); });
+  if(!open.length) return '';
+  return `<section class="card backto">${open.map(m=>{ const i=infoOf(m);
+    return `<div class="spread"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n} &middot; in progress</div><div class="h3">${esc(i.activeName||'Your session')}</div></div>
+      <button class="btn pri" data-a="resume" data-m="${m}" style="flex:none">Back to your session ${IC.arrow}</button></div>`; }).join('')}</section>`;
+}
+/* After the first day: the defaults the program started from, each a tap from changing. */
+function tuneCard(){
+  if(!tg.on || tg.tuned || !((tg.log||[]).some(e=>(e.parts||[]).some(p=>p[1]==='done'||p[1]==='ended')) || tg.run&&tg.run.parts.some(p=>p.st==='done'||p.st==='ended'))) return '';
+  const F=[['secs','Order'],['mins','Time'],['kit','Kit'],['exp','Experience'],['days','Weekdays'],['stage','Life stage'],['screen','Health check']];
+  return `<section class="card"><div class="spread"><div class="h3">Tune your program</div><button class="tog" data-a="tune-done">Looks good</button></div>
+    <p class="hint" style="margin-top:6px">Your first day is done. Milo started from a full gym, an hour a session and some training behind you: change what doesn’t fit.</p>
+    <div class="pills" style="margin-top:10px">${F.map(([k,l])=>`<button data-a="tune-go" data-v="${k}">${l}</button>`).join('')}</div></section>`;
+}
+/* After the first session: Milo on the home screen. The browser's own prompt where there is one; in Safari on an
+   iPhone or iPad, how to do it, and why it matters there. */
+function installCard(){
+  const I=window.__install; if(!I || !I.due()) return '';
+  const ios=I.ios();
+  return `<section class="card"><div class="spread"><div class="h3">Put Milo on your home screen</div><button class="tog" data-a="inst-no">Not now</button></div>
+    <p class="hint" style="margin-top:6px">${ios? 'Tap Share, then Add to Home Screen. Safari can delete a website’s saved data after seven days of use without a visit; from the home screen, Milo keeps it. Until then, Milo asks for a backup every 7 days.'
+      : 'It opens like an app, full screen and offline.'}</p>
+    ${ios? '' : `<button class="btn pri block" data-a="inst-go" style="margin-top:10px">${IC.arrow} Install Milo</button>`}</section>`;
+}
+/* Train with no single session to show: the ones in progress, today's workout, and one section on its own. */
+function viewTrainHub(){
+  const used=ALL.filter(m=>H.has(m)||tg.secs.includes(m)||progType()===m), type=progType();
+  const open=used.filter(m=>{ const i=infoOf(m); return !!(i&&(i.open||[]).length); });
+  const run=tg.on&&tg.run, nxt=run? run.parts.findIndex(p=>p.st==='todo') : -1, W=tg.on? weekOf() : null, d=W? nextIdx(W) : -1;
+  let today='';
+  if(run && nxt>=0) today=`<button class="btn pri block" data-a="part" data-k="${nxt}">${IC.play} Start ${partName(run.parts[nxt])}</button>`;
+  else if(run) today=`<p class="lead">Today’s day is under way. Its parts are on Today.</p>`;
+  else if(type==='mix' && tg.on && d>=0) today=`<button class="btn pri block" data-a="tr-day" data-d="${d}">${IC.play} Start today’s workout: Day ${d+1}</button><p class="hint">${dayTitle(dayParts(W[d], dayInfo(d)))}</p>`;
+  else if(type!=='mix') today=`<button class="btn pri block" data-a="tr-quick" data-m="${type}">${IC.play} Start today’s workout</button>`;
+  else today=`<p class="lead">Set up your week on Today, and its workouts start here.</p>`;
+  const quick=used.filter(m=>m!==type && !(infoOf(m)||{}).busy);
+  return `<div class="stack">
+    ${open.length? `<section class="card"><div class="eyebrow">${plural(open.length,'section')} with a session open</div>${open.map(m=>{ const i=infoOf(m), n=(i.open||[]).length;
+      return `<div class="spread" style="margin-top:10px"><div style="min-width:0"><b>${esc(i.activeName||SEC[m].n)}</b><div class="hint" style="margin:2px 0 0">${SEC[m].n}${n>1? ' &middot; '+n+' open' : ''}</div></div>
+        <button class="btn pri sm" data-a="resume" data-m="${m}" style="flex:none">Resume</button></div>`; }).join('')}</section>` : ''}
+    <section class="card"><div class="eyebrow">Today</div>${today}</section>
+    ${quick.length? `<section class="card"><div class="eyebrow">Or one section on its own</div><div class="stack" style="gap:8px;margin-top:10px">${quick.map(m=>
+      `<button class="btn block" data-a="tr-quick" data-m="${m}"><span class="dot" style="background:${SEC[m].c}"></span> ${SEC[m].n} session</button>`).join('')}</div>
+      <p class="hint">Its own next session, outside your week. It still counts toward each muscle’s weekly sets.</p></section>` : ''}
+  </div>`;
+}
+/* Progress, All: one summary across everything. */
+function weekStart(){ const t=startOfToday(); let first=1;
+  try{ const l=new Intl.Locale(navigator.language||'en-GB'), w=l.getWeekInfo? l.getWeekInfo() : l.weekInfo; if(w) first=w.firstDay%7; }catch(e){}
+  return Day.add(t, -((new Date(t).getDay()-first+7)%7)); }
+function recsAll(){ const out=[]; ALL.forEach(m=>{ if(!H.has(m)) return; try{ const A=H.api(m); if(A&&A.recsIn) A.recsIn(0, Infinity).forEach(r=>out.push(Object.assign({m}, r))); }catch(e){} }); return out; }
+function weekCount(){
+  const R=recsAll(), ws=weekStart(), now=R.filter(r=>r.date>=ws), days=new Set(now.map(r=>Day.start(r.date))).size;
+  // weeks in a row with a session, this one counting once it has one
+  let n=0, w=now.length? ws : Day.add(ws, -7);
+  while(R.some(r=>r.date>=w && r.date<Day.add(w, 7))){ n++; w=Day.add(w, -7); }
+  return `<section class="card"><div class="spread"><div class="h3">This week</div><span class="chip">${n? plural(n,'week')+' in a row' : 'No streak yet'}</span></div>
+    <div class="row3" style="margin-top:10px"><div class="stat"><b>${now.length}</b><span>${now.length===1?'session':'sessions'}</span></div><div class="stat"><b>${days}</b><span>${days===1?'day':'days'} trained</span></div><div class="stat"><b>${R.length}</b><span>all time</span></div></div>
+    ${!R.length? `<p class="hint">Your sessions from every section count here once you finish one.</p>` : ''}</section>`;
+}
+const fmtDay=ts=>new Date(ts).toLocaleDateString(undefined,{day:'numeric', month:'short'});
+function wtxt(kg){ const lb=Prefs.get('unit','kg')==='lb'; return (lb? Math.round(kg/0.45359237) : Math.round(kg*2)/2)+(lb?' lb':' kg'); }
+function liftsCard(){
+  const S=H.has('str')? H.api('str') : null, L=H.has('lift')? H.api('lift') : null;
+  const cat={}; try{ (L&&L.catalog? L.catalog() : []).forEach(e=>{ cat[e.id]=e; }); }catch(e){}
+  // Shared lifts keep one series; exercises trained only in Muscle still belong in All.
+  const names={}; try{ (S&&S.points? S.points(0) : []).forEach(x=>{ names[SAME_LIFT[x.id]||('str:'+x.id)]=S.name(x.id); }); }catch(e){}
+  let rows=liftPoints(0).filter(x=>names[x.id] || cat[x.id]&&cat[x.id].comp).map(x=>({n:names[x.id]||cat[x.id].name, pts:x.pts}));
+  rows=rows.filter(x=>x.pts.length>=2).sort((a,b)=>b.pts.length-a.pts.length).slice(0,6);
+  if(!rows.length) return `<section class="card"><div class="h3">Your main lifts</div><p class="lead muted" style="font-size:13px">After two sessions of a lift, its estimated max and its trend show here.</p></section>`;
+  const body=rows.map(x=>{ const P=x.pts.slice().sort((a,b)=>a.date-b.date), E=Lift.estimate(P), T=Lift.trend(P);
+    let best=0, at=0; P.forEach(p=>{ if(p.e1>best+1e-9){ best=p.e1; at=p.date; } });
+    const lo=Math.min(...P.map(p=>p.e1)), hi=Math.max(...P.map(p=>p.e1)), sp=P.slice(-12), pts=sp.map((p,i)=>`${sp.length>1? Math.round(i/(sp.length-1)*96)+2 : 50},${hi>lo? Math.round(26-(p.e1-lo)/(hi-lo)*22) : 15}`).join(' ');
+    const word={up:'rising', down:'slipping', flat:'holding', unknown:'too early to say'}[T.state]||'';
+    return `<div class="lrow"><div style="min-width:0"><b>${esc(x.n)}</b><div class="hint" style="margin:2px 0 0">${E? 'About '+wtxt(E.value) : ''}${word? ' &middot; '+word+(T.state==='up'||T.state==='down'? ' '+Math.abs(T.slope*100).toFixed(1)+'% a week' : '') : ''} &middot; record ${fmtDay(at)}</div></div>
+      <svg class="spark" viewBox="0 0 100 30" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></div>`; }).join('');
+  return `<section class="card"><div class="spread"><div class="h3">Your main lifts</div><span class="chip">Estimated max</span></div>${body}
+    <p class="hint">The estimate weighs recent sessions most. A trend needs four sessions and shows only when it’s more than day-to-day noise.</p></section>`;
+}
+function goalsCard(){
+  if(!H.has('cal')) return '';
+  let G=[]; try{ const C=H.api('cal'); G=C&&C.goals? C.goals() : []; }catch(e){}
+  if(!G.length) return '';
+  return `<section class="card"><div class="h3">Ladder goals</div>${G.map(g=>`<div class="grow"><div class="spread"><b>${esc(g.n)}</b><span class="hint" style="margin:0">${g.placed? g.pct+'%' : 'Not placed yet'}</span></div>
+    <div class="gbar" role="img" aria-label="${esc(g.n)}: ${g.placed? g.pct+'% of the way' : 'not placed yet'}"><i style="width:${g.placed? g.pct : 0}%"></i></div>${g.step? `<div class="hint" style="margin:4px 0 0">Now: ${esc(g.step)}</div>` : ''}</div>`).join('')}</section>`;
+}
+function viewProgressAll(){
+  return `<div class="stack">${weekCount()}${volCard({lift:H.has('lift')? infoOf('lift') : null})}${liftsCard()}${goalsCard()}${recoveryCard()}</div>`;
+}
+/* Library, All (and Strength): every exercise in every section, one search. A section's own library has more:
+   Muscle's filters and your own exercises, Ladder's ladders rung by rung. */
+function libRows(m){ try{ const A=H.api(m); return A&&A.lib? A.lib() : []; }catch(e){ return []; } }
+function viewLibraryAll(){
+  const Q=H.libq? H.libq() : {q:'', f:'all'}, q=(Q.q||'').toLowerCase(), f=Q.f, secs=f==='all'? ALL : [f];
+  const hit=t=>!q || String(t||'').toLowerCase().includes(q);
+  const groups=secs.map(m=>{ let items=[];
+    if(m==='cal') libRows('cal').forEach(L=>{ if(hit(L.n)) items.push({n:L.n, s:plural(L.steps.length,'rung'), a:`data-a="lib-open" data-m="cal" data-id="${esc(L.id)}"`});
+      else L.steps.forEach((st,i)=>{ if(q&&hit(st)) items.push({n:st, s:L.n, a:`data-a="lib-open" data-m="cal" data-id="${esc(L.id)}" data-i="${i}"`}); }); });
+    else libRows(m).forEach(x=>{ if(hit(x.n)||hit(x.s)||(x.chain||[]).some(hit)) items.push({n:x.n, s:x.s, a:`data-a="lib-open" data-m="${m}" data-id="${esc(x.id)}"`}); });
+    return {m, items};
+  });
+  const cap0= q? 40 : f==='all'? 8 : 200, total=groups.reduce((t,g)=>t+g.items.length,0);
+  return `<div class="stack">
+    ${groups.map(({m, items})=>`<section class="card"><div class="spread"><div class="h3" style="color:${SEC[m].c}">${SEC[m].n}</div><span class="chip">${q? items.length+(items.length===1?' match':' matches') : plural(items.length,'exercise')}</span></div>
+      ${items.length? `<div class="liblist">${items.slice(0,cap0).map(x=>`<button class="librow" ${x.a}><span><b>${esc(x.n)}</b><span>${esc(x.s)}</span></span>${IC.chev}</button>`).join('')}</div>` : `<p class="hint">${q? 'Nothing here matches.' : 'Nothing yet.'}</p>`}
+      ${items.length>cap0? `<button class="btn ghost block" data-a="lib-more" data-m="${m}">See all ${items.length}</button>` : ''}
+      <div class="row2" style="margin-top:10px"><button class="btn sm" data-a="lib-ev" data-m="${m}">${IC.book} ${SEC[m].n}’s evidence</button>${m==='str'? `<button class="btn sm ghost" data-a="lib-tools">Calculators</button>` : ''}</div></section>`).join('')}
+    ${q&&!total? `<p class="hint" style="text-align:center">No exercise matches “${esc(Q.q)}”.</p>` : ''}
+  </div>`;
+}
+/* What the shell asks of Together: its pages, the program type, opening the set-up at one question, and the section
+   running a part of today's day. */
+H.reg('mix', {
+  go(p){ page=PAGE_H[p]? p : 'today'; if(p==='today'){ offer=null; } render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  type:progType, on:()=>!!tg.on,
+  setType(t){ if(t===progType()) return;
+    if(t==='mix'){ tg.type=null; tg.on=tg.secs.length>0; }
+    else if(ALL.includes(t)){ if(tg.run) closeRun(); tg.on=false; tg.type=t; }
+    save(); H.changed('mix'); render(); },
+  setup(field){ page='today'; draft=newDraft(); tune=null; render();
+    const el=$('#su-'+field); if(!el) { window.scrollTo(0,0); return; }
+    const det=el.querySelector('details'); if(det) det.open=true;
+    el.scrollIntoView({block:'start'}); const b=el.querySelector('button,input'); if(b) b.focus({preventScroll:true}); },
+  runPart(){ const p=tg.on&&tg.run&&tg.run.parts.find(x=>x.st==='run'); return p? p.m : null; },
+  sheetOpen:()=>false,
+});
 /* A drawing error shows what went wrong, with a retry, instead of taking the whole tab down. */
 function render(){
   try{ draw(); }
@@ -14275,11 +14679,20 @@ const newDraft=()=>({secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.p
   wd:tg.wd&&tg.wd.slice(), stage:tg.stage||'', yes:tg.screen? tg.screen.yes.slice() : [], asked:!!tg.screen});
 function draw(){
   fresh(); refreshRun(); strip();
-  if(!tg.on && !draft) draft=newDraft();
   const y=window.scrollY;
-  $('#view').innerHTML= MiloSecurity.html(draft? viewSetup() : tune? (tune.pick? viewPick() : viewTune()) : viewMain());
-  $('#subtitle').innerHTML= MiloSecurity.html(tg.on&&!draft? `${rankList().map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
+  let html;
+  if(page==='train') html=viewTrainHub();
+  else if(page==='progress') html=viewProgressAll();
+  else if(page==='library') html=viewLibraryAll();
+  // the first run picks the sections you have training in (an import, say) until you pick for yourself
+  else { if(!tg.on && !draft && (!first||first.auto)) first=newFirst(); if(tg.on) first=null;
+    html= draft? viewSetup() : !tg.on? viewFirst() : tune? (tune.pick? viewPick() : viewTune()) : viewMain(); }
+  $('#view').innerHTML= MiloSecurity.html(html);
+  const h=__root.querySelector('.appbar h1'); if(h) h.textContent=PAGE_H[page];
+  $('#subtitle').innerHTML= MiloSecurity.html(page==='train'? 'Your sessions' : page==='progress'? 'Every section together' : page==='library'? 'Every exercise, and the evidence'
+    : tg.on&&!draft? `${rankList().map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
   if(H.current()==='mix') window.scrollTo(0,y);
+  if(window.__routed) window.__routed('mix', page);
 }
 
 /* ==================== ACTIONS ==================== */
@@ -14287,6 +14700,44 @@ __root.addEventListener('click', e=>{
   const el=e.target.closest('[data-a]'); if(!el||el.disabled) return;
   const a=el.dataset.a, k=+el.dataset.k;
   switch(a){
+    // first run: what you train, days a week, units, then build
+    case 'f-sec': { first.auto=false; const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'f-days': first.auto=false; first.days=+el.dataset.v; render(); { const b=$(`[data-a="f-days"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
+    case 'f-unit': first.auto=false; first.unit=el.dataset.v==='lb'? 'lb' : 'kg'; render(); { const b=$(`[data-a="f-unit"][data-v="${first.unit}"]`); if(b) b.focus({preventScroll:true}); } break;
+    case 'f-backup': if(window.__openSettings) window.__openSettings('restore'); break;
+    case 'f-go': { const f=first; if(!f||!f.secs.length) break;
+      if(tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
+      tg.secs=f.secs.slice(); tg.days=f.days; tg.mins=60; tg.prio=autoOrder(ALL, skillGoal()).slice(); tg.on=true; tg.type=null;
+      tg.kit=null; tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
+      Prefs.set({unit:f.unit, kit:KIT.map(k=>k[0])});
+      first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Your week is built. Day 1 is ready.'); break; }
+    // the one-tap check-in
+    case 'ci-q': { const q=QUICK.find(x=>x[0]===el.dataset.v); if(!q) break;
+      const rec={day:startOfToday(), at:Date.now(), w:{}, sore:{}, x:{}, cw:2, quick:q[0]}; WELL.forEach(([k])=>{ rec.w[k]=q[2]; });
+      tg.checkins=(tg.checkins||[]).filter(c=>c.day!==rec.day).concat([rec]).sort((a,b)=>a.day-b.day).slice(-400);
+      save(); render(); toast('Check-in saved'); break; }
+    // the health check offered once before Day 1
+    case 'o-q': { const v=+el.dataset.v, y=offer.yes, i=y.indexOf(v); if(i>=0) y.splice(i,1); else y.push(v); render(); { const b=$(`[data-a="o-q"][data-v="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'o-start': case 'o-skip': { const d=+el.dataset.d;
+      if(a==='o-start') tg.screen={at:Date.now(), yes:offer.yes.slice().sort((x,z)=>x-z), blk:screenBlk()};
+      tg.offered=true; offer=null; save(); startDay(d); break; }
+    case 'tune-go': if(H.dest) H.dest('today'); page='today'; { const A=H.api('mix'); if(A) A.setup(el.dataset.v); } break;
+    case 'tune-done': tg.tuned=true; save(); render(); break;
+    case 'inst-go': if(window.__install) window.__install.prompt().then(()=>render()); break;
+    case 'inst-no': if(window.__install) window.__install.dismiss(); render(); break;
+    // Train, Progress and Library
+    case 'resume': { const m=el.dataset.m, api=H.api(m); if(!api) break; const p=tg.on&&tg.run&&tg.run.parts.find(x=>x.m===m&&x.st==='run');
+      api.open(); if(p) H.away(m,'run'); else H.go(m); break; }
+    case 'tr-day': page='today'; render(); { const b=$(`[data-a="start-day"][data-d="${el.dataset.d}"]`); if(b&&!b.disabled) b.click(); else window.scrollTo(0,0); } break;
+    case 'tr-quick': { const m=el.dataset.m, api=H.api(m); if(!api) break; const i=api.info();
+      if(i.busy){ api.open(); H.go(m); break; }
+      const id= i.ready&&api.start? api.start() : (api.quick? (api.quick(), 'quick') : null);
+      if(id){ api.open&&id!=='quick'&&api.open(); H.go(m); } else { H.go(m); if(api.setup) api.setup(); } break; }
+    // a how-to or the evidence opens in its section; closing it comes back here
+    case 'lib-open': { const m=el.dataset.m, api=H.api(m); if(!api||!api.howto) break; H.away(m,'rec'); api.howto(el.dataset.id, el.dataset.i!=null? +el.dataset.i : null); break; }
+    case 'lib-ev': { const m=el.dataset.m, api=H.api(m); if(!api||!api.evidence) break; H.away(m,'rec'); api.evidence(); break; }
+    case 'lib-tools': { const api=H.api('str'); if(api){ H.go('str'); api.go('tools'); } break; }
+    case 'lib-more': if(H.filter) H.filter('library', el.dataset.m); break;
     case 'd-sec': { const m=el.dataset.m, s=draft.secs; draft.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); break; }
     case 'd-days': draft.days=+el.dataset.v; draft.wd=null; render(); break;
     // your weekdays: tap to train on one or not; the number of days follows, two at least
@@ -14317,6 +14768,7 @@ __root.addEventListener('click', e=>{
       tune=null; save(); render(); window.scrollTo(0,0);
       toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.${open.length? ' '+listText(open)+' is still open: finish or end it there.' : ''}` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, true); break; }
     case 't-cancel': tune=null; render(); window.scrollTo(0,0); break;
+    case 't-discard': tune.T=cleanTune(tg.tune); render(); { const b=$('[data-a="t-save"],[data-a="t-cancel"]'); if(b) b.focus({preventScroll:true}); } break;
     case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, day:null, y:window.scrollY}; render(); pickTop(); break;
     case 't-day': { const K=tune.pick; K.day=+el.dataset.d; K.q=''; K.dy=window.scrollY; render(); pickTop(); break; }
     case 't-day-cancel': { const K=tune.pick, d=K.day; K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
@@ -14396,14 +14848,17 @@ __root.addEventListener('click', e=>{
         tg.screen= was&&was.yes.join()===yes.join()? was : {at:Date.now(), yes, blk:screenBlk()}; }
       Prefs.set({kit:tg.kit||KIT.map(k=>k[0])});
       if(changed){ tg.custom=null; tg.next=(tg.next||0)%tg.days; }
-      // a set-up that changes what the program is built from starts a new block, so it opens for you to customize
-      draft=null; if(baseSig()!==was) tune={T:cleanTune(tg.tune), fresh:true, setup:true};
-      save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(tune? 'Your week is built. Customize this block, then start it.' : 'Saved'); break;
+      // a set-up that changes what the program is built from starts a new block; customizing it is a link on Today
+      const rebuilt=baseSig()!==was; draft=null;
+      save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(rebuilt? 'Your week is built. Customize this block from Your program, or start Day 1.' : 'Saved'); break;
     }
     case 'd-cancel': draft=null; render(); break;
     case 'd-stop': remember('Together stopped'); tg.on=false; tg.run=null; draft=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Stopped. Each trainer carries on by itself.', true); break;
     case 'edit': draft=newDraft(); render(); window.scrollTo(0,0); break;
-    case 'start-day': startDay(+el.dataset.d); break;
+    case 'start-day': { const d=+el.dataset.d;
+      // before the very first workout, the health check is offered once (optional, about 30 seconds)
+      if(!tg.screen && !tg.offered){ offer={d, yes:[]}; render(); { const o=$('#offer'); if(o){ o.scrollIntoView({block:'nearest'}); const b=o.querySelector('button'); if(b) b.focus({preventScroll:true}); } } break; }
+      startDay(d); break; }
     case 'part': startPart(k); break;
     case 'skip': if(tg.run&&tg.run.parts[k]){ const n=partName(tg.run.parts[k]); remember(n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(n+' skipped.', true); } break;
     case 'unskip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='todo'; save(); render(); } break;
@@ -14524,10 +14979,43 @@ render();
      section starts, so a section's pending save can't write old data over it. */
   const BK_APP='milovancroton', BK_PENDING='milo.restore', BK_ERASE='milo.erase';
   const BK_STAMP='milo.backup', BK_SINCE='milo.since', BK_BEFORE='milo.before', BK_ASKED='milo.persist';
-  const DAY=864e5, DUE_AFTER=14*DAY;
+  const DAY=864e5;
+  /* ---- Installing Milo ----
+     After the first finished session Today offers it: the browser's own install prompt where there is one
+     (beforeinstallprompt), and in Safari on an iPhone or iPad the Share, Add to Home Screen steps. Safari can delete a
+     website's saved data after seven days of use without a visit, so there, until Milo is installed, a backup is due
+     every 7 days instead of 14. */
+  const UA=navigator.userAgent||'', IOS=/iP(hone|ad|od)/.test(UA) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const SAFARI=/^((?!chrome|android|crios|fxios|edgios|opr).)*safari/i.test(UA);
+  const standalone=()=>{ try{ return navigator.standalone===true || matchMedia('(display-mode: standalone)').matches; }catch(e){ return false; } };
+  const dueAfter=()=> SAFARI && !standalone()? 7*DAY : 14*DAY;
+  let installEv=null;
+  function refreshInstall(){ try{ if(active==='mix'&&apis.mix&&apis.mix.redraw) apis.mix.redraw(); else if(roots[active]&&routes[active]==='today') window.__install.draw(roots[active]); }catch(e){} }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installEv=e; refreshInstall(); });
+  window.addEventListener('appinstalled', ()=>{ installEv=null; try{ localStorage.setItem('milo.install','done'); }catch(e){} refreshInstall(); });
+  window.__install={
+    ios:()=>IOS && SAFARI,
+    due(){ if(standalone()||!hasHistory()) return false; try{ if(localStorage.getItem('milo.install')) return false; }catch(e){} return !!installEv || (IOS&&SAFARI); },
+    async prompt(){ const e=installEv; if(!e) return false; installEv=null;
+      try{ e.prompt(); const c=await e.userChoice; if(c&&c.outcome==='accepted') localStorage.setItem('milo.install','done'); }catch(_){} return true; },
+    dismiss(){ try{ localStorage.setItem('milo.install', String(Date.now())); }catch(e){} },
+    draw(root){
+      const old=root.querySelector('[data-install-card]'); if(old) old.remove();
+      if(!this.due() || progType()==='mix') return;
+      const stack=root.querySelector('#view .stack'); if(!stack) return;
+      const ios=this.ios(), html=`<section class="card pad" data-install-card><h3>Put Milo on your home screen</h3>
+        <p class="muted">${ios? 'Tap Share, then Add to Home Screen. Until then, back up every 7 days: Safari can remove data from websites you haven’t visited.' : 'Open it like an app, full screen and offline.'}</p>
+        ${ios? '' : '<button class="btn primary" data-install-go>Install Milo</button>'}<button class="btn ghost" data-install-no>Not now</button></section>`;
+      const anchor=stack.firstElementChild; if(anchor) anchor.insertAdjacentHTML('afterend',MiloSecurity.html(html)); else stack.innerHTML=MiloSecurity.html(html);
+      const card=stack.querySelector('[data-install-card]');
+      card.querySelector('[data-install-no]').addEventListener('click',()=>{ this.dismiss(); card.remove(); });
+      const go=card.querySelector('[data-install-go]'); if(go) go.addEventListener('click',async()=>{ await this.prompt(); this.draw(root); });
+    },
+  };
   /* Keys that are the shell's own notes, and copies kept for taking a step back, never go into a backup. */
   function snapshot(){ return MiloSecurity.snapshot(localStorage); }
   function toast(t, ms){ const d=document.createElement('div'); d.className='shtoast'; d.setAttribute('role','status'); d.textContent=t;
+    try{ if(active && routes[active]==='train') d.classList.add('top'); }catch(e){}
     document.body.appendChild(d); setTimeout(()=>d.remove(), ms||3200); }
   window.__toast=toast;
   function note(k){ try{ const n=+localStorage.getItem(k); return n>0? n : 0; }catch(e){ return 0; } }
@@ -14561,7 +15049,7 @@ render();
     if(!hasHistory()) return 0;
     let since=note(BK_SINCE); if(!since){ since=Date.now(); try{ localStorage.setItem(BK_SINCE,String(since)); }catch(e){} }
     const ref=Math.max(since, lastBackupAt());
-    return Date.now()-ref>DUE_AFTER? ref : 0;
+    return Date.now()-ref>dueAfter()? ref : 0;
   }
   function paintNudge(){
     const b=document.getElementById('bkbtn'), ref=overdue();
@@ -14620,13 +15108,124 @@ render();
   /* A pasted or loaded backup with a passphrase asks for it. */
   function paintLock(){ const on=MiloSecurity.sealed(document.getElementById('bk-in').value.trim()); document.getElementById('bk-lock').hidden=!on; return on; }
   document.getElementById('bk-in').addEventListener('input',paintLock);
-  function openBackup(){
-    say('bk-msg1',''); say('bk-msg2',''); say('yd-msg',''); ['bk-in','bk-pass','bk-rpass'].forEach(id=>{ document.getElementById(id).value=''; }); paintLock(); paintLast();
-    if(bk.showModal) bk.showModal(); else bk.setAttribute('open','');
+  /* ---- Settings: one sheet for the whole app ----
+     Units, sound, vibration, theme and your kit are one choice for every section (Prefs and Kit pass them on); the
+     program is Together's set-up; each section adds its own options (opts on its hub API) in a group that opens out;
+     Your data, the backup and its friends, sits at the bottom, where the header's Backup button opens it. */
+  const setBody=document.getElementById('set-body'), LBS=0.45359237;
+  const escS=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+  const unitNow=()=>Prefs.get('unit','kg')==='lb'? 'lb' : 'kg';
+  let setOpen={general:true}, setFor=null;
+  const SEC_N={lift:'Muscle', str:'Strength', cal:'Ladder'};
+  /* A row of choices: one pressed, or several when cur is a list. */
+  function pills(s, opts, cur, more){ return `<div class="pills">${opts.map(([v,l])=>{ const on=Array.isArray(cur)? cur.map(String).includes(String(v)) : String(cur)===String(v);
+    return `<button type="button" class="b" data-s="${s}" data-v="${escS(v)}"${more||''} aria-pressed="${on}">${l}</button>`; }).join('')}</div>`; }
+  let optN=0;
+  const opt=(l, d, body)=>{ const id='so'+(++optN); return `<div class="opt" role="group" aria-labelledby="${id}"><div class="ol" id="${id}">${l}</div>${d? `<div class="od">${d}</div>` : ''}${body}</div>`; };
+  const grp=(k, title, note, body)=>`<details class="grp" data-g="${k}"${setOpen[k]? ' open' : ''}><summary>${title}${note? `<span>${note}</span>` : ''}</summary>${body}</details>`;
+  /* The sections in use: in the program, or with training saved. */
+  function inUse(m){ const t=tgSaved(); return progType()===m || !!(t&&t.on&&Array.isArray(t.secs)&&t.secs.includes(m)) || hasData(m); }
+  function sectionOpts(m){ try{ const A=inUse(m)? hubApi(m) : null; return A&&A.opts? A.opts()||[] : []; }catch(e){ console.warn('options not read', m, e); return []; } }
+  function optRows(m, list){ return list.map(o=> o.act? `<div class="opt"><button type="button" class="b act" data-s="opt" data-m="${m}" data-k="${escS(o.k)}">${o.l}<span aria-hidden="true">›</span></button></div>`
+    : opt(o.l, o.d, pills('opt', o.c, o.v, ` data-m="${m}" data-k="${escS(o.k)}"`))).join(''); }
+  function paintSet(){
+    optN=0;
+    const u=unitNow(), K=Kit.get(u), lb=u==='lb', type=progType(), t=tgSaved()||{};
+    const on=(k,d)=>Prefs.get(k,d)? 1 : 0;
+    const general=opt('Units','',pills('unit',[['kg','Kilograms'],['lb','Pounds']],u))
+      +opt('Theme','',pills('theme',[['system','Auto'],['light','Light'],['dark','Dark']],theme))
+      +opt('Sound','A chime when rest ends.',pills('sound',[[1,'On'],[0,'Off']],on('sound',true)))
+      +opt('Vibration','A buzz when rest ends, on phones that can.',pills('vibrate',[[1,'On'],[0,'Off']],on('vibrate',true)))
+      +opt('Keep the screen on during a session','So you don’t unlock the phone for every set. Phones may still hold back alerts while the screen is locked.',pills('wake',[[1,'On'],[0,'Off']],on('wake',true)))
+      +(window.MiloSession&&MiloSession.alertsAvailable()? opt('Rest alerts','An alert when rest ends while Milo is in the background. Locked phones may delay it.',
+        Notification.permission==='granted'? '<span>Alerts enabled</span>' : Notification.permission==='denied'? '<span>Allow notifications for Milo in your browser settings.</span>'
+          : '<button type="button" class="b" data-s="alerts">Enable rest alerts</button>') : '');
+    const types=[['mix','Together'],['lift','Muscle only'],['str','Strength only'],['cal','Ladder only']];
+    const fields=[['secs','What you train and its order'],['days','Days and weekdays'],['mins','Time for a session'],['kit','What you train with'],['exp','Experience'],['stage','Life stage'],['screen','Health check']];
+    const summary= type==='mix'? (t.on&&Array.isArray(t.secs)? t.secs.map(m=>SEC_N[m]).filter(Boolean).join(' + ')+' · '+(t.days||3)+' days' : 'Not set up yet') : SEC_N[type]+' on its own';
+    const program=opt('Program type','Together builds one week from every section you train. One section on its own runs that section’s own plan.',pills('type',types,type))
+      +(type==='mix'? `<div class="opt stack">${fields.map(([k,l])=>`<button type="button" class="b act" data-s="tg-setup" data-v="${k}">${l}<span aria-hidden="true">›</span></button>`).join('')}</div>`
+        : `<div class="opt"><button type="button" class="b act" data-s="sec-setup" data-v="${type}">${type==='cal'? 'Choose your Ladder goals' : 'Set up '+SEC_N[type]+'’s plan'}<span aria-hidden="true">›</span></button></div>`);
+    const plates=lb? [45,35,25,15,10,5,2.5,1.25,1,0.5] : [25,20,15,10,5,2.5,2,1.5,1.25,1,0.5,0.25];
+    const rack=Prefs.get(lb?'dbRackLb':'dbRackKg', null), rackList=Array.isArray(rack)? rack : rack&&Array.isArray(rack.list)? rack.list : [];
+    const bars=Prefs.get('bars', null)||{}, barVal=b=>bars[b]&&Number(bars[b][u])>0? bars[b][u] : '';
+    const collars=lb? [[0,'None'],[1,'1 lb'],[2,'2 lb'],[5,'5 lb']] : [[0,'None'],[0.5,'0.5 kg'],[1,'1 kg'],[2.5,'2.5 kg']];
+    const colOn=collars.find(c=>Math.abs(c[0]-K.collar)<0.01); if(!colOn) collars.push([Math.round(K.collar*100)/100, Math.round(K.collar*10)/10+' '+u]);
+    const kit=opt('Barbell','',`<div class="pills">${Kit.BARS.map(([n,bu])=>`<button type="button" class="b" data-s="bar" data-v="${n}" data-u="${bu}" aria-pressed="${Kit.barIs(n,bu,u)}">${n} ${bu}</button>`).join('')}</div>`)
+      +opt('Trap and EZ bars','Blank: the usual weight.',`<div class="kc"><label>Trap bar (${u})<input class="txt" inputmode="decimal" data-sf="bar" data-b="trap" value="${escS(barVal('trap'))}" placeholder="${escS(K.bars.trap)}"></label><label>EZ bar (${u})<input class="txt" inputmode="decimal" data-sf="bar" data-b="ez" value="${escS(barVal('ez'))}" placeholder="${escS(K.bars.ez)}"></label></div>`)
+      +opt('Plates you have ('+u+', per side)','',pills('plate',plates.map(p=>[p,String(p)]),K.plates))
+      +opt('Pairs of each','Blank: plenty. Loads never ask for more than you have.',`<div class="kc">${K.plates.map(p=>`<label>${p} ${u}<input class="txt" inputmode="numeric" data-sf="count" data-p="${p}" value="${K.count[p]!=null? escS(K.count[p]) : ''}" placeholder="any" aria-label="Pairs of ${p} ${u} plates"></label>`).join('')}</div>`)
+      +opt('Collars, each','',pills('collar',collars,colOn? colOn[0] : Math.round(K.collar*100)/100))
+      +opt('Dumbbell jumps','',pills('dbstep',(lb?[2.5,5,10]:[1,2,2.5]).map(v=>[v,v+' '+u]),K.dbStep))
+      +opt('Your dumbbells ('+u+')','Lightest to heaviest, with spaces. Blank: every jump, no top.',`<input class="txt" inputmode="decimal" data-sf="rack" value="${escS(rackList.join(' '))}" placeholder="${lb?'e.g. 5 10 15 20 25 30':'e.g. 2 4 6 8 10 12.5 15'}" aria-label="Your dumbbells">`)
+      +opt('Machine and cable jumps','',pills('stack',(lb?[5,10,15]:[2.5,5,7]).map(v=>[v,v+' '+u]),K.stack));
+    const S={lift:sectionOpts('lift'), str:sectionOpts('str'), cal:sectionOpts('cal')};
+    const warm=S.str.filter(o=>o.g==='warm');
+    let html=grp('general','General','',general)+grp('program','Program',escS(summary),program)+grp('kit','Your kit','',kit)
+      +(warm.length? grp('warm','Warm-ups','',optRows('str',warm)) : '');
+    ['lift','str','cal'].forEach(m=>{ const list=S[m].filter(o=>o.g!=='warm'); if(list.length) html+=grp(m, SEC_N[m], '', optRows(m, list)); });
+    setBody.innerHTML=MiloSecurity.html(html);
   }
-  window.__openBackup=openBackup;
+  setBody.addEventListener('toggle', e=>{ const d=e.target.closest&&e.target.closest('details.grp'); if(d) setOpen[d.dataset.g]=d.open; }, true);
+  function redrawActive(){ try{ if(inited[active]&&apis[active]&&apis[active].redraw) apis[active].redraw(); }catch(e){ console.error(e); } }
+  function closeSet(){ if(bk.close) bk.close(); else bk.removeAttribute('open'); }
+  setBody.addEventListener('click', async e=>{
+    const b=e.target.closest('[data-s]'); if(!b) return;
+    const s=b.dataset.s, v=b.dataset.v, u=unitNow(), lb=u==='lb';
+    if(s==='unit') Prefs.set({unit:v});
+    else if(s==='theme') window.__setTheme(v);
+    else if(s==='sound'||s==='vibrate'){ Prefs.set({[s]:v==='1'}); if(s==='vibrate'&&v==='1') try{ navigator.vibrate&&navigator.vibrate(60); }catch(_){} }
+    else if(s==='wake'){ Prefs.set({wake:v==='1'}); syncWake(); }
+    else if(s==='alerts'){ const permission=await MiloSession.requestAlerts(); toast(permission==='granted'? 'Rest alerts enabled' : permission==='denied'? 'Rest alerts are blocked in your browser settings.' : 'Rest alerts stay off.'); }
+    else if(s==='type'){ const A=hubApi('mix'); if(A&&A.setType) A.setType(v); }
+    else if(s==='tg-setup'){ closeSet(); goDest('today'); const A=hubApi('mix'); if(A&&A.setup) A.setup(v); return; }
+    else if(s==='sec-setup'){ closeSet(); show(v); const A=hubApi(v); if(A&&A.setup) A.setup(); return; }
+    else if(s==='bar') Kit.setBar(+v, b.dataset.u, u);
+    else if(s==='plate'){ const p=Number(v), have=Kit.get(u).plates, arr=have.filter(x=>x!==p);
+      if(arr.length===have.length){ arr.push(p); arr.sort((a,c)=>c-a); } else if(!arr.length){ toast('Keep at least one plate'); return; }
+      Kit.set({[lb?'platesLb':'platesKg']:arr}); }
+    else if(s==='collar') Kit.set({collarKg: lb? +v*LBS : +v});
+    else if(s==='dbstep') Kit.set({[lb?'dbStepLb':'dbStepKg']:+v});
+    else if(s==='stack') Kit.set({[lb?'stackStepLb':'stackStepKg']:+v});
+    else if(s==='opt'){ const m=b.dataset.m, A=hubApi(m), o=A&&A.opts? (A.opts()||[]).find(x=>x.k===b.dataset.k) : null; if(!o) return;
+      if(o.act){ if(o.ask && !await ask(o.l+'?', o.ask, o.l.split(' ').slice(0,2).join(' '))) return;
+        closeSet(); show(m); A.opt(o.k); return; }
+      A.opt(o.k, v); }
+    paintSet(); redrawActive();
+    const sel='[data-s="'+s+'"][data-v="'+(window.CSS&&CSS.escape? CSS.escape(v||'') : v)+'"]'+(b.dataset.k? '[data-k="'+b.dataset.k+'"]' : '');
+    const nb=setBody.querySelector(sel); if(nb) nb.focus();
+  });
+  /* Typed kit: trap and EZ bars, pairs of each plate, and your dumbbells, saved when you leave the box. */
+  setBody.addEventListener('change', e=>{
+    const el=e.target.closest('[data-sf]'); if(!el) return; const f=el.dataset.sf, u=unitNow();
+    if(f==='bar'){ const v=Num.parse(el.value), bars=JSON.parse(JSON.stringify(Prefs.get('bars', null)||{})), k=el.dataset.b;
+      bars[k]=Object.assign({}, bars[k]); if(v>0) bars[k][u]=v; else delete bars[k][u]; Kit.set({bars}); }
+    else if(f==='count'){ const v=Num.int(el.value), pc=JSON.parse(JSON.stringify(Prefs.get('plateCount', null)||{})), p=el.dataset.p;
+      pc[u]=Object.assign({}, pc[u]); if(v!=null&&v>=0) pc[u][p]=v; else delete pc[u][p]; Kit.set({plateCount:pc}); }
+    else if(f==='rack'){ const list=[...new Set(String(el.value).split(/[\s;/]+/).flatMap(t=>Num.parse(t)!=null? [t] : t.split(',')).map(Num.parse).filter(x=>x>0))].sort((a,c)=>a-c);
+      Kit.set({[u==='lb'?'dbRackLb':'dbRackKg']: list.length? list : null}); el.value=list.join(' '); }
+    redrawActive();
+  });
+  /* Open the sheet at the top, at a section's group (from its own settings button), or at Your data (part 'data'). */
+  function openSheet(part){
+    say('bk-msg1',''); say('bk-msg2',''); say('yd-msg',''); ['bk-in','bk-pass','bk-rpass'].forEach(id=>{ document.getElementById(id).value=''; }); paintLock(); paintLast();
+    if(SEC_N[part]) setOpen[part]=true;
+    paintSet(); setFor=part||null;
+    if(bk.showModal){ if(!bk.open) bk.showModal(); } else bk.setAttribute('open','');
+    const at= part==='data'? document.getElementById('bk-title') : part==='restore'? document.getElementById('bk-in') : SEC_N[part]? setBody.querySelector('[data-g="'+part+'"] summary') : null;
+    if(at){ at.scrollIntoView({block:'start'}); at.focus({preventScroll:true}); } else { bk.scrollTop=0; document.getElementById('set-title').focus({preventScroll:true}); }
+  }
+  function openBackup(){ openSheet('data'); }
+  window.__openBackup=openBackup; window.__openSettings=openSheet;
   document.getElementById('bkbtn').addEventListener('click',openBackup);
-  document.getElementById('bk-done').addEventListener('click',()=>{ if(bk.close) bk.close(); else bk.removeAttribute('open'); });
+  document.getElementById('setbtn').addEventListener('click',()=>openSheet(null));
+  const more=document.getElementById('morebtn'), tools=more.closest('.shell-tools');
+  function closeTools(){ tools.classList.remove('tools-open'); more.setAttribute('aria-expanded','false'); }
+  more.addEventListener('click',()=>{ const on=!tools.classList.contains('tools-open'); tools.classList.toggle('tools-open',on); more.setAttribute('aria-expanded',String(on)); });
+  document.getElementById('shell-actions').addEventListener('click',e=>{ if(e.target.closest('button')) closeTools(); });
+  document.addEventListener('click',e=>{ if(!tools.contains(e.target)) closeTools(); });
+  tools.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeTools(); more.focus(); } });
+  document.getElementById('bk-done').addEventListener('click',closeSet);
   document.getElementById('bk-copy').addEventListener('click',async()=>{
     const locked=!!passOf('bk-pass'); let ok=false, txt='';
     if(!locked){ txt=backupText(); try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} }
@@ -14726,35 +15325,108 @@ render();
     }catch(e){} });
   };
 
-  /* ---- Which tabs show ----
-     Together comes first and is always there. A trainer's tab shows once you choose it in Together. Until Together
-     is set up, a trainer you already have training saved in shows too, so nothing you made goes missing. The open
-     one always shows: a link or a running session can open any of them. */
-  const trained={};
-  function hasTraining(m){
-    if(trained[m]==null){ trained[m]=false;
-      try{ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null');
-        trained[m]=!!o && ((o.history||[]).length>0 || !!o.active || (m==='lift'? (o.mesos||[]).length>0 : m==='str'? !!o.program : (o.goals||[]).length>0)); }catch(e){} }
-    return trained[m];
+  /* ---- One app: Today · Train · Progress · Library ----
+     The sections keep their pages and their saved data; one navigation reaches them. Today is Together's day (or, with
+     a program type of one section, that section's own Today), Train the session that's running, Progress and Library
+     one page each with a filter for the section. A section's own navigation is hidden: each tells the shell which page
+     it shows (__routed), so the navigation stays right however you got there. */
+  const DESTS=['today','train','progress','library'], FILTERS=['all','lift','str','cal'];
+  const NAMES={all:'All', lift:'Muscle', str:'Strength', cal:'Ladder'}, PLAN_ROUTE={lift:'plan', str:'program', cal:'goals'};
+  const routes={}, savedRun={};
+  let dest='today', routing=false, homeAfter=null, libQ='';
+  const filt={progress:'all', library:'all'};
+  try{ const f=JSON.parse(localStorage.getItem(SK+'.filter')||'null')||{}; ['progress','library'].forEach(k=>{ if(FILTERS.includes(f[k])) filt[k]=f[k]; }); }catch(e){}
+  function tgSaved(){ try{ return JSON.parse(localStorage.getItem('trainer.together')||'null'); }catch(e){ return null; } }
+  /* The program type: 'mix' (Together, the default) or the one section you train on its own. */
+  function progType(){ const A=apis.mix; if(A&&A.type) return A.type(); const t=tgSaved(); return t&&!t.on&&KEYS[t.type]? t.type : 'mix'; }
+  function tgOn(){ const A=apis.mix; if(A&&A.on) return A.on(); const t=tgSaved(); return !!(t&&t.on); }
+  /* A section with a session open: its live state once it has started, else what it saved (read once: nothing else writes it). */
+  function runningIn(m){ try{
+    if(inited[m]&&apis[m]&&apis[m].info){ const i=apis[m].info(); return !!(i.busy || (i.open||[]).length); }
+    if(savedRun[m]==null){ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null'); savedRun[m]=!!(o&&(o.active || (Array.isArray(o.parked)&&o.parked.length))); }
+    return savedRun[m]; }catch(e){ return false; } }
+  /* Where a section's page sits in the navigation. */
+  function destOf(m, r){ if(m==='mix') return DESTS.includes(r)? r : 'today';
+    return r==='train'? 'train' : r==='progress'? 'progress' : r==='library'||r==='tools'? 'library' : 'today'; }
+  /* The section Train opens: the part of a Together day that's running, else the one section with a session open. */
+  function trainIn(){
+    let cur=null; try{ const A=hubApi('mix'); cur=A&&A.runPart&&A.runPart(); }catch(e){}
+    if(cur && runningIn(cur)) return cur;
+    const busy=['lift','str','cal'].filter(runningIn); return busy.length===1? busy[0] : 'mix';
   }
-  function chosenMods(){ try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); return t&&t.on&&Array.isArray(t.secs)? t.secs : null; }catch(e){ return null; } }
-  function visibleMods(){ const c=chosenMods(); return MODS.filter(m=> m==='mix' || m===active || (c? c.includes(m) : hasTraining(m))); }
-  function paintTabs(){ const v=visibleMods(); document.querySelectorAll('.seg').forEach(b=>{ b.hidden=!v.includes(b.dataset.m); }); }
-  /* A section with a session still going, from its saved state. */
-  function runningIn(m){ try{ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null'); return !!(o&&o.active); }catch(e){ return false; } }
+  function paintNav(){
+    document.querySelectorAll('.seg').forEach(b=>{ const on=b.dataset.d===dest; b.classList.toggle('on',on);
+      if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+    const live=['lift','str','cal'].some(runningIn), tb=document.querySelector('.seg[data-d="train"]');
+    if(tb){ tb.classList.toggle('live', live); tb.setAttribute('aria-label', live? 'Train, session in progress' : 'Train'); }
+    paintSub();
+  }
+  /* The row under the header: the section filter on Progress and Library (with the one search box on Library), and
+     Today and Plan when you train one section on its own. */
+  const sub=document.getElementById('subnav'), chipsEl=document.getElementById('subchips'), qWrap=document.getElementById('libq-wrap'), qIn=document.getElementById('libq');
+  function paintSub(){
+    const type=progType(); let chips=null, cur=null;
+    if(dest==='progress'||dest==='library'){ chips=FILTERS.map(f=>[f, NAMES[f]]); cur=filt[dest]; }
+    else if(dest==='today' && type!=='mix'){ chips=[['today','Today'],[PLAN_ROUTE[type], type==='cal'? 'Goals' : 'Plan']]; cur= active===type && routes[type]===PLAN_ROUTE[type]? PLAN_ROUTE[type] : 'today'; }
+    sub.hidden=!chips; qWrap.hidden=dest!=='library';
+    if(!chips) return;
+    const html=chips.map(([v,l])=>`<button type="button" data-f="${v}" aria-pressed="${v===cur}">${l}</button>`).join('');
+    if(chipsEl.innerHTML!==html){ const f=document.activeElement&&chipsEl.contains(document.activeElement)? document.activeElement.dataset.f : null;
+      chipsEl.innerHTML=MiloSecurity.html(html); if(f){ const b=chipsEl.querySelector('[data-f="'+f+'"]'); if(b) b.focus(); } }
+    chipsEl.setAttribute('aria-label', dest==='today'? 'Your section' : 'Show a section');
+  }
+  chipsEl.addEventListener('click', e=>{
+    const b=e.target.closest('[data-f]'); if(!b) return; const v=b.dataset.f;
+    if(dest==='today'){ const t=progType(); if(t!=='mix'){ show(t); apiGo(t, v); dest='today'; paintNav(); } return; }
+    filt[dest]=v; try{ localStorage.setItem(SK+'.filter', JSON.stringify(filt)); }catch(e){}
+    goDest(dest, {keepFocus:true});
+  });
+  qIn.addEventListener('input', ()=>{ libQ=qIn.value.trim(); if(dest==='library') goDest('library', {keepFocus:true, typing:true}); });
+  function apiGo(m, r){ const A=hubApi(m); if(A&&A.go) A.go(r); routes[m]=r; }
+  /* Open one of the four places. Each knows which section's page to show. */
+  function goDest(d, o){
+    o=o||{}; if(!DESTS.includes(d)) d='today';
+    if(d==='today'){ hubApi('mix'); const t=progType(); if(t!=='mix'){ show(t); apiGo(t, 'today'); } else { show('mix'); apiGo('mix','today'); } }
+    else if(d==='train'){ const m=trainIn(); show(m);
+      if(m==='mix') apiGo('mix','train');
+      else { const A=hubApi(m); if(A&&A.open) A.open(); routes[m]='train';
+        // a part of a Together day: finishing it leads on to the next part, as when it was started from Today
+        try{ const T=hubApi('mix'); if(T&&T.runPart&&T.runPart()===m) back={m, kind:'run', y:null, act0:null}; keepBack(); }catch(e){} } }
+    else if(d==='progress'){ const f=filt.progress; if(f==='all'){ show('mix'); apiGo('mix','progress'); } else { show(f); apiGo(f,'progress'); } }
+    else { const f=filt.library;
+      if(f==='lift'){ if(!(o.typing&&active==='lift')){ show('lift'); apiGo('lift','library'); } const A=apis.lift; if(A&&A.search) A.search(libQ); }
+      else if(f==='cal'&&!libQ){ show('cal'); apiGo('cal','library'); }
+      else if(o.typing&&active==='mix'&&routes.mix==='library'){ const A=apis.mix; if(A&&A.go) A.go('library'); }
+      else { show('mix'); apiGo('mix','library'); } }
+    dest=d; paintNav();
+  }
+  /* A section tells the shell which page it shows. On its own page Today belongs to Together, so a section going back
+     to its own Today (after a session ends, say) brings Together's Today back, once any sheet it opened is closed. */
+  window.__routed=function(m, r){
+    routes[m]=r;
+    // during a session toasts go to the top, clear of the set rows
+    const h=hostOf(m); if(h) h.classList.toggle('training', r==='train');
+    if(routing || m!==active) return;
+    const d=destOf(m, r);
+    if(m!=='mix' && d==='today' && r==='today' && tgOn() && progType()!==m && !(back&&back.m===m)){
+      const A=apis[m]; if(A&&A.sheetOpen&&A.sheetOpen()){ homeAfter=m; return; }
+      setTimeout(()=>{ if(active===m && routes[m]==='today' && !(apis[m].sheetOpen&&apis[m].sheetOpen())) goDest('today', {focus:false}); }, 0); return; }
+    if(d!==dest){ dest=d; paintNav(); } else if(dest==='today') paintSub();
+  };
+  /* The way back to Together is kept for the tab's life, so a reload in the middle of a part still leads on to the next. */
+  function keepBack(){ try{ if(back) sessionStorage.setItem('milo.back', JSON.stringify(back)); else sessionStorage.removeItem('milo.back'); }catch(e){} }
 
   function show(m){
     if(!MODS.includes(m)) m='mix';
-    if(back && m!==back.m) back=null;   // going anywhere else yourself cancels the way back
+    if(back && m!==back.m){ back=null; keepBack(); }   // going anywhere else yourself cancels the way back
     active=m;
+    if(sessionOn && sessionOn!==m) window.__sessionMode(false);
     MODS.forEach(x=>{ hostOf(x).hidden=(x!==m); });
-    document.querySelectorAll('.seg').forEach(b=>{
-      const on=b.dataset.m===m; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1;
-    });
-    ensureInit(m);
-    paintBg(); paintTabs();
+    routing=true; try{ ensureInit(m); }finally{ routing=false; }
+    paintBg();
     try{ localStorage.setItem(SK+'.mod',m); }catch(e){}
     window.scrollTo(0,0);
+    dest=destOf(m, routes[m]||'today'); paintNav();
     hubChanged('show');
     keepStorage();
   }
@@ -14778,7 +15450,7 @@ render();
   const apis={}, listeners=[];
   function hasData(m){ if(inited[m]) return true; try{ return !!(KEYS[m]&&localStorage.getItem(KEYS[m])); }catch(e){ return false; } }
   function hubApi(m){ ensureInit(m); return apis[m]||null; }
-  function hubChanged(m){ if(KEYS[m]) trained[m]=null; if(m==='mix'||KEYS[m]) paintTabs();
+  function hubChanged(m){ if(KEYS[m]) savedRun[m]=null; if(m==='mix'||KEYS[m]) paintNav();
     listeners.slice().forEach(f=>{ try{ f(m); }catch(e){ console.error(e); } }); checkBack(m,'changed'); syncWake(); }
   /* ---- The screen stays on while a session is running ----
      Between sets the phone would lock and every set would start with unlocking it. The screen is held from the
@@ -14789,7 +15461,7 @@ render();
   function running(){ return ['lift','str','cal'].some(m=>{ try{ const t=inited[m] && apis[m] && apis[m].running && apis[m].running(); return !!t && Date.now()-t<WAKE_MAX; }catch(e){ return false; } }); }
   async function syncWake(){
     if(!('wakeLock' in navigator) || waking) return;
-    const need=!document.hidden && running();
+    const need=!document.hidden && running() && Prefs.get('wake',true)!==false;
     if(need===!!wake) return;
     waking=true;
     try{
@@ -14797,7 +15469,7 @@ render();
       else { const w=wake; wake=null; if(w) await w.release(); }
     }catch(e){ wake=null; }
     waking=false;
-    if(need!==(!document.hidden && running())) syncWake();   // things changed while it was being asked for
+    if(need!==(!document.hidden && running() && Prefs.get('wake',true)!==false)) syncWake();   // things changed while it was being asked for
   }
   document.addEventListener('visibilitychange', syncWake);
   setInterval(syncWake, 5000);   // a cheap check; not every way of starting a session tells the hub
@@ -14805,21 +15477,25 @@ render();
      finishing a session started there (kind 'run'), comes back to Together where you were. */
   let back=null;
   function away(m, kind){ const y= active==='mix'? window.scrollY : null; let act0=null; try{ const i=hubApi(m).info(); act0=i&&i.busy? i.activeId : null; }catch(e){}
-    show(m); back={m, kind, y, act0}; }
+    const d= active==='mix'? (routes.mix||'today') : dest;
+    show(m); back={m, kind, y, act0, d}; keepBack(); }
   /* Continue on a session opened from Together picks it back up in its own section: you stay there to train it,
      and finishing or leaving it comes back to Together, as with a session started there. */
-  function stay(m){ if(back&&back.m===m) back.kind='run'; }
+  function stay(m){ if(back&&back.m===m){ back.kind='run'; keepBack(); } }
   function checkBack(m, why){
+    // a section that went back to its own Today while a sheet was open: Together's Today, now that it's closed
+    if(why==='closed' && homeAfter===m){ homeAfter=null;
+      setTimeout(()=>{ if(active===m && routes[m]==='today' && !back && !(apis[m].sheetOpen&&apis[m].sheetOpen()) && tgOn() && progType()!==m) goDest('today'); }, 90); }
     if(!back||back.m!==m||active!==m) return;
     setTimeout(()=>{ const b=back; if(!b||b.m!==m||active!==m) return;
       const api=apis[m];
       if(api&&api.sheetOpen&&api.sheetOpen()) return;                                  // a follow-up sheet opened
       // still training, or a session started there since (a goal's placement test, say)
       if(why!=='left' && api&&api.info){ try{ const i=api.info(); if(i.busy && (b.kind==='run' || i.activeId!==b.act0)) return; }catch(e){} }
-      back=null;
+      back=null; keepBack();
       // a part of a Together day finished: the next part starts straight away, so the day runs as one session
       if(b.kind==='run' && why!=='left' && window.__hub.advance && window.__hub.advance(m)) return;
-      show('mix'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
+      goDest(b.kind==='rec'&&DESTS.includes(b.d)? b.d : 'today'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
   }
   /* Muscles a Strength or Ladder set counts toward. Muscle's own table wins when it has the same exercise;
      otherwise the Strength area or the Ladder progression decides. [primary, secondary] */
@@ -14882,14 +15558,17 @@ render();
     api:hubApi, has:hasData, sets:tallySets, muscles:musclesOf,
     changed:hubChanged,
     on(f){ listeners.push(f); },
-    go(m){ show(m); },
+    go(m){ if(m==='mix'){ show('mix'); apiGo('mix','today'); } else show(m); },
+    dest:goDest, type:progType, libq:()=>({q:libQ, f:filt.library}), filter(d, f){ if(FILTERS.includes(f)&&filt[d]){ filt[d]=f; goDest(d); } },
     away, stay, closed(m){ checkBack(m,'closed'); }, left(m){ checkBack(m,'left'); },
+    // the finish screen's Next button: on to the next part of today's day, or back to Today
+    next(m){ back=null; keepBack(); if(!(window.__hub.advance && window.__hub.advance(m))) goDest('today'); },
     current(){ return active; },
   };
 
   /* Section headers stick just under the top bar, which grows while a combined day is running. */
   const shellbar=document.querySelector('.shellbar');
-  function syncShellTop(){ const mobile=matchMedia('(max-width:999px)').matches; const side=document.querySelector('.sidebar'); document.documentElement.style.setProperty('--shell-bar-height',shellbar.offsetHeight+'px'); document.documentElement.style.setProperty('--shell-top',(shellbar.offsetHeight+(mobile?side.offsetHeight:0))+'px'); document.querySelector('.sw').setAttribute('aria-orientation',mobile?'horizontal':'vertical'); }
+  function syncShellTop(){ const h=shellbar.offsetHeight; document.documentElement.style.setProperty('--shell-bar-height',h+'px'); document.documentElement.style.setProperty('--shell-top',h+'px'); }
   if(window.ResizeObserver) new ResizeObserver(syncShellTop).observe(shellbar);
   syncShellTop();
   window.addEventListener('resize',syncShellTop);
@@ -14902,8 +15581,10 @@ render();
     const host=hostOf(m);
     const r=host.attachShadow({mode:'open'});
     r.appendChild(document.getElementById('t-'+m).content.cloneNode(true));
-    const nav=r.getElementById('tabbar'), app=r.getElementById('app'), bar=r.querySelector('.appbar');
-    if(nav&&app&&bar) bar.after(nav);
+    // one navigation and one Settings for the whole app: each section's own bottom bar and settings button step aside
+    const own=document.createElement('style');
+    own.textContent='.tabbar{display:none!important}.appbar #setbtn,.appbar #gearbtn{display:none!important}.searchbar:has(#libsearch){display:none!important}';
+    r.appendChild(own);
     r.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"]')){e.preventDefault();e.target.click();} });
     roots[m]=r;
   });
@@ -14911,32 +15592,35 @@ render();
   try{ theme=localStorage.getItem(SK+'.theme')||'system'; }catch(e){}
   stampTheme();
 
-  document.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>show(b.dataset.m)));
-  /* Arrow keys, Home and End move between the tabs that show (only the open one is in the tab order). */
+  document.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>goDest(b.dataset.d)));
+  /* Arrow keys, Home and End move between the four places; Enter or Space opens one. */
   document.querySelector('.sw').addEventListener('keydown',e=>{
     if(e.ctrlKey||e.metaKey||e.altKey) return;
-    const V=visibleMods(), i=V.indexOf(active); let j=-1;
-    if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%V.length; else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i+V.length-1)%V.length;
-    else if(e.key==='Home') j=0; else if(e.key==='End') j=V.length-1;
+    const B=[...document.querySelectorAll('.seg')], i=B.indexOf(document.activeElement); let j=-1;
+    if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%B.length; else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i+B.length-1)%B.length;
+    else if(e.key==='Home') j=0; else if(e.key==='End') j=B.length-1;
     if(j<0) return;
-    e.preventDefault(); show(V[j]); document.querySelector('.seg[data-m="'+V[j]+'"]').focus();
+    e.preventDefault(); B[j].focus();
   });
+  /* A session's focus mode (the next-set card) asks for the whole screen: the header and the navigation step back
+     while it shows, and come back when it ends or you go somewhere else. */
+  let sessionOn=null;
+  window.__sessionMode=function(on){ sessionOn= on? active : null; document.documentElement.classList.toggle('focus-mode', !!on); syncShellTop(); };
 
   document.getElementById('shell-date').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-  document.getElementById('theme-toggle').addEventListener('click',()=>{
-    const dark=theme==='dark'||(theme==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);
-    window.__setTheme(dark?'light':'dark');
-    document.getElementById('theme-toggle').setAttribute('aria-label',dark?'Switch to dark theme':'Switch to light theme');
-  });
   document.querySelectorAll('[data-open-guide]').forEach(b=>b.addEventListener('click',()=>document.getElementById('guide').showModal()));
   document.getElementById('guide-done').addEventListener('click',()=>document.getElementById('guide').close());
-  // Together is home; a trainer with a session still going opens instead, so you land back in it
-  let start='mix';
-  try{ const last=localStorage.getItem(SK+'.mod'); if(KEYS[last] && runningIn(last)) start=last; }catch(e){}
-  // a home-screen shortcut or a link: index.html?m=str opens that section
-  try{ const q=new URLSearchParams(location.search).get('m');
-    if(MODS.includes(q)){ start=q; history.replaceState(history.state,'',location.pathname+location.hash); } }catch(e){}
-  show(start);
+  // Today is home; with a session still going Train opens instead, so you land back in it
+  let start='today', open=null;
+  try{ const last=localStorage.getItem(SK+'.mod'); if(KEYS[last] && runningIn(last)) start='train'; }catch(e){}
+  try{ back=JSON.parse(sessionStorage.getItem('milo.back')||'null'); if(!(back&&KEYS[back.m])) back=null; }catch(e){ back=null; }
+  // a home-screen shortcut or a link: ?m=mix opens Today, ?m=lift|str|cal that section's Progress (or its session), ?go= a place
+  try{ const P=new URLSearchParams(location.search), q=P.get('m'), g=P.get('go');
+    if(q==='mix') start='today';
+    else if(KEYS[q]){ if(runningIn(q)){ start='train'; open=q; } else { start='progress'; filt.progress=q; } }
+    else if(DESTS.includes(g)) start=g;
+    if(q||g) history.replaceState(history.state,'',location.pathname+location.hash); }catch(e){}
+  if(open){ show(open); const A=hubApi(open); if(A&&A.open) A.open(); } else goDest(start);
   booted=true; paintNudge();
   // Together keeps the combined-day strip up to date from any tab, so it starts with the app once it is in use
   try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); if(t&&t.on) ensureInit('mix'); }catch(e){}

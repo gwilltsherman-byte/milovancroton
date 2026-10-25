@@ -42,18 +42,18 @@
   const saved=k=>JSON.parse(localStorage.getItem(k)||'null');
   const DAY=864e5, at=(daysAgo,h)=>{ const d=new Date(); d.setHours(h||18,0,0,0); d.setDate(d.getDate()-daysAgo); return d.getTime(); };
   const dup=new Date(2025,0,30,9,0).getTime();
-  const muscle={v:1, onboarded:true, route:'today', settings:{unit:'kg', sound:false, vibrate:false}, mesos:[], bodylog:[], exercises:[], history:[
+  const muscle={v:1, onboarded:true, route:'today', settings:{sessionView:'list',unit:'kg', sound:false, vibrate:false}, mesos:[], bodylog:[], exercises:[], history:[
     {id:'m-1', name:'Push', date:at(3), durationSec:3000, prs:[], note:'=SUM(A1)', entries:[
       {exId:'barbell-bench', name:'Barbell Bench Press', primary:['chest'], secondary:['fdelt','tri'], equipment:'Barbell', target:{repLow:6,repHigh:10,rir:2,rest:180}, note:'Felt strong, "solid"', sets:[
         {type:'warmup', weight:40, reps:10, rir:null, done:true, tag:null, segments:[]},
         {type:'work', weight:80, reps:8, rir:2, done:true, tag:null, segments:[], assumed:true},
         {type:'work', weight:80, reps:7, rir:1, done:true, tag:'Drop set', segments:[{weight:60, reps:6}]},
         {type:'work', weight:85, reps:null, rir:null, done:false, tag:null, segments:[]}]}]}]};
-  const strength={v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false}, history:[
+  const strength={v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false}, history:[
     {id:'s-dup', name:'Bench day', date:dup, durationSec:2400, prs:[], entries:[{liftId:'bench', label:'', sc:null, sets:[{kind:'work', w:70, reps:5, rpe:8, done:true}]}]},
     {id:'s-1', name:'Day A', date:at(2), durationSec:3600, prs:[], entries:[{liftId:'squat', label:'', sc:null, sets:[
       {kind:'warm', w:60, reps:5, rpe:null, done:true}, {kind:'work', w:100, reps:5, rpe:8, ra:true, done:true}]}]}]};
-  const ladder={v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:6}, placed:{pull:true}, goals:[], tests:[],
+  const ladder={v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false, rest:0}, rung:{pull:6}, placed:{pull:true}, goals:[], tests:[],
     advances:[{date:at(1), id:'pull', from:5, to:6, name:'Weighted pull-up'}], history:[
     {id:'c-1', name:'Pull', date:at(1), durationSec:1800, cleared:[], entries:[{ladderId:'pull', stepIdx:6, kind:'reps', target:5, setup:{load:10}, sets:[{v:5, rir:2, done:true}]}]}]};
   const togetherOn={v:1, on:true, secs:['lift','str'], days:3, mins:60, wd:[0,2,4]};
@@ -227,8 +227,9 @@
     await pause(300);
     const left=Object.keys(localStorage).filter(k=>/^(hyplog|strlog|proladder|trainer\.together)/.test(k)||['milo.before','milo.backup','milo.caltime','trainer.shell.unit'].includes(k));
     check(!left.length && localStorage.getItem(FOREIGN)==='yours', 'Erase everything removes every Milo key, with undo and unreadable copies, and leaves other apps’ keys');
-    const tabs=()=>[...doc.querySelectorAll('.seg')].filter(b=>!b.hidden).map(b=>b.dataset.m).join(',');
-    check(tabs()==='mix' && !sessionStorage.getItem('milo.erase'), 'and Milo starts again as on its first run');
+    // the first run on Today, with the sections that have training picked for you
+    const firstPicks=()=>{ const r=doc.getElementById('m-mix').shadowRoot; return r.querySelector('[data-a="f-go"]')? [...r.querySelectorAll('[data-a="f-sec"][aria-pressed="true"]')].map(b=>b.dataset.m).join(',') : null; };
+    check(firstPicks()==='' && doc.querySelector('.seg.on').dataset.d==='today' && !sessionStorage.getItem('milo.erase'), 'and Milo starts again as on its first run');
 
     // someone new coming from Strong, with a morning and an evening workout on one day: both go in whole, and their
     // sections show as soon as the import is done, without a reload
@@ -242,7 +243,7 @@
     check(imp2.textContent.includes('Added 2 workouts (4 sets).') && !imp2.textContent.includes('already in Milo') && saved('hyplog.v1').history.length===2 && saved('strlog.v2').history.length===2,
       'two workouts on one day go in whole: the second’s exercises are not taken for ones already in Milo');
     doc.getElementById('imp-cancel').click(); doc.getElementById('bk-done')?.click(); await pause(100);
-    check(tabs()==='mix,lift,str', 'after an import on a fresh start, Muscle and Strength show straight away');
+    check(firstPicks()==='lift,str', 'after an import on a fresh start, Muscle and Strength are picked on the first run straight away');
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;

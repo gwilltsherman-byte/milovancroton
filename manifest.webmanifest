@@ -1,9 +1,13 @@
 {
   "name": "Milo van Croton",
   "short_name": "Milo",
-  "description": "Three evidence-led trainers in one app: muscle growth, strength, and goal-based calisthenics.",
+  "description": "Muscle growth, strength and calisthenics skills in one app, with one plan for your week.",
   "lang": "en",
-  "categories": ["health", "fitness", "sports"],
+  "categories": [
+    "health",
+    "fitness",
+    "sports"
+  ],
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -11,14 +15,77 @@
   "background_color": "#20292f",
   "theme_color": "#20292f",
   "icons": [
-    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Muscle", "short_name": "Muscle", "description": "Muscle growth log", "url": "./index.html?m=lift", "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Strength", "short_name": "Strength", "description": "Strength log", "url": "./index.html?m=str", "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Ladder", "short_name": "Ladder", "description": "Calisthenics goals", "url": "./index.html?m=cal", "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Together", "short_name": "Together", "description": "Muscle, Strength and Ladder in one week", "url": "./index.html?m=mix", "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+    {
+      "name": "Today",
+      "short_name": "Today",
+      "description": "Your next workout",
+      "url": "./index.html?m=mix",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Train",
+      "short_name": "Train",
+      "description": "The session you're on",
+      "url": "./index.html?go=train",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Progress",
+      "short_name": "Progress",
+      "description": "Every section together",
+      "url": "./index.html?go=progress",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Library",
+      "short_name": "Library",
+      "description": "Exercises and the evidence",
+      "url": "./index.html?go=library",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

@@ -5,13 +5,15 @@
   frame.title = 'Ladder test session'; frame.style.cssText = 'width:390px;height:720px;border:1px solid #777';
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   function check(ok, message) { if (!ok) throw new Error(message); results.push('PASS ' + message); }
-  async function loadFrame(ready = '[data-act="toggle-done"]') {
+  // ?m=cal opens Ladder's session when one is going, else Ladder on Progress; route opens one of its pages through the hub
+  async function loadFrame(ready = '[data-act="toggle-done"]', route) {
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('App loading timed out')), 10000);
       frame.onload = () => { clearTimeout(timeout); resolve(); };
       frame.src = '../index.html?m=cal&ladder-regression=' + Date.now();
       if (!frame.parentNode) document.body.appendChild(frame);
     });
+    if (route) { const hub = frame.contentWindow.__hub; hub.go('cal'); hub.api('cal').go(route); }
     for (let i = 0; i < 100; i++) {
       const root = frame.contentDocument.getElementById('m-cal')?.shadowRoot;
       if (root?.querySelector(ready)) return root;
@@ -21,7 +23,7 @@
   }
   try {
     localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'train',
-      settings:{sound:false, vibrate:false, rest:0}, rung:{pull:3}, placed:{pull:true}, history:[], tests:[], goals:[],
+      settings:{sessionView:'list',sound:false, vibrate:false, rest:0}, rung:{pull:3}, placed:{pull:true}, history:[], tests:[], goals:[],
       active:{id:'browser-ladder-test',name:'Browser regression session',startedAt:Date.now(),
         entries:[{ladderId:'pull',stepIdx:3,kind:'reps',target:8,role:'goal',setup:{},clean:true,
           sets:[{v:null,done:false},{v:null,done:false},{v:null,done:false}]}]}}));
@@ -51,11 +53,11 @@
     const controls = [...root.querySelectorAll('input,button')];
     check(controls.every(el => !el.matches('button') || el.getAttribute('aria-label') || el.textContent.trim()), 'session controls have accessible names');
     check(doc.documentElement.scrollWidth <= 420 || root.querySelector('#view').scrollWidth <= 420, 'session fits the narrow viewport');
-    localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'goals', settings:{sound:false, vibrate:false, rest:0},
+    localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'goals', settings:{sessionView:'list',sound:false, vibrate:false, rest:0},
       rung:{pull:2, pushh:3}, placed:{pull:true, pushh:true}, history:[], tests:[], active:null,
       goals:[{id:'goal-a', key:'pullup1', n:'First strict pull-up', l:'pull', r:4, std:1, sup:[], added:1, achieved:null},
         {id:'goal-b', key:'pushup20', n:'20 strict push-ups', l:'pushh', r:3, std:20, sup:[], added:1, achieved:null}]}));
-    root = await loadFrame('.goal-full');
+    root = await loadFrame('.goal-full', 'goals');
     const heads = () => [...root.querySelectorAll('.goal-head')], bodies = () => [...root.querySelectorAll('.goal-body')];
     check(heads().length === 2 && heads().every(h => h.getAttribute('aria-expanded') === 'false') && bodies().every(b => b.hidden), 'several goals start folded to their summaries');
     heads()[1].click();
@@ -67,7 +69,7 @@
     check(!!root.querySelector('#sheet.on .howto') && !root.querySelector('#sheet.on svg.mvfig'), 'a rung’s how-to shows the written steps, with no drawing');
     // a per-side set corrected after its tick counts its weaker side (the page in the frame goes first: it saves as it leaves)
     await new Promise(resolve => { frame.onload = resolve; frame.src = 'about:blank'; });
-    localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'train', settings:{sound:false, vibrate:false, rest:0},
+    localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'train', settings:{sessionView:'list',sound:false, vibrate:false, rest:0},
       rung:{legs:5}, placed:{legs:true}, history:[], tests:[], goals:[],
       active:{id:'browser-side-test', name:'Sides', startedAt:Date.now(), entries:[{ladderId:'legs', stepIdx:5, kind:'reps', target:5, role:'goal', setup:{}, clean:true,
         sets:[{v:null,done:false},{v:null,done:false}]}]}}));
@@ -80,7 +82,7 @@
     check(side.done && side.lr[0] === 5 && side.lr[1] === 3 && side.v === 3, 'correcting one side of a ticked set counts the weaker side');
     // goals added from Together: "Skip the test" goes back to the plan, with no Ladder session of its own
     await new Promise(resolve => { frame.onload = resolve; frame.src = 'about:blank'; });
-    localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0},
+    localStorage.setItem(key, JSON.stringify({v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false, rest:0},
       rung:{}, placed:{}, history:[], tests:[], goals:[], active:null}));
     root = await loadFrame('#tabbar');
     check(frame.contentWindow.__hub.api('cal').addGoals(['pullup1']), 'Together can add a goal to Ladder');
