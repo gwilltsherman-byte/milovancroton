@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=' 'sha256-+e7fkCzZl4snL5vAItCKSUo2zprLbMjsXTEXNJRHwlM='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=' 'sha256-z0W1cVU/UEeGfv6EC5jf+SuQiyVj4Ykvje3psTA0khQ='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -135,9 +135,12 @@ body{background:#0A0D12; overflow-x:hidden;
   <p class="shell-tagline">A little stronger, every session.</p>
   <div class="shell-tools">
     <span class="shell-date" id="shell-date"></span>
+    <button class="shbtn more-tools" id="morebtn" aria-label="More options" aria-expanded="false" aria-controls="shell-actions"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>
+    <div class="shell-actions" id="shell-actions">
     <button class="shbtn mobile-guide" data-open-guide aria-label="How Milo works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg></button>
     <button class="shbtn" id="setbtn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     <button class="shbtn backup-button" id="bkbtn" aria-label="Back up or restore your data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg><span>Backup</span></button>
+    </div>
   </div>
 </header>
 <nav class="sidebar" aria-label="Milo">
@@ -2230,12 +2233,13 @@ details.based p{font-size:13.5px; line-height:1.65; color:var(--ink-2); margin:2
 
 /* volume */
 .grp{font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); margin:12px 0 4px}
-.vrow{display:grid; grid-template-columns:84px minmax(0,1fr) 26px; gap:10px; align-items:center; padding:4px 0}
+.vrow{display:grid; grid-template-columns:84px minmax(0,1fr) 56px; gap:10px; align-items:center; padding:4px 0}
 .vrow .nm{font-size:12.5px; font-weight:600; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .vbar{position:relative; height:9px; border-radius:99px; background:var(--well); overflow:hidden; display:flex}
 .vbar i{height:100%}
 .vbar b{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ink); opacity:.35}
 .vrow .vn{font-size:12.5px; font-weight:800; text-align:right; font-variant-numeric:tabular-nums}
+@media(max-width:300px){.vrow{grid-template-columns:minmax(0,1fr) max-content;gap:6px}.vrow .nm{grid-column:1/-1;white-space:normal}.backto .spread{flex-direction:column;align-items:stretch}.backto .btn{width:100%}}
 .legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:12px; color:var(--muted)}
 .legend span{display:inline-flex; align-items:center; gap:5px}
 .legend i{width:8px; height:8px; border-radius:99px}
@@ -2317,7 +2321,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=87c787b298661d4f7501" integrity="sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=f9eedf902cd9978b272f" integrity="sha256-+e7fkCzZl4snL5vAItCKSUo2zprLbMjsXTEXNJRHwlM=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=cf45b571553f5047867e" integrity="sha256-z0W1cVU/UEeGfv6EC5jf+SuQiyVj4Ykvje3psTA0khQ=" crossorigin="anonymous"></script>
 </body>
 </html>
 

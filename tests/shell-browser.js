@@ -132,6 +132,32 @@
     win.__sessionMode(false);
     check(getComputedStyle(doc.querySelector('.sidebar')).display!=='none', 'and they come back when it ends');
 
+    // A person who trained one section before this navigation keeps that program from the first paint.
+    frame.remove(); frame=null;
+    const legacy={v:2, onboarded:true, route:'today', settings:{unit:'kg',sound:false,vibrate:false}, history:[{id:'old-str',name:'Old workout',date:Date.now()-864e5,entries:[],prs:[]}]};
+    reset({'milo.persist':'1','strlog.v2':JSON.stringify(legacy)});
+    ({win,doc}=await load());
+    check(win.__hub.type()==='str' && win.__hub.current()==='str' && place(doc)==='today', 'legacy single-section history opens its own Today immediately');
+    check(!rootOf(doc,'str').querySelector('[data-act="f-go"]'), 'legacy training does not force a new Together program');
+    let prompted=0;
+    const install=new win.Event('beforeinstallprompt',{cancelable:true});
+    install.prompt=()=>{ prompted++; }; install.userChoice=Promise.resolve({outcome:'accepted'});
+    win.dispatchEvent(install); await pause(100);
+    check(!!rootOf(doc,'str').querySelector('[data-install-card]'), 'a standalone program offers installation after its first finished session');
+    rootOf(doc,'str').querySelector('[data-install-go]').click(); await pause(150);
+    check(prompted===1 && !rootOf(doc,'str').querySelector('[data-install-card]'), 'Install uses the browser prompt and removes the card after acceptance');
+
+    // At 200% phone zoom the header folds, while all its actions remain available.
+    frame.style.width='195px'; await pause(200);
+    check(doc.documentElement.scrollWidth<=195, 'the shell fits a 195 px viewport without sideways scrolling');
+    doc.getElementById('morebtn').click(); await pause(50);
+    const settingBox=doc.getElementById('setbtn').getBoundingClientRect();
+    check(doc.getElementById('morebtn').getAttribute('aria-expanded')==='true' && settingBox.left>=0 && settingBox.right<=195, 'More options keeps Settings on screen at high zoom');
+    doc.getElementById('setbtn').click(); await pause(100);
+    check(doc.getElementById('bk').open && doc.getElementById('morebtn').getAttribute('aria-expanded')==='false', 'the narrow header opens Settings and closes its options');
+    check(doc.getElementById('bk').scrollWidth<=doc.getElementById('bk').clientWidth+1, 'Settings fits the narrow viewport');
+    doc.getElementById('bk-done').click();
+
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;

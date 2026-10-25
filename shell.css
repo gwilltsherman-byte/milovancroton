@@ -18,6 +18,8 @@ button,a,input,textarea{touch-action:manipulation}
 .milo-wordmark small{display:block;font:400 11px/1.5 "Public Sans",sans-serif;letter-spacing:.04em;margin-top:3px}
 .shell-tagline{font-size:13px;color:var(--sh-muted);margin:0 auto 0 22px}
 .shell-tools{display:flex;align-items:center;gap:12px}
+.shell-actions{display:flex;align-items:center;gap:8px}
+.more-tools{display:none}
 .shell-date{font-size:13px;color:var(--sh-muted);margin-right:8px;white-space:nowrap}
 .shbtn{width:44px;height:44px;border-radius:8px;background:none;color:var(--sh-ink);border:1px solid var(--sh-edge)}
 .shbtn:hover{background:var(--sh-well)}
@@ -57,6 +59,13 @@ button,a,input,textarea{touch-action:manipulation}
 }
 @media(max-width:440px){.backup-button{width:44px;padding:0;justify-content:center}.backup-button span{display:none}}
 @media(max-width:380px){.shellbar{padding-left:16px;padding-right:16px}.seg{font-size:11px}.bk{padding:22px}}
+@media(max-width:300px){
+ .shellbar{gap:8px;padding-left:12px;padding-right:12px}.milo-brand{gap:6px}.shell-tools{position:relative;gap:0}.more-tools{display:grid;place-items:center}
+ .shell-actions{display:none;position:absolute;top:calc(100% + 8px);right:0;padding:8px;background:var(--sh-solid);border:1px solid var(--sh-border);border-radius:12px}
+ .tools-open .shell-actions{display:flex}.shell-actions .shbtn{flex:none}.sidebar{padding-left:4px;padding-right:4px}.sw{gap:0}.seg{min-width:44px}
+ .bk.set{width:calc(100vw - 12px);max-width:calc(100vw - 12px);padding:16px}.set .pills .b{max-width:100%;overflow-wrap:anywhere}.set .grp>summary{flex-wrap:wrap}.set .grp>summary span{margin-left:0;text-align:left}
+ .bk .stack,.bk .calrow{grid-template-columns:minmax(0,1fr)}.bk .tm{flex-wrap:wrap}.bk .tm .txt{min-width:0;max-width:100%}.bk .b{min-width:0;overflow-wrap:anywhere}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 .mobile-guide{display:none}@media(max-width:999px){.mobile-guide{display:grid}}

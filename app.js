@@ -29,6 +29,7 @@ window.MiloDesign = {
       const stack=view.querySelector('.stack'), m=(root.host&&root.host.id||'').replace('m-','');
       if(stack){stack.classList.add('today-layout');stack.insertAdjacentHTML('beforeend',MiloSecurity.html(this.week(history)));
         const r=this.role(m); if(r){ stack.insertAdjacentHTML('afterbegin',MiloSecurity.html(r)); const b=stack.querySelector('[data-go]'); if(b) b.addEventListener('click',()=>window.__go&&window.__go('mix')); } }
+      if(window.__install&&window.__install.draw) window.__install.draw(root);
     }
     root.querySelectorAll('.tab').forEach(b=>{if(b.classList.contains('active'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   }
@@ -13951,21 +13952,22 @@ function tuneLine(P){
 function daysOn(m){ const n=weekOf().filter(d=>d.includes(m)).length; return plural(n,'day')+' a week'; }
 function volCard(I){
   const T=table(); if(!T) return '';
-  const x=H.sets(Day.add(startOfToday(), -6), null, ALL), target=(I.lift&&I.lift.target)||10;
+  const x=H.sets(Day.add(startOfToday(), -6), null, ALL), goals=tg.on? (plan().goal||{}) : {}, target=(I.lift&&I.lift.target)||0;
+  const targetOf=k=>Object.prototype.hasOwnProperty.call(goals,k)? goals[k] : target;
   const used=ALL.filter(m=>Object.values(x.by).some(b=>b[m]));
-  let body='';
-  if(!x.total) body=`<p class="lead muted" style="font-size:13px">No hard sets in the last seven days yet. They show up here from all three sections as you train.</p>`;
-  else {
+  let body=!x.total? `<p class="lead muted" style="font-size:13px">No hard sets in the last seven days yet. They show up here from all three sections as you train.</p>` : '';
+  {
     // a set counts in full for the muscles it mainly works and half for those that help, as Muscle and the plan count
-    const max=Math.max(target*1.6, ...Object.values(x.frac));
+    const max=Math.max(1, target*1.6, ...Object.values(goals).map(n=>n*1.6), ...Object.values(x.frac));
     let helped=false;
     T.groups.forEach(g=>{
-      const ks=Object.keys(T.muscles).filter(k=>T.muscles[k].g===g && x.frac[k]>0);
+      const ks=Object.keys(T.muscles).filter(k=>T.muscles[k].g===g && (x.frac[k]>0 || targetOf(k)>0));
       if(!ks.length) return;
       body+=`<div class="grp">${esc(g)}</div>`+ks.map(k=>{ const b=x.by[k]||{}, help=x.frac[k]-(x.direct[k]||0); if(help>0) helped=true;
-        return `<div class="vrow"><div class="nm">${esc(T.muscles[k].n)}</div><div class="vbar">${ALL.map(m=>b[m]? `<i style="width:${b[m]/max*100}%;background:${SEC[m].c}"></i>` : '').join('')}${help>0? `<i class="help" style="width:${help/max*100}%"></i>` : ''}<b style="left:${target/max*100}%"></b></div><div class="vn">${Math.round(x.frac[k])}</div></div>`; }).join('');
+        const goal=targetOf(k), n=Math.round(x.frac[k]||0), label=T.muscles[k].n+': '+n+(goal>0? ' of '+goal : '')+' hard sets';
+        return `<div class="vrow" aria-label="${esc(label)}"><div class="nm">${esc(T.muscles[k].n)}</div><div class="vbar" aria-hidden="true">${ALL.map(m=>b[m]? `<i style="width:${b[m]/max*100}%;background:${SEC[m].c}"></i>` : '').join('')}${help>0? `<i class="help" style="width:${help/max*100}%"></i>` : ''}${goal>0? `<b style="left:${goal/max*100}%"></b>` : ''}</div><div class="vn">${n}${goal>0? ' / '+goal : ''}</div></div>`; }).join('');
     });
-    body+=`<div class="legend">${used.map(m=>`<span><i style="background:${SEC[m].c}"></i>${SEC[m].n}</span>`).join('')}${helped? '<span><i class="help"></i>Helping, half a set</span>' : ''}<span>Marker: ${target} sets</span></div>`;
+    body+=`<div class="legend">${used.map(m=>`<span><i style="background:${SEC[m].c}"></i>${SEC[m].n}</span>`).join('')}${helped? '<span><i class="help"></i>Helping, half a set</span>' : ''}${target||Object.values(goals).some(n=>n>0)? '<span>Marker: your weekly target</span>' : ''}</div>`;
   }
   return `<section class="card"><div class="spread"><div class="h3">Hard sets per muscle</div><span class="chip">Last 7 days</span></div>
     <p class="hint" style="margin-top:6px">Every section counts toward the same totals: a bench press in Strength counts for chest just like one in Muscle, and half a set for the triceps and front delts that help it. Muscle&rsquo;s Today uses these totals too.</p>${body}</section>`;
@@ -14356,7 +14358,6 @@ function newFirst(){ return {secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit
 function viewFirst(){
   const f=first;
   return `<div class="stack"><section class="card first">
-    <div class="eyebrow">Your first workout is two taps away</div>
     <div class="h2">What do you want to train?</div>
     <div class="field" role="group" aria-label="Train">${ALL.map(m=>`<button class="pick ${f.secs.includes(m)?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${f.secs.includes(m)}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
       <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`).join('')}</div>
@@ -14376,10 +14377,9 @@ function offerHtml(d){
     <button class="btn pri block" data-a="o-start" data-d="${d}" style="margin-top:12px">${IC.play} Start Day ${d+1}</button>
     <button class="btn ghost block" data-a="o-skip" data-d="${d}" style="margin-top:8px">Skip the check</button></div>`;
 }
-/* Sessions open in a section outside today's day: Today leads with the way back to them. */
+/* Today leads with the way back to every running session, including a part of its own day. */
 function sessionCard(){
-  const run=tg.run, inRun=m=>!!run&&run.parts.some(p=>p.m===m&&p.st==='run');
-  const open=ALL.filter(m=>{ if(!H.has(m)) return false; const i=infoOf(m); return !!(i&&i.busy) && !inRun(m); });
+  const open=ALL.filter(m=>{ if(!H.has(m)) return false; const i=infoOf(m); return !!(i&&i.busy); });
   if(!open.length) return '';
   return `<section class="card backto">${open.map(m=>{ const i=infoOf(m);
     return `<div class="spread"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n} &middot; in progress</div><div class="h3">${esc(i.activeName||'Your session')}</div></div>
@@ -14387,7 +14387,7 @@ function sessionCard(){
 }
 /* After the first day: the defaults the program started from, each a tap from changing. */
 function tuneCard(){
-  if(!tg.on || tg.tuned || !(tg.log||[]).some(e=>(e.parts||[]).some(p=>p[1]==='done'||p[1]==='ended'))) return '';
+  if(!tg.on || tg.tuned || !((tg.log||[]).some(e=>(e.parts||[]).some(p=>p[1]==='done'||p[1]==='ended')) || tg.run&&tg.run.parts.some(p=>p.st==='done'||p.st==='ended'))) return '';
   const F=[['secs','Order'],['mins','Time'],['kit','Kit'],['exp','Experience'],['days','Weekdays'],['stage','Life stage'],['screen','Health check']];
   return `<section class="card"><div class="spread"><div class="h3">Tune your program</div><button class="tog" data-a="tune-done">Looks good</button></div>
     <p class="hint" style="margin-top:6px">Your first day is done. Milo started from a full gym, an hour a session and some training behind you: change what doesn’t fit.</p>
@@ -14426,7 +14426,9 @@ function viewTrainHub(){
   </div>`;
 }
 /* Progress, All: one summary across everything. */
-function weekStart(){ const t=startOfToday(); return Day.add(t, -((new Date(t).getDay()+6)%7)); }
+function weekStart(){ const t=startOfToday(); let first=1;
+  try{ const l=new Intl.Locale(navigator.language||'en-GB'), w=l.getWeekInfo? l.getWeekInfo() : l.weekInfo; if(w) first=w.firstDay%7; }catch(e){}
+  return Day.add(t, -((new Date(t).getDay()-first+7)%7)); }
 function recsAll(){ const out=[]; ALL.forEach(m=>{ if(!H.has(m)) return; try{ const A=H.api(m); if(A&&A.recsIn) A.recsIn(0, Infinity).forEach(r=>out.push(Object.assign({m}, r))); }catch(e){} }); return out; }
 function weekCount(){
   const R=recsAll(), ws=weekStart(), now=R.filter(r=>r.date>=ws), days=new Set(now.map(r=>Day.start(r.date))).size;
@@ -14441,11 +14443,10 @@ const fmtDay=ts=>new Date(ts).toLocaleDateString(undefined,{day:'numeric', month
 function wtxt(kg){ const lb=Prefs.get('unit','kg')==='lb'; return (lb? Math.round(kg/0.45359237) : Math.round(kg*2)/2)+(lb?' lb':' kg'); }
 function liftsCard(){
   const S=H.has('str')? H.api('str') : null, L=H.has('lift')? H.api('lift') : null;
-  let rows=[];
-  try{ if(S&&S.points) rows=S.points(0).map(x=>({n:S.name(x.id), pts:x.pts})); }catch(e){}
-  // without Strength, Muscle's most-trained exercises
-  if(!rows.length){ try{ if(L&&L.points){ const cat={}; (L.catalog? L.catalog() : []).forEach(e=>{ cat[e.id]=e; });
-    rows=L.points(0).filter(x=>cat[x.id]&&cat[x.id].comp).map(x=>({n:cat[x.id].name, pts:x.pts})); } }catch(e){} }
+  const cat={}; try{ (L&&L.catalog? L.catalog() : []).forEach(e=>{ cat[e.id]=e; }); }catch(e){}
+  // Shared lifts keep one series; exercises trained only in Muscle still belong in All.
+  const names={}; try{ (S&&S.points? S.points(0) : []).forEach(x=>{ names[SAME_LIFT[x.id]||('str:'+x.id)]=S.name(x.id); }); }catch(e){}
+  let rows=liftPoints(0).filter(x=>names[x.id] || cat[x.id]&&cat[x.id].comp).map(x=>({n:names[x.id]||cat[x.id].name, pts:x.pts}));
   rows=rows.filter(x=>x.pts.length>=2).sort((a,b)=>b.pts.length-a.pts.length).slice(0,6);
   if(!rows.length) return `<section class="card"><div class="h3">Your main lifts</div><p class="lead muted" style="font-size:13px">After two sessions of a lift, its estimated max and its trend show here.</p></section>`;
   const body=rows.map(x=>{ const P=x.pts.slice().sort((a,b)=>a.date-b.date), E=Lift.estimate(P), T=Lift.trend(P);
@@ -14828,14 +14829,27 @@ render();
   const standalone=()=>{ try{ return navigator.standalone===true || matchMedia('(display-mode: standalone)').matches; }catch(e){ return false; } };
   const dueAfter=()=> SAFARI && !standalone()? 7*DAY : 14*DAY;
   let installEv=null;
-  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installEv=e; try{ if(apis.mix&&apis.mix.redraw&&active==='mix') apis.mix.redraw(); }catch(_){} });
-  window.addEventListener('appinstalled', ()=>{ installEv=null; try{ localStorage.setItem('milo.install','done'); }catch(e){} });
+  function refreshInstall(){ try{ if(active==='mix'&&apis.mix&&apis.mix.redraw) apis.mix.redraw(); else if(roots[active]&&routes[active]==='today') window.__install.draw(roots[active]); }catch(e){} }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installEv=e; refreshInstall(); });
+  window.addEventListener('appinstalled', ()=>{ installEv=null; try{ localStorage.setItem('milo.install','done'); }catch(e){} refreshInstall(); });
   window.__install={
     ios:()=>IOS && SAFARI,
     due(){ if(standalone()||!hasHistory()) return false; try{ if(localStorage.getItem('milo.install')) return false; }catch(e){} return !!installEv || (IOS&&SAFARI); },
     async prompt(){ const e=installEv; if(!e) return false; installEv=null;
       try{ e.prompt(); const c=await e.userChoice; if(c&&c.outcome==='accepted') localStorage.setItem('milo.install','done'); }catch(_){} return true; },
     dismiss(){ try{ localStorage.setItem('milo.install', String(Date.now())); }catch(e){} },
+    draw(root){
+      const old=root.querySelector('[data-install-card]'); if(old) old.remove();
+      if(!this.due() || progType()==='mix') return;
+      const stack=root.querySelector('#view .stack'); if(!stack) return;
+      const ios=this.ios(), html=`<section class="card pad" data-install-card><h3>Put Milo on your home screen</h3>
+        <p class="muted">${ios? 'Tap Share, then Add to Home Screen. Until then, back up every 7 days: Safari can remove data from websites you haven’t visited.' : 'Open it like an app, full screen and offline.'}</p>
+        ${ios? '' : '<button class="btn primary" data-install-go>Install Milo</button>'}<button class="btn ghost" data-install-no>Not now</button></section>`;
+      const anchor=stack.firstElementChild; if(anchor) anchor.insertAdjacentHTML('afterend',MiloSecurity.html(html)); else stack.innerHTML=MiloSecurity.html(html);
+      const card=stack.querySelector('[data-install-card]');
+      card.querySelector('[data-install-no]').addEventListener('click',()=>{ this.dismiss(); card.remove(); });
+      const go=card.querySelector('[data-install-go]'); if(go) go.addEventListener('click',async()=>{ await this.prompt(); this.draw(root); });
+    },
   };
   /* Keys that are the shell's own notes, and copies kept for taking a step back, never go into a backup. */
   function snapshot(){ return MiloSecurity.snapshot(localStorage); }
@@ -14961,7 +14975,10 @@ render();
       +opt('Theme','',pills('theme',[['system','Auto'],['light','Light'],['dark','Dark']],theme))
       +opt('Sound','A chime when rest ends.',pills('sound',[[1,'On'],[0,'Off']],on('sound',true)))
       +opt('Vibration','A buzz when rest ends, on phones that can.',pills('vibrate',[[1,'On'],[0,'Off']],on('vibrate',true)))
-      +opt('Keep the screen on during a session','So you don’t unlock the phone for every set. Phones may still hold back alerts while the screen is locked.',pills('wake',[[1,'On'],[0,'Off']],on('wake',true)));
+      +opt('Keep the screen on during a session','So you don’t unlock the phone for every set. Phones may still hold back alerts while the screen is locked.',pills('wake',[[1,'On'],[0,'Off']],on('wake',true)))
+      +(window.MiloSession&&MiloSession.alertsAvailable()? opt('Rest alerts','An alert when rest ends while Milo is in the background. Locked phones may delay it.',
+        Notification.permission==='granted'? '<span>Alerts enabled</span>' : Notification.permission==='denied'? '<span>Allow notifications for Milo in your browser settings.</span>'
+          : '<button type="button" class="b" data-s="alerts">Enable rest alerts</button>') : '');
     const types=[['mix','Together'],['lift','Muscle only'],['str','Strength only'],['cal','Ladder only']];
     const fields=[['secs','What you train and its order'],['days','Days and weekdays'],['mins','Time for a session'],['kit','What you train with'],['exp','Experience'],['stage','Life stage'],['screen','Health check']];
     const summary= type==='mix'? (t.on&&Array.isArray(t.secs)? t.secs.map(m=>SEC_N[m]).filter(Boolean).join(' + ')+' · '+(t.days||3)+' days' : 'Not set up yet') : SEC_N[type]+' on its own';
@@ -14998,6 +15015,7 @@ render();
     else if(s==='theme') window.__setTheme(v);
     else if(s==='sound'||s==='vibrate'){ Prefs.set({[s]:v==='1'}); if(s==='vibrate'&&v==='1') try{ navigator.vibrate&&navigator.vibrate(60); }catch(_){} }
     else if(s==='wake'){ Prefs.set({wake:v==='1'}); syncWake(); }
+    else if(s==='alerts'){ const permission=await MiloSession.requestAlerts(); toast(permission==='granted'? 'Rest alerts enabled' : permission==='denied'? 'Rest alerts are blocked in your browser settings.' : 'Rest alerts stay off.'); }
     else if(s==='type'){ const A=hubApi('mix'); if(A&&A.setType) A.setType(v); }
     else if(s==='tg-setup'){ closeSet(); goDest('today'); const A=hubApi('mix'); if(A&&A.setup) A.setup(v); return; }
     else if(s==='sec-setup'){ closeSet(); show(v); const A=hubApi(v); if(A&&A.setup) A.setup(); return; }
@@ -15040,6 +15058,12 @@ render();
   window.__openBackup=openBackup; window.__openSettings=openSheet;
   document.getElementById('bkbtn').addEventListener('click',openBackup);
   document.getElementById('setbtn').addEventListener('click',()=>openSheet(null));
+  const more=document.getElementById('morebtn'), tools=more.closest('.shell-tools');
+  function closeTools(){ tools.classList.remove('tools-open'); more.setAttribute('aria-expanded','false'); }
+  more.addEventListener('click',()=>{ const on=!tools.classList.contains('tools-open'); tools.classList.toggle('tools-open',on); more.setAttribute('aria-expanded',String(on)); });
+  document.getElementById('shell-actions').addEventListener('click',e=>{ if(e.target.closest('button')) closeTools(); });
+  document.addEventListener('click',e=>{ if(!tools.contains(e.target)) closeTools(); });
+  tools.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeTools(); more.focus(); } });
   document.getElementById('bk-done').addEventListener('click',closeSet);
   document.getElementById('bk-copy').addEventListener('click',async()=>{
     const locked=!!passOf('bk-pass'); let ok=false, txt='';
@@ -15201,7 +15225,7 @@ render();
   /* Open one of the four places. Each knows which section's page to show. */
   function goDest(d, o){
     o=o||{}; if(!DESTS.includes(d)) d='today';
-    if(d==='today'){ const t=progType(); if(t!=='mix'){ show(t); apiGo(t, 'today'); } else { show('mix'); apiGo('mix','today'); } }
+    if(d==='today'){ hubApi('mix'); const t=progType(); if(t!=='mix'){ show(t); apiGo(t, 'today'); } else { show('mix'); apiGo('mix','today'); } }
     else if(d==='train'){ const m=trainIn(); show(m);
       if(m==='mix') apiGo('mix','train');
       else { const A=hubApi(m); if(A&&A.open) A.open(); routes[m]='train';
