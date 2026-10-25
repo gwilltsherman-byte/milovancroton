@@ -1,6 +1,6 @@
 # Wave 2 results
 
-Implemented on `codex/wave2-complete`, 24 October 2026 (Pacific time). Pending review and merge into `main`.
+Implemented on `codex/wave2-complete`, 24 October 2026 (Pacific time), and merged into `main` in PR #49.
 
 ## Delivered
 
@@ -51,4 +51,29 @@ Physical iPhone/Android testing, mobile keyboard behavior and locked-screen noti
 unverified. Permission and worker-dispatch behavior were tested with simulated browser APIs. Phones may delay
 alerts while locked, as Settings explains.
 
-Review and merge Wave 2, then continue with the Wave 3 briefs in `HANDOFF.md`.
+Continue with the Wave 3 briefs in `HANDOFF.md` after the UI repair below is merged.
+
+
+## UI regression repair
+
+The owner reported UI bugs after the merge. Walking the actual first-run flow exposed issues that the prepared
+session fixtures had missed. The repair covers:
+
+- Entering and leaving focus mode synchronizes the shell and Together strip immediately, including when a
+  session is rendered before its trainer becomes visible.
+- Day and section names have separators. Weight fields retain visible units. Warm-ups, top sets, back-off sets
+  and plus sets retain their instructions; working-set counts exclude warm-ups.
+- Effort chips follow typed values and steppers, including blank and half-step values. Strength's suggested
+  effort follows changed reps, matching the existing value that Done saves without changing training calculations.
+- Set numbers no longer overlap weight fields at phone widths. Heavy plate displays and the Library search
+  wrap at 195 CSS pixels. Focus dialogs and toasts no longer reserve space for the hidden desktop sidebar.
+- Changing program type on Today immediately displays that program.
+- Browser console errors now fail the suite runner instead of being printed under a passing result.
+
+`tests/ui-browser.html` adds 74 checks, including the real setup-to-workout path and every main destination and
+section filter at 1440, 768, 390, 360 and 195 CSS pixels. The initial targeted run reproduced 18 failures; the
+expanded screen sweep exposed Library overflow, stale program routing and desktop dialog alignment as well.
+
+Validation: all 202 Node tests and all 482 browser assertions across eight suites pass, together with syntax
+and asset integrity checks. Visual review used the in-app browser and a 390 × 844 iframe with local test data.
+These checks emulate screen sizes; they do not substitute for physical-phone keyboard or locked-screen tests.

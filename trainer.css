@@ -567,7 +567,7 @@ button.dchip {min-height:36px}
 .session-effort button[aria-pressed=true] {background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .session-done {min-height:60px;width:100%;font-size:18px;margin:24px 0 12px}
 [data-session-plates] {margin-top:20px;font-size:13px;color:var(--muted)}
-.session-plates {display:flex;align-items:center;gap:4px;position:relative;min-height:76px;padding:5px 10px;isolation:isolate}
+.session-plates {display:flex;flex-wrap:wrap;align-items:center;gap:4px;position:relative;min-height:76px;padding:5px 10px;isolation:isolate}
 .session-bar {position:absolute;height:8px;left:0;right:0;top:calc(50% - 4px);background:var(--steel);z-index:-1}
 .session-plate {min-width:28px;background:var(--steel);color:var(--surface);font-size:12px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-style:normal}
 .session-rest {text-align:center;padding:20px 0}
@@ -581,17 +581,21 @@ button.dchip {min-height:36px}
 .session-rest-actions {display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
 :host(.session-focus) #rest,:host(.session-focus) #resttimer,:host(.session-focus) header,:host(.session-focus) #tabbar {display:none!important}
 :host(.session-focus) main {padding-top:16px;padding-bottom:24px}
+:host(.session-focus) .sheet {left:0}
+:host(.session-focus) .scrim {padding-left:0}
+:host(.session-focus) #toast,:host(.session-focus) .toast {left:50%;max-width:calc(100vw - 32px)}
 .session-card [hidden],.session-stage>[hidden] {display:none!important}
 .excard-actions {flex-wrap:wrap;overflow:visible;gap:8px}
 .excard-actions .tinybtn,.exhead .setmenu,.setopt,.donebtn {min-width:44px;min-height:44px}
-.setrow,.setrow-head,:host(#m-str) .setrow,:host(#m-str) .setrow-head,:host(#m-lift) .setrow,:host(#m-lift) .setrow-head {grid-template-columns:24px minmax(60px,1.15fr) minmax(52px,.95fr) 44px 44px 44px;gap:8px}
+.setrow,.setrow-head,:host(#m-str) .setrow,:host(#m-str) .setrow-head,:host(#m-lift) .setrow,:host(#m-lift) .setrow-head {grid-template-columns:34px minmax(60px,1.15fr) minmax(52px,.95fr) 44px 44px 44px;gap:8px}
 :host(#m-cal) .setrow,:host(#m-cal) .setrow-head {grid-template-columns:24px minmax(64px,1fr) 44px 44px 44px;gap:8px}
 .sinput {font-size:16px;min-width:0}
 .targetrow input,.targetline input,.targets input,.tinput input {min-height:44px;min-width:44px}
 .setrow {scroll-margin-top:30vh;max-width:680px}
 @media(min-width:760px) {.setgrid {max-width:680px}}
 @media(max-width:500px) {
-  .setrow,.setrow-head,:host(#m-str) .setrow,:host(#m-str) .setrow-head,:host(#m-lift) .setrow,:host(#m-lift) .setrow-head {grid-template-columns:20px minmax(44px,1.15fr) minmax(44px,.95fr) 44px 44px 44px;gap:8px}
+  .setrow,.setrow-head,:host(#m-str) .setrow,:host(#m-str) .setrow-head,:host(#m-lift) .setrow,:host(#m-lift) .setrow-head {grid-template-columns:24px minmax(44px,1.15fr) minmax(44px,.95fr) 44px 44px 44px;gap:8px}
+  .setrow .sidx,:host(#m-str) .setrow .sidx {width:24px;font-size:10px}
   .setgrid {padding-left:8px;padding-right:8px}
 }
 @media(max-width:359px) {

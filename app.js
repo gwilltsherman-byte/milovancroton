@@ -1900,9 +1900,25 @@ window.MiloSession=(()=>{
   }
   function active(c){ return c.st.route==='train'&&!!c.st.active; }
   function focus(c){ return c.st.settings.sessionView!=='list'; }
+  function syncShell(root){
+    const c=views.get(root), on=!!(c&&active(c)&&focus(c));
+    document.documentElement.classList.toggle('session-focus-active',on);
+    if(window.__sessionMode)window.__sessionMode(on);
+  }
   function frame(c,on){
     c.root.host.classList.toggle('session-focus',!!on);
-    if(!window.__hub||window.__hub.current()===c.m){ document.documentElement.classList.toggle('session-focus-active',!!on); if(window.__sessionMode)window.__sessionMode(!!on); }
+    if(!window.__hub||window.__hub.current()===c.m)syncShell(c.root);
+  }
+  function dayName(a){
+    const strip=document.getElementById('tgstrip');
+    return strip&&!strip.hidden? [...strip.querySelectorAll('.tgs-lbl,.tgs-p')].map(el=>el.textContent.trim()).join(' · ')||a.name : a.name;
+  }
+  function effort(c){
+    const card=c.root.querySelector('.session-card'); if(!card)return;
+    card.querySelectorAll('[data-session="effort"]').forEach(b=>{
+      const input=card.querySelector('input[data-field="'+b.dataset.field+'"]');
+      b.setAttribute('aria-pressed',String(!!input&&Num.parse(input.value)===Number(b.dataset.v)));
+    });
   }
   function install(root){
     const c={root,returnTo:null}; views.set(root,c);
@@ -1919,7 +1935,7 @@ window.MiloSession=(()=>{
       else if(a==='skip'){ c.stop(); c.save(); c.returnTo=null; c.render(); }
       else if(a==='add'){ const v=c.st.active; if(v&&v.restEndsAt){ v.restEndsAt+=30000; if(v.restDuration!=null)v.restDuration+=30; else v.restDur=(v.restDur||0)+30; c.save(); tick(c); } }
     });
-    root.addEventListener('input',e=>{ if(e.target.closest('.session-card'))e.target.classList.remove('assumed'); if(e.target.matches('.session-card input[data-field="w"], .session-card input[data-field="weight"]'))plates(c); });
+    root.addEventListener('input',e=>{ if(e.target.closest('.session-card')){ e.target.classList.remove('assumed'); effort(c); } if(e.target.matches('.session-card input[data-field="w"], .session-card input[data-field="weight"]'))plates(c); });
     let down=null;
     root.addEventListener('pointerdown',e=>{ if(e.isPrimary&&e.pointerType==='touch'&&!e.target.closest('input,button,textarea'))down={x:e.clientX,y:e.clientY,id:e.pointerId}; });
     root.addEventListener('pointerup',e=>{ const d=down; down=null; if(d&&d.id===e.pointerId&&Math.abs(e.clientX-d.x)>70&&Math.abs(e.clientY-d.y)<40&&active(c)){ c.st.settings.sessionView=focus(c)?'list':'focus'; c.save(); c.render(); window.scrollTo(0,0); } });
@@ -1952,15 +1968,16 @@ window.MiloSession=(()=>{
     let row='', detail=null, setup='', name='All sets logged', target='Finish, or use List to change a set.', setText='';
     if(next){
       detail=meta(next.ei,next.si); c.kit=detail.kit||null; c.side=detail.side||null;
-      name=detail.name; target=detail.target; setText='Set '+(next.si+1)+' of '+st.active.entries[next.ei].sets.length+(detail.side?' · '+(detail.side==='l'?'Left':'Right'):'');
+      name=detail.name; target=detail.target; setText=(detail.count||'Set '+(next.si+1)+' of '+st.active.entries[next.ei].sets.length)+(detail.side?' · '+(detail.side==='l'?'Left':'Right'):'');
       const btn=view.querySelector('[data-act="toggle-done"][data-ex="'+next.ei+'"][data-set="'+next.si+'"]'), original=btn&&btn.closest('.setrow');
       if(original){ const copy=original.cloneNode(true); copy.querySelector('.sidx')?.remove(); copy.querySelector('[data-act="toggle-done"]')?.remove(); copy.querySelector('[data-act="set-menu"]')?.remove();
+        if(detail.warm)copy.querySelector('input[data-field="rir"]')?.remove();
         if(detail.side)copy.querySelector('input[data-field="'+(detail.side==='l'?'r':'l')+'"]')?.remove();
         copy.querySelectorAll('input').forEach(input=>{
           const field=input.dataset.field, numeric=Num.parse(input.value), ph=detail.values&&detail.values[field]!=null? detail.values[field] : Num.parse(String(input.placeholder).replace(/^~/,''));
           if(numeric==null&&ph!=null){ input.value=ph; input.setAttribute('value',String(ph)); input.classList.add('assumed'); }
           const label=input.getAttribute('aria-label')||field, wrap=document.createElement('label'); wrap.className='session-field';
-          const title=document.createElement('span'); title.textContent=label.replace(/^Set \d+ /,''); wrap.appendChild(title); input.replaceWith(wrap);
+          const title=document.createElement('span'); title.textContent=label.replace(/^Set (?:\d+|W) /,'')+((field==='weight'||field==='w'||field==='segweight')&&detail.unit?' ('+detail.unit+')':''); wrap.appendChild(title); input.replaceWith(wrap);
           const box=document.createElement('div'); box.className='session-step'; wrap.appendChild(box);
           const step=(field==='w'||field==='weight')? detail.step||1 : field==='rpe'?0.5:1;
           box.innerHTML=MiloSecurity.html(`<button type="button" data-session="step" data-step="${-step}" aria-label="Decrease ${esc(label)}">${icon('minus')}</button>`);
@@ -1969,11 +1986,11 @@ window.MiloSession=(()=>{
       }
       setup=detail.setup||'';
     }
-    const strip=document.getElementById('tgstrip'), day=strip&&!strip.hidden?strip.querySelector('.tgs-main')?.textContent:'';
+    const day=dayName(st.active);
     view.innerHTML=MiloSecurity.html(`<div class="session-top"><button class="btn ghost" data-session="list">List</button><div><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${fmt(Math.max(0,Math.floor((Date.now()-st.active.startedAt)/1000)))} elapsed</span></div><button class="btn primary" data-act="finish">Finish</button></div>
       <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
       <section class="session-rest" hidden><h2>Rest</h2><div class="session-clock" role="timer" aria-label="Rest remaining"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="session-track" cx="50" cy="50" r="45"/><circle data-session-arc cx="50" cy="50" r="45"/></svg><span data-session-time></span></div><p>Next: ${esc(name)}${setText?' · '+esc(setText):''}</p><div class="session-rest-actions"><button class="btn ghost" data-session="add">+30 s</button><button class="btn primary" data-session="skip">Skip rest</button></div></section></div>`);
-    plates(c); tick(c);
+    plates(c); effort(c); tick(c);
     const restore=find(root,old)||view.querySelector('.session-rest:not([hidden]) button, .session-card:not([hidden]) .session-step input, .session-done');
     if(restore)restore.focus({preventScroll:true}); c.returnTo=null;
   }
@@ -1985,10 +2002,10 @@ window.MiloSession=(()=>{
     const time=rest.querySelector('[data-session-time]'); time.textContent=fmt(left);
     const dur=a.restDuration||a.restDur||left, arc=rest.querySelector('[data-session-arc]'); arc.style.strokeDashoffset=String(283*(1-Math.min(1,left/Math.max(1,dur))));
     if(changed){ const el=resting?rest.querySelector('button'):card.querySelector('.session-step input,button'); if(el)el.focus({preventScroll:true}); }
-    const day=c.root.querySelector('[data-session-day]'), strip=document.getElementById('tgstrip'); if(day&&strip&&!strip.hidden)day.textContent=strip.querySelector('.tgs-main')?.textContent||a.name;
+    const day=c.root.querySelector('[data-session-day]'); if(day)day.textContent=dayName(a);
   }
   setInterval(()=>views.forEach(tick),250);
-  return {mount,restOver,alertsAvailable,requestAlerts};
+  return {mount,restOver,alertsAvailable,requestAlerts,syncShell};
 })();
 
 const MOD_INIT = {
@@ -2662,7 +2679,9 @@ function render(){
   if(window.__routed) window.__routed('lift', state.route);
   if(window.MiloSession) window.MiloSession.mount(__root,'lift',state,render,save,(ei,si)=>{
     const e=state.active.entries[ei], x=exById(e.exId)||e, st=e.sets[si], prev=lastPerf(e.exId), eq=kitEq(x.equipment,st.weight), rir=lastFailSet(e,si)?0:e.target.rir;
-    return {name:e.name, target:(e.target.repLow===e.target.repHigh?e.target.repLow:e.target.repLow+'–'+e.target.repHigh)+' '+(isHold(e.exId)?'seconds':'reps')+' · '+rir+' in reserve', step:Kit.step(eq,unit()), effort:st.type==='warmup'?null:'rir', effortValue:st.rir==null?rir:st.rir,
+    const warm=st.type==='warmup', same=s=>(s.type==='warmup')===warm;
+    return {name:e.name, warm, unit:unit(), count:(warm?'Warm-up ':'Set ')+e.sets.slice(0,si+1).filter(same).length+' of '+e.sets.filter(same).length,
+      target:(warm?(st.reps==null?e.target.repLow:st.reps):(e.target.repLow===e.target.repHigh?e.target.repLow:e.target.repLow+'–'+e.target.repHigh))+' '+(isHold(e.exId)?'seconds':'reps')+(warm?'':' · '+rir+' in reserve'), step:Kit.step(eq,unit()), effort:warm?null:'rir', effortValue:st.rir==null?rir:st.rir,
       kit:eq==='bar'?{field:'weight',unit:unit(),bar:'bar'}:null};
   },(ei,si)=>{
     const set=state.active.entries[ei].sets[si], field=f=>__root.querySelector('[data-field="'+f+'"][data-ex="'+ei+'"][data-set="'+si+'"]');
@@ -11917,7 +11936,10 @@ function render(){
   if(window.__routed) window.__routed('str', state.route);
   if(window.MiloSession) window.MiloSession.mount(__root,'str',state,render,save,(ei,si)=>{
     const e=state.active.entries[ei], st=e.sets[si], eq=eqOf(e.liftId);
-    return {name:exName(e.liftId,e.vi), values:{reps:st.reps==null?st.tr:st.reps}, target:(st.tr||'Your reps')+(st.trHi?'–'+st.trHi:'')+' reps'+(st.trpe!=null?' · RPE '+st.trpe:''), step:Kit.step(eq,u()), effort:st.kind==='warm'?null:'rpe', effortValue:st.rpe==null?st.trpe:st.rpe,
+    const warm=st.kind==='warm', same=s=>(s.kind==='warm')===warm, reps=st.reps==null?st.tr:st.reps;
+    const rpe=st.rpe==null&&st.trpe!=null?assumedRpe(Object.assign({},st,{reps})):st.rpe;
+    return {name:exName(e.liftId,e.vi), warm, unit:u(), count:(warm?'Warm-up ':st.kind==='top'?'Top set ':st.kind==='bo'?'Back-off set ':'Set ')+e.sets.slice(0,si+1).filter(same).length+' of '+e.sets.filter(same).length,
+      values:{reps,rpe}, target:(st.tr||'Your reps')+(st.trHi?'–'+st.trHi:st.kind==='plus'&&st.trpe==null?'+':'')+' reps'+(st.trpe!=null?' · RPE '+st.trpe:''), step:Kit.step(eq,u()), effort:warm?null:'rpe', effortValue:rpe,
       kit:plated(e.liftId)?{field:'w',unit:u(),bar:EX[e.liftId].bar||'bar'}:null};
   },toggleDone,stopRest);
 
@@ -12106,6 +12128,11 @@ __root.addEventListener('input', e=>{
     else if(f==='reps'){ const n=Num.int(el.value); s.reps=n==null?null:Math.max(0,n); if(s.ra){ s.rpe=assumedRpe(s); moved=[si]; } if(s.kind==='top'&&s.done) moved=moved.concat(followTop(en)); }
     else { const n=Num.parse(el.value); s.rpe=n==null?null:Math.max(1,Math.min(10,n)); s.ra=false; el.classList.remove('auto'); if(s.kind==='top'&&s.done) moved=followTop(en); }
     moved.forEach(i=>paintSet(ei, i));
+    // Focus shows a suggestion as a value. Keep it in agreement with the effort that Done will save.
+    if(f==='reps'&&s.rpe==null&&s.trpe!=null){
+      const r=__root.querySelector('.session-card [data-field="rpe"][data-ex="'+ei+'"][data-set="'+si+'"]');
+      if(r){ const value=assumedRpe(Object.assign({},s,{reps:s.reps==null?s.tr:s.reps})); r.placeholder=String(value); if(r.classList.contains('assumed'))r.value=value; }
+    }
     save(); return;
   }
   if(f==='calc-w'||f==='calc-r'||f==='calc-rpe'){ calc[f.slice(5)]=el.value; const o=$('#calc-out'); if(o) o.innerHTML=MiloSecurity.html(calcOut()); return; }
@@ -15177,7 +15204,7 @@ render();
     else if(s==='sound'||s==='vibrate'){ Prefs.set({[s]:v==='1'}); if(s==='vibrate'&&v==='1') try{ navigator.vibrate&&navigator.vibrate(60); }catch(_){} }
     else if(s==='wake'){ Prefs.set({wake:v==='1'}); syncWake(); }
     else if(s==='alerts'){ const permission=await MiloSession.requestAlerts(); toast(permission==='granted'? 'Rest alerts enabled' : permission==='denied'? 'Rest alerts are blocked in your browser settings.' : 'Rest alerts stay off.'); }
-    else if(s==='type'){ const A=hubApi('mix'); if(A&&A.setType) A.setType(v); }
+    else if(s==='type'){ const A=hubApi('mix'); if(A&&A.setType) A.setType(v); if(dest==='today')goDest('today'); }
     else if(s==='tg-setup'){ closeSet(); goDest('today'); const A=hubApi('mix'); if(A&&A.setup) A.setup(v); return; }
     else if(s==='sec-setup'){ closeSet(); show(v); const A=hubApi(v); if(A&&A.setup) A.setup(); return; }
     else if(s==='bar') Kit.setBar(+v, b.dataset.u, u);
@@ -15423,6 +15450,8 @@ render();
     if(sessionOn && sessionOn!==m) window.__sessionMode(false);
     MODS.forEach(x=>{ hostOf(x).hidden=(x!==m); });
     routing=true; try{ ensureInit(m); }finally{ routing=false; }
+    // Together can render a session before showing its host; apply that host's layout as it becomes visible.
+    if(window.MiloSession) window.MiloSession.syncShell(roots[m]);
     paintBg();
     try{ localStorage.setItem(SK+'.mod',m); }catch(e){}
     window.scrollTo(0,0);

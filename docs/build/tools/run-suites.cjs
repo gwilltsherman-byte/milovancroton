@@ -29,10 +29,10 @@ const pages = process.argv.slice(3).length ? process.argv.slice(3)
     if (fail.length || !done) bad++;
     console.log(`--- ${p}: ${done ? '' : 'DID NOT FINISH, '}pass=${pass} fail=${fail.length} (${Date.now() - t0} ms)`);
     console.log(lines.slice(-3).join('\n'));
-    if (fail.length) console.log('FAILURES:\n' + fail.join('\n'));
+    if (fail.length) console.log('FAILURES:\n' + lines.filter(l => /FAIL|^BAD |^not ok|✗/.test(l)).join('\n'));
     // The CSP test causes one blocked inline script and one 404 on purpose.
     const real = errors.filter(e => !/Content Security Policy|404|Failed to load resource|navigator.vibrate/.test(e));
-    if (real.length) console.log('PAGE ERRORS:\n' + real.slice(0, 10).join('\n'));
+    if (real.length) { bad++; console.log('PAGE ERRORS:\n' + real.slice(0, 10).join('\n')); }
     await ctx.close();
   }
   await browser.close();
