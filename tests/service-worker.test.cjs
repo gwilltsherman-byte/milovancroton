@@ -47,10 +47,11 @@ test('an updated offline shell gets fresh scripts instead of stale HTTP-cache en
   assert.equal(saved.has('/milo/index.html'),true);
 });
 
-test('installation caches the exact reviewed script versions and rejects foreign or unknown script URLs', async()=>{
+test('installation caches the exact reviewed script and stylesheet versions and rejects foreign or unknown script URLs', async()=>{
   const cached = new Map(), requests = [];
   const html = '<script defer src="app.js?v=aaaaaaaaaaaaaaaaaaaa"></script>' +
     '<script defer src="security.js?v=bbbbbbbbbbbbbbbbbbbb"></script>' +
+    '<link rel="stylesheet" href="shell.css?v=cccccccccccccccccccc"><template><link rel="stylesheet" href="trainer.css?v=dddddddddddddddddddd"></template>' +
     '<script src="https://attacker.test/milo/app.js?v=foreign"></script>' +
     '<script src="../other/app.js?v=sibling"></script><script src="unknown.js?v=unknown"></script>' +
     '<script src="icon-192.png?v=not-a-script"></script>';
@@ -67,6 +68,8 @@ test('installation caches the exact reviewed script versions and rejects foreign
   handlers.install({waitUntil:promise=>work=promise}); await work;
   assert.ok(cached.has('https://example.test/milo/app.js?v=aaaaaaaaaaaaaaaaaaaa'));
   assert.ok(cached.has('https://example.test/milo/security.js?v=bbbbbbbbbbbbbbbbbbbb'));
+  assert.ok(cached.has('https://example.test/milo/shell.css?v=cccccccccccccccccccc'));
+  assert.ok(cached.has('https://example.test/milo/trainer.css?v=dddddddddddddddddddd'));
   assert.ok(cached.has('https://example.test/milo/app.js'), 'plain shell scripts remain cached');
   assert.ok(requests.every(request=>request.cache==='reload'), 'both script forms bypass the HTTP cache during installation');
   assert.equal([...cached.keys()].some(url=>/foreign|sibling|unknown|not-a-script/.test(url)), false);
@@ -89,13 +92,13 @@ test('a script version cannot reuse another query version or a cached unversione
   assert.equal(fetched.length,1);
 });
 
-test('integrity generation versions script URLs by content and stays idempotent',()=>{
+test('integrity generation versions script and stylesheet URLs by content and stays idempotent',()=>{
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(),'milo-integrity-'));
   try {
     fs.mkdirSync(path.join(fixture,'tools')); fs.mkdirSync(path.join(fixture,'assets/fonts'),{recursive:true});
     fs.copyFileSync(path.join(__dirname,'../tools/update-integrity.cjs'),path.join(fixture,'tools/update-integrity.cjs'));
     fs.writeFileSync(path.join(fixture,'sw.js'),code);
-    fs.writeFileSync(path.join(fixture,'index.html'),'<meta charset="utf-8">\n<script defer src="security.js"></script>\n<script defer src="app.js?v=old-version"></script>\n');
+    fs.writeFileSync(path.join(fixture,'index.html'),'<meta charset="utf-8">\n<link rel="stylesheet" href="shell.css"><template><link rel="stylesheet" href="trainer.css?v=old"></template>\n<script defer src="security.js"></script>\n<script defer src="app.js?v=old-version"></script>\n');
     const security = 'window.fixtureSecurity=true;', app = 'window.fixtureApp=1;';
     fs.writeFileSync(path.join(fixture,'security.js'),security); fs.writeFileSync(path.join(fixture,'app.js'),app);
     for (const name of ['fonts.css', 'shell.css', 'trainer.css','manifest.webmanifest','icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png', 'favicon.svg', 'favicon-32.png']) fs.writeFileSync(path.join(fixture,name),'fixture');
@@ -109,6 +112,7 @@ test('integrity generation versions script URLs by content and stays idempotent'
       assert.ok(html.includes('integrity="sha256-'+digest(value).toString('base64')+'"'));
       assert.ok(html.includes("'sha256-"+digest(value).toString('base64')+"'"), 'CSP retains the reviewed source hash');
     }
+    for (const file of ['shell.css','trainer.css']) assert.ok(html.includes('href="'+file+'?v='+digest('fixture').toString('hex').slice(0,20)+'"'));
     assert.ok(html.includes("script-src-attr 'none'"));
     assert.equal(html.includes("script-src 'self'"),false);
     const sw = fs.readFileSync(path.join(fixture,'sw.js'),'utf8');
@@ -118,6 +122,11 @@ test('integrity generation versions script URLs by content and stays idempotent'
     fs.writeFileSync(path.join(fixture,'app.js'),'window.fixtureApp=2;');
     run(); run('--check');
     assert.notEqual(fs.readFileSync(path.join(fixture,'index.html'),'utf8'),html, 'changed content changes the script URL');
+    const beforeCSS=fs.readFileSync(path.join(fixture,'index.html'),'utf8');
+    fs.writeFileSync(path.join(fixture,'trainer.css'),'changed-style');run();run('--check');
+    const afterCSS=fs.readFileSync(path.join(fixture,'index.html'),'utf8');
+    assert.notEqual(afterCSS,beforeCSS,'a CSS-only change updates template stylesheet URLs');
+    assert.ok(afterCSS.includes('trainer.css?v='+digest('changed-style').toString('hex').slice(0,20)));
   } finally {fs.rmSync(fixture,{recursive:true,force:true});}
 });
 
