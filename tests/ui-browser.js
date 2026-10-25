@@ -30,7 +30,7 @@
       check(win.getComputedStyle(doc.getElementById('tgstrip')).display==='none','starting from Together folds the day strip into the focus header');
       check(/Day 1 · Strength/.test(root.querySelector('[data-session-day]').textContent),'the focus header separates day and program names');
       root.querySelector('[data-session="list"]').click();await pause(50);
-      check(win.getComputedStyle(doc.querySelector('.sidebar')).display!=='none','List restores the main navigation');
+      check(win.getComputedStyle(doc.querySelector('.sidebar')).display==='none','List keeps the logging area clear of the main navigation');
       for(const width of [390,360]){
         frame.style.width=width+'px';await pause(60);
         const row=root.querySelector('.setrow'), idx=row.querySelector('.sidx').getBoundingClientRect(), weight=row.querySelector('[data-field="w"]').getBoundingClientRect();

@@ -513,3 +513,39 @@ test('the Progress week follows the locale and spans calendar days', () => {
   T.evaluate("navigator.language='en-GB'");
   assert.equal(new Date(T.call('weekStart')).getDay(), 1);
 });
+
+
+test('conditioning target, fatigue and conservative interval placement',()=>{
+  const T=together();
+  assert.equal(T.call('condTarget',{target:150},0),150);
+  assert.equal(T.call('condTarget',{target:150},1),100);
+  assert.equal(T.call('condTarget',{target:150},2),50);
+  assert.equal(T.call('condEquivalent',{minutes:30,intensity:'vigorous'}),60);
+  assert.equal(T.call('condEquivalent',{minutes:30,intensity:'light'}),0);
+  assert.ok(T.call('condFatigue',{minutes:90,rpe:8,activity:'sport'})>8);
+  assert.ok(T.call('condFatigue',{minutes:60,rpe:2,activity:'cycle'})<1);
+  const days=[{heavy:false,minutes:20},{heavy:true,minutes:40},{heavy:false,minutes:10}];
+  const p=T.call('condPlacement',days,[0,1,4],60,150,'intervals');
+  assert.equal(p[0].style,'easy','adjacent day before heavy legs uses easy work');
+  assert.equal(p[1].style,'easy','heavy lifting day uses easy work');
+  assert.equal(p[2].style,'intervals');
+  p.forEach((x,i)=>assert.ok(!x||x.minutes+days[i].minutes<=60));
+});
+test('conditioning remains last and outside hard-set totals',()=>{
+  const T=together();T.reset({on:true,secs:['cond','str','lift'],prio:['cond','str','lift','cal']});
+  assert.deepEqual(plain(T.call('dayParts',['cond','lift','str'],{})),[{m:'str'},{m:'lift'},{m:'cond'}]);
+  assert.equal(T.call('doses').str,'moderate');
+  assert.equal(T.call('doses').lift,'maintain');
+  const now=Date.now();T.evaluate(`tg.conditioning.log=[{date:${now},minutes:90,rpe:8,activity:'sport'}]`);
+  const C=T.call('fatigue',now-1,now+1);assert.ok(C.quad.cond>8);assert.equal(C.chest,undefined);
+  assert.ok(T.call('tiredFrom',{by:C},['lift','str','cal']).quad>0);
+});
+test('outcome projections require evidence and summary deduplicates sessions',()=>{
+  const T=together(),now=Date.now();
+  assert.equal(T.call('outcomeProjection',[],100,now).projected,null);
+  assert.equal(T.call('outcomeProjection',[{date:now,e1:100,rated:true}],120,now).projected,null);
+  const pts=Array.from({length:8},(_,i)=>({date:now-(7-i)*7*DAY,e1:80+i*3,rated:true}));
+  assert.ok(T.call('outcomeProjection',pts,120,now).projected>now);
+  const n=T.call('summaryNumbers',[{m:'lift',id:'a',date:now},{m:'lift',id:'a',date:now}],now-1,now+1,3,{},1,[{date:now,minutes:30,intensity:'vigorous'}]);
+  assert.equal(n.sessions,1);assert.equal(n.days,1);assert.equal(n.minutes,60);
+});

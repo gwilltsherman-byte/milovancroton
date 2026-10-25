@@ -637,3 +637,23 @@ button.dchip {min-height:36px}
 :host(.session-running) #view button,:host(.session-running) #view input:not([type=range]) {min-height:44px;min-width:44px}
 :host(.session-running) #view .pillpick,:host(.session-running) #view .row {gap:8px!important}
 :host(.session-running) .train-head {gap:8px}
+
+/* The full list shares the unobstructed workout frame with Next set. */
+.train-head .session-switch {margin:0;flex-basis:100%;justify-content:center}
+:host(.session-running) .train-head {flex-wrap:wrap}
+:host(.session-running) .train-head .tt {min-width:0;flex:1 1 140px}
+:host(.session-running) .train-head h2 {overflow-wrap:anywhere}
+
+.cond-timer {text-align:center;padding:24px}
+.cond-clock {font-size:clamp(3rem,14vw,6rem);font-variant-numeric:tabular-nums;margin:24px 0}
+.cond-history {overflow-x:auto}
+.cond-history table {width:100%;border-collapse:collapse;text-align:left;font-size:13px}
+.cond-history th,.cond-history td {padding:10px 6px;border-bottom:1px solid var(--border)}
+progress {display:block;width:100%;height:10px;accent-color:var(--accent);margin:6px 0;max-width:100%}
+#cond-form input,#cond-form select,#goal-form input,#goal-form select,[data-cond-setting] {width:100%;min-width:0;max-width:100%;min-height:44px;background:var(--card);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:10px;font:inherit}
+
+:host(.session-running) header,:host(.session-running) #tabbar {display:none!important}
+:host(.session-running) main {padding-top:16px}
+:host(.session-running) .sheet {left:0}
+:host(.session-running) .scrim {padding-left:0}
+:host(.session-running) .toast {left:50%;top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto;max-width:calc(100vw - 32px)}
