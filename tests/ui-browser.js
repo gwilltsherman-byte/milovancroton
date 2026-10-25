@@ -102,6 +102,38 @@
       const sheet=root.querySelector('.sheet.on').getBoundingClientRect();
       check(Math.abs((sheet.left+sheet.right)/2-720)<2,'a dialog in desktop focus mode is centered without reserving the hidden sidebar');
     });
+    await group('Installed iPhone session safe area',async()=>{
+      const fixtures=[
+        ['lift','hyplog.v1',{...base,v:1,active:active([{exId:'db_row_cs',name:'Chest-Supported Dumbbell Row',target:{repLow:6,repHigh:10,rir:3,rest:180},sets:[{weight:25,reps:6,rir:1,done:true},{weight:25,reps:null,rir:null,done:false}]}])}],
+        ['str','strlog.v2',{...base,v:2,active:active([{liftId:'bench',sets:[{kind:'work',w:40,reps:null,tr:5,trpe:8,done:false}]}])}],
+        ['cal','proladder.v1',{...base,v:2,rung:{legs:5},placed:{legs:true},tests:[],goals:[],active:active([{ladderId:'legs',stepIdx:5,kind:'reps',target:5,setup:{},clean:true,sets:[{v:null,done:false}]}])}]
+      ];
+      for(const [m,key,data] of fixtures){
+        const {win,doc}=await seed({[key]:data},'m='+m),root=rootOf(doc,m);
+        // Chromium has no device notch. Override the production inset token, as the shell tests do.
+        doc.documentElement.style.setProperty('--shell-safe-top','59px');
+        for(const view of ['focus','list']){
+          if(view==='list')root.querySelector('[data-session="list"]').click();
+          for(const width of [430,390,195]){
+            frame.style.width=width+'px';await pause(60);win.scrollTo(0,0);
+            const head=root.querySelector(view==='focus'?'.session-top':'.train-head');
+            check(win.getComputedStyle(root.querySelector('.appbar')).display==='none',m+' '+view+' hides its duplicate section header at '+width+'px');
+            check(head&&head.getBoundingClientRect().top>=59&&[...head.querySelectorAll('button')].filter(x=>x.getClientRects().length).every(x=>x.getBoundingClientRect().top>=59),m+' '+view+' controls clear the 59px iPhone status area at '+width+'px');
+            check(doc.documentElement.scrollWidth<=width+1,m+' '+view+' with an inset fits '+width+'px');
+          }
+          if(view==='focus'){win.scrollTo(0,180);await pause(50);check(root.querySelector('.session-top').getBoundingClientRect().top>=59,m+' sticky controls stay below the status area after scrolling');}
+        }
+        const cover=win.getComputedStyle(doc.documentElement,'::before');
+        check(cover.position==='fixed'&&parseFloat(cover.height)===59&&cover.pointerEvents==='none',m+' keeps scrolled content out of the system status area');
+        doc.documentElement.style.setProperty('--shell-safe-top','0px');frame.style.width='1440px';win.scrollTo(0,0);await pause(60);
+        check(root.querySelector('.train-head').getBoundingClientRect().top<40,m+' desktop list does not retain an iPhone-sized gap');
+      }
+      const {win,doc}=await seed({'trainer.together':{v:1,on:true,secs:['cond'],prio:['cond'],days:2,mins:60,offered:true,tuned:true,conditioning:{target:150,style:'easy',log:[],active:{id:'safe-area-cond',startedAt:Date.now(),minutes:30,style:'easy'}}}}),root=rootOf(doc,'mix');
+      doc.documentElement.style.setProperty('--shell-safe-top','59px');root.querySelector('[data-a="cond-resume"]').click();await pause(60);win.scrollTo(0,0);
+      check(win.getComputedStyle(root.querySelector('.appbar')).display==='none'&&root.querySelector('[data-a="cond-back"]').getBoundingClientRect().top>=59,'Conditioning also hides its header and clears the status area');
+      root.querySelector('[data-a="cond-back"]').click();await pause(60);
+      check(win.getComputedStyle(doc.querySelector('.shellbar')).display!=='none'&&parseFloat(win.getComputedStyle(doc.getElementById('main')).paddingTop)===0,'leaving the session restores the normal header without double safe-area spacing');
+    });
   }finally{
     if(frame)frame.remove();Object.keys(localStorage).filter(managed).forEach(k=>localStorage.removeItem(k));Object.entries(original).forEach(([k,v])=>localStorage.setItem(k,v));sessionStorage.clear();Object.entries(originalSession).forEach(([k,v])=>sessionStorage.setItem(k,v));
     result.textContent=results.join('\n')+'\n'+(failures?'FAIL '+failures+' UI regressions':'ALL TESTS PASSED');

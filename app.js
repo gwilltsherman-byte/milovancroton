@@ -14903,6 +14903,7 @@ function draw(){
     : tg.on&&!draft? `${orderParts(tg.secs).map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
   if(H.current()==='mix') window.scrollTo(0,y);
   if(window.__routed) window.__routed('mix', page);
+  __root.host.classList.toggle('session-running',!!condScreen);
   if(H.current()==='mix'&&window.__sessionMode){ window.__sessionMode(!!condScreen); document.documentElement.classList.toggle('session-focus-active',!!condScreen); }
 }
 
