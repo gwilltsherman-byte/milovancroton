@@ -9180,33 +9180,41 @@ function e1(w, reps, rir, id){ return Lift.e1rm(w, reps, rir, clsOf(id)); }
 /* The load for reps at an RPE, from an estimated max: the same sums as the estimate, reps-in-reserve correction and all
    (Lift.trueRir), so a set done as prescribed gives back the estimate it came from instead of nudging it up. */
 function loadFor(e1rm, reps, rpe, id){ const t=Lift.trueRir(Math.max(0,10-(rpe==null?10:rpe)), reps, clsOf(id)); return e1rm*pctOf(reps+(t>0?t:0), id); }
-/* How hard a set was. An RPE you typed is rated. A box left untouched on a set with a target keeps the target (ra:
-   assumed; sessions from before kept nothing): it counts at the target when you made the reps, a rep less in reserve
-   for each rep over, and as all-out (RPE 10) when you fell short. No RPE and no target counts as all-out. Neither is
-   rated, so each weighs half in the estimate. {rir, rated} */
+/* How hard a set was. An RPE you typed is rated. A box left untouched on a set with a target is worked out from the
+   target (ra: assumed, and saved as assumedRpe; sessions from before kept nothing): it counts at the target when you
+   made the reps, a rep less in reserve for each rep over, and as all-out (RPE 10) when you fell short. No RPE and no
+   target counts as all-out. Neither is rated, so each weighs half in the estimate. {rir, rated} */
 function setEffort(s){
   if(s.rpe!=null && !s.ra) return {rir:Math.max(0,10-s.rpe), rated:true};
-  const t= s.rpe!=null? s.rpe : s.trpe;
+  const t= s.trpe!=null? s.trpe : s.rpe;
   if(t!=null && (s.tr==null || (s.reps||0)>=s.tr)) return {rir:Math.max(0, 10-t-(s.tr!=null? (s.reps||0)-s.tr : 0)), rated:false};
   return {rir:0, rated:false};
 }
-/* The RPE an untouched box saves when the set is ticked: the target, or 10 when the reps fell short of it. */
-function assumedRpe(s){ return s.tr!=null && (s.reps||0)<s.tr? 10 : s.trpe; }
+/* The RPE an untouched box saves when the set is ticked: the effort the estimate counts (setEffort), so the target when
+   you made the reps, a point harder for each rep over, and 10 when the reps fell short of it. */
+function assumedRpe(s){ return 10-setEffort({reps:s.reps, tr:s.tr, trpe:s.trpe}).rir; }
 /* A set's estimated max, in kg (with bodyweight for lifts that move it): 0 for warm-ups and for sets that say little
-   about your max (past 12 reps or more than 3.5 short of failure: Lift.usable). Only for external loads. */
-function setE1(s, id, ts){ if(!s||!s.done||s.kind==='warm'||!s.w||!s.reps||!EX[id]||EX[id].k!=='load') return 0;
+   about your max (past 12 reps or more than 3.5 short of failure: Lift.usable). Only for external loads; with nothing
+   held, only for a lift that moves your body too, once a bodyweight is logged. */
+function setE1(s, id, ts){ if(!s||!s.done||s.kind==='warm'||!s.reps||!EX[id]||EX[id].k!=='load'||!(s.w>0||(s.w===0&&EX[id].bw&&bwAt(ts)>0))) return 0;
   const f=setEffort(s); if(!Lift.usable(s.reps, f.rir)) return 0; return e1(totalOf(id, s.w, ts), s.reps, f.rir, id); }
-/* Each session's best set, as estimates: [{date, best, top, rated}]. */
-let lsMemo={k:null, v:{}};
-function liftSessions(id){
-  const k=strVer+':'+bodyCache.t; if(lsMemo.k!==k) lsMemo={k, v:{}};
-  if(lsMemo.v[id]) return lsMemo.v[id];
+/* A set you rated too easy to say much (4 or more reps left, so Lift.usable leaves it out) still shows your max is at least
+   what that set would show with 3.5 left (fewer on a long set, up to 12 reps). 0 when it says nothing more. */
+function easyE1(s, id, ts){ if(!s||!s.done||s.kind==='warm'||!(s.w>0)||!s.reps||s.reps>12||s.rpe==null||s.ra||!EX[id]||EX[id].k!=='load') return 0;
+  const r=Math.max(0,10-s.rpe), at=Math.min(3.5, 12-s.reps); return r>at? e1(totalOf(id, s.w, ts), s.reps, at, id) : 0; }
+/* Each session's best set, as estimates: [{date, best, top, rated, lb}], with lb the most its too-easy sets show (easyE1)
+   where that is more than its best. sessionPts keeps the sessions with only too-easy sets too (best 0). */
+let lsMemo={k:null, v:{}, p:{}};
+function sessionPts(id){
+  const k=strVer+':'+bodyCache.t; if(lsMemo.k!==k) lsMemo={k, v:{}, p:{}};
+  if(lsMemo.p[id]) return lsMemo.p[id];
   const out=[];
-  state.history.forEach(h=>{ let best=0, top=null;
-    h.entries.forEach(en=>{ if(en.liftId!==id) return; en.sets.forEach(s=>{ const v=setE1(s,id,h.date); if(v>best){ best=v; top=s; } }); });
-    if(best>0) out.push({date:h.date, best, top, rated:setEffort(top).rated}); });
-  return lsMemo.v[id]=out;
+  state.history.forEach(h=>{ let best=0, top=null, lb=0;
+    h.entries.forEach(en=>{ if(en.liftId!==id) return; en.sets.forEach(s=>{ const v=setE1(s,id,h.date); if(v>best){ best=v; top=s; } lb=Math.max(lb, easyE1(s,id,h.date)); }); });
+    if(best>0||lb>0) out.push({date:h.date, best, top, rated:top? setEffort(top).rated : true, lb:lb>best? lb : 0}); });
+  return lsMemo.p[id]=out;
 }
+function liftSessions(id){ if(lsMemo.k===strVer+':'+bodyCache.t && lsMemo.v[id]) return lsMemo.v[id]; const out=sessionPts(id).filter(x=>x.best>0); return lsMemo.v[id]=out; }
 /* Muscle's sessions of the same lift (SAME_LIFT), as liftSessions gives them, from the sets that say something about your
    max (Lift.usable). */
 let musMemo={k:null, v:{}};
@@ -9227,19 +9235,36 @@ function muscleSessions(id){
    instead (backF). {value, lo, hi, n} or null. */
 function e1Est(id){
   if(!EX[id]||EX[id].k!=='load') return null;
-  const L=state.lifts[id], ss=liftSessions(id).concat(muscleSessions(id));
-  const last=ss.reduce((m,x)=>Math.max(m,x.date),0), seed=L.seed&&L.seed.v>0? L.seed : null;
+  const L=state.lifts[id], own=sessionPts(id), ss=liftSessions(id).concat(muscleSessions(id));
+  const last=own.concat(ss).reduce((m,x)=>Math.max(m,x.date),0), seed=seedOf(id);
   if(seed && seed.date>=last) return {value:seed.v, lo:null, hi:null, n:1, last:seed.date, seed:true};
-  const pts=ss.map(x=>({date:x.date, e1:x.best, rated:x.rated}));
+  const pts=ss.map(x=>({date:x.date, e1:x.best, rated:x.rated, x}));
   if(seed) pts.push({date:seed.date, e1:seed.v, rated:seed.rated!==false});
-  const est=Lift.estimate(pts); if(est) return est;
-  if(L.tm) return {value:L.tm*100/state.settings.tmPct, lo:null, hi:null, n:0, last:null};
+  const est=Lift.estimate(floors(pts, own)); if(est) return est;
+  if(L.tm) return {value:EX[id].bw? oldTotal(id, L.tm*100/state.settings.tmPct) : L.tm*100/state.settings.tmPct, lo:null, hi:null, n:0, last:null};
   return null;
 }
+/* Too-easy sets push the estimate up, never down: a session whose easy sets show more (lb) than the estimate as it stood
+   before it counts at that. Else an estimate that starts low gives easy loads, an honest rating of them leaves every set
+   out, and it never rises. pts: the points so far ({x} is the session a point came from); own: sessionPts. */
+function floors(pts, own){
+  own.filter(x=>x.lb>0).forEach(x=>{ const before=Lift.estimate(pts.filter(p=>p.date<x.date));
+    if(before && x.lb<=before.value) return;
+    const p=pts.find(q=>q.x===x); if(p){ p.e1=x.lb; p.rated=true; } else pts.push({date:x.date, e1:x.lb, rated:true, x}); });
+  return pts;
+}
+/* The starting test, as a total for a lift that moves your body too. One saved before bodyweight counted (it has neither
+   rated nor work) held the dumbbell or plate alone, one dumbbell where you hold two (oldTotal). */
+function seedOf(id){ const s=state.lifts[id]&&state.lifts[id].seed; if(!s||!(s.v>0)) return null;
+  return !EX[id].bw || s.rated!==undefined || s.work!==undefined? s : Object.assign({}, s, {v:oldTotal(id, s.v, s.date)}); }
+/* An estimated max of the weight in your hands alone (as saved before bodyweight counted) as a total: your bodyweight's
+   share at the effort the old test asked for (about 5 reps with 1 or 2 left), plus the dumbbells. Without a bodyweight,
+   as it was, which is how every estimate reads then. */
+function oldTotal(id, v, ts){ const X=EX[id], b=bwAt(ts); return X.bw&&b>0? b*X.bw/pctOf(6.5, id)+v*(X.per==='each'? 2 : 1) : v; }
 function currentE1(id){ const r=e1Est(id); return r? r.value : null; }
 /* The estimate as it stood just before a date, for "in 4 weeks". */
-function e1Before(id, ts){ const pts=liftSessions(id).concat(muscleSessions(id)).filter(x=>x.date<ts).map(x=>({date:x.date, e1:x.best, rated:x.rated}));
-  const est=Lift.estimate(pts); return est? est.value : 0; }
+function e1Before(id, ts){ const pts=liftSessions(id).concat(muscleSessions(id)).filter(x=>x.date<ts).map(x=>({date:x.date, e1:x.best, rated:x.rated, x}));
+  const est=Lift.estimate(floors(pts, sessionPts(id).filter(x=>x.date<ts))); return est? est.value : 0; }
 function bestE1(id){ return liftSessions(id).reduce((m,x)=>Math.max(m,x.best),0); }
 function repMaxes(id){ // heaviest load (or added load) for at least n reps
   const B=[1,2,3,4,5,6,8,10], out={};
@@ -9270,14 +9295,14 @@ function isDeload(model,week){ return (model==='wave'||model==='topset') && week
 function weekName(model,week){ if(model==='wave') return WAVE_WEEKS[week-1].n; if(model==='topset') return TOP_WEEKS[week-1].n; return ''; }
 /* exposure: 1 for a lift's first (heavy) session of the week, then 2, 3. lite: lighter practice of a lift trained heavy
    on another day. A lift that moves your body too takes RPE-based loads in wave cycles, since percentages of a training
-   max that includes your bodyweight can leave nothing to hold. */
+   max that includes your bodyweight can leave nothing to hold (main: that is its heavy session, not lighter volume). */
 function schemeFor(id, exposure, model, lite){
   const X=EX[id];
   if(X.k==='bw') return lite? {t:'var', sets:2, lo:4, hi:8, lite:true} : {t:'var', sets:4, lo:4, hi:8};
   if(X.k==='added') return lite? {t:'dp', sets:2, lo:5, hi:8, lite:true} : {t:'dp', sets:3, lo:5, hi:8};
   if(model==='linear'){ const sc= X.eq==='bar'? {t:'lp', sets:X.lp1?1:3, reps:5} : {t:'dp', sets:3, lo:5, hi:8}; if(lite){ sc.sets=Math.min(sc.sets,2); sc.lite=true; } return sc; }
   if(lite) return {t:'rpe', sets:3, reps:6, rpe:7, lite:true};
-  if(model==='wave') return exposure===1? (X.bw? {t:'rpe', sets:3, reps:5, rpe:8} : {t:'wave'}) : {t:'rpe', sets:3, reps:6, rpe:7};
+  if(model==='wave') return exposure===1? (X.bw? {t:'rpe', sets:3, reps:5, rpe:8, main:true} : {t:'wave'}) : {t:'rpe', sets:3, reps:6, rpe:7};
   return exposure===1? {t:'top', reps:5, n:3, bor:5} : exposure===2? {t:'top', reps:3, n:3, bor:5} : {t:'rpe', sets:3, reps:6, rpe:7};
 }
 /* New to strength training (the set-up's first answer; it suggests simple progression): the first three weeks of
@@ -9351,7 +9376,7 @@ function schemeText(id, sc, week, model){
     return wk.n+' &middot; '+wk.sets.map(x=>Math.round(x[0]*100)+'%').join(' / ')+(last[2]?(sc.intro?', last set '+last[1]+' at RPE '+INTRO_RPE+' for now':', last set '+last[1]+'+'):'')+(wk.bo?' &middot; '+wk.bo[2]+'&times;'+wk.bo[1]+' back-off':''); }
   if(sc.t==='top'){ const wk=TOP_WEEKS[week-1], n=Math.max(1,Math.round(sc.n*wk.bo));
     return 'Top set of '+sc.reps+' at RPE '+cap(sc, wk.rpe)+', then '+n+'&times;'+(sc.bor||sc.reps)+' at RPE '+cap(sc, wk.borpe!=null?wk.borpe:wk.rpe)+', set from the top set'+it; }
-  if(sc.t==='rpe'){ const dl=isDeload(model,week); return (dl?Math.max(2,sc.sets-1):sc.sets)+'&times;'+sc.reps+' at RPE '+cap(sc, dl?sc.rpe-2:sc.rpe)+' (lighter volume)'; }
+  if(sc.t==='rpe'){ const dl=isDeload(model,week); return (dl?Math.max(2,sc.sets-1):sc.sets)+'&times;'+sc.reps+' at RPE '+cap(sc, dl?sc.rpe-2:sc.rpe)+(sc.main?'':' (lighter volume)'); }
   return '';
 }
 function chipText(id, sc, week, model){
@@ -9359,28 +9384,31 @@ function chipText(id, sc, week, model){
   if(sc.t==='var') return sc.sets+'&times;'+sc.lo+'&ndash;'+sc.hi+(sc.lite?' light':'');
   if(sc.t==='dp') return sc.sets+'&times;'+sc.lo+'&ndash;'+(sc.hi+xr)+(sc.lite?' light':'');
   if(sc.t==='lp') return sc.sets+'&times;'+(sc.reps+xr)+(sc.lite?' light':' linear');
-  if(sc.t==='wave') return WAVE_WEEKS[week-1].n+(L.tm?' &middot; TM '+fmtW(L.tm):'');
+  if(sc.t==='wave') return WAVE_WEEKS[week-1].n+(L.tm?' &middot; TM '+fmtW(L.tm):'')+(sc.intro?' &middot; RPE '+INTRO_RPE+' max':'');
   if(sc.t==='top') return 'Top '+sc.reps+' @ '+cap(sc, TOP_WEEKS[week-1].rpe)+' + back-offs';
   if(sc.t==='rpe'){ const dl=isDeload(model,week); return (dl?Math.max(2,sc.sets-1):sc.sets)+'&times;'+sc.reps+' @ RPE '+cap(sc, dl?sc.rpe-2:sc.rpe); }
   return '';
 }
 function snapshotE1(){ const o={}; chosen().forEach(id=>{ const e=currentE1(id); if(e) o[id]=e; }); return o; }
-function resetProgram(){ state.program={cycle:1, week:1, done:{}, next:0, log:{}, startedAt:Date.now(), startE1:snapshotE1()}; }
+function resetProgram(){ state.program={cycle:1, week:1, done:{}, next:0, log:{}, startedAt:Date.now(), startE1:snapshotE1(), tot:1}; }
+/* The estimates a block started from. A program saved before bodyweight counted (no tot) kept, for a lift that moves your
+   body too, the weight in your hands alone: from then on, totals (oldTotal). */
+function startE1s(P){ if(!P.tot){ const o=P.startE1||{}; Object.keys(o).forEach(id=>{ if(EX[id]&&EX[id].bw&&o[id]>0) o[id]=oldTotal(id, o[id], P.startedAt); }); P.startE1=o; P.tot=1; } return P.startE1; }
 function heaviest(sets){ return sets.reduce((m,s)=>s.w&&(!m||s.w>m.w)?s:m,null); }
 function slotSummary(id, sc, week, model){
   const X=EX[id];
   if(X.k==='bw'){ const b=bwBests(id)[viOf(id)]; return b? 'best '+b.reps : sc.lo+'&ndash;'+sc.hi+' reps'; }
   const pl=planSlot(id,sc,week,model), h=heaviest(pl);
   if(X.k==='added'){ const w=pl.length? pl[0].w : null; return w? '+'+fmtW(w)+' '+u() : 'bodyweight'; }
-  return h&&h.w? fmtW(h.w)+' '+u()+' &times; '+h.tr+(h.kind==='plus'?'+':'') : 'set a weight';
+  return h&&h.w? fmtW(h.w)+' '+u()+' &times; '+h.tr+(h.kind==='plus'&&h.trpe==null?'+':'') : 'set a weight';
 }
 /* The lifts in your plan that are back after a break: [{id, d (days away), f}]. */
 function backList(ids){ return ids.filter((id,i)=>ids.indexOf(id)===i && EX[id] && EX[id].k!=='bw').map(id=>({id, d:awayDays(id)})).filter(x=>x.d!=null&&x.d>=21).map(x=>Object.assign(x,{f:breakF(x.d)})); }
 
 /* ==================== WARM-UPS ==================== */
 /* A ramp of lighter sets up to the first work set. A lift pulled from the floor starts from the bar with full-size
-   plates on (20 kg or 45 lb, or the nearest you have), so the bar sits at its proper height, when that is under the
-   first work set. */
+   plates and your collars on (20 kg or 45 lb, or the nearest you have), so the bar sits at its proper height, when that
+   is under the first work set. */
 function warmups(id, first, heavy){
   const X=EX[id]; if(X.k!=='load'||!first) return [];
   const eq=eqOf(id);
@@ -9388,7 +9416,7 @@ function warmups(id, first, heavy){
     const bar=fromDisp(barDisp(eq)); if(first<=bar*1.2) return [];
     let start=bar;
     if(X.floor){ const ps=plateList(), want=isLb()?45:20, big=ps.find(p=>Math.abs(p-want)<1e-6)||ps.filter(p=>p>want).pop()||ps[0];
-      const w=big? roundLoad(fromDisp(barDisp(eq)+2*big), eq) : null; if(w && w<first-1e-6) start=w; }
+      const w=big? roundLoad(fromDisp(barDisp(eq)+2*(big+Kit.get(u()).collar)), eq) : null; if(w && w<first-1e-6) start=w; }
     const steps= heavy? [[0,5],[.4,5],[.6,3],[.75,2],[.87,1]] : [[0,5],[.45,5],[.65,3],[.8,2]];
     const out=[];
     steps.forEach(([p,r])=>{ let w= p===0? start : roundLoad(first*p, eq); if(w<start) w=start;
@@ -9416,13 +9444,17 @@ function makeEntry(id, planned, sc, label){
 /* Now and then (every three weeks at most), one set in a session asks for an RPE check: call your reps left at the
    planned stop, keep going to failure, and say how many more you got. It shows how well you judge reps left on heavy
    sets (Muscle keeps the record, and every section allows for it: Lift.calibrate). Only on lifts you can safely take to
-   failure (not squats or pulls from the floor), on a set planned 1 to 3 reps short. Not in a new lifter's first weeks,
-   which keep every set short of failure. */
+   failure: not squats, pulls from the floor or a free barbell bench, where a missed rep can pin you; dumbbells and
+   machines first. On a set planned 1 to 3 reps short. Not in a new lifter's first weeks, which keep every set short of
+   failure. */
 function calDue(){ const H=window.__hub; return !!(H&&H.has) && !introOn() && !(state.calLast && Date.now()-state.calLast<21*864e5); }
-function checkable(id){ const X=EX[id]; return !!X && X.k==='load' && !X.floor && !(X.eq==='bar'&&X.lower); }
+function checkable(id){ const X=EX[id]; return !!X && X.k==='load' && !X.floor && !(X.eq==='bar'&&(X.lower||X.mv==='bench')); }
+/* Where a missed rep can come down on you, the check asks for safeties or a spotter on the set itself. */
+function checkSafe(id){ const X=EX[id]; return !!X && X.eq!=='stack'; }
 function markCheck(entries){
   if(!calDue()) return;
-  for(const en of entries){ if(!checkable(en.liftId)) continue;
+  const order=entries.filter(en=>checkable(en.liftId)).sort((a,b)=>(EX[a.liftId].eq==='bar')-(EX[b.liftId].eq==='bar'));
+  for(const en of order){
     const s=en.sets.filter(x=>(x.kind==='work'||x.kind==='bo')&&x.trpe!=null&&x.trpe>=7&&x.trpe<=9&&x.tr!=null&&x.tr<=10).pop();
     if(s){ s.chk=true; return; } }
 }
@@ -9432,7 +9464,7 @@ function startProgramDay(d){
   const entries=day.slots.map(([id,sc])=>makeEntry(id, planSlot(id,sc,week,D.model), sc, chipText(id,sc,week,D.model)));
   markCheck(entries);
   state.active={id:uid(), name:day.n, startedAt:Date.now(), entries, restEndsAt:null, restDur:0, note:null,
-    plan:{cycle:P.cycle, week, day:d, model:D.model}};
+    plan:{cycle:P.cycle, week, day:d, model:D.model, prog:P.startedAt}};
   save(); closeModal(); state.route='train'; render(); window.scrollTo(0,0);
   if(window.__hub) window.__hub.changed('str');
   const back=entries.filter(en=>en.back);
@@ -9514,7 +9546,8 @@ function fillOn(en, si, old){
 function toggleDone(ei,si){
   const en=state.active.entries[ei], s=en.sets[si], X=EX[en.liftId]; if(!s) return;
   if(!s.done && X.k==='load' && s.w==null){ toast('Enter the weight first'); return; }
-  if(!s.done && X.k==='load' && !(s.w>0) && (X.eq==='db'||X.eq==='bar')){ toast(X.eq==='db'? 'Enter the dumbbell’s weight first' : 'Enter the weight first'); return; }
+  // nothing in your hands is a real set only on a lift that moves your body too (a back extension with no plate)
+  if(!s.done && X.k==='load' && !(s.w>0) && !X.bw && (X.eq==='db'||X.eq==='bar')){ toast(X.eq==='db'? 'Enter the dumbbell’s weight first' : 'Enter the weight first'); return; }
   if(!s.done && X.k==='added' && s.w==null) s.w=0;
   if(!s.done && s.reps==null) s.reps=s.tr;
   if(!s.done && !s.reps){ toast('Enter your reps first'); return; }
@@ -9527,7 +9560,7 @@ function toggleDone(ei,si){
     if(s.done){ const v=setE1(s,en.liftId), bo=en.sets.find(x=>x.kind==='bo'&&!x.done);
       msg= v? 'Top set in: e1RM '+fmtW(shownE1(en.liftId,v))+' '+u()+(bo&&bo.w?'. Back-offs '+wu(bo.w)+(mv.length?', set from it':''):'') : null; } }
   if(s.done){
-    if(s.kind==='plus' && s.reps>s.tr){ const v=setE1(s,en.liftId); msg=s.reps+' reps on the plus set'+(v?'. e1RM '+fmtW(shownE1(en.liftId,v))+' '+u():''); }
+    if(s.kind==='plus' && s.trpe==null && s.reps>s.tr){ const v=setE1(s,en.liftId); msg=s.reps+' reps on the plus set'+(v?'. e1RM '+fmtW(shownE1(en.liftId,v))+' '+u():''); }
     const heavy=s.kind==='top'||s.kind==='plus';
     startRest(s.kind==='warm'? 75 : heavy? state.settings.rest+60 : state.settings.rest, s.kind==='warm');
     buzz(12);
@@ -9705,10 +9738,11 @@ function markDayDone(plan, recId, notes){
   return endCycle();
 }
 /* A cycle's plus sets for a lift, from history: [{week, w, reps, tr, e1}]. The plan keeps no copy, so changing a session
-   changes what its cycle is judged on. */
-function plusLog(id, cycle){
-  const P=state.program, out=[]; if(!P) return out;
-  state.history.forEach(h=>{ const pl=h.plan; if(!pl||pl.cycle!==cycle||pl.model!=='wave'||h.date<(P.startedAt||0)) return;
+   changes what its cycle is judged on. prog: the program it was (when it started, plan.prog), the one running when left
+   out; a new set-up starts again from cycle 1, so the number alone could be another program's. */
+function plusLog(id, cycle, prog){
+  const P=state.program, out=[], from= prog!=null? prog : P? (P.startedAt||0) : null; if(from==null) return out;
+  state.history.forEach(h=>{ const pl=h.plan; if(!pl||pl.cycle!==cycle||pl.model!=='wave'||(pl.prog!=null? pl.prog!==from : h.date<from)) return;
     h.entries.forEach(en=>{ if(en.liftId!==id||!en.sc||en.sc.t!=='wave') return;
       en.sets.forEach(s=>{ if(s.kind!=='plus'||!s.done||!s.w||!s.reps) return;
         out.push({week:pl.week, w:s.w, reps:s.reps, tr:s.tr, e1:e1(totalOf(id, s.w, h.date), s.reps, setEffort(s).rir, id)}); }); }); });
@@ -9719,8 +9753,8 @@ function waveLifts(){ const ids=new Set(); [1,2].forEach(w=>{ const D=progDef(w)
 /* At the end of a wave cycle: the training max goes up a step only when the cycle's plus sets say your max has grown into
    it, that is when the new training max is still no more than your training-max share of their average estimate. Else
    it holds, so it can't climb past your real max. */
-function tmDecide(id, cycle){
-  const L=state.lifts[id], from=L.tm, ps=plusLog(id, cycle).filter(x=>x.e1>0);
+function tmDecide(id, cycle, prog){
+  const L=state.lifts[id], from=L.tm, ps=plusLog(id, cycle, prog).filter(x=>x.e1>0);
   if(!from||!ps.length) return {id, from, to:from, ok:false, none:!ps.length};
   const est=ps.reduce((a,x)=>a+x.e1,0)/ps.length, want=from+tmInc(id), ok=est*state.settings.tmPct/100>=want-1e-6;
   if(ok) L.tm=want;
@@ -9728,37 +9762,41 @@ function tmDecide(id, cycle){
 }
 function endCycle(){
   const P=state.program, D=progDef(), changes=[];
-  if(D && D.model==='wave') waveLifts().forEach(id=>changes.push(tmDecide(id, P.cycle)));
+  if(D && D.model==='wave') waveLifts().forEach(id=>changes.push(tmDecide(id, P.cycle, P.startedAt)));
   else if(D){
-    chosen().filter(id=>EX[id].k==='load').forEach(id=>{ const from=(P.startE1||{})[id]||null, to=currentE1(id); changes.push({id, from:from&&shownE1(id,from), to:to&&shownE1(id,to), e1:true}); });
+    const S0=startE1s(P); chosen().filter(id=>EX[id].k==='load').forEach(id=>{ const from=S0[id]||null, to=currentE1(id); changes.push({id, from:from&&shownE1(id,from), to:to&&shownE1(id,to), e1:true}); });
   }
-  P.cycle++; P.week=1; P.log={}; P.startE1=snapshotE1();
+  P.cycle++; P.week=1; P.log={}; P.startE1=snapshotE1(); P.tot=1;
   return changes;
 }
 /* After a finished session is changed, deleted or put back: each lift it moved on is moved on again from where it stood
-   before it (or, for a session from before these were kept, from the session itself), through every later session as
-   finishing them did, so a typo of 600 for 60 doesn't stay your working weight. A starting test taken in between starts
-   the lift again from there; the end of a wave cycle is judged again on its plus sets, even when the session that ended it
-   was deleted. rec: the session as it was. */
+   before it (rec.lifts), through every later session as finishing them did, so a typo of 600 for 60 doesn't stay your
+   working weight. A starting test taken in between (or a variation picked there) starts the lift again from there; the
+   end of a wave cycle is judged again on its own program's plus sets, even when the session that ended it was deleted. A
+   session that kept no note of where its lifts stood moved nothing that can be worked out again (one finished before
+   these notes were kept, or one ended early), so changing it leaves next time's weights as they are. rec: the session as
+   it was. */
 function replay(rec){
   if(!rec) return;
-  const ids=[...new Set(rec.entries.filter(e=>e.sc).map(e=>e.liftId))].filter(id=>state.lifts[id]); if(!ids.length) return;
+  strVer++;   // history changed: what is read from it is worked out again, before the next save
+  if(!rec.lifts) return;
+  const ids=[...new Set(rec.entries.filter(e=>e.sc).map(e=>e.liftId))].filter(id=>state.lifts[id]&&rec.lifts[id]); if(!ids.length) return;
   const moved=h=>h.lifts!==undefined? !!h.lifts : !h.partial;   // sessions from before: every one finished moved its lifts on
   const later=state.history.filter(h=>h.date>=rec.date && h.id!==rec.id && moved(h));
-  const cur=state.history.find(h=>h.id===rec.id), first= cur? (moved(cur)? [cur] : []) : rec.cyc? [{date:rec.date, entries:[], cyc:rec.cyc}] : [];
+  const cur=state.history.find(h=>h.id===rec.id), first= cur? (moved(cur)? [cur] : []) : rec.cyc? [{date:rec.date, entries:[], cyc:rec.cyc, plan:rec.plan}] : [];
   const list=first.concat(later).sort((a,b)=>a.date-b.date);
-  ids.forEach(id=>{ const L=state.lifts[id], b=(rec.lifts||{})[id], en=rec.entries.find(e=>e.liftId===id);
-    if(b) Object.assign(L, {work:b.work, fails:b.fails||0, tm:b.tm, var:b.var||0, xr:b.xr||0});
-    else Object.assign(L, {work:null, fails:0, xr:0, var:en&&en.vi!=null? en.vi : (L.var||0)}); });
-  const seeded={};
+  ids.forEach(id=>{ const b=rec.lifts[id]; Object.assign(state.lifts[id], {work:b.work, fails:b.fails||0, tm:b.tm, var:b.var||0, xr:b.xr||0}); });
+  // a test taken after the session, once, before the first session after it (or at the end)
+  const seeded={}, reseed=(id, until)=>{ const L=state.lifts[id], s=L.seed; if(s && !seeded[id] && s.date>rec.date && s.date<=until){ seeded[id]=1; fromSeed(L, s); } };
   list.forEach(h=>{
-    ids.forEach(id=>{ const L=state.lifts[id], s=L.seed; if(s && s.work!==undefined && s.date<=h.date && s.date>rec.date && !seeded[id]){ seeded[id]=1; L.work=s.work; L.tm=s.tm; L.fails=0; L.xr=0; } });
+    ids.forEach(id=>reseed(id, h.date));
     h.entries.forEach(en=>{ if(!ids.includes(en.liftId)||!en.sc) return; if(h.lifts) h.lifts[en.liftId]=liftSnap([en])[en.liftId]; progressEntry(en, [], h.plan); });
-    if(h.cyc) ids.forEach(id=>{ if(state.lifts[id].tm && plusLog(id, h.cyc).length) tmDecide(id, h.cyc); });
+    if(h.cyc){ const pr=h.plan&&h.plan.prog; ids.forEach(id=>{ if(state.lifts[id].tm && plusLog(id, h.cyc, pr).length) tmDecide(id, h.cyc, pr); }); }
   });
-  // a test taken after the last of them still stands
-  ids.forEach(id=>{ const L=state.lifts[id], s=L.seed, last=list.length? list[list.length-1].date : 0; if(s && s.work!==undefined && s.date>last && s.date>rec.date){ L.work=s.work; L.tm=s.tm; L.fails=0; L.xr=0; } });
+  ids.forEach(id=>reseed(id, Infinity));
 }
+/* Where a starting test put a lift: its working weight and training max, or the variation you picked. */
+function fromSeed(L, s){ if(s.work!==undefined){ L.work=s.work; L.fails=0; L.xr=0; } if(s.tm!==undefined) L.tm=s.tm; if(s.var!=null) L.var=s.var; }
 function prText(p){
   if(p.type==='Rep record') return `${p.reps} reps`;
   return (p.added?'+':'')+fmtW(p.val)+' <small>'+u()+'</small>';
@@ -9911,15 +9949,18 @@ function saveStart(){
       const bw=Num.int(v.bw), add=fromDisp(v.add);
       if(bw!=null && bw<X.min){ // not ready for added weight: fall back
         const S=state.setup;
-        if(X.chain){ const C=EX[X.chain]; S.choice[X.a]=X.chain; state.lifts[X.chain].var= X.chain==='pullchain'? (bw>=3?1:0) : (bw>=4?1:0); notes.push(`${AREAS[X.a].n}: ${esc(C.chain[state.lifts[X.chain].var][1])} until ${X.min} bodyweight reps`); }
+        if(X.chain){ const C=EX[X.chain], CL=state.lifts[X.chain]; S.choice[X.a]=X.chain; CL.var= X.chain==='pullchain'? (bw>=3?1:0) : (bw>=4?1:0); CL.seed={date:Date.now(), var:CL.var}; notes.push(`${AREAS[X.a].n}: ${esc(C.chain[state.lifts[X.chain].var][1])} until ${X.min} bodyweight reps`); }
         else { const nb=options(X.a).filter(o=>o!==id)[0]; if(nb){ S.choice[X.a]=nb; notes.push(`${AREAS[X.a].n}: ${EX[nb].n} for now`); } }
         return; }
-      if(add!=null && add>=0) L.work=roundLoad(add,'added'); else if(bw!=null&&L.work==null) L.work=0;
+      // a test is kept with its date (seed), so changing an older session later doesn't undo it (replay)
+      if(add!=null && add>=0){ L.work=roundLoad(add,'added'); L.fails=0; L.xr=0; L.seed={date:Date.now(), work:L.work}; }
+      else if(bw!=null&&L.work==null){ L.work=0; L.seed={date:Date.now(), work:0}; }
       return; }
     if(X.k!=='load') return;
     const w=fromDisp(v.w), reps=Num.int(v.r)||(fresh&&w? 8 : null), rpe=Num.parse(v.rpe);
     if(!w||!reps||reps<1||reps>12) return;
-    const est=e1(totalOf(id, w), reps, rpe!=null? Math.max(0,10-Math.min(10,rpe)) : 0, id);
+    // RPE left blank: all-out, as for any set, except new to it, where the test asked for 3 or more left (RPE 7)
+    const est=e1(totalOf(id, w), reps, rpe!=null? Math.max(0,10-Math.min(10,rpe)) : fresh? 3 : 0, id);
     // the training max is a share of the estimate, not rounded to plates; new to it, the work starts at the test weight
     L.tm=est*state.settings.tmPct/100;
     L.work= fresh? roundLoad(w,eq) : roundLoad(boxOf(id, loadFor(est,5,X.eq==='bar'?6:7,id)),eq); L.fails=0; L.xr=0;
@@ -10049,14 +10090,16 @@ function exCard(en,ei){
 }
 function setRow(en,ei,s,si,isNext,n){
   const X=EX[en.liftId], prev=en.sets[si-1];
-  const lbl= s.kind==='warm'?'W': s.kind==='top'?'TOP': s.kind==='plus'?n+'+': s.kind==='bo'?'BO': String(n);
-  const repsPh= s.tr!=null? (s.trHi? s.tr+'-'+s.trHi : s.tr+(s.kind==='plus'?'+':'')) : '';
+  // a plus set with a target RPE (new to it: capped at RPE 7) is a set of its reps, not as many as you can
+  const plus=s.kind==='plus'&&s.trpe==null;
+  const lbl= s.kind==='warm'?'W': s.kind==='top'?'TOP': plus?n+'+': s.kind==='bo'?'BO': String(n);
+  const repsPh= s.tr!=null? (s.trHi? s.tr+'-'+s.trHi : s.tr+(plus?'+':'')) : '';
   const showPl= X.k!=='bw' && !s.done && s.w!=null && (!prev || prev.done || Math.abs((prev.w||0)-s.w)>1e-6);
   const pl= showPl? `<div class="pl mono" id="pl-${ei}-${si}">${loadNote(en.liftId,s.w)}</div>` : '';
   const wcell= X.k==='bw'? `<div class="nil mono bwcell">BW</div>`
     : `<input class="sinput" inputmode="decimal" data-field="w" data-ex="${ei}" data-set="${si}" value="${inW(s.w)}" placeholder="${X.k==='added'?'+0':u()}" aria-label="Weight">`;
   // an RPE logged from the target (the box was left untouched) shows apart from one you typed
-  const chk= s.chk&&!s.done? `<button class="pl chk" data-act="chk-why" data-ex="${ei}" data-set="${si}">${I.gauge} RPE check: at ${s.tr} reps, call your reps left, then keep going to failure</button>` : '';
+  const chk= s.chk&&!s.done? `<button class="pl chk" data-act="chk-why" data-ex="${ei}" data-set="${si}">${I.gauge} RPE check: at ${s.tr} reps, call your reps left, then keep going to failure${checkSafe(en.liftId)?'. Only with safeties set or a spotter':''}</button>` : '';
   return `<div class="setrow k-${s.kind} ${s.done?'done':''} ${isNext?'next':''}">
     <div class="sidx">${lbl}</div>
     ${wcell}
@@ -10151,7 +10194,7 @@ function applySessionSwap(ei, id, stick){
   if(stick){
     const S=state.setup, Pr=state.program;
     if(S && S.choice[area]===old){ S.choice[area]=id;
-      if(Pr){ Pr.startE1=Pr.startE1||{}; const e=currentE1(id); if(e&&Pr.startE1[id]==null) Pr.startE1[id]=e; } }
+      if(Pr){ const o=startE1s(Pr), e=currentE1(id); if(e&&o[id]==null) o[id]=e; } }
   }
   save(); closeModal(); render();
   if(window.__hub) window.__hub.changed('str');
@@ -10174,8 +10217,9 @@ function openEndCont(){
       <button class="btn ghost block" data-act="close-modal" style="margin-top:8px">Keep training</button>
     </div>`);
 }
-/* A session into its place in history, by date. */
-function insertRec(rec){ const i=state.history.findIndex(h=>h.date>rec.date); if(i<0) state.history.push(rec); else state.history.splice(i,0,rec); }
+/* A session into its place in history, by date. History changed, so the sums read from it are done again (strVer), even
+   before the next save: the end of a cycle reads this session's sets straight away. */
+function insertRec(rec){ const i=state.history.findIndex(h=>h.date>rec.date); if(i<0) state.history.push(rec); else state.history.splice(i,0,rec); strVer++; }
 /* Continue a finished session. Today's latest goes back exactly as it was (Take back), and whatever finishing
    moved on goes back too. Any other comes back from what was saved: the sets that counted ticked off, the ones you
    didn't waiting. Finishing it again saves it in its place, keeping its date; next time’s weights and plan stay as the first finish set them. */
@@ -10418,7 +10462,7 @@ function progStandards(){
   const bw=bwAt(), lt=Body.latest(bodyList().length? bodyList() : []);
   const bwField=`<div class="card pad" style="margin-bottom:12px"><div class="field" style="margin:0"><label for="str-bw">Bodyweight (${u()})</label>
     <input class="mono" id="str-bw" inputmode="decimal" data-field="bw" value="${bw?inW(bw):''}" placeholder="e.g. ${isLb()?'180':'80'}">
-    ${lt&&lt.date?`<div class="muted" style="font-size:11.5px;margin-top:5px">Logged ${relDay(lt.date).toLowerCase()}, shared with every section</div>`:''}</div></div>`;
+    ${lt&&lt.date?`<div class="muted" style="font-size:11.5px;margin-top:5px">Logged ${relDay(lt.date).replace(/^(Today|Yesterday)$/,w=>w.toLowerCase())}, shared with every section</div>`:''}</div></div>`;
   const ids=Object.keys(MILESTONES).filter(id=>liftIds().includes(id));
   if(!ids.length) return bwField+`<div class="card pad"><p class="muted" style="font-size:13.5px;line-height:1.55;margin:0">Bodyweight milestones exist for the barbell squat, bench, deadlift and overhead press. Your exercises are tracked on the Exercises and Records tabs instead, which is where your progress shows best: against yourself.</p></div>`;
   if(!bw) return bwField+`<div class="empty" style="padding-top:20px"><div class="ei">${I.target}</div><h3>Add your bodyweight</h3><p>Milestones are multiples of bodyweight: a 1.5&times; squat, a bodyweight bench.</p></div>`;
@@ -10568,7 +10612,9 @@ function openSettings(){
   const plates=isLb()? [45,35,25,15,10,5,2.5,1.25,1,0.5] : [25,20,15,10,5,2.5,2,1.5,1.25,1,0.5,0.25];
   const mine=plateList(), K=Kit.get(u()), rack=Prefs.get(isLb()?'dbRackLb':'dbRackKg', null), rackList=Array.isArray(rack)? rack : rack&&Array.isArray(rack.list)? rack.list : [];
   const bars=Prefs.get('bars', null)||{}, barVal=b=>bars[b]&&Number(bars[b][u()])>0? bars[b][u()] : '';
+  // collars are kept in kg: after a change of unit they may be none of these, so the one in use shows as it is
   const collars=isLb()? [[0,'None'],[1,'1 lb'],[2,'2 lb'],[5,'5 lb']] : [[0,'None'],[0.5,'0.5 kg'],[1,'1 kg'],[2.5,'2.5 kg']];
+  const colOn=collars.find(c=>Math.abs(c[0]-K.collar)<0.01); if(!colOn) collars.push([K.collar, Math.round(K.collar*10)/10+' '+u()]);
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Settings</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
@@ -10582,7 +10628,7 @@ function openSettings(){
       <div class="field"><label>Plates you have (${u()}, per side)</label><div class="pillpick">${plates.map(p=>`<button class="${mine.includes(p)?'on':''}" data-act="toggle-plate" data-v="${p}">${p}</button>`).join('')}</div></div>
       <div class="field"><label>Pairs of each</label><div class="kitcount">${mine.map(p=>`<label class="kc"><span class="mono">${p}</span><input class="mono" inputmode="numeric" data-field="kit-count" data-p="${p}" value="${K.count[p]!=null?K.count[p]:''}" placeholder="any" aria-label="Pairs of ${p} ${u()} plates"></label>`).join('')}</div>
         <div class="muted" style="font-size:11.5px;margin-top:5px">Blank: plenty. Loads never ask for more than you have.</div></div>
-      <div class="field"><label>Collars, each</label>${pills('set-collar',collars,collars.some(c=>Math.abs(c[0]-K.collar)<0.01)? collars.find(c=>Math.abs(c[0]-K.collar)<0.01)[0] : 0)}</div>
+      <div class="field"><label>Collars, each</label>${pills('set-collar',collars,colOn? colOn[0] : K.collar)}</div>
       <div class="field"><label>Dumbbell jumps</label>${isLb()?pills('set-dbstep',[[2.5,'2.5 lb'],[5,'5 lb'],[10,'10 lb']],K.dbStep):pills('set-dbstep',[[1,'1 kg'],[2,'2 kg'],[2.5,'2.5 kg']],K.dbStep)}</div>
       <div class="field"><label for="kit-rack">Your dumbbells (${u()})</label><input class="mono" id="kit-rack" inputmode="decimal" data-field="kit-rack" value="${esc(rackList.join(' '))}" placeholder="${isLb()?'e.g. 5 10 15 20 25 30':'e.g. 2 4 6 8 10 12.5 15'}">
         <div class="muted" style="font-size:11.5px;margin-top:5px">Lightest to heaviest, with spaces. Blank: every jump, no top.</div></div>
@@ -10702,7 +10748,7 @@ __root.addEventListener('click', e=>{
     case 'wz-next': if(wz.step<3){ wz.step++; renderSetup(); } else saveSetup(); break;
     case 'start-test': stDraft={}; openStart(false); break;
     case 'sheet-back': nav.back(); break;
-    case 'st-var': { const id=el.dataset.id; state.lifts[id].var=+el.dataset.v; save(); el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el)); break; }
+    case 'st-var': { const id=el.dataset.id, L=state.lifts[id]; L.var=+el.dataset.v; L.seed={date:Date.now(), var:L.var}; save(); el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el)); break; }
     case 'st-save': saveStart(); break;
     case 'st-skip': stDraft={}; closeModal(); state.route='program'; render(); toast('Plan ready. Pick weights you could do for the reps with one or two to spare'); break;
     case 'swap-area': openSwap(el.dataset.a); break;
@@ -10881,7 +10927,7 @@ setInterval(()=>{ const a=state.active, el=__root.getElementById('elapsed');
 
 /* ==================== EDIT A FINISHED SESSION ==================== */
 /* A copy is edited and replaces the saved session only on Save. Estimated maxes and records read from history,
-   so they follow; weights your plan already set when you finished stay as they are. */
+   so they follow, and next time's weights and training max are worked out again from it (replay). */
 let edit=null;
 function openEditSession(id, view){
   const r=state.history.find(h=>h.id===id); if(!r) return;
@@ -10906,7 +10952,7 @@ function renderEdit(){
     <div class="sheet-head"><h3>${edit.view?'Finished session':'Edit session'}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body ${edit.view?'edro':''}">
       <label class="edlbl">Name</label><input class="edtext" type="text" data-ed="name"${edit.view?' disabled':''} value="${esc(r.name)}">
-      <p class="edwhy">${longDate(r.date)}${r.durationSec?' &middot; '+fmtDur(r.durationSec):''}${r.partial?' &middot; ended early':''}. ${edit.view? 'Finished. Continue picks it back up where you left off; Edit or delete fixes what’s in it.'+leftNote() : 'Fixing it updates your history, estimated maxes and records. Weights your plan already set when you finished stay as they are; change them in the plan if they are off.'}</p>
+      <p class="edwhy">${longDate(r.date)}${r.durationSec?' &middot; '+fmtDur(r.durationSec):''}${r.partial?' &middot; ended early':''}. ${edit.view? 'Finished. Continue picks it back up where you left off; Edit or delete fixes what’s in it.'+leftNote() : (r.lifts? 'Fixing it updates your history, estimated maxes, records and next time’s weights.' : 'Fixing it updates your history, estimated maxes and records. Next time’s weights stay as they are.')}</p>
       ${ex||'<p class="edwhy">Nothing left in this session.</p>'}
       <label class="edlbl">Session note</label><textarea class="edtext" rows="2" data-ed="note"${edit.view?' disabled':''} placeholder="None">${esc(r.note||'')}</textarea>
       ${edit.view? `<button class="btn primary block" data-act="ed-continue" style="margin-top:16px">${I.play} Continue</button><button class="btn ghost block" data-act="ed-change" style="margin-top:8px">${I.pen} Edit or delete</button>`
