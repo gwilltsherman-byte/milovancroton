@@ -66,6 +66,7 @@
 input,textarea {caret-color:var(--accent)}
 a {color:var(--accent-ink); text-underline-offset:3px; overflow-wrap:anywhere}
 button,input,select,textarea {touch-action:manipulation}
+:host(.ios-fixed-scale),:host(.ios-fixed-scale) * {touch-action:pan-x pan-y}
 button {line-height:1.35}
 button:disabled,[aria-disabled="true"] {opacity:.5; cursor:not-allowed}
 :focus-visible {outline:3px solid var(--accent)!important; outline-offset:3px!important}

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=' 'sha256-TbmTi0lNElH4r2hMIhpA5KJgc85l83krMlpmCZkGy+Y='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=' 'sha256-PVCa+XZiWNTTi2EIua/tJ19KyrNREawyp2UH4sgZbvU='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -116,13 +116,13 @@ body{background:#0A0D12; overflow-x:hidden;
 .shtoast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:100;
   background:var(--sh-solid); color:var(--sh-ink); border:1px solid var(--sh-border); border-radius:12px; padding:11px 16px;
   font-size:14px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,.3)}
-/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays.
+/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays on non-iOS devices.
    touch-action isn't inherited, and a scrolling sheet ends the chain, so every element says it. */
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 </style>
-<link rel="stylesheet" href="shell.css?v=d48330b6536055432597">
+<link rel="stylesheet" href="shell.css?v=f38ced93023cd42bf546">
 </head>
 <body>
 
@@ -884,12 +884,12 @@ details.why p{margin:0 0 4px}
 [data-act="sessions"],[data-act="ed-view"]{cursor:pointer}
 .edwhy{font-size:12.5px; line-height:1.5; color:var(--muted); margin:8px 0 14px}
 /* iPhones zoom the page when a field smaller than 16px is focused. Pinch zoom is allowed now, so keep fields at 16px there. */
-/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays.
+/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays on non-iOS devices.
    touch-action isn't inherited, and a scrolling sheet ends the chain, so every element says it. */
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} .tinput input{width:31px} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=8a37833b142cae9febf1">
+<link rel="stylesheet" href="trainer.css?v=1debfe72d9d91051e2ba">
 <div id="app">
   <div class="appbar">
     <div class="brand">
@@ -1409,12 +1409,12 @@ button.banner{font:inherit}
 [data-act="sessions"],[data-act="ed-view"]{cursor:pointer}
 .edwhy{font-size:12.5px; line-height:1.5; color:var(--muted); margin:8px 0 14px}
 /* iPhones zoom the page when a field smaller than 16px is focused. Pinch zoom is allowed now, so keep fields at 16px there. */
-/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays.
+/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays on non-iOS devices.
    touch-action isn't inherited, and a scrolling sheet ends the chain, so every element says it. */
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=8a37833b142cae9febf1">
+<link rel="stylesheet" href="trainer.css?v=1debfe72d9d91051e2ba">
 <div id="app">
   <header class="appbar">
     <div class="brand">
@@ -1934,12 +1934,12 @@ button.pl.chk{display:flex; align-items:center; gap:5px; background:none; border
 .metric .k .q{flex:none; font-size:8.5px; font-weight:700; color:var(--faint); background:var(--well); border:1px solid var(--border); border-radius:99px; padding:1px 5px; letter-spacing:.04em}
 .edwhy{font-size:12.5px; line-height:1.5; color:var(--muted); margin:8px 0 14px}
 /* iPhones zoom the page when a field smaller than 16px is focused. Pinch zoom is allowed now, so keep fields at 16px there. */
-/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays.
+/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays on non-iOS devices.
    touch-action isn't inherited, and a scrolling sheet ends the chain, so every element says it. */
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=8a37833b142cae9febf1">
+<link rel="stylesheet" href="trainer.css?v=1debfe72d9d91051e2ba">
 <div id="app">
   <header class="appbar">
     <div class="brand">
@@ -2292,12 +2292,12 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 .btn .dot{width:10px; height:10px; border-radius:50%; flex:none}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 /* iPhones zoom the page when a field smaller than 16px is focused. Pinch zoom is allowed now, so keep fields at 16px there. */
-/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays.
+/* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays on non-iOS devices.
    touch-action isn't inherited, and a scrolling sheet ends the chain, so every element says it. */
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=8a37833b142cae9febf1">
+<link rel="stylesheet" href="trainer.css?v=1debfe72d9d91051e2ba">
 <div id="app">
   <header class="appbar">
     <div class="logo" aria-hidden="true"><i style="background:#FF5C3C"></i><i style="background:#5B8CFF"></i><i style="background:#F2C14E"></i></div>
@@ -2322,7 +2322,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=87c787b298661d4f7501" integrity="sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=4db9938b494d1251f8af" integrity="sha256-TbmTi0lNElH4r2hMIhpA5KJgc85l83krMlpmCZkGy+Y=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=3d509af9766258d4d38b" integrity="sha256-PVCa+XZiWNTTi2EIua/tJ19KyrNREawyp2UH4sgZbvU=" crossorigin="anonymous"></script>
 </body>
 </html>
 

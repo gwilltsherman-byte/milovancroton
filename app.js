@@ -16304,16 +16304,40 @@ window.MiloData=(function(){
 
 ;
 
+/* ==================== IOS APP SCALE ====================
+   Keep iPhone and iPad at their initial scale. Safari can ignore viewport zoom limits,
+   so also block multi-touch zoom. Gesture events may stay inside a shadow root. */
+(function(){
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(!ios) return;
+  document.documentElement.classList.add('ios-fixed-scale');
+  const viewport=document.querySelector('meta[name="viewport"]');
+  if(viewport) viewport.content='width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
+  const prevent=e=>{if(e.cancelable) e.preventDefault();};
+  const multi=e=>{if(e.touches.length>1) prevent(e);};
+  const roots=[document];
+  for(const id of ['lift','str','cal','mix']){
+    const host=document.getElementById('m-'+id);
+    if(host&&host.shadowRoot){host.classList.add('ios-fixed-scale');roots.push(host.shadowRoot);}
+  }
+  for(const root of roots){
+    for(const type of ['gesturestart','gesturechange']) root.addEventListener(type,prevent,{passive:false,capture:true});
+    for(const type of ['touchstart','touchmove']) root.addEventListener(type,multi,{passive:false,capture:true});
+  }
+})();
+
 /* ==================== NO DOUBLE-TAP ZOOM ====================
    touch-action does this in the stylesheets, but phones still zoomed on a quick second tap inside the sections.
    So the second tap of a double tap is cancelled here, which stops the zoom. That also drops the click the
    browser would have made, so a button or link under it gets its click from here: two quick taps on +30s still
    count twice. Fields keep their own behaviour, and a swipe, a scroll or a pinch is never treated as a tap. */
 (function(){
-  let last=0, lx=0, ly=0, sx=0, sy=0;
+  let last=0, lx=0, ly=0, sx=0, sy=0, multiple=false;
   const CLICKABLE='button, a, summary, label, [role="button"], [data-act], [data-a], [data-m], [data-tg]';
-  addEventListener('touchstart', e=>{ if(e.touches.length===1){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; } else last=0; }, {passive:true, capture:true});
+  addEventListener('touchstart', e=>{ if(e.touches.length===1){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; multiple=false; } else {last=0;multiple=true;} }, {passive:true, capture:true});
+  addEventListener('touchcancel',()=>{last=0;multiple=false;},{passive:true,capture:true});
   addEventListener('touchend', e=>{
+    if(multiple){last=0;if(!e.touches.length)multiple=false;return;}
     if(e.touches.length) return;                                              // a finger is still down: a pinch, not a tap
     const t=e.changedTouches[0]; if(!t) return;
     if(Math.hypot(t.clientX-sx, t.clientY-sy)>10){ last=0; return; }          // it moved: a swipe or a scroll

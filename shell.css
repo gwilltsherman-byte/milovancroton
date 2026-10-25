@@ -6,6 +6,7 @@
 body{background:var(--sh-bg);color:var(--sh-ink);font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 ::selection{background:#f1cfbb;color:#21272a}
 button,a,input,textarea{touch-action:manipulation}
+.ios-fixed-scale,.ios-fixed-scale *{touch-action:pan-x pan-y}
 :focus-visible{outline:3px solid var(--sh-focus);outline-offset:4px}
 .skip-link{position:fixed;top:-70px;left:20px;z-index:200;background:var(--sh-solid);color:var(--sh-ink);padding:14px 20px;border-radius:8px}
 .skip-link:focus{top:8px}
