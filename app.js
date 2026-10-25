@@ -1965,7 +1965,7 @@ const RAW_EX = [
   ['db-reverse-fly','Dumbbell Reverse Fly','Dumbbell',['rdelt'],['uback'],0],
   ['pistol-squat','Pistol Squat','Bodyweight',['quad','glute'],['adductor'],1],
   ['single-leg-rdl','Single-Leg Dumbbell RDL','Dumbbell',['ham','glute'],['lback'],1],
-  ['nordic-curl','Nordic Hamstring Curl','Bodyweight',['ham'],['glute'],1],
+  ['nordic-curl','Nordic Hamstring Curl','Bodyweight',['ham'],['glute'],0],   // a knee curl: single-joint, like the sliding one
   // more choices for each muscle (the last 1 marks an alternative: Muscle's own plans pick the classics first)
   ['pendlay-row','Pendlay Row','Barbell',['uback','lat'],['bi','rdelt','lback'],1,1],
   ['tbar-row','T-Bar Row','Barbell',['uback','lat'],['bi','rdelt','lback'],1,1],
@@ -2649,7 +2649,8 @@ function viewTrain(){
   </div>
   ${Parked.panel(state, setsDone, esc)}
   ${readi}
-  ${a.trim? `<div class="banner info" style="align-items:flex-start">${I.layers}<span style="flex:1;min-width:0"><b>Trimmed for Together.</b> ${a.trim.cuts.map(c=>esc(c.name)+' '+(c.to? c.from+'&rarr;'+c.to+' sets' : 'left out')+(c.why? ' ('+esc(c.why)+')':'')).join('; ')}.</span><button class="tinybtn" data-act="trim-undo" style="flex:none">Put back</button></div>` : ''}
+  ${warmLine(a)}
+  ${a.trim?`<div class="banner info" style="align-items:flex-start">${I.layers}<span style="flex:1;min-width:0"><b>Trimmed for Together.</b> ${a.trim.cuts.map(c=>esc(c.name)+' '+(c.to? c.from+'&rarr;'+c.to+' sets' : 'left out')+(c.why? ' ('+esc(c.why)+')':'')).join('; ')}.</span><button class="tinybtn" data-act="trim-undo" style="flex:none">Put back</button></div>` : ''}
   ${a.note
     ? `<div class="banner info" data-act="session-note" style="cursor:pointer">${I.book}<span>${esc(a.note)}</span><span style="margin-left:auto;font-size:11px;font-weight:700;opacity:.75">Edit</span></div>`
     : `<button class="tinybtn" data-act="session-note" style="margin-bottom:12px">${I.plus} Session note</button>`}
@@ -2988,7 +2989,7 @@ function coachVolume(muscle){
 function explainPlateau(exId){
   const ex=exById(exId)||{name:exId,primary:[]};
   const muscle=(ex.primary||[])[0]; const hyps=[];
-  if(muscle){ const vol=weeklyVolume().direct[muscle]||0; if(vol<state.settings.target) hyps.push({t:'Volume is on the low side', d:'Your '+MUSCLES[muscle].n+' is getting '+vol+' direct sets a week, under your '+state.settings.target+' marker. Try adding a set or two.', ev:'volume'}); }
+  if(muscle&&MUSCLES[muscle]){ const vol=Math.round((weeklyVolume().frac[muscle]||0)*2)/2; if(vol<state.settings.target) hyps.push({t:'Volume is on the low side', d:'Your '+MUSCLES[muscle].n+' is getting '+vol+' hard sets a week (helpers at half), under your '+state.settings.target+' marker. Try adding a set or two.', ev:'volume'}); }
   const rir=exerciseRecentRir(exId);
   if(rir!=null && rir>=3) hyps.push({t:'You\'re leaving reps in the tank', d:'Recent sets averaged about '+rir.toFixed(1)+' reps in reserve. Pushing a little closer to failure can restart progress.', ev:'effort'});
   const bt=bodyTrendCheck();
@@ -3458,7 +3459,7 @@ function progHistory(){
       const work = en.sets.filter(s=>isWork(s)&&s.done);
       if(!work.length) return '';
       let top=work[0]; for(const s of work){ if(setScore(en.exId,s,w.date)>setScore(en.exId,top,w.date)) top=s; }
-      return `<div class="hist-ex"><span>${esc(en.name)}</span><span class="hx-s">${work.length} &times; ${wTxt(en.exId, top.weight)}&times;${top.reps||'&ndash;'}</span></div>${en.note?`<div style="font-size:11.5px;color:var(--muted);margin:0 0 6px;display:flex;gap:5px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}`;
+      return `<div class="hist-ex"><span>${esc(en.name)}</span><span class="hx-s">${work.length} &times; ${wTxt(en.exId, top.weight)}&times;${top.reps? (top.assumed?'~':'')+top.reps : '&ndash;'}</span></div>${en.note?`<div style="font-size:11.5px;color:var(--muted);margin:0 0 6px;display:flex;gap:5px;align-items:flex-start;line-height:1.4">${I.book}<span>${esc(en.note)}</span></div>`:''}`;
     }).join('');
     return `<div class="card hist-item" data-act="ed-view" data-id="${esc(w.id)}">
       <div class="hh"><div class="hd">${esc(w.name)}</div><div class="hm">${longDate(w.date)}</div></div>
@@ -3823,7 +3824,7 @@ function openGenerator(){
    like arms in pull-ups and presses, aren’t their focus, so the block still trains them, just a little less.
    Isolation work first, so it adds as little as possible to the muscles they already work. */
 const GAP_COVERED=8;   // weekly direct hard sets from Strength and Ladder at which a muscle counts as covered (Together uses the same)
-const GAP_ORDER=['sdelt','rdelt','bi','tri','calf','ham','glute','quad','chest','uback','lat','fdelt','trap','abs','obli','adductor'];
+const GAP_ORDER=['sdelt','rdelt','bi','tri','calf','ham','glute','quad','chest','uback','lat','fdelt','trap','abs','obli'];
 function gapAvailable(){ const H=window.__hub; if(!H||!H.coverage) return false;
   try{ return ['str','cal'].some(m=>H.has(m) && (H.api(m).info()||{}).ready); }catch(e){ return false; } }
 function andList(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
@@ -4650,14 +4651,29 @@ function pairUp(es){
     used.add(j); const sg='ss-'+uid(); a.sg=sg; es[j].sg=sg; out.push(es[j]); });
   es.splice(0, es.length, ...out);
 }
-/* Warm-up sets before the first heavy compound lift (Strength's warm-up setting covers both): the bar, then about half
-   and 70 percent of the working weight on a barbell; one set at about half on anything else. They don't count as work. */
+/* Warm-up sets (Strength's warm-up setting covers both) before the first loaded compound of each part of the body a
+   session trains: the legs and hips, a push, a pull. The first of the session gets the bar, then about half and 70
+   percent of the working weight on a barbell; a later one is warm already, so it skips the empty bar. Anything but a
+   barbell gets one set at about half. They don't count as work. An assisted exercise has none: its weight is help. */
+const WARM_LOWER=['quad','ham','glute','adductor','calf'], WARM_PULL=['lat','uback','rdelt','trap'];
+function warmPart(en){ const p=en.primary||[]; return p.some(q=>WARM_LOWER.includes(q))? 'lower' : p.some(q=>WARM_PULL.includes(q))? 'pull' : 'push'; }
 function warmUp(es){
   if(!Prefs.get('warmups', true)) return;
-  const en=es.find(e=>{ const x=exById(e.exId); return x&&x.comp&&e.equipment!=='Bodyweight'&&e.sets[0]&&e.sets[0].weight>0; }); if(!en) return;
-  const top=toDisp(en.sets[0].weight), st=loadStep(en.equipment);
-  const ramp= en.equipment==='Barbell'? warmupRamp(top).filter(r=>r.w<top*0.8) : [{w:toDisp(roundLoad(fromDisp(top*0.5), en.equipment)), reps:8}].filter(r=>r.w>0&&r.w<top);
-  ramp.slice().reverse().forEach(r=>en.sets.unshift(Object.assign(makeSet('warmup'), {weight:fromDisp(r.w), reps:r.reps})));
+  const seen=new Set();
+  es.forEach(en=>{ const x=exById(en.exId), part=warmPart(en);
+    if(seen.has(part) || !(x&&x.comp) || en.equipment==='Bodyweight' || isAssisted(en.exId) || !(en.sets[0]&&en.sets[0].weight>0)) return;
+    const first=!seen.size; seen.add(part);
+    const top=toDisp(en.sets[0].weight), bar=barDisp();
+    let ramp= en.equipment==='Barbell'? warmupRamp(top).filter(r=>r.w<top*0.8) : [{w:toDisp(roundLoad(fromDisp(top*0.5), en.equipment)), reps:8}].filter(r=>r.w>0&&r.w<top);
+    if(!first && en.equipment==='Barbell'){ const on=ramp.filter(r=>r.w>bar+1e-6); ramp= on.length? on : ramp.slice(0,1); }
+    ramp.slice().reverse().forEach(r=>en.sets.unshift(Object.assign(makeSet('warmup'), {weight:fromDisp(r.w), reps:r.reps})));
+  });
+}
+/* One optional line at the start of a session: a few minutes of easy movement before the first lift. Gone once a set is
+   ticked or you close it, and not shown with warm-ups turned off. */
+function warmLine(a){
+  if(a.warmSeen || !Prefs.get('warmups', true) || a.entries.some(e=>e.sets.some(s=>s.done))) return '';
+  return `<div class="warmline">${I.flame}<span><b>Warm up first:</b> 3 to 5 minutes of easy cardio or the moves you're about to do.</span><button class="tinybtn" data-act="warm-hide" aria-label="Hide the warm-up line">${I.x}</button></div>`;
 }
 function startEmpty(){ state.active=null; ensureActive('Workout'); save(); state.route='train'; render(); openPicker(); }
 function startTemplate(tpl){
@@ -5508,7 +5524,7 @@ function openSettings(){
       <button class="actitem" data-act="import-data">${I.upload}<span>Import data (JSON)</span></button>
       <button class="actitem danger" data-act="reset-data">${I.trash}<span>Erase everything</span></button>
       <p class="muted" style="font-size:11.5px;line-height:1.55;margin-top:14px">Everything is stored locally on this device. Nothing leaves your browser. This app logs your training. It isn’t medical advice. Stop and seek care for pain, dizziness, or unusual symptoms; never train through pain.</p>
-      <div class="faint" style="font-size:11px;text-align:center;margin-top:14px">Hypertrophy Log &middot; evidence-led, honestly uncertain</div>
+      <div class="faint" style="font-size:11px;text-align:center;margin-top:14px">Milo &middot; Muscle &middot; evidence-led, honestly uncertain</div>
     </div>`);
 }
 
@@ -5519,7 +5535,7 @@ function onboard(){
     <div class="sheet-body">
       <div style="text-align:center;padding:6px 0 4px">
         <div class="logo" style="width:52px;height:52px;border-radius:15px;margin:0 auto 14px">${I.bolt}</div>
-        <h2 class="disp" style="font-weight:800;font-size:24px;letter-spacing:-.03em;margin:0 0 6px">Welcome to Hypertrophy Log</h2>
+        <h2 class="disp" style="font-weight:800;font-size:24px;letter-spacing:-.03em;margin:0 0 6px">Welcome to Muscle</h2>
         <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 18px;max-width:320px">Log sets, effort and training volume for muscle growth. You can use the log offline. For max-strength training, choose the Strength tab.</p>
       </div>
       <div class="stack" style="gap:10px;margin-bottom:18px">
@@ -5663,12 +5679,13 @@ __root.addEventListener('click', e=>{
     case 'metro-open': openMetronome(); break;
     case 'cal-mark': { const en=state.active.entries[ei]; en.sets.forEach((x,k)=>{ if(k===si) x.check=true; else delete x.check; }); save(); closeModal(); render(); break; }
     case 'cal-skip': { const a=state.active; a.calSkip=true; a.entries.forEach(e=>e.sets.forEach(x=>{ delete x.check; delete x.calx; })); save(); render(); break; }
+    case 'warm-hide': if(state.active){ state.active.warmSeen=true; save(); render(); } break;
     case 'metro-toggle': if(metro.on) metroStop(); else metroStart(); break;
     case 'metro-close': metroStop(); closeModal(); break;
     case 'coach-q': { const q=el.dataset.q; if(q==='deload') coachDeloadAnswer(); else if(q==='volume') coachVolumeAnswer(); else if(q==='effort') coachEffortAnswer(); else if(q==='balance') coachBalanceAnswer(); break; }
     case 'coach-vol': coachVolumeResult(el.dataset.m); break;
     case 'coach-plateau': coachPlateauResult(el.dataset.id); break;
-    case 'meso-add-deload': { const m=getActiveMeso(); if(m){ if(!m.deloadWeeks) m.deloadWeeks=[]; const dw=m.currentWeek+1; if(!isDeloadWeek(m,dw)){ m.deloadWeeks.push(dw); m.totalWeeks++; save(); toast('Deload added as week '+dw); } else toast('Next week is already a deload'); } closeModal(); state.route='plan'; state.planMode='home'; render(); break; }
+    case 'meso-add-deload': { const m=getActiveMeso(); if(m){ if(!m.deloadWeeks) m.deloadWeeks=[]; const dw=m.currentWeek+1; if(!isDeloadWeek(m,dw)){ m.deloadWeeks.push(dw); m.totalWeeks++; save(); toast('Lighter week added as week '+dw); } else toast('Next week is already a lighter week'); } closeModal(); state.route='plan'; state.planMode='home'; render(); break; }
     case 'body-log': openBodyLog(); break;
     case 'save-body': saveBody(); break;
     case 'body-goal': { const v=el.dataset.v, g=bodyGoal(); state.settings.bodyGoal= v? {kind:v, rate:g&&g.rate? g.rate : 0.25} : null; save(); render(); break; }
@@ -5928,11 +5945,11 @@ function renderEdit(){
     const rows=en.sets.map((s,si)=>{ const warm=s.type==='warmup';
       return `<div class="edrow"><span class="edi">${warm?'W':++n}</span>
         <input class="edin"${edit.view?' disabled':''} inputmode="decimal" data-ed="weight" data-e="${ei}" data-s="${si}" value="${s.weight!=null?toDisp(s.weight):''}" placeholder="${unit()}" aria-label="Weight">
-        <input class="edin"${edit.view?' disabled':''} inputmode="numeric" data-ed="reps" data-e="${ei}" data-s="${si}" value="${s.reps!=null?s.reps:''}" placeholder="reps" aria-label="Reps">
+        <input class="edin${s.assumed?' assumed':''}"${edit.view?' disabled':''} inputmode="numeric" data-ed="reps" data-e="${ei}" data-s="${si}" value="${s.reps!=null?s.reps:''}" placeholder="reps" aria-label="Reps${s.assumed?', assumed from the hint':''}"${s.assumed?' title="Assumed from the hint, not typed"':''}>
         <input class="edin"${edit.view?' disabled':''} inputmode="numeric" data-ed="rir" data-e="${ei}" data-s="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" aria-label="Reps in reserve">
         <button class="edx" data-act="ed-rm-set" data-e="${ei}" data-s="${si}" aria-label="Remove set">${I.x}</button></div>`; }).join('');
     return `<div class="edex"><div class="edh"><div><b>${esc(en.name)}</b></div><button class="tinybtn" data-act="ed-rm-ex" data-e="${ei}">Remove</button></div>
-      ${en.sets.length? `<div class="edrow head"><span></span><span>${unit()}</span><span>Reps</span><span>RIR</span><span></span></div>${rows}` : '<p class="edwhy" style="margin:0 0 8px">'+(en.left&&en.left.length?'Not started.':'No sets left.')+'</p>'}
+      ${en.sets.length? `<div class="edrow head"><span></span><span>${isAssisted(en.exId)? 'Help '+unit() : unit()}</span><span>Reps</span><span>RIR</span><span></span></div>${rows}` : '<p class="edwhy" style="margin:0 0 8px">'+(en.left&&en.left.length?'Not started.':'No sets left.')+'</p>'}
       ${leftRows(en, ei, x=>`${x.type==='warmup'?'Warm-up &middot; ':''}${x.weight!=null? toDisp(x.weight)+' '+unit()+' &times; ' : ''}${x.reps!=null? x.reps+' reps' : 'reps not logged'}`)}
       <button class="tinybtn" data-act="ed-add-set" data-e="${ei}">${I.plus} Add set</button></div>`; }).join('');
   const sc=[...__root.querySelectorAll('.sheet, .sheet-body')].map(x=>x.scrollTop);
@@ -5973,7 +5990,7 @@ function edInput(el){
   if(f==='name'||f==='note'){ r[f]=v; return; }
   const s=r.entries[+el.dataset.e].sets[+el.dataset.s]; if(!s) return;
   if(f==='weight') s.weight=fromDisp(v);
-  else { const n= f==='rir'? Num.parse(v) : Num.int(v); s[f]=n==null? null : Math.max(0,n); }
+  else { const n= f==='rir'? Num.parse(v) : Num.int(v); s[f]=n==null? null : Math.max(0,n); if(f==='reps') delete s.assumed; }   // typed: a real count
 }
 function edAddSet(ei){
   const en=edit.rec.entries[ei]; if(!en) return;
