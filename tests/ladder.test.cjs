@@ -789,7 +789,12 @@ test('a pain hold trains the assisted step of straight-arm work for a week, and 
   assert.ok(api.evaluate('state.hold.until') > Date.now() + 7 * day - 1);
   assert.equal(planFor(api, 'planche', 9).role !== 'easy' || !notesFor(api, 'planche', 9).some(n => n.why === 'pain'), true, 'it ends after a week');
   assert.equal(api.evaluate('holdJoint("knee")'), null, 'only elbow, wrist and shoulder');
+  assert.equal(api.evaluate('holdJoint("constructor")'), null);
   assert.equal(api.evaluate('normalize({hold:{until:"x"}}).hold'), null, 'a malformed hold is dropped');
+  assert.equal(api.evaluate('normalize({hold:{until:Date.now()+864e5}}).hold'), null);
+  assert.deepEqual(plain(api.evaluate('normalize({hold:{until:Date.now()+864e5, joints:["constructor","wrist"]}}).hold.joints')), ['wrist'], 'only known joints are kept');
+  const pl = plain(api.evaluate('normalize({placing:{survey:["constructor","pull"], tests:["__proto__","pull"], total:2, ans:{constructor:1, pull:4, dip:"x"}}}).placing'));
+  assert.deepEqual([pl.survey, pl.tests, pl.ans], [['pull'], ['pull'], {pull: 4}], 'and only real ladders in a saved placement');
 });
 
 test('placement keeps your answers through a reload and starts from your current step', () => {

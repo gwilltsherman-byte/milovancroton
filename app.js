@@ -5821,7 +5821,7 @@ const LADDERS={
     {id:'band-pullup', n:'Band-assisted pull-up', k:'reps', sets:3, v:8, cue:'Knee in the band, start from straight arms, chin clears the bar. Log the help, 0 none to 5 most, and use less as sets reach the top.'},
     {id:'pullup', n:'Pull-up', k:'reps', sets:3, v:8, cue:'Hands a little wider than the shoulders. Shoulder blades down first, elbows to the hips, chin over the bar, then all the way to straight arms.'},
     {id:'archer-pullup', n:'Archer pull-up', k:'reps', sets:3, v:5, cue:'Hands twice shoulder width. Chin goes over one hand while the other arm stays straight along the bar. The target counts each side.'},
-    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Keep the same strict range as your pull-up. Start with a small added load you can control and record it; increase in small increments as sets become repeatable.'},
+    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Keep the same strict range as your pull-up. Log the weight added: start small, and add a little once every set reaches the top.'},
     {id:'assisted-oap', n:'Assisted one-arm pull-up', k:'reps', sets:3, v:3, cue:'Working hand directly over the shoulder; the other hand on a towel, held as low as you can manage. Help only as much as you need.'},
     {id:'oap', n:'One-arm pull-up', k:'reps', sets:3, v:1, cue:'Hand directly over the shoulder, palm toward you. Straight arm to chin over the bar, the body turning slightly toward the working arm. Each side counts.'},
     {id:'assisted-archer-pullup', n:'Assisted archer pull-up', k:'reps', sets:3, v:5, cue:'Use a band or light foot support while pulling toward one hand. Keep the other elbow nearly straight, and reduce assistance gradually. Per side.'},
@@ -5876,7 +5876,7 @@ const LADDERS={
     {id:'shrimp-squat', n:'Shrimp squat', k:'reps', sets:3, v:6, cue:'Hold the rear foot behind you with the same-side hand; lower until the back knee touches a mat directly under you. Per side.'},
     {id:'pistol-squat', n:'Pistol squat', k:'reps', sets:3, v:5, cue:'Free leg straight out in front, heel down, knee over the second toe, thigh to calf at the bottom, up without rocking. Per side.'},
     {id:'box-pistol', n:'Box pistol', k:'reps', sets:3, v:5, cue:'Lower on one leg to a stable box, free leg in front. Touch lightly and stand without rocking. Start high and lower the box gradually. Per side.'},
-    {id:'assisted-pistol', n:'Assisted pistol', k:'reps', sets:3, v:5, cue:'Hold a fixed support and squat on one leg through your controlled range, heel down. Record the grip and assistance, then reduce the help. Per side.'},
+    {id:'assisted-pistol', n:'Assisted pistol', k:'reps', sets:3, v:5, cue:'Hold a fixed support and squat on one leg through your controlled range, heel down. Log the help, 0 none to 5 most, and use less as you can. Per side.'},
     {id:'counterbalance-pistol', n:'Counterbalance pistol', k:'reps', sets:3, v:5, cue:'Hold a small weight in front to help balance while you squat on one leg, heel down. Log the weight; hold less as control improves. Per side.'},
     {id:'assisted-shrimp-squat', n:'Assisted shrimp squat', k:'reps', sets:3, v:5, cue:'On one leg with the free foot behind, hold a post and lower the free knee onto a padded raised target. Reduce support and target height gradually. Per side.'},
   ]},
@@ -5910,7 +5910,7 @@ const LADDERS={
     {id:'straddle-fl', n:'Straddle front lever', k:'hold', sets:3, v:10, cue:'Legs straight and as wide as the hips allow, glutes squeezed, body level from shoulders to feet. Wider is easier.'},
     {id:'half-lay-fl', n:'Half-lay front lever', k:'hold', sets:3, v:8, cue:'Hips straight with the knees bent to 90 degrees, or one leg out and one tucked. Everything level, arms locked.'},
     {id:'full-fl', n:'Full front lever', k:'hold', sets:3, v:8, cue:'One level line from shoulders to toes, slightly hollow, arms locked and pressing toward the hips. Years of work for most people.'},
-    {id:'assisted-tuck-fl', n:'Assisted tuck front lever', k:'hold', sets:3, v:10, cue:'Band supporting the hips, knees tucked, arms straight and back level. Record the band and anchor so assistance can be reduced gradually.'},
+    {id:'assisted-tuck-fl', n:'Assisted tuck front lever', k:'hold', sets:3, v:10, cue:'Band supporting the hips, knees tucked, arms straight and back level. Log the help, 0 none to 5 most, and reduce it gradually.'},
     {id:'assisted-straddle-fl', n:'Assisted straddle front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body level. Keep the same straddle width and reduce assistance in small steps.'},
     {id:'assisted-full-fl', n:'Assisted full front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together and body level. Use enough help for a controlled hold, then reduce it without losing the shape.'},
   ]},
@@ -5921,7 +5921,7 @@ const LADDERS={
     {id:'straddle-planche', n:'Straddle planche', k:'hold', sets:3, v:8, cue:'Legs straight and wide, hips at shoulder height, body level, elbows straight. This is demanding strength work; build exposure gradually and recover between hard sessions.'},
     {id:'full-planche', n:'Full planche', k:'hold', sets:3, v:5, cue:'Legs together, body straight and level, shoulders well in front of the hands. One of the hardest holds in the sport.'},
     {id:'assisted-tuck-planche', n:'Assisted tuck planche', k:'hold', sets:3, v:10, cue:'Band supporting the hips or toes lightly on a fixed support. Knees tucked, elbows straight and shoulders forward. Reduce the help while keeping the hips level.'},
-    {id:'assisted-straddle-planche', n:'Assisted straddle planche', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, elbows straight. Record the support and straddle width; reduce assistance gradually.'},
+    {id:'assisted-straddle-planche', n:'Assisted straddle planche', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, elbows straight. Keep the same straddle width; log the help and reduce it gradually.'},
     {id:'assisted-full-planche', n:'Assisted full planche', k:'hold', sets:3, v:5, cue:'Band supporting the hips, legs together, body level. Use enough assistance to keep straight elbows and a consistent shoulder lean.'},
   ]},
   muscleup:{n:'Muscle-up', p:'Skill', ic:'bar', skill:true, m:'Lats, chest, triceps', steps:[
@@ -5930,8 +5930,8 @@ const LADDERS={
     {id:'straight-bar-dip', n:'Straight-bar dip', k:'reps', sets:3, v:8, cue:'Chest leaning over the bar, elbows pointing back; lower until the bar touches the lower chest. The top half of the muscle-up.'},
     {id:'jumping-muscleup', n:'Jumping muscle-up', k:'reps', sets:3, v:5, cue:'Bar at chin height. Jump and pull together to bring the bar to the lower chest, then roll the wrists over and press out.'},
     {id:'strict-muscleup', n:'Strict muscle-up', k:'reps', sets:3, v:3, cue:'No kip. Pull the bar to the lower chest, throw the chest over it as the wrists roll on top, press out to locked arms.'},
-    {id:'band-muscleup', n:'Band-assisted muscle-up', k:'reps', sets:3, v:3, cue:'Use a recorded band and anchor setup for the whole movement: high pull, controlled turnover, dip to lockout. Reduce assistance without adding a kip.'},
-    {id:'low-bar-transition', n:'Low-bar transition drill', k:'reps', sets:3, v:5, cue:'Low bar, feet on the floor. Pull the lower chest toward it, lean over and press out. Record foot support and reduce leg assistance gradually.'},
+    {id:'band-muscleup', n:'Band-assisted muscle-up', k:'reps', sets:3, v:3, cue:'The same band and anchor each time, for the whole movement: high pull, controlled turnover, dip to lockout. Log the help; reduce it without adding a kip.'},
+    {id:'low-bar-transition', n:'Low-bar transition drill', k:'reps', sets:3, v:5, cue:'Low bar, feet on the floor. Pull the lower chest toward it, lean over and press out. Log how much the legs help, 0 none to 5 most, and reduce it gradually.'},
     {id:'hip-to-bar-pull', n:'Hip-to-bar pull', k:'reps', sets:3, v:5, cue:'Swing from an arch to a hollow; on the hollow, press the bar down with straight arms and drive the hips up to it.'},
     {id:'kipping-muscleup', n:'Muscle-up, small kip', k:'reps', sets:3, v:3, cue:'A small hip drive starts the pull. Bar to the lower chest, chest over it as the wrists turn, press out. Keep the kip small.'},
   ]},
@@ -6038,7 +6038,7 @@ const LADDERS={
     {id:'full-bl', n:'Full back lever', k:'hold', sets:3, v:8, cue:'Legs together, one level line from head to toes, face down, bar or rings beside the hips, arms locked.'},
     {id:'german-hang-feet', n:'Supported German hang', k:'hold', sets:2, v:20, cue:'Feet stay on the floor with hands behind you on low rings or a bar. Ease into a comfortable shoulder range and use the feet to control the load.'},
     {id:'assisted-tuck-bl', n:'Assisted tuck back lever', k:'hold', sets:3, v:10, cue:'A band supports the hips in a tucked back lever. Keep elbows straight and back level; use enough help to hold the position comfortably.'},
-    {id:'assisted-straddle-bl', n:'Assisted straddle back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body face down and level. Record and gradually reduce assistance.'},
+    {id:'assisted-straddle-bl', n:'Assisted straddle back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body face down and level. Log the help and reduce it gradually.'},
     {id:'assisted-full-bl', n:'Assisted full back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together, body level and elbows straight. Reduce support only while the whole shape stays controlled.'},
   ]},
   flag:{n:'Human flag', p:'Skill', ic:'flag', skill:true, m:'Obliques, lats, shoulders', steps:[
@@ -6059,10 +6059,10 @@ const LADDERS={
   press:{n:'Press to handstand', p:'Skill', ic:'hand', skill:true, m:'Shoulders, hip flexors, compression', steps:[
     {id:'pike-compression', n:'Pike compression lift', k:'reps', sets:3, v:10, cue:'Legs straight and together, palms flat beside the knees. Lift both heels without leaning back.'},
     {id:'press-negative', n:'Straddle press negative', k:'reps', sets:3, v:3, cue:'From a handstand, open to a wide straddle and lower the feet slowly, hips high over the hands, shoulders leaning past the fingers.'},
-    {id:'elevated-straddle-press', n:'Elevated straddle press', k:'reps', sets:3, v:3, cue:'Feet on a stable raised surface, hands in front. Lean and lift without jumping. Record the surface height and lower it gradually as the press becomes controlled.'},
+    {id:'elevated-straddle-press', n:'Elevated straddle press', k:'reps', sets:3, v:3, cue:'Feet on a stable raised surface, hands in front. Lean and lift without jumping. Lower the surface gradually as the press becomes controlled.'},
     {id:'straddle-press', n:'Straddle press to handstand', k:'reps', sets:3, v:3, cue:'Feet twice shoulder width, hands between them in line with the toes. Shoulders past the fingertips, hips over the hands, no jump.'},
     {id:'pike-press', n:'Pike press to handstand', k:'reps', sets:3, v:3, cue:'Hands 20 to 30 cm in front of the feet, legs together and straight the whole way up. The hardest press.'},
-    {id:'assisted-straddle-press', n:'Assisted floor straddle press', k:'reps', sets:3, v:3, cue:'A securely anchored overhead band supports the hips as you press from a floor straddle without jumping. Record its setup; reduce assistance gradually.'},
+    {id:'assisted-straddle-press', n:'Assisted floor straddle press', k:'reps', sets:3, v:3, cue:'A securely anchored overhead band supports the hips as you press from a floor straddle without jumping. Log the help; reduce it gradually.'},
   ]},
   onearmhs:{n:'One-arm handstand', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Shoulders, wrists, balance', steps:[
     {id:'hs-shoulder-tap', n:'Wall handstand shoulder tap', k:'reps', sets:3, v:10, cue:'Chest to the wall, hands a hand’s length from it. Shift over one hand, arm vertical, and tap that shoulder with the other hand.'},
@@ -6078,7 +6078,7 @@ const LADDERS={
     {id:'straddle-planche-pushup', n:'Straddle planche push-up', k:'reps', sets:3, v:3, cue:'From a straddle planche, body level, elbows close to the ribs down to 90 degrees and back up.'},
     {id:'full-planche-pushup', n:'Full planche push-up', k:'reps', sets:3, v:2, cue:'From a full planche, the body stays straight and level as the elbows bend to 90 degrees and press back. Elite.'},
     {id:'assisted-tuck-planche-pushup', n:'Assisted tuck planche push-up', k:'reps', sets:3, v:5, cue:'Band supporting the hips in a tuck. Bend and straighten the arms through a controlled range with hips level; reduce support gradually.'},
-    {id:'assisted-straddle-planche-pushup', n:'Assisted straddle planche push-up', k:'reps', sets:3, v:3, cue:'Band supporting the hips, legs straight and wide. Keep the body level during the press and record assistance and depth.'},
+    {id:'assisted-straddle-planche-pushup', n:'Assisted straddle planche push-up', k:'reps', sets:3, v:3, cue:'Band supporting the hips, legs straight and wide. Keep the body level and the depth the same; log the help and reduce it gradually.'},
     {id:'assisted-full-planche-pushup', n:'Assisted full planche push-up', k:'reps', sets:3, v:2, cue:'Band supporting the hips, legs together. Use sufficient help for controlled lowering and pressing with a straight body.'},
   ]},
   rings:{n:'Rings', p:'Skill', ic:'dip', skill:true, m:'Chest, shoulders, arms, stability', steps:[
@@ -6173,7 +6173,7 @@ const LADDERS={
   ]},
   weightedpull:{n:'Weighted pull-up', p:'Pull', ic:'pull', like:'pull', m:'Lats, biceps, upper back', steps:[
     {id:'pullup', n:'Pull-up base', k:'reps', sets:3, v:5, cue:'Start from straight arms and pull the chin over the bar with no swing. Keep this range as you introduce a small external load.'},
-    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Record added load and keep strict full-range reps. Start with a manageable small weight and increase it gradually when sets are repeatable.'},
+    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Log the weight added and keep strict full-range reps. Start small; add a little once every set reaches the top.'},
   ]},
   leverrow:{n:'Front lever row strength', p:'Pull', ic:'row', like:'row', m:'Lats, upper back, biceps', steps:[
     {id:'incline-row', n:'Incline row', k:'reps', sets:3, v:12, cue:'High bar or rings, body straight. Lower the support gradually as full-range rows become controlled.'},
@@ -6856,9 +6856,13 @@ function normalize(p){
   Parked.all(s).forEach(a=>{ a.entries=(a.entries||[]).filter(e=>LADDERS[e.ladderId]&&LADDERS[e.ladderId].steps[e.stepIdx]); });
   if(s.active && s.active.restEndsAt && s.active.restEndsAt<Date.now()) s.active.restEndsAt=null;
   // a pain hold (HOLDS) and a placement survey part-way through (PLACEMENT); anything malformed is dropped
-  if(!(s.hold&&Number.isFinite(s.hold.until)&&Array.isArray(s.hold.joints))) s.hold=null;
+  const own=(o,k)=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);
+  const H=s.hold; s.hold=null;
+  if(H&&Number.isFinite(H.until)&&Array.isArray(H.joints)){ const j=H.joints.filter(x=>['elbow','wrist','shoulder'].includes(x)); if(j.length) s.hold={until:H.until, at:H.at, joints:j}; }
   const pl=s.placing; if(!(pl&&Array.isArray(pl.survey)&&Array.isArray(pl.tests)&&pl.ans&&typeof pl.ans==='object')) s.placing=null;
-  else pl.survey=pl.survey.filter(id=>LADDERS[id]);
+  else { const ans={}; Object.keys(pl.ans).forEach(id=>{ if(own(LADDERS,id)&&Number.isInteger(pl.ans[id])) ans[id]=pl.ans[id]; });
+    s.placing={survey:pl.survey.filter(id=>own(LADDERS,id)), tests:pl.tests.filter(id=>own(LADDERS,id)), total:Number.isInteger(pl.total)? pl.total : pl.survey.length,
+      gids:Array.isArray(pl.gids)? pl.gids.filter(x=>typeof x==='string') : [], ans}; }
   return s;
 }
 function load(){
@@ -7270,7 +7274,7 @@ function heldBy(id,at){ const h=state.hold; if(!h||!(h.until>(at||Date.now()))) 
 function assistedStep(id,i){ const p=pathFor(id), a=p.indexOf(i);
   for(let j=a; j>=0; j--){ const f=setupField(stepsOf(id)[p[j]]); if(f&&f.key==='assist') return p[j]; }
   const f=setupField(stepsOf(id)[i]); return f&&f.key==='assist'? i : null; }
-function holdJoint(joint, days){ if(!HOLD_JOINTS[joint]) return null;
+function holdJoint(joint, days){ if(!['elbow','wrist','shoulder'].includes(joint)) return null;
   const until=Day.add(Day.start(), (days||HOLD_DAYS)+1), h=state.hold&&state.hold.until>Date.now()? state.hold : null;
   state.hold={until:Math.max(until, h? h.until : 0), joints:[...new Set((h? h.joints : []).concat(joint))], at:Date.now()};
   save(); return state.hold; }
