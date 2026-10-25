@@ -26,7 +26,7 @@
       check(!!root.querySelector('#cond-target'),'Conditioning has target and style controls on first setup');
       root.querySelector('[data-a="f-go"]').click();
       check(!/hit a problem/.test(root.textContent),'conditioning-only week renders');
-      root.querySelector('[data-a="start-day"]').click();root.querySelector('[data-a="o-skip"]').click();await pause(100);
+      root.querySelector('[data-a="start-day"]').click();await pause(100);
       check(!!root.querySelector('[data-cond-clock]'),'planned conditioning opens the timer');
       root.querySelector('[data-a="cond-done"]').click();root.querySelector('#ca-min').value='20';root.querySelector('#cond-form').requestSubmit();await pause(150);
       let saved=JSON.parse(localStorage.getItem('trainer.together'));

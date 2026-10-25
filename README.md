@@ -7,7 +7,7 @@ Milo plans and logs muscle, strength, calisthenics and conditioning training. It
 ## Start
 
 1. Open Milo and choose what you train, your days and weight units.
-2. On **Today**, start your workout. The health check is optional.
+2. On **Today**, tap **Start Day** to open your workout.
 3. Log the actual load, reps and effort; tap **Done**, then rest.
 4. Finish the session and review **Progress**. Use **Settings** to adjust your program.
 

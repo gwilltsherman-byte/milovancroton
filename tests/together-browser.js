@@ -18,8 +18,8 @@
   }
   const place=doc=>(doc.querySelector('.seg[aria-current="page"]')||{dataset:{}}).dataset.d;
   const saved=()=>JSON.parse(localStorage.getItem('trainer.together'));
-  // Start Day: before the first workout the health check is offered once, and skipping it starts the day
-  async function startDay(root){ root.querySelector('[data-a="start-day"]').click(); await pause(150); const sk=root.querySelector('[data-a="o-skip"]'); if(sk) sk.click(); }
+  // Start Day goes directly to training, including old saves with no health answers.
+  async function startDay(root){ root.querySelector('[data-a="start-day"]').click(); await pause(150); if(root.querySelector('#offer')) throw Error('Starting a day opened the removed first-run questionnaire'); }
   const ladder={v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false, rest:0}, rung:{pull:2, pushh:3, core:1, row:1}, placed:{pull:true, pushh:true, core:true, row:true, scap:true},
     history:[], tests:[], active:null, goals:[{id:'goal-a', key:'pullup1', n:'First strict pull-up', l:'pull', r:4, std:1, sup:['row','core'], added:1, achieved:null}]};
   try {
@@ -42,11 +42,10 @@
     const ex={}; P.days.forEach(d=>d.str.forEach(x=>{ (ex[x.id]||(ex[x.id]=[])).push(x.heavy); }));
     check(Object.values(ex).every(h=>h.filter(Boolean).length===1), 'each lift has exactly one heavy exposure a week');
     check(P.days.every(d=>!(d.str.some(x=>x.a==='legs'&&x.heavy)&&d.str.some(x=>x.a==='hips'))), 'heavy squats and deadlifts are on different days');
-    root.querySelector('[data-a="start-day"]').click(); await pause(150);
-    const without=root.querySelector('[data-a="o-skip"]');
-    check(!!without && without.getBoundingClientRect().bottom<=800, 'the optional health check can be skipped without scrolling past its questions');
-    without.click(); await pause(250);
-    check(saved().offered && !!saved().run && win.__hub.current()==='str', 'skipping the health check starts the workout and saves that it was offered');
+    check(!!root.querySelector('[data-a="ci-edit"]'), 'the optional daily check-in stays available on Today');
+    root.querySelector('[data-a="start-day"]').click(); await pause(250);
+    check(!root.querySelector('#offer')&&!root.querySelector('[data-a="o-skip"]'), 'the first workout has no health questionnaire or skip step');
+    check(!saved().screen && !!saved().run && win.__hub.current()==='str', 'Start Day opens the workout directly without inventing health answers');
     frame.remove(); frame=null;
 
     // all three, ranked by the suggestion: Strength builds, Ladder moderate, Muscle maintains
