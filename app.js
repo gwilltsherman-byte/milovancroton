@@ -9765,6 +9765,8 @@ function prText(p){
 }
 function showReview(rec, notes, cycle){
   const work=rec.entries.reduce((n,e)=>n+e.sets.filter(s=>s.kind!=='warm').length,0);
+  // a first session has nothing to beat, so no "Records 0"
+  const first=!state.history.some(h=>h.id!==rec.id && h.date<rec.date);
   const best=rec.entries.map(en=>({id:en.liftId, e:Math.max(0,...en.sets.map(s=>setE1(s,en.liftId)))})).filter(x=>x.e>0);
   const prHtml=rec.prs.length? `<div class="section-label" style="margin:16px 3px 4px">${I.trophy}<span>New records</span><span class="ln"></span></div>
     ${rec.prs.map(p=>`<div class="lrow"><div class="li gold">${I.trophy}</div><div class="lb"><div class="a">${esc(exName(p.lift,p.vi))}</div><div class="b">${p.type==='e1RM'?'Estimated max':p.type}</div></div><div class="lv">${prText(p)}</div></div>`).join('')}` : '';
@@ -9777,7 +9779,7 @@ function showReview(rec, notes, cycle){
       <h2 class="disp" style="font-size:30px;margin:6px 0 14px">${esc(rec.name)}</h2></div>
     <div class="grid3">
       <div class="metric"><div class="k">Work sets</div><div class="v">${work}</div></div>
-      <div class="metric"><div class="k">Records</div><div class="v">${rec.prs.length}</div></div>
+      ${first? `<div class="metric"><div class="k">Exercises</div><div class="v">${rec.entries.length}</div></div>` : `<div class="metric"><div class="k">Records</div><div class="v">${rec.prs.length}</div></div>`}
       <div class="metric"><div class="k">Time</div><div class="v" style="font-size:19px">${fmtDur(rec.durationSec)}</div></div>
     </div>
     ${prHtml}${topHtml}${noteHtml}${cycleHtml(cycle)}

@@ -76,14 +76,43 @@ function train(S, perform, gap = 2) {
   return {rec, day: d, active: a};
 }
 
-test('the Strength section loads and draws every view in the test harness', () => {
-  const S = strength();
-  plan(S, {choice: {chest: 'bench', legs: 'squat'}});
-  for (const r of ['today', 'program', 'progress', 'tools']) { S.T.state.route = r; S.fn.render(); }
-  S.T.state.lifts.bench.work = 60; S.T.state.lifts.squat.work = 80;
-  train(S, s => { s.reps = s.tr; });
-  S.T.state.route = 'train'; S.fn.render();
-  assert.equal(S.T.state.history.length, 1);
+test('the Strength section draws every view and sheet, with the new lifts, kit settings and set-up in them', () => {
+  const S = strength({body: [{date: Date.UTC(2026, 0, 1), kg: 80}]});
+  const sheet = () => S.T.run("$('#sheet').innerHTML"), view = () => S.T.run("$('#view').innerHTML");
+  plan(S, {model: 'topset', choice: {chest: 'bench', legs: 'goblet', hips: 'tbdl', back: 'dbrow', lats: 'wpull', shoulders: 'pikechain'}, exp: 'exp'});
+  Object.values(S.T.state.lifts).forEach(L => Object.assign(L, {work: 30, tm: 40, seed: {v: 60, date: S.now - DAY, rated: true}}));
+  for (let i = 0; i < 4; i++) train(S, s => { s.reps = s.tr; if (s.w == null && s.kind !== 'warm') s.w = 20; });
+  for (const r of ['today', 'program', 'tools']) { S.T.state.route = r; S.fn.render(); assert.ok(view().length > 100, r); }
+  for (const t of ['lifts', 'records', 'standards', 'history']) for (const id of ['bench', 'goblet', 'tbdl', 'wpull', 'pikechain']) {
+    S.T.state.route = 'progress'; S.T.state.progTab = t; S.T.state.progLift = id; S.fn.render(); assert.ok(view().length > 100, t + ' ' + id);
+  }
+  assert.ok(view().includes('class="auto"'), 'an RPE logged from the target shows apart in the history');
+  for (const t of ['max', 'plates', 'warm']) { S.T.state.route = 'tools'; S.T.state.toolTab = t; S.fn.render(); }
+  S.T.state.progTab = 'standards'; S.T.state.route = 'progress'; S.fn.render();
+  assert.ok(view().includes('shared with every section') && view().includes('value="80"'), 'bodyweight from the one log');
+  // a session going: every set row, the exercise and set menus, swaps, plates, the RPE check
+  S.T.state.calLast = null; S.fn.startProgramDay(0); S.T.state.route = 'train'; S.fn.render();
+  assert.ok(view().includes('data-act="toggle-done"'));
+  S.T.state.active.entries.forEach((en, ei) => { S.T.run(`openExMenu(${ei}); openSetMenu(${ei},0); openSessionSwap(${ei})`); });
+  S.T.run(`openPlates(85, 'trap')`);
+  assert.ok(sheet().includes('25 kg trap bar + 25 + 5 a side'), 'plates on the trap bar');
+  S.T.run(`openPicker(); openSessionMenu(); openEnd(); openNote('session')`);
+  S.T.run(`openCheckWhy(0, 1); openCheck(0, 1)`);
+  assert.ok(sheet().includes('RPE check'));
+  // settings: bars in both units, the trap and EZ bars, micro plates, how many of each, collars, your dumbbells
+  S.T.run('openSettings()');
+  for (const t of ['45 lb', '35 lb', '15 lb', '10 kg', 'Trap bar', 'EZ bar', 'data-v="0.25"', 'Pairs of each', 'Collars, each', 'Your dumbbells']) assert.ok(sheet().includes(t), t);
+  // set-up: step 1 can be closed and starts with "Everything, all six"; the kit starts from the shared kit
+  S.T.run('openSetup()');
+  assert.ok(sheet().includes('data-act="close-modal"'));
+  assert.ok(sheet().indexOf('Everything, all six') < sheet().indexOf('data-act="wz-area"'));
+  for (let st = 1; st < 4; st++) { S.T.run(`wz.step=${st}; renderSetup()`); assert.ok(sheet().includes('data-act="close-modal"'), 'step ' + (st + 1)); }
+  S.T.run('openStart(false)');
+  assert.ok(sheet().includes('RPE is how hard a set was'), 'one line on RPE where it is first asked');
+  S.T.run('openSwap("legs"); openSwap("hips"); openEditSession(state.history[0].id); openSessionList()');
+  // with nothing saved, the kit is all of it, not none; with a kit saved anywhere, that one
+  const F = strength(); F.T.run('openSetup()'); assert.equal(F.T.run('wz.equip.size'), 7);
+  const K = strength({prefs: {kit: ['db', 'pullup']}}); K.T.run('openSetup()'); assert.deepEqual(plain(K.T.run('[...wz.equip]')), ['db', 'pullup']);
 });
 
 // The lifter in these simulations: a true max that the app doesn't know, and as many reps as that allows, up to the target.
