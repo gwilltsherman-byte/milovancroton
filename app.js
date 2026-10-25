@@ -3647,7 +3647,8 @@ function startMeso(id){ const m=mesoById(id); if(!m) return; state.mesos.forEach
    experience and 12 to 14 for the advanced (the top of each with more days to spread them over), and 3 or 4 more for a
    muscle you want more of. Muscles the big lifts work on the side (front delts, biceps, triceps, rear delts) get less of
    their own; traps, forearms, lower back, adductors and neck get what the rest gives them. Each muscle is trained on
-   about two days a week, at most SESSION_CAP sets a session, where more adds little and leaves you tired. */
+   about two days a week, at most SESSION_CAP sets of its own a session (SESSION_MAX with what it gets as a helper), where
+   more adds little and leaves you tired, in sessions of DAY_MAX hard sets at most. */
 const TARGET_SHARE={chest:1, lat:1, uback:1, quad:1, ham:1, glute:1, sdelt:1, bi:0.8, tri:0.8, calf:0.8, rdelt:0.6, abs:0.6, fdelt:0.6};
 const SESSION_CAP=9, SESSION_MAX=11;   // a muscle's own sets in a session; with what it gets as a helper
 /* Hard sets in one session: about 24, near an hour and a quarter at these rests. A week that won't fit aims lower for the
@@ -3815,6 +3816,9 @@ function generateDraft(o){
         }
       });
     }));
+    // a full session: a set from one exercise to another the same day, where the week needs it more
+    if(full) days.forEach((d,i)=>{ if(d.items.reduce((a,y)=>a+y.sets,0)<DAY_MAX) return;
+      d.items.forEach(x=>{ if(x.sets>2) d.items.forEach(y=>{ if(y!==x && y.sets<maxP && room(y.ex,i,X)>=1) tryMove(()=>{ x.sets--; y.sets++; }, ()=>{ x.sets++; y.sets--; }); }); }); });
     Object.keys(on).forEach(mu=>{ if((C[mu]||0)>T[mu]-1) return;
       on[mu].forEach(i=>{ if(days[i].items.filter(x=>x.ex.primary.includes(mu)).length>=3) return;
         picks(mu, i, spare[mu]===i? false : null, C).filter(x=>room(x,i,X)>=2 && (spare[mu]!==i || !x.comp)).slice(0,3)
