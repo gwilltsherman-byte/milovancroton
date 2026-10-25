@@ -11068,7 +11068,7 @@ function buildPlan(T){
     const [hs,ls]=strSets(dose.str), low=a=>a==='legs'||a==='hips', heavyN=i=>days[i].str.filter(y=>y.heavy).length;
     // a heavy squat and a heavy hinge both load the legs and lower back hard: never on the same day, and 48 hours
     // apart when your weekdays allow; the hinge goes with the lighter squat instead
-    const clashAt=(i,a)=>sd.reduce((c,j)=>c + (days[j].str.some(y=>y.heavy&&low(y.a)&&y.a!==a)? (j===i? 100 : gapOf(PW,i,j)<2? 20 : 0) : 0), 0);
+    const clashAt=(i,a)=>sd.reduce((c,j)=>c + (days[j].str.some(y=>y.heavy&&low(y.a)&&y.a!==a)? (j===i? 100 : gapOf(PW,i,j)<2? 60 : 0) : 0), 0);
     S.map(x=>Object.assign({}, x, {f:Math.min(sd.length, strFreq(x.a, dose.str))})).filter(x=>x.f>0).sort((a,b)=>b.f-a.f || STR_ORDER.indexOf(a.a)-STR_ORDER.indexOf(b.a))
       .forEach(x=>{
         const hard=j=>low(x.a)? clashAt(sd[j], x.a) : 0;
@@ -11077,6 +11077,13 @@ function buildPlan(T){
         // the heavy exposure: the chosen day furthest from the other heavy squat or hinge, then with the fewest heavy lifts
         const hj=sel.slice().sort((a,b)=>hard(a)-hard(b) || heavyN(sd[a])-heavyN(sd[b]) || a-b)[0];
         sel.forEach(j=>{ const h=j===hj; days[sd[j]].str.push({id:x.id, a:x.a, k:x.k, key:x.key, bar:!!x.bar, lp1:!!x.lp1, heavy:h, sets:h? hs : Math.max(2,ls)}); }); });
+    // then even out the heavy lifts: one heavy on a busy day and lighter on a quieter one swaps them (squats and hinges
+    // stay where the rule above put them)
+    for(let guard=0; guard<12 && sd.length>1; guard++){
+      const n=sd.map(heavyN), a=sd[n.indexOf(Math.max(...n))], b=sd[n.indexOf(Math.min(...n))]; if(heavyN(a)-heavyN(b)<2) break;
+      const x=days[a].str.find(y=>y.heavy && !low(y.a) && days[b].str.some(z=>z.id===y.id&&!z.heavy)); if(!x) break;
+      const z=days[b].str.find(z=>z.id===x.id&&!z.heavy); x.heavy=false; z.heavy=true; [x.sets, z.sets]=[z.sets, x.sets];
+    }
     // with no way round it (one Strength day), the heavy squat and the heavy hinge take turns, week by week
     days.forEach(d=>{ const hv=d.str.filter(y=>y.heavy&&low(y.a)); if(hv.length>1) hv.forEach(y=>{ y.alt= y.a==='legs'? 1 : 0; }); });
     // heavy lifts first in the day, then the lighter ones
@@ -12327,6 +12334,7 @@ function programCard(){
       : top? 'This is the top week: Strength works up to one heavy set, then back-off sets, and Muscle keeps last week’s sets. Next, a new block from your new numbers.'
       : 'Effort climbs each week. Week 5 is decided as it starts: lighter if your lifts are slipping or your check-ins say you need it, otherwise a top week. Then Together builds the next block from your new numbers.'} Built from your order, ${plural(tg.days,'day')} and ${tg.mins? tg.mins+' minutes' : 'no time limit'}.</p>
     ${who.map(t=>`<p class="hint" style="margin-top:6px">${t}</p>`).join('')}
+    ${tg.stage&&STAGE_WHY[tg.stage]? basedOn('The guidance for your life stage', [STAGE_WHY[tg.stage][0]], [SAFETY_SOURCES[STAGE_WHY[tg.stage][1]]]) : ''}
     ${tuneLine(P)}${adjLine()}
     <div class="row2" style="margin-top:12px"><button class="btn sm" data-a="t-edit">${IC.sliders} Customize this block</button><button class="btn sm ghost" data-a="t-new">${IC.play} Start a new block</button></div>
     ${`<div class="grp" style="margin-top:16px">Week ${wk} of ${P.weeks}</div>
@@ -12405,6 +12413,11 @@ const SAFETY_SOURCES=[
   ['Mottola et al. 2018, Physical activity throughout pregnancy','Br J Sports Med','2019 Canadian guideline for physical activity throughout pregnancy'],
   ['Bickel et al. 2011, The dose that keeps what you built, young and older','Med Sci Sports Exerc','Exercise dosing to retain resistance training adaptations in young and older adults'],
 ];
+/* What each life stage's changes rest on: [text, its source in SAFETY_SOURCES]. */
+const STAGE_WHY={
+  u18:['Young people gain strength safely from resistance training that is supervised by someone qualified, progressive and technique-first, as this consensus statement sets out. Nothing to failure keeps the focus on how each rep moves.', 1],
+  older:['Resistance training builds strength, power and function at any age. This position statement recommends power training, lifting the weight fast with good form, as part of the program, alongside balance work; recovery takes longer, so the days either side of a session count for more here.', 0],
+  preg:['This guideline encourages staying active through pregnancy for anyone without a reason not to, once cleared by a midwife or doctor, and suggests changing position if lying on your back makes you light-headed or unwell. RPE 7 at most keeps the effort moderate.', 2]};
 /* Why fewer Ladder goals at once move faster, and how Together recommends them. */
 const LADDER_SOURCES=[
   ['Ralston et al. 2017, Weekly set volume and strength','Sports Med','The Effect of Weekly Set Volume on Strength Gain A Meta-Analysis'],
