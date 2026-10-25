@@ -77,10 +77,11 @@ button,a,input,textarea{touch-action:manipulation}
 .bk .small{font-size:12.5px;line-height:1.5;margin:0 0 12px}
 .bk .stack{display:grid;gap:8px}
 .bk .stack>.b{width:100%;text-align:left}
-.bk .calrow{flex-wrap:nowrap;align-items:center}
-.bk .calrow .b{text-align:left}
-.bk .tm{flex:none;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--sh-muted)}
-.bk .tm .txt{width:auto;margin:0;min-height:46px;padding:8px}
+.bk h2:focus{outline:none}
+.bk .calrow{display:grid;gap:6px}
+.bk .calrow .b{width:100%;text-align:left}
+.bk .tm{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--sh-muted)}
+.bk .tm .txt{width:auto;margin:0;min-height:44px;padding:8px}
 .bk .b:disabled{opacity:.45;cursor:default;filter:none}
 .bk .b.danger{background:#b43636;border-color:transparent;color:#fff}
 .bk .b.sm{flex:1 1 auto;min-height:44px;padding:9px 12px;font-size:13.5px;text-align:left}
@@ -97,11 +98,12 @@ button,a,input,textarea{touch-action:manipulation}
 .imx-list button{display:flex;justify-content:space-between;gap:8px;min-height:44px;padding:8px 10px;border-radius:8px;border:1px solid var(--sh-border);background:var(--sh-solid);color:var(--sh-ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer}
 .imx-list button span{color:var(--sh-muted);font-size:12px;flex:none}
 .imx-list button[aria-pressed="true"]{border-color:var(--sh-accent)}
-.imp-foot{margin-top:14px}
+.imp-foot{position:sticky;bottom:-28px;margin:14px -28px -28px;padding:12px 28px 28px;background:var(--sh-solid);border-top:1px solid var(--sh-border)}
+#imp .msg:empty{display:none}
+.imp-foot .b{flex:1 1 100px}
 .sum section{margin:0 0 14px}
 .sum ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;overflow-wrap:anywhere}
 .shtoast button{margin-left:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--sh-edge);background:var(--sh-well);color:var(--sh-ink);font:inherit;font-weight:700;cursor:pointer}
-@media(max-width:380px){.bk .calrow{flex-wrap:wrap}}
 /* The coach summary prints on its own, in black on white. */
 @media print{
   body{background:#fff!important}

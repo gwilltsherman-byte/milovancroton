@@ -162,7 +162,7 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <dialog class="bk" id="bk" aria-labelledby="bk-title">
-  <h2 id="bk-title">Back up your data</h2>
+  <h2 id="bk-title" tabindex="-1" autofocus>Back up your data</h2>
   <p>One backup holds everything from Together, Muscle, Strength and Ladder, including Together’s check-in answers. Make one before you delete the app, then restore it after you add the app again.</p>
   <div class="last" id="bk-last"></div>
   <label class="fld" for="bk-pass">Passphrase <span>(optional)</span></label>
@@ -194,9 +194,9 @@ body{background:#0A0D12; overflow-x:hidden;
     <button class="b" id="yd-csv">Export your sets (CSV)</button>
     <button class="b" id="yd-import">Import from Strong or Hevy</button>
     <button class="b" id="yd-sum">Share a summary</button>
-    <div class="row calrow">
+    <div class="calrow">
       <button class="b" id="yd-cal">Add training days to your calendar</button>
-      <label class="tm" for="yd-time">at <input class="txt" type="time" id="yd-time" value="18:00"></label>
+      <label class="tm" for="yd-time">Training time <input class="txt" type="time" id="yd-time" value="18:00"></label>
     </div>
     <button class="b" data-open-privacy>Privacy and erasing your data</button>
   </div>
@@ -216,17 +216,17 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <dialog class="bk" id="imp" aria-labelledby="imp-title">
-  <h2 id="imp-title">Import workouts</h2>
+  <h2 id="imp-title" tabindex="-1" autofocus>Import workouts</h2>
   <div id="imp-body"></div>
+  <div class="msg" id="imp-msg" role="status"></div>
   <div class="row imp-foot">
     <button class="b" id="imp-cancel">Cancel</button>
     <button class="b pri" id="imp-go">Import</button>
   </div>
-  <div class="msg" id="imp-msg" role="status"></div>
 </dialog>
 
 <dialog class="bk sum" id="sum" aria-labelledby="sum-title">
-  <h2 id="sum-title">Training summary</h2>
+  <h2 id="sum-title" tabindex="-1" autofocus>Training summary</h2>
   <p class="last" id="sum-range"></p>
   <div id="sum-body"></div>
   <div class="row noprint">
@@ -238,7 +238,7 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <dialog class="bk" id="privacy" aria-labelledby="privacy-title">
-  <h2 id="privacy-title">Privacy</h2>
+  <h2 id="privacy-title" tabindex="-1" autofocus>Privacy</h2>
   <h3>What Milo keeps</h3>
   <p>Your workouts (sets, weights, reps and notes), plans, settings and bodyweight, and Together’s check-in answers: sleep, energy, stress, mood, soreness, joint pain and whether you feel unwell, with any health questions you answer.</p>
   <h3>Where it stays</h3>
