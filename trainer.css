@@ -539,3 +539,95 @@ button.dchip {min-height:36px}
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after {animation:none!important; transition:none!important; scroll-behavior:auto!important}
 }
+
+/* Both ways of logging keep the same fields, with room for a thumb and a keyboard. */
+.session-sr {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.session-switch {display:flex;justify-content:flex-end;margin-bottom:12px}
+.session-top {display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.session-top>div {flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.session-top [data-session-day] {font-weight:650;color:var(--ink);overflow-wrap:anywhere}
+.session-stage {max-width:600px;margin:0 auto}
+.session-card h2 {font-size:clamp(24px,5vw,32px);line-height:1.15;margin:10px 0;overflow-wrap:anywhere}
+.session-count {font-size:14px;color:var(--muted)}
+.session-target {font-size:16px;color:var(--ink-2);margin:0 0 24px}
+.session-card .setrow {display:flex!important;flex-direction:column;align-items:stretch;gap:16px;padding:0;background:none}
+.session-card .setwrap,.session-card .lr {display:contents}
+.session-field {display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:650;min-width:0}
+.session-step {display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:8px;align-items:center}
+.session-step input.sinput {width:100%;height:56px;min-width:0;font-size:24px;text-align:center;max-width:none}
+.session-step button {height:48px;width:48px;padding:12px;border:1px solid var(--border-2);border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
+.session-step svg {width:22px;height:22px}
+.session-card .session-clean {display:flex;gap:12px;align-items:center;font-size:14px;margin:16px 0}
+.session-clean input {width:44px;height:44px;flex:none;accent-color:var(--accent)}
+.session-method {font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
+.session-effort {display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.session-effort button {min-width:44px;min-height:44px;padding:8px;border:1px solid var(--border-2);border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
+.session-effort button[aria-pressed=true] {background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.session-done {min-height:60px;width:100%;font-size:18px;margin:24px 0 12px}
+[data-session-plates] {margin-top:20px;font-size:13px;color:var(--muted)}
+.session-plates {display:flex;align-items:center;gap:4px;position:relative;min-height:76px;padding:5px 10px;isolation:isolate}
+.session-bar {position:absolute;height:8px;left:0;right:0;top:calc(50% - 4px);background:var(--steel);z-index:-1}
+.session-plate {min-width:28px;background:var(--steel);color:var(--surface);font-size:12px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-style:normal}
+.session-rest {text-align:center;padding:20px 0}
+.session-rest h2 {font-size:28px;margin:0 0 20px}
+.session-clock {position:relative;width:min(240px,100%);aspect-ratio:1;margin:0 auto}
+.session-clock svg {width:100%;height:100%;transform:rotate(-90deg)}
+.session-clock circle {fill:none;stroke:var(--accent);stroke-width:5;stroke-dasharray:283;stroke-linecap:round}
+.session-clock .session-track {stroke:var(--border);stroke-dasharray:none}
+.session-clock span {position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(32px,10vw,48px);font-variant-numeric:tabular-nums;font-weight:650}
+.session-rest p {font-size:15px;color:var(--muted);line-height:1.5}
+.session-rest-actions {display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
+:host(.session-focus) #rest,:host(.session-focus) #resttimer,:host(.session-focus) header,:host(.session-focus) #tabbar {display:none!important}
+:host(.session-focus) main {padding-top:16px;padding-bottom:24px}
+.session-card [hidden],.session-stage>[hidden] {display:none!important}
+.excard-actions {flex-wrap:wrap;overflow:visible;gap:8px}
+.excard-actions .tinybtn,.exhead .setmenu,.setopt,.donebtn {min-width:44px;min-height:44px}
+.setrow,.setrow-head,:host(#m-str) .setrow,:host(#m-str) .setrow-head,:host(#m-lift) .setrow,:host(#m-lift) .setrow-head {grid-template-columns:24px minmax(60px,1.15fr) minmax(52px,.95fr) 44px 44px 44px;gap:8px}
+:host(#m-cal) .setrow,:host(#m-cal) .setrow-head {grid-template-columns:24px minmax(64px,1fr) 44px 44px 44px;gap:8px}
+.sinput {font-size:16px;min-width:0}
+.targetrow input,.targetline input,.targets input,.tinput input {min-height:44px;min-width:44px}
+.setrow {scroll-margin-top:30vh;max-width:680px}
+@media(min-width:760px) {.setgrid {max-width:680px}}
+@media(max-width:500px) {
+  .setrow,.setrow-head,:host(#m-str) .setrow,:host(#m-str) .setrow-head,:host(#m-lift) .setrow,:host(#m-lift) .setrow-head {grid-template-columns:20px minmax(44px,1.15fr) minmax(44px,.95fr) 44px 44px 44px;gap:8px}
+  .setgrid {padding-left:8px;padding-right:8px}
+}
+@media(max-width:359px) {
+  .setrow-head {display:none!important}
+  .setrow,:host(#m-str) .setrow,:host(#m-lift) .setrow,:host(#m-cal) .setrow {display:flex;flex-wrap:wrap;gap:8px;padding:10px 4px;align-items:center}
+  .setrow .sidx {width:24px;flex:none}
+  .setrow .setwrap {flex:1 1 60px;min-width:44px}
+  .setrow>.sinput {flex:1 1 60px;width:60px}
+  .setrow .lr {flex:1 1 112px;min-width:0;gap:8px}
+  .setrow .lr input {min-width:44px}
+  .setrow>.donebtn,.setrow>.setopt {margin-top:0;flex:0 0 44px}
+  .setrow>.pl,.setrow>.calrow {flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+  .session-top {gap:8px;flex-wrap:wrap}
+  .session-top>div {flex-basis:100%;order:-1}
+  .session-top>.btn {flex:1}
+}
+@media(max-width:259px) {
+  main {padding-left:8px!important;padding-right:8px!important}
+  .exhead {padding-left:8px;padding-right:8px;gap:8px;flex-wrap:wrap}
+  .exhead .en {width:100%}
+  .excard-actions {padding-left:8px;padding-right:8px}
+  .train-head {flex-wrap:wrap}
+  .train-head .tt {flex-basis:calc(100% - 56px)}
+  .session-step {grid-template-columns:44px minmax(0,1fr) 44px}
+  .session-step button {width:44px}
+  .session-step input.sinput {font-size:20px}
+}
+.target-row {display:flex;flex-wrap:wrap;gap:8px}
+.target-row .tinput {flex-wrap:wrap;gap:8px;padding:4px;min-width:0;max-width:100%}
+.target-row .tinput input {font-size:16px;flex:0 0 44px}
+.target-row .tinput:first-child {flex-basis:100%;justify-content:flex-start}
+@media(max-width:259px) {
+  .target-row {padding-left:8px;padding-right:8px}
+  .target-row .tinput {flex:1 1 100%;justify-content:flex-start}
+  .target-row .tinput label {flex-basis:100%}
+}
+.session-top {position:sticky;top:var(--shell-safe-top,0px);z-index:20;background:var(--bg);padding-top:8px}
+:host(.session-focus) .toast {top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto}
+:host(.session-running) #view button,:host(.session-running) #view input:not([type=range]) {min-height:44px;min-width:44px}
+:host(.session-running) #view .pillpick,:host(.session-running) #view .row {gap:8px!important}
+:host(.session-running) .train-head {gap:8px}

@@ -594,7 +594,7 @@ test('the set shows what is asked: a capped plus set has no plus, and the RPE an
   S.fn.startProgramDay(0); S.T.state.route = 'train'; S.fn.render();
   const en = S.T.state.active.entries[0], pi = en.sets.findIndex(s => s.kind === 'plus');
   assert.match(en.label, /RPE 7 max/);
-  const row = S.T.run("$('#view').innerHTML").match(/<div class="setrow k-plus[\s\S]*?aria-label="Reps">/)[0];
+  const row = S.T.run("$('#view').innerHTML").match(/<div class="setrow k-plus[\s\S]*?aria-label="Set \d+ reps">/)[0];
   assert.ok(!/\d\+</.test(row) && !/placeholder="\d\+"/.test(row), row);
   en.sets[pi].reps = 9; S.fn.toggleDone(0, pi);
   assert.ok(!S.T.run("$('#toast').innerHTML").includes('plus set'), 'no "reps on the plus set" for a set capped at RPE 7');

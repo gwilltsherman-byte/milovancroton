@@ -113,3 +113,7 @@ button,a,input,textarea{touch-action:manipulation}
   .print-sum #sum .noprint{display:none!important}
   .print-sum #sum p,.print-sum #sum .last{color:#000}
 }
+
+/* The focus card folds day parts and rest into its own single top line. */
+html.session-focus-active #tgstrip {display:none!important}
+.tgs-p.done {opacity:1;color:var(--shell-muted)}

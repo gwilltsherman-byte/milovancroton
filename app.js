@@ -1863,6 +1863,133 @@ window.Safe=(function(){
 
 ;
 
+/* ==================== NEXT SET SESSION VIEW ====================
+   The focus card uses the same fields and actions as the list, so both views save precisely the same sets. */
+window.MiloSession=(()=>{
+  const views=new Map(), esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  const icon=(kind)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="${kind==='plus'?'M5 12h14M12 5v14':'M5 12h14'}"/></svg>`;
+  const ios=()=>/iP(ad|hone|od)/.test(navigator.userAgent)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+  const alertsAvailable=()=>!ios()&&'Notification' in window&&'serviceWorker' in navigator;
+  async function requestAlerts(){
+    if(!alertsAvailable()) return 'unavailable';
+    if(Notification.permission!=='default') return Notification.permission;
+    if(Prefs.get('restAlertsAsked',false)) return 'default';
+    Prefs.set({restAlertsAsked:true});
+    try{ return await Notification.requestPermission(); }catch(e){ return 'unavailable'; }
+  }
+  function restOver(root){
+    let live=root.querySelector('[data-rest-status]');
+    if(!live){ live=document.createElement('div'); live.className='session-sr'; live.dataset.restStatus=''; live.setAttribute('role','status'); live.setAttribute('aria-live','polite'); root.appendChild(live); }
+    live.textContent=''; setTimeout(()=>live.textContent='Rest over',20);
+    if(document.hidden&&alertsAvailable()&&Notification.permission==='granted'){
+      navigator.serviceWorker.getRegistration().then(r=>r&&r.showNotification('Rest over',{body:'Ready for your next set.',tag:'milo-rest'})).catch(()=>{});
+    }
+  }
+  function descriptor(el){ if(!el||!el.dataset) return null; const d={}; for(const k of ['act','field','ex','set','session']) if(el.dataset[k]!=null)d[k]=el.dataset[k]; return Object.keys(d).length?d:null; }
+  function find(root,d){ if(!d)return null; return [...root.querySelectorAll('button,input,textarea,select')].find(el=>Object.keys(d).every(k=>el.dataset[k]===d[k])&&el.getClientRects().length); }
+  function first(a){
+    for(let ei=0;ei<a.entries.length;ei++){
+      const entry=a.entries[ei]; if(!entry.sets.some(s=>!s.done))continue;
+      if(entry.sg){ let best=ei, count=entry.sets.filter(s=>s.done).length;
+        for(let j=ei+1;j<a.entries.length&&a.entries[j].sg===entry.sg;j++){ const e=a.entries[j], n=e.sets.filter(s=>s.done).length; if(e.sets.some(s=>!s.done)&&n<count){best=j;count=n;} } ei=best;
+      }
+      return {ei,si:a.entries[ei].sets.findIndex(s=>!s.done)};
+    } return null;
+  }
+  function active(c){ return c.st.route==='train'&&!!c.st.active; }
+  function focus(c){ return c.st.settings.sessionView!=='list'; }
+  function frame(c,on){
+    c.root.host.classList.toggle('session-focus',!!on);
+    if(!window.__hub||window.__hub.current()===c.m){ document.documentElement.classList.toggle('session-focus-active',!!on); if(window.__sessionMode)window.__sessionMode(!!on); }
+  }
+  function install(root){
+    const c={root,returnTo:null}; views.set(root,c);
+    root.addEventListener('click',e=>{ const el=e.target.closest('button,input,select,textarea'); if(el)c.returnTo=descriptor(el); },true);
+    root.addEventListener('focusin',e=>{ const d=descriptor(e.target); if(d)c.returnTo=d; });
+    root.addEventListener('click',e=>{
+      const b=e.target.closest('[data-session]'); if(!b)return;
+      const a=b.dataset.session;
+      if(a==='list'||a==='focus'){ c.st.settings.sessionView=a; c.save(); c.returnTo={session:a==='list'?'focus':'list'}; c.render(); window.scrollTo(0,0); }
+      else if(a==='done'){ const n=first(c.st.active); if(n)c.done(n.ei,n.si,c.side); }
+      else if(a==='step'){ const input=b.parentElement.querySelector('input'), n=Num.parse(input.value)||0, step=Number(b.dataset.step)||1;
+        const value=Math.round((n+step)*1000)/1000; input.value=input.dataset.field==='rpe'?Math.max(1,Math.min(10,value)):Math.max(0,value); input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true})); input.focus(); plates(c); }
+      else if(a==='effort'){ const input=c.root.querySelector('.session-card input[data-field="'+b.dataset.field+'"]'); if(input){ input.value=b.dataset.v; input.dispatchEvent(new Event('input',{bubbles:true})); b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); } }
+      else if(a==='skip'){ c.stop(); c.save(); c.returnTo=null; c.render(); }
+      else if(a==='add'){ const v=c.st.active; if(v&&v.restEndsAt){ v.restEndsAt+=30000; if(v.restDuration!=null)v.restDuration+=30; else v.restDur=(v.restDur||0)+30; c.save(); tick(c); } }
+    });
+    root.addEventListener('input',e=>{ if(e.target.closest('.session-card'))e.target.classList.remove('assumed'); if(e.target.matches('.session-card input[data-field="w"], .session-card input[data-field="weight"]'))plates(c); });
+    let down=null;
+    root.addEventListener('pointerdown',e=>{ if(e.isPrimary&&e.pointerType==='touch'&&!e.target.closest('input,button,textarea'))down={x:e.clientX,y:e.clientY,id:e.pointerId}; });
+    root.addEventListener('pointerup',e=>{ const d=down; down=null; if(d&&d.id===e.pointerId&&Math.abs(e.clientX-d.x)>70&&Math.abs(e.clientY-d.y)<40&&active(c)){ c.st.settings.sessionView=focus(c)?'list':'focus'; c.save(); c.render(); window.scrollTo(0,0); } });
+    root.addEventListener('pointercancel',()=>{down=null;});
+    return c;
+  }
+  function plates(c){
+    const out=c.root.querySelector('[data-session-plates]'); if(!out||!c.kit)return;
+    const inp=c.root.querySelector('.session-card input[data-field="'+c.kit.field+'"]'), n=inp&&Num.parse(inp.value);
+    const kg=n==null?null:c.kit.unit==='lb'? n/2.2046226218 : n;
+    const ps=kg==null?null:Kit.plates(kg,c.kit.bar||'bar',c.kit.unit);
+    out.innerHTML=MiloSecurity.html(ps===null?'':`<span>Per side</span><div class="session-plates" role="img" aria-label="${esc(ps.length?ps.map(p=>p.c+' × '+p.p+' '+c.kit.unit).join(', '):'Empty bar')}"><i class="session-bar"></i>${ps.flatMap(p=>Array.from({length:p.c},()=>`<i class="session-plate" style="height:${30+Math.min(40,p.p)}px">${p.p}</i>`)).join('')}</div>`);
+  }
+  function mount(root,m,st,render,save,meta,done,stop){
+    const c=views.get(root)||install(root); Object.assign(c,{m,st,render,save,meta,done,stop});
+    const view=root.getElementById('view'); if(!view)return;
+    const on=active(c)&&focus(c); root.host.classList.toggle('session-running',active(c)); frame(c,on);
+    if(!active(c))return;
+    const next=first(st.active), old=c.returnTo;
+    if(!on){
+      view.insertAdjacentHTML('afterbegin',MiloSecurity.html('<div class="session-switch"><button class="btn ghost" data-session="focus">Next set</button></div>'));
+      let target=find(root,old);
+      if(old&&old.act==='toggle-done'){
+        const buttons=[...view.querySelectorAll('[data-act="toggle-done"]')], button=buttons.find(b=>{ const e=st.active.entries[+b.dataset.ex]; return e&&!e.sets[+b.dataset.set].done; });
+        if(button){ const row=button.closest('.setrow'); target=row.querySelector('input')||button;
+          if(old.ex!==button.dataset.ex) setTimeout(()=>{ const y=row.getBoundingClientRect().top+window.scrollY-window.innerHeight/3; window.scrollTo({top:Math.max(0,y),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); },0); }
+      }
+      if(target)target.focus({preventScroll:true}); c.returnTo=null; return;
+    }
+    let row='', detail=null, setup='', name='All sets logged', target='Finish, or use List to change a set.', setText='';
+    if(next){
+      detail=meta(next.ei,next.si); c.kit=detail.kit||null; c.side=detail.side||null;
+      name=detail.name; target=detail.target; setText='Set '+(next.si+1)+' of '+st.active.entries[next.ei].sets.length+(detail.side?' · '+(detail.side==='l'?'Left':'Right'):'');
+      const btn=view.querySelector('[data-act="toggle-done"][data-ex="'+next.ei+'"][data-set="'+next.si+'"]'), original=btn&&btn.closest('.setrow');
+      if(original){ const copy=original.cloneNode(true); copy.querySelector('.sidx')?.remove(); copy.querySelector('[data-act="toggle-done"]')?.remove(); copy.querySelector('[data-act="set-menu"]')?.remove();
+        if(detail.side)copy.querySelector('input[data-field="'+(detail.side==='l'?'r':'l')+'"]')?.remove();
+        copy.querySelectorAll('input').forEach(input=>{
+          const field=input.dataset.field, numeric=Num.parse(input.value), ph=detail.values&&detail.values[field]!=null? detail.values[field] : Num.parse(String(input.placeholder).replace(/^~/,''));
+          if(numeric==null&&ph!=null){ input.value=ph; input.setAttribute('value',String(ph)); input.classList.add('assumed'); }
+          const label=input.getAttribute('aria-label')||field, wrap=document.createElement('label'); wrap.className='session-field';
+          const title=document.createElement('span'); title.textContent=label.replace(/^Set \d+ /,''); wrap.appendChild(title); input.replaceWith(wrap);
+          const box=document.createElement('div'); box.className='session-step'; wrap.appendChild(box);
+          const step=(field==='w'||field==='weight')? detail.step||1 : field==='rpe'?0.5:1;
+          box.innerHTML=MiloSecurity.html(`<button type="button" data-session="step" data-step="${-step}" aria-label="Decrease ${esc(label)}">${icon('minus')}</button>`);
+          box.appendChild(input); box.insertAdjacentHTML('beforeend',MiloSecurity.html(`<button type="button" data-session="step" data-step="${step}" aria-label="Increase ${esc(label)}">${icon('plus')}</button>`));
+        }); row=copy.outerHTML;
+      }
+      setup=detail.setup||'';
+    }
+    const strip=document.getElementById('tgstrip'), day=strip&&!strip.hidden?strip.querySelector('.tgs-main')?.textContent:'';
+    view.innerHTML=MiloSecurity.html(`<div class="session-top"><button class="btn ghost" data-session="list">List</button><div><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${fmt(Math.max(0,Math.floor((Date.now()-st.active.startedAt)/1000)))} elapsed</span></div><button class="btn primary" data-act="finish">Finish</button></div>
+      <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
+      <section class="session-rest" hidden><h2>Rest</h2><div class="session-clock" role="timer" aria-label="Rest remaining"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="session-track" cx="50" cy="50" r="45"/><circle data-session-arc cx="50" cy="50" r="45"/></svg><span data-session-time></span></div><p>Next: ${esc(name)}${setText?' · '+esc(setText):''}</p><div class="session-rest-actions"><button class="btn ghost" data-session="add">+30 s</button><button class="btn primary" data-session="skip">Skip rest</button></div></section></div>`);
+    plates(c); tick(c);
+    const restore=find(root,old)||view.querySelector('.session-rest:not([hidden]) button, .session-card:not([hidden]) .session-step input, .session-done');
+    if(restore)restore.focus({preventScroll:true}); c.returnTo=null;
+  }
+  function tick(c){
+    if(!active(c)||!focus(c)||c.root.host.hidden)return;
+    const a=c.st.active, rest=c.root.querySelector('.session-rest'), card=c.root.querySelector('.session-card'); if(!rest||!card)return;
+    const left=Math.max(0,Math.ceil(((a.restEndsAt||0)-Date.now())/1000)), resting=left>0;
+    const changed=rest.hidden===resting; rest.hidden=!resting; card.hidden=resting;
+    const time=rest.querySelector('[data-session-time]'); time.textContent=fmt(left);
+    const dur=a.restDuration||a.restDur||left, arc=rest.querySelector('[data-session-arc]'); arc.style.strokeDashoffset=String(283*(1-Math.min(1,left/Math.max(1,dur))));
+    if(changed){ const el=resting?rest.querySelector('button'):card.querySelector('.session-step input,button'); if(el)el.focus({preventScroll:true}); }
+    const day=c.root.querySelector('[data-session-day]'), strip=document.getElementById('tgstrip'); if(day&&strip&&!strip.hidden)day.textContent=strip.querySelector('.tgs-main')?.textContent||a.name;
+  }
+  setInterval(()=>views.forEach(tick),250);
+  return {mount,restOver,alertsAvailable,requestAlerts};
+})();
+
 const MOD_INIT = {
   lift: function(__root){
 
@@ -2531,6 +2658,19 @@ function render(){
   view.scrollTop = 0;
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   if(state.route==='library'){ const si=$('#libsearch'); if(si){ si.value=state.libSearch; } }
+  if(window.MiloSession) window.MiloSession.mount(__root,'lift',state,render,save,(ei,si)=>{
+    const e=state.active.entries[ei], x=exById(e.exId)||e, st=e.sets[si], prev=lastPerf(e.exId), eq=kitEq(x.equipment,st.weight), rir=lastFailSet(e,si)?0:e.target.rir;
+    return {name:e.name, target:(e.target.repLow===e.target.repHigh?e.target.repLow:e.target.repLow+'–'+e.target.repHigh)+' '+(isHold(e.exId)?'seconds':'reps')+' · '+rir+' in reserve', step:Kit.step(eq,unit()), effort:st.type==='warmup'?null:'rir', effortValue:st.rir==null?rir:st.rir,
+      kit:eq==='bar'?{field:'weight',unit:unit(),bar:'bar'}:null};
+  },(ei,si)=>{
+    const set=state.active.entries[ei].sets[si], field=f=>__root.querySelector('[data-field="'+f+'"][data-ex="'+ei+'"][data-set="'+si+'"]');
+    // An untouched suggestion must log the number still on the card, even after its weight changes.
+    const reps=field('reps'), weight=field('weight');
+    if(set.reps==null&&reps&&Num.int(reps.value)!=null){ set.reps=Num.int(reps.value); set.assumed=true; }
+    if(set.weight==null&&weight&&Num.parse(weight.value)!=null)set.weight=fromDisp(weight.value);
+    toggleDone(ei,si);
+  },stopRest);
+
 }
 
 function renderTabs(){
@@ -2789,7 +2929,7 @@ function exerciseCard(en, ei){
       ${ls?`<button class="tinybtn" data-act="fill-last" data-ex="${ei}">${I.copy} Same as last</button>`:''}
       ${bw||isAssisted(en.exId)? '' : `<button class="tinybtn" data-act="loading" data-ex="${ei}">${I.barbell} Loading</button>`}
       <button class="tinybtn" data-act="ex-swap" data-ex="${ei}">${I.swap} Swap</button>
-      ${en.sets.length>1?`<button class="tinybtn danger" data-act="del-last-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
+
     </div>
   </div>`;
 }
@@ -2809,8 +2949,8 @@ function setRow(en, ei, s, si){
     segHtml = s.segments.map((sg,gi)=>`
       <div class="seg">
         <div class="slbl">drop</div>
-        <input class="sinput" inputmode="decimal" data-field="segweight" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.weight!=null?fmtW(sg.weight):''}" placeholder="${unit()}" aria-label="Drop set weight">
-        <input class="sinput" inputmode="numeric" data-field="segreps" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.reps!=null?sg.reps:''}" placeholder="reps" aria-label="Drop set reps">
+        <input class="sinput" inputmode="decimal" data-field="segweight" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.weight!=null?fmtW(sg.weight):''}" placeholder="${unit()}" aria-label="Set ${si+1} drop ${gi+1} weight">
+        <input class="sinput" inputmode="numeric" data-field="segreps" data-ex="${ei}" data-set="${si}" data-seg="${gi}" value="${sg.reps!=null?sg.reps:''}" placeholder="reps" aria-label="Set ${si+1} drop ${gi+1} reps">
         <div></div><div></div>
         <button class="setopt" data-act="del-seg" data-ex="${ei}" data-set="${si}" data-seg="${gi}" aria-label="Remove drop">${I.x}</button>
       </div>`).join('');
@@ -2822,7 +2962,7 @@ function setRow(en, ei, s, si){
       : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev&&prev.weight!=null?fmtW(prev.weight):'&ndash;'}" aria-label="Set ${idxLabel} weight"></div>`}
     <div class="setwrap"><input class="sinput${s.assumed?' assumed':''}" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${idxLabel} reps${s.assumed?', assumed from the hint: type the real count':''}"${s.assumed?' title="Assumed from the hint. Type the real count if it was different."':''}></div>
     <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${calSet(en, ei)===si? '?' : lastFailSet(en,si)? 0 : en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
-    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
+    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-pressed="${s.done}" aria-label="${s.done?'Set '+(si+1)+' logged':'Log set '+(si+1)}">${I.check}</button>
     <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     ${tagBadge? `<div style="grid-column:1/7;padding:0 2px 2px">${tagBadge}</div>`:''}
     ${calSet(en, ei)===si? `<div class="calrow">
@@ -4888,7 +5028,7 @@ function toggleDone(ei,si){
   if(noW) toast('Logged with no weight. Type it in, and next time starts from it');
   else if(cal) toast(cal);
   else if(adj) toast(adj);
-  if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
+  if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
 }
 
 /* ---- REST TIMER ---- */
@@ -4939,7 +5079,7 @@ function tickRest(){
   el.classList.add('on');
   if(rem<=0 && !a.restDone){ // finished -- alert exactly once
     a.restDone=true;
-    chime(); buzz([140,70,140,70,200]);
+    chime(); buzz([140,70,140,70,200]); if(window.MiloSession) window.MiloSession.restOver(__root);
     el.classList.add('flash');
     setTimeout(()=>{ if(state.active) state.active.restEndsAt=null; el.classList.remove('on','flash'); save(); }, 2200);
   }
@@ -8581,6 +8721,7 @@ function afterAdvances(rec){ const done=checkGoals();
   if(done.length) celebrate(done,0,next); else next(); }
 function sessionDone(rec){
   tb.seal();
+  const next=window.__hub&&window.__hub.nextAfter&&window.__hub.nextAfter('cal');
   const n=rec.entries.reduce((m,e)=>m+e.sets.length,0);
   const near=activeGoals().filter(g=>rec.entries.some(e=>e.ladderId===g.l)).map(g=>{
     const path=pathFor(g.l,g), at=path.indexOf(curIdx(g.l));
@@ -8599,7 +8740,7 @@ function sessionDone(rec){
         </div>
       </div>
       ${near?`<div class="section-label" style="margin:0 3px 4px">Your goals <span class="ln"></span></div>${near}`:''}
-      <button class="btn primary block" data-act="close-modal" style="margin-top:14px">${I.check} Done</button>
+      <button class="btn primary block" data-act="${next?'session-next':'close-modal'}" style="margin-top:14px">${next?'Next: '+esc(next)+' →':I.check+' Done'}</button>
     </div>`);
 }
 /* rest timer */
@@ -8613,7 +8754,7 @@ function tickRest(){
   const a=state.active, el=$('#rest');
   if(!a||!a.restEndsAt||!el){ if(el) el.classList.remove('on'); return; }
   const left=Math.round((a.restEndsAt-Date.now())/1000);
-  if(left<=0){ el.classList.remove('on'); a.restEndsAt=null; save();
+  if(left<=0){ el.classList.remove('on'); a.restEndsAt=null; save(); if(window.MiloSession) window.MiloSession.restOver(__root);
     if(state.settings.vibrate&&navigator.vibrate) try{navigator.vibrate([120,70,120]);}catch(e){}
     toast('Rest done'); return; }
   el.classList.add('on');
@@ -9016,7 +9157,7 @@ function exCard(e,ei){
       <div class="sidx">${si+1}</div>
       ${side? `<div class="lr">${box(s,si,0)}${box(s,si,1)}</div>` : box(s,si,null)}
       ${third}
-      <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="${s.done?'Mark set incomplete':'Log set'}">${I.check}</button>
+      <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-pressed="${s.done}" aria-label="${s.done?'Set '+(si+1)+' logged':'Log set '+(si+1)}">${I.check}</button>
       <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     </div>${note?`<div class="muted" style="font-size:11px;line-height:1.4;padding:0 6px 6px 34px">${note}</div>`:''}`; }).join('');
   return `<div class="card excard">
@@ -9045,7 +9186,7 @@ function exCard(e,ei){
       <button class="tinybtn" data-act="add-set" data-ex="${ei}">${I.plus} Add set</button>
       <button class="tinybtn" data-act="fill-target" data-ex="${ei}">${I.copy} Fill target</button>
       <button class="tinybtn" data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}">${I.info} How to</button>
-      ${e.sets.length>1?`<button class="tinybtn danger" data-act="del-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
+
     </div>
   </div>`;
 }
@@ -9303,6 +9444,19 @@ function render(){
   renderTabs();
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   const a=state.active; if(a&&a.restEndsAt) tickRest();
+  if(window.MiloSession) window.MiloSession.mount(__root,'cal',state,render,save,(ei,si)=>{
+    const e=state.active.entries[ei], st=stepsOf(e.ladderId)[e.stepIdx], set=e.sets[si], f=setupField(st), target=e.target==null?st.v:e.target;
+    const side=perSide(st)?set.lr&&set.lr[0]!=null?'r':'l':null;
+    return {name:st.n, target:target+(e.kind==='hold'?' s hold':' reps')+(side?' each side':''), side,
+      effort:e.kind==='hold'||practiceOf(e.ladderId,e.stepIdx)==='balance'||practiceOf(e.ladderId,e.stepIdx)==='power'?null:'rir', effortValue:set.rir,
+      setup:(f?doseInput(e,ei,st,f):'')+`<label class="session-clean"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''}> Clean form, full range, no pain</label><div class="session-method">${esc(/negative|lowering|eccentric/i.test(st.id+' '+st.n)?'Lowering practice':f&&f.key!=='load'?'Assisted movement':'Strict movement')} · <button class="tinybtn" data-act="ex-menu" data-ex="${ei}">Change movement</button></div>`};
+  },(ei,si,side)=>{
+    const e=state.active.entries[ei], set=e.sets[si], st=stepsOf(e.ladderId)[e.stepIdx];
+    if(holdOn(ei,si)){ holdGo(ei,si); return; }
+    if(side==='l'){ const inp=__root.querySelector('input[data-field="l"]'), v=Num.int(inp&&inp.value); set.lr=[v==null?e.target==null?st.v:e.target:v,set.lr&&set.lr[1]!=null?set.lr[1]:null]; save(); render(); return; }
+    toggleDone(ei,si);
+  },stopRest);
+
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['goals','Goals',I.target],['progress','Progress',I.chart],['library','Library',I.book]];
@@ -9323,6 +9477,7 @@ __root.addEventListener('click', e=>{
     case 'goal-toggle': { const card=el.closest('.goal-full'), open=!card.classList.contains('open');
       goalOpen[el.dataset.id]=open; card.classList.toggle('open',open); el.setAttribute('aria-expanded',String(open)); card.querySelector('.goal-body').hidden=!open; break; }
     case 'close-modal': closeModal(); break;
+    case 'session-next': closeModal(); if(window.__hub&&window.__hub.next)window.__hub.next('cal'); break;
     case 'settings': openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'evidence-lib': openEvidenceLib(); break;
@@ -10634,7 +10789,7 @@ function tickRest(){
   $('#restl').textContent=a.restWarm?'Warm-up rest':'Rest';
   $('#restv').textContent=left>0? fmtDur(left) : 'Go';
   $('#restbar').style.width=(a.restDur? (1-left/a.restDur)*100 : 100).toFixed(1)+'%';
-  if(left<=0 && !a.restDone){ a.restDone=true; chime(); buzz([140,70,140]); el.classList.add('flash');
+  if(left<=0 && !a.restDone){ a.restDone=true; chime(); buzz([140,70,140]); if(window.MiloSession) window.MiloSession.restOver(__root); el.classList.add('flash');
     setTimeout(()=>{ if(state.active&&state.active.restDone){ state.active.restEndsAt=null; save(); } el.classList.remove('on','flash'); },2500); }
 }
 setInterval(()=>{ if(state&&state.active&&state.active.restEndsAt) tickRest(); },250);
@@ -11097,7 +11252,7 @@ function exCard(en,ei){
       <button class="tinybtn" data-act="add-set" data-ex="${ei}">${I.plus} Add set</button>
       ${X.k==='load'?`<button class="tinybtn" data-act="add-warm" data-ex="${ei}">${I.flame} Warm-ups</button>`:''}
       ${plated(en.liftId)?`<button class="tinybtn" data-act="plates-for" data-ex="${ei}">${I.bar} Plates</button>`:''}
-      ${en.sets.length>1?`<button class="tinybtn danger" data-act="rm-last" data-ex="${ei}">${I.trash} Remove last</button>`:''}
+
     </div></div>`;
 }
 function setRow(en,ei,s,si,isNext,n){
@@ -11109,15 +11264,15 @@ function setRow(en,ei,s,si,isNext,n){
   const showPl= X.k!=='bw' && !s.done && s.w!=null && (!prev || prev.done || Math.abs((prev.w||0)-s.w)>1e-6);
   const pl= showPl? `<div class="pl mono" id="pl-${ei}-${si}">${loadNote(en.liftId,s.w)}</div>` : '';
   const wcell= X.k==='bw'? `<div class="nil mono bwcell">BW</div>`
-    : `<input class="sinput" inputmode="decimal" data-field="w" data-ex="${ei}" data-set="${si}" value="${inW(s.w)}" placeholder="${X.k==='added'?'+0':u()}" aria-label="Weight">`;
+    : `<input class="sinput" inputmode="decimal" data-field="w" data-ex="${ei}" data-set="${si}" value="${inW(s.w)}" placeholder="${X.k==='added'?'+0':u()}" aria-label="Set ${si+1} weight">`;
   // an RPE logged from the target (the box was left untouched) shows apart from one you typed
   const chk= s.chk&&!s.done? `<button class="pl chk" data-act="chk-why" data-ex="${ei}" data-set="${si}">${I.gauge} RPE check: at ${s.tr} reps, call your reps left, then keep going to failure. Only with safeties set or a spotter</button>` : '';
   return `<div class="setrow k-${s.kind} ${s.done?'done':''} ${isNext?'next':''}">
     <div class="sidx">${lbl}</div>
     ${wcell}
-    <input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Reps">
-    ${s.kind==='warm'?'<div class="nil"></div>':`<input class="sinput rpe${s.ra?' auto':''}" inputmode="decimal" data-field="rpe" data-ex="${ei}" data-set="${si}" value="${s.rpe!=null?s.rpe:''}" placeholder="${s.trpe!=null?s.trpe:'RPE'}" aria-label="${s.ra?'RPE, logged from the target':'RPE'}">`}
-    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
+    <input class="sinput" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${si+1} reps">
+    ${s.kind==='warm'?'<div class="nil"></div>':`<input class="sinput rpe${s.ra?' auto':''}" inputmode="decimal" data-field="rpe" data-ex="${ei}" data-set="${si}" value="${s.rpe!=null?s.rpe:''}" placeholder="${s.trpe!=null?s.trpe:'RPE'}" aria-label="Set ${si+1} RPE${s.ra?', logged from the target':''}">`}
+    <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-pressed="${s.done}" aria-label="${s.done?'Set '+(si+1)+' logged':'Log set '+(si+1)}">${I.check}</button>
     <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     ${pl}${chk}</div>`;
 }
@@ -11721,6 +11876,12 @@ function render(){
   renderTabs();
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   tickRest();
+  if(window.MiloSession) window.MiloSession.mount(__root,'str',state,render,save,(ei,si)=>{
+    const e=state.active.entries[ei], st=e.sets[si], eq=eqOf(e.liftId);
+    return {name:exName(e.liftId,e.vi), values:{reps:st.reps==null?st.tr:st.reps}, target:(st.tr||'Your reps')+(st.trHi?'–'+st.trHi:'')+' reps'+(st.trpe!=null?' · RPE '+st.trpe:''), step:Kit.step(eq,u()), effort:st.kind==='warm'?null:'rpe', effortValue:st.rpe==null?st.trpe:st.rpe,
+      kit:plated(e.liftId)?{field:'w',unit:u(),bar:EX[e.liftId].bar||'bar'}:null};
+  },toggleDone,stopRest);
+
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['program','Plan',I.cal],['progress','Progress',I.chart],['tools','Tools',I.calc]];

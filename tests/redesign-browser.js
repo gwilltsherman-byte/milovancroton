@@ -129,7 +129,7 @@
     }
 
     await pause(200);
-    const fixture=JSON.parse(localStorage.getItem('hyplog.v1'));
+    const fixture=JSON.parse(localStorage.getItem('hyplog.v1')); fixture.settings.sessionView='list';
     const date=new Date(); date.setDate(date.getDate()-2); date.setHours(12,0,0,0);
     fixture.route='today'; fixture.active=null; fixture.repeat=null;
     fixture.history=[{id:'redesign-test-session',name:'Redesign test fixture — one saved workout',date:date.getTime(),durationSec:600,prs:[],entries:[{
@@ -197,7 +197,7 @@
       fx.route='train';
       fx.active={id:'share-active',name:'Pull day',startedAt:Date.now(),restEndsAt:null,restDuration:0,
         entries:[Object.assign(pull([{type:'work',weight:null,reps:null,rir:null,done:false}]),{target:{repLow:6,repHigh:12,rir:2,rest:180},mi:0})]};
-      const lad={v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:4}, placed:{pull:true}, tests:[], active:null,
+      const lad={v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false, rest:0}, rung:{pull:4}, placed:{pull:true}, tests:[], active:null,
         goals:[{id:'g10', key:'pullup10', n:'10 strict pull-ups', l:'pull', r:4, std:10, sup:['row'], added:1, achieved:null}],
         history:[{id:'lad-1', name:'Ladder', date:day(1), entries:[{ladderId:'pull', stepIdx:4, kind:'reps', target:8, setup:{}, clean:true, role:'goal',
           sets:[7,7,6].map(v=>({v, done:true, clean:true}))}]}]};
@@ -247,10 +247,10 @@
     // Ladder and Strength: Start another keeps the session going open beside the next one
     { frame.remove(); frame=null;
       const now=Date.now();
-      localStorage.setItem('proladder.v1',JSON.stringify({v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:4}, placed:{pull:true}, tests:[], history:[],
+      localStorage.setItem('proladder.v1',JSON.stringify({v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false, rest:0}, rung:{pull:4}, placed:{pull:true}, tests:[], history:[],
         goals:[{id:'g10', key:'pullup10', n:'10 strict pull-ups', l:'pull', r:4, std:10, sup:['row'], added:1, achieved:null}],
         active:{id:'lad-open', name:'First one', startedAt:now-600000, restEndsAt:null, restDur:0, entries:[{ladderId:'pull', stepIdx:4, kind:'reps', target:8, setup:{}, sets:[{v:7, done:true}]}]}}));
-      localStorage.setItem('strlog.v2',JSON.stringify({v:2, onboarded:true, route:'today', settings:{unit:'kg'}, history:[],
+      localStorage.setItem('strlog.v2',JSON.stringify({v:2, onboarded:true, route:'today', settings:{sessionView:'list',unit:'kg'}, history:[],
         active:{id:'str-open', name:'First one', startedAt:now-600000, restEndsAt:null, restDur:0, note:null, plan:null, entries:[]}}));
       ({win,doc}=await load());
       for(const [m,key] of [['cal','proladder.v1'],['str','strlog.v2']]){
@@ -281,7 +281,7 @@
       fx.active={id:'share-str',name:'Push',startedAt:Date.now(),restEndsAt:null,restDuration:0,
         entries:[Object.assign(bench([{type:'work',weight:null,reps:null,rir:null,done:false}]),{target:{repLow:6,repHigh:10,rir:2,rest:180},mi:0})]};
       localStorage.setItem('hyplog.v1',JSON.stringify(fx));
-      localStorage.setItem('strlog.v2',JSON.stringify({v:2, onboarded:true, route:'today', settings:{unit:'kg', sound:true, vibrate:true}, active:null,
+      localStorage.setItem('strlog.v2',JSON.stringify({v:2, onboarded:true, route:'today', settings:{sessionView:'list',unit:'kg', sound:true, vibrate:true}, active:null,
         history:[{id:'str-bench',name:'Day A',date:day(1),entries:[{liftId:'bench',sets:[{kind:'work',w:100,reps:5,rpe:8,done:true}]}]}]}));
       ({win,doc}=await load()); root=rootOf(doc,'lift');
       await until(()=>root.querySelector('.excard'),'The session did not open');

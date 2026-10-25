@@ -18,7 +18,7 @@
   }
   const tabs=doc=>[...doc.querySelectorAll('.seg')].filter(b=>!b.hidden).map(b=>b.dataset.m).join(',');
   const saved=()=>JSON.parse(localStorage.getItem('trainer.together'));
-  const ladder={v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:2, pushh:3, core:1, row:1}, placed:{pull:true, pushh:true, core:true, row:true, scap:true},
+  const ladder={v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false, rest:0}, rung:{pull:2, pushh:3, core:1, row:1}, placed:{pull:true, pushh:true, core:true, row:true, scap:true},
     history:[], tests:[], active:null, goals:[{id:'goal-a', key:'pullup1', n:'First strict pull-up', l:'pull', r:4, std:1, sup:['row','core'], added:1, achieved:null}]};
   try {
     // a new person sees only Together, and it is where the app opens
