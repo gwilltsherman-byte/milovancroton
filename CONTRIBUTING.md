@@ -1,18 +1,38 @@
 # Contributing to Milo
 
-I welcome bug reports, feedback and small, focused pull requests. If something gets in the way of using Milo, please tell me what happened.
+Report a bug through the [issue forms](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose). Include the action, expected result, device and browser. A screenshot helps; personal workout backups and health details are not required.
 
-## Report a problem
+## Local development
 
-Use the [issue forms](https://github.com/gwilltsherman-byte/milovancroton/issues/new/choose). Include your browser, device, trainer, the steps you took, and what you expected. A screenshot helps when the problem is visual. You do not need to share your workout backup or personal health details.
+Serve the repository with `python3 -m http.server 8000 --bind 127.0.0.1`, then open `http://localhost:8000`. There is no build step or runtime dependency installation.
 
-## Try a change locally
+Use a separate local origin for test fixtures. They replace test storage temporarily and restore it when finished; do not run them against your everyday training origin.
 
-Serve the repository with any static web server, such as `python3 -m http.server 8000`, then open `http://localhost:8000`. There is no build step.
+## Code map
 
-The page is `index.html`, and the trainers live in `app.js`. Each trainer has its own shadow root and saved data. `security.js` checks backups and HTML rendering. After changing app assets, run `node tools/update-integrity.cjs`; it updates the recorded hashes and offline cache. Check the result with `node tools/update-integrity.cjs --check` and `node --test tests/*.test.cjs`. The exercise drawings are made in `tools/visuals` (the engine, and one file of poses per body area); after editing them run `node tools/visuals/build.cjs` before the integrity tool. `node tools/visuals/check.cjs` lists any hand or foot that misses what it should rest on, and `--sheet <file>` on the build writes a page of every figure for checking poses by eye.
+- `app.js`: shared training calculations, Muscle, Ladder, Strength, Together and the application shell. Section comments mark each region.
+- `trainer.css`, `shell.css`, `fonts.css`: trainer surfaces, shared navigation and local fonts.
+- `security.js`: backup validation, encryption, import limits, restore and HTML sanitization.
+- `index.html`, `manifest.webmanifest`, `sw.js`: app entry, installation and offline cache.
+- `tests/`: calculation tests and browser fixtures.
+- `tools/update-integrity.cjs`: script hashes, versioned assets and offline cache identifiers.
 
-Before opening a pull request, exercise the flow you changed on a narrow screen and with keyboard navigation. Check that sessions and backups still work if your change touches saved data. Describe what changed and how you checked it.
+Keep storage fields additive and preserve existing keys, exercise IDs and deep links. Escape user text and use `MiloSecurity.html` for HTML insertion. No inline handlers or external runtime services.
 
-For changes to training recommendations, include the source and explain its limits. Please open an issue before proposing a large redesign or changing the data format.
+## Required checks
 
+```sh
+node --check app.js
+node tools/update-integrity.cjs
+node tools/update-integrity.cjs --check
+node --test tests/*.test.cjs
+bash docs/build/tools/check-all.sh "$PWD" 18820
+```
+
+The Node command includes `tests/engine.test.cjs`. The full runner requires Playwright and its Chromium browser; neither is an app dependency. It discovers `tests/browser.html` and every `*-browser.html` fixture automatically.
+
+Alternatively, serve a dedicated test origin and open each browser fixture sequentially. Every fixture must report success. Inspect the changed flow at 390×844, at desktop width, and with keyboard navigation.
+
+## Pull requests
+
+Describe the concrete behavior change and validation. Preserve regression assertions; update exact wording only when the UI intentionally changes. Training changes need primary sources and an explanation of their limits. Do not claim a planning estimate is a validated physiological threshold.

@@ -300,9 +300,9 @@ Archivo gives titles a compact, assured character. Public Sans keeps instruction
 
 ## Layout
 
-The shared shell uses a 64px top bar and, from 1000px wide, a fixed 216px trainer rail. The training workspace is centered within the remaining area with a maximum width of 1120px. Desktop workspace gutters are 40px; content groups usually have 20px between them and 12px between adjacent controls or small cards.
+The shared shell uses a 64px top bar and, from 1000px wide, a fixed 216px navigation rail. The training workspace is centered within the remaining area with a maximum width of 1120px. Desktop workspace gutters are 40px; content groups usually have 20px between them and 12px between adjacent controls or small cards.
 
-Below 1000px, trainer selection becomes a compact horizontal strip and route navigation moves to a fixed bottom bar with safe-area padding. Leave content clearance for the bottom navigation, active timer, and Together strip. At 720–999px the workspace caps at 760px with 32px gutters. Ordinary phone gutters are 20px, with tighter adaptations below 390px.
+Below 1000px, Today, Train, Progress and Library use a fixed bottom bar with safe-area padding. Progress and Library use section filters. Leave content clearance for the bottom navigation, active timer, and Together strip. At 720–999px the workspace caps at 760px with 32px gutters. Ordinary phone gutters are 20px, with tighter adaptations below 390px.
 
 The shared header reserves `env(safe-area-inset-top)` above its controls in installed iPhone apps. Its measured full height positions the trainer navigation beneath it, including after scrolling and orientation changes. Narrow-screen padding must preserve that top inset.
 
@@ -350,7 +350,9 @@ General fields use Quiet Porcelain, Control Edge, small corners, 16px editable t
 
 ### Navigation
 
-Trainer navigation is persistent Carbon with a Signal Orange selected item. Desktop entries include an icon, name, and short explanation; mobile entries retain icons and names in a horizontal strip. Route navigation is a separate level: a text-and-icon row with an underline on desktop, and five equal bottom-bar cells with soft selected fills on phones. Use the existing selected and accessibility state attributes together.
+Main navigation is persistent Carbon with an orange selected destination: Today, Train, Progress and Library. It moves from a desktop rail to four bottom cells on phones. Section chips filter Progress and Library; program type belongs in Settings. Keep selected and accessibility states together.
+
+Active next-set and full-list workouts hide the global header, navigation and Together strip. List keeps its own back arrow, Finish, Next set and rest controls. Never let fixed navigation cover a logging row.
 
 ### Chips / Choices
 

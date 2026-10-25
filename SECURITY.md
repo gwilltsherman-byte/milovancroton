@@ -1,38 +1,23 @@
 # Security
 
-If you find a security problem, please report it privately. Use GitHub's private
-vulnerability reporting from the Security tab when available. If that option is
-unavailable, open an issue asking me for a private reporting channel without
-including vulnerability details.
+Report vulnerabilities privately through GitHub’s Security tab when available. Otherwise, request a private reporting channel in an issue without posting exploit details. Keep backups, health information and credentials out of public reports.
 
-Please keep workout backups, health information and credentials out of public issues.
-For ordinary bugs, describe the steps you took and the result you expected.
+## Local data
 
-## Your workouts and backups
+Milo saves training in browser storage. It has no account system, analytics or cloud synchronization. Browser eviction, clearing site data or losing a device can lose workouts. Keep independent backups.
 
-Milo saves workouts in your browser. It has no account system, analytics or cloud
-sync. Export a backup before clearing browser data or changing devices. Only
-restore backups you trust.
+A complete backup includes the supported trainer states and Together’s conditioning data. Outcome goals are stored with Muscle or Strength. CSV exports contain workout sets and are not complete backups.
 
-Milo accepts its own supported backup versions and storage keys, with a 2 MB
-import limit. It validates each section before restoring data and rolls back
-the restore if a save fails. These checks do not replace your own backups.
+Settings can encrypt a backup with a passphrase. Encryption uses PBKDF2-SHA256 with a random salt and AES-GCM with a random nonce. The passphrase is required to decrypt; Milo cannot recover it.
 
-The published app uses GitHub Pages and does not need a backend or API key.
-Its page limits scripts through a content security policy. Hosts that support
-`_headers` also apply the framing and MIME protections in that file; GitHub
-Pages does not apply `_headers`.
+Only restore files you trust. JSON validation limits each supported backup to 2 MB and bounds structure complexity. CSV import has separate limits. Restore validates before replacement and attempts rollback if storage fails. These safeguards do not remove browser storage limits.
 
-## Repository and fork security
+Erase everything in Settings removes Milo’s local records and preferences after confirmation. Save a backup first when you need to retain them. Erasing the browser copy does not delete files already exported elsewhere.
 
-Every branch in this repository blocks force pushes and deletion, including for
-administrators. If you maintain a fork, apply equivalent protection and choose
-status checks that fit your contribution process.
+## Hosting and code
 
-Use passkeys or hardware security keys for GitHub and hosting accounts, keep
-recovery codes offline, and review installed apps and token permissions. Check
-usage limits and billing alerts before enabling paid runners, large build
-artifacts, Codespaces, LFS or other metered services on a fork.
+The published app uses GitHub Pages without a backend or API key. Hash-based content security policy and script integrity checks restrict executable content. Inline handlers and third-party scripts are blocked.
 
-Keep the app updated and retain backups. These safeguards reduce risk but cannot
-prevent every software defect.
+Hosts supporting `_headers` can apply its framing and MIME protections. GitHub Pages does not apply that file. Other applications on the same origin can share its storage boundary; a dedicated origin is stronger isolation.
+
+After changing app assets, regenerate integrity metadata and run all checks. Keep hosting credentials private, review access regularly, and use strong account authentication. Tests reduce risk but do not prove the absence of defects.

@@ -17,8 +17,7 @@ move workouts between devices. They do not sync automatically.
 
 In Safari, choose **File > Add to Dock**. Open the new icon before recording
 workouts. Your installed copy keeps workouts on this Mac after you close it,
-and works offline after its first load. Save a backup from the arrow at the top
-before moving to another device, then restore that file there.
+and works offline after its first load. Use Settings → Your data to save a backup before moving devices. Restore it in the destination browser. Encrypted files require their passphrase.
 
 ## Run a local copy on Mac
 
@@ -52,3 +51,7 @@ In your fork's Settings, Pages, choose Deploy from a branch, select `main` and
 `/(root)`, then save. GitHub publishes the static app files.
 After changes to app assets, run the integrity tool described in the README.
 
+
+## First use
+
+Follow the [quick start](docs/QUICKSTART.md). Today, Train, Progress and Library are the main places; program and data controls are in Settings. Updates may require closing and reopening the installed app to load its new offline version.
