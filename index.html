@@ -136,33 +136,36 @@ body{background:#0A0D12; overflow-x:hidden;
   <div class="shell-tools">
     <span class="shell-date" id="shell-date"></span>
     <button class="shbtn mobile-guide" data-open-guide aria-label="How Milo works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg></button>
-    <button class="shbtn" id="theme-toggle" aria-label="Change color theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></svg></button>
+    <button class="shbtn" id="setbtn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     <button class="shbtn backup-button" id="bkbtn" aria-label="Back up or restore your data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg><span>Backup</span></button>
   </div>
 </header>
-<aside class="sidebar" aria-label="Training sections">
-  <div class="sw" role="tablist" aria-label="Choose a trainer">
-    <button class="seg" id="tab-mix" data-m="mix" role="tab" aria-controls="m-mix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4v6a7 7 0 0 0 7 7m7-13v6a7 7 0 0 1-7 7v4M9 7l3-3 3 3M12 4v13"/></svg><span>Together<small>Your whole week</small></span></button>
-    <button class="seg" id="tab-lift" data-m="lift" role="tab" aria-controls="m-lift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg><span>Muscle<small>Build muscle</small></span></button>
-    <button class="seg" id="tab-str" data-m="str" role="tab" aria-controls="m-str"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17 10 11l4 3 6-9M14 5h6v6M4 21h16"/></svg><span>Strength<small>Move more weight</small></span></button>
-    <button class="seg" id="tab-cal" data-m="cal" role="tab" aria-controls="m-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 3v18M17 3v18M7 6h10M7 12h10M7 18h10"/></svg><span>Ladder<small>Earn your next skill</small></span></button>
+<nav class="sidebar" aria-label="Milo">
+  <div class="sw">
+    <button class="seg" data-d="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg><span>Today<small>Your next workout</small></span></button>
+    <button class="seg" data-d="train"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9v6m3-9v12m12-12v12m3-9v6M6 12h12"/></svg><span>Train<small>The session you’re on</small></span></button>
+    <button class="seg" data-d="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17 10 11l4 3 6-9M14 5h6v6M4 21h16"/></svg><span>Progress<small>What you’ve built</small></span></button>
+    <button class="seg" data-d="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10"/></svg><span>Library<small>Exercises and evidence</small></span></button>
   </div>
   <div class="sidebar-foot"><button id="guide-open" data-open-guide><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>How Milo works</button><p>Your training stays<br>on this device.<br>No account needed.</p></div>
-</aside>
+</nav>
 <div class="tgstrip" id="tgstrip" hidden></div>
 <dialog class="bk" id="guide" aria-labelledby="guide-title">
   <h2 id="guide-title">Make the next session count.</h2>
-  <p>Milo brings your plans, workouts and progress together. Start in Together.</p>
-  <div class="guide-step"><b>1</b><div><h3>Choose what you train</h3><p>In Together, pick muscle, strength, calisthenics skills or any mix, and rank them. Together builds your week from that, and the trainers you chose appear as tabs.</p></div></div>
+  <p>Milo brings your plans, workouts and progress together in one place.</p>
+  <div class="guide-step"><b>1</b><div><h3>Choose what you train</h3><p>Pick muscle, strength, calisthenics skills or any mix. Milo builds your week from that, and Today shows what’s next.</p></div></div>
   <div class="guide-step"><b>2</b><div><h3>Train. Log. Repeat.</h3><p>Record the sets you actually complete. Your session saves as you go, so you can come back to it.</p></div></div>
-  <div class="guide-step"><b>3</b><div><h3>Go deeper in each trainer</h3><p>Each trainer keeps your history, records, exercise instructions and progress for its kind of training, and can run a plan of its own if you want to train just that.</p></div></div>
-  <p>Works offline after the first load. Your data stays in this browser; use Backup before moving devices or clearing browser data. Units and training preferences are in each trainer’s Settings.</p>
+  <div class="guide-step"><b>3</b><div><h3>See it add up</h3><p>Progress shows everything together or one section at a time. Library has every exercise’s how-to and the evidence behind the plan.</p></div></div>
+  <p>Works offline after the first load. Your data stays in this browser; use Backup before moving devices or clearing browser data. Units, your kit and preferences are in Settings.</p>
   <button class="b" data-open-privacy style="width:100%; margin-bottom:8px">Privacy</button>
   <button class="b pri" id="guide-done" style="width:100%">Got it</button>
 </dialog>
 
-<dialog class="bk" id="bk" aria-labelledby="bk-title">
-  <h2 id="bk-title" tabindex="-1" autofocus>Back up your data</h2>
+<dialog class="bk set" id="bk" aria-labelledby="set-title">
+  <h2 id="set-title" tabindex="-1" autofocus>Settings</h2>
+  <div id="set-body"></div>
+  <section class="set-data" id="set-data" aria-labelledby="bk-title">
+  <h3 class="set-h" id="bk-title" tabindex="-1">Your data</h3>
   <p>One backup holds everything from Together, Muscle, Strength and Ladder, including Together’s check-in answers. Make one before you delete the app, then restore it after you add the app again.</p>
   <div class="last" id="bk-last"></div>
   <label class="fld" for="bk-pass">Passphrase <span>(optional)</span></label>
@@ -189,7 +192,7 @@ body{background:#0A0D12; overflow-x:hidden;
   <div class="msg" id="bk-msg2" role="status"></div>
   <button class="b" id="bk-undo" hidden style="margin-top:12px; width:100%"></button>
   <hr>
-  <h3 id="yd-title">Your data</h3>
+  <h3 id="yd-title">Export, import and share</h3>
   <div class="stack" role="group" aria-labelledby="yd-title">
     <button class="b" id="yd-csv">Export your sets (CSV)</button>
     <button class="b" id="yd-import">Import from Strong or Hevy</button>
@@ -203,6 +206,7 @@ body{background:#0A0D12; overflow-x:hidden;
   <input type="file" id="yd-fin" accept=".csv,text/csv,text/plain" hidden>
   <div class="msg" id="yd-msg" role="status"></div>
   <button class="b" id="yd-undo" hidden style="margin-top:8px; width:100%">Undo the import</button>
+  </section>
   <button class="done" id="bk-done">Done</button>
 </dialog>
 
@@ -257,10 +261,14 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <main id="main" tabindex="-1">
-<div id="m-lift" class="mod" role="tabpanel" aria-labelledby="tab-lift" hidden></div>
-<div id="m-str"  class="mod" role="tabpanel" aria-labelledby="tab-str" hidden></div>
-<div id="m-cal"  class="mod" role="tabpanel" aria-labelledby="tab-cal" hidden></div>
-<div id="m-mix"  class="mod" role="tabpanel" aria-labelledby="tab-mix" hidden></div>
+<div class="subnav" id="subnav" hidden>
+  <div class="fchips" id="subchips" role="group" aria-label="Show"></div>
+  <label class="libq" id="libq-wrap" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg><input type="search" id="libq" placeholder="Search every exercise" aria-label="Search the library" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></label>
+</div>
+<div id="m-lift" class="mod" aria-label="Muscle" hidden></div>
+<div id="m-str"  class="mod" aria-label="Strength" hidden></div>
+<div id="m-cal"  class="mod" aria-label="Ladder" hidden></div>
+<div id="m-mix"  class="mod" aria-label="Together" hidden></div>
 </main>
 
 <template id="t-lift">

@@ -2531,6 +2531,7 @@ function render(){
   view.scrollTop = 0;
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   if(state.route==='library'){ const si=$('#libsearch'); if(si){ si.value=state.libSearch; } }
+  if(window.__routed) window.__routed('lift', state.route);
 }
 
 function renderTabs(){
@@ -5739,7 +5740,7 @@ __root.addEventListener('click', e=>{
   const gi=el.dataset.seg!=null?+el.dataset.seg:null;
   switch(act){
     case 'nav': state.route=el.dataset.route; save(); render(); break;
-    case 'open-settings': openSettings(); break;
+    case 'open-settings': if(window.__openSettings) window.__openSettings('lift'); else openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'ev-lib': openEvidenceLibrary(); break;
     case 'techniques': openTechniques(); break;
@@ -6284,6 +6285,23 @@ if(window.__hub) window.__hub.reg('lift', {
         if(best>0) (ex[en.exId]||(ex[en.exId]={id:en.exId, p:(en.primary||[]).slice(), pts:[]})).pts.push({date:w.date, e1:best, rated}); }); });
     return Object.values(ex); },
   table(){ return {muscles:MUSCLES, groups:GROUPS}; },
+  // for the shell's one navigation: a page of this section, a fresh draw, the library's search, how-tos and evidence
+  go(r){ state.route=['today','train','plan','library','progress'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  search(q){ q=String(q||''); if(state.libSearch===q) return; state.libSearch=q; if(state.route==='library') render(); },
+  lib(){ return state.exercises.map(e=>({id:e.id, n:e.name, s:e.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(', ')+' · '+e.equipment})); },
+  howto(id){ exDetail(id); },
+  evidence(){ openEvidenceLibrary(); },
+  // this section's own options for the one Settings sheet: [{k, l, d, c:[[value, label]], v, multi, act}]
+  opts(){ const s=state.settings; return [
+    {k:'target', l:'Weekly volume marker', d:'A reference line for each muscle. A rough guide, not a limit.', c:[8,10,12,15].map(n=>[n,String(n)]), v:s.target},
+    {k:'equip', l:'Equipment for swap suggestions', c:['Barbell','Dumbbell','Machine','Cable','Bodyweight'].map(x=>[x,x]), v:myEquip(), multi:true},
+    {k:'platecalc', l:'Plate calculator', act:true}]; },
+  opt(k, v){ const s=state.settings;
+    if(k==='target'){ s.target=+v; save(); render(); }
+    else if(k==='equip'){ if(!s.equipment||!s.equipment.length) s.equipment=myEquip().slice(); const arr=s.equipment, i=arr.indexOf(v); if(i>=0){ if(arr.length>1) arr.splice(i,1); } else arr.push(v);
+      const rest=(Prefs.get('kit',null)||['pullup','dip','load']).filter(x=>!KIT_NAME[x]); Prefs.set({kit:Object.keys(KIT_NAME).filter(x=>arr.includes(KIT_NAME[x])).concat(rest)}); save(); }
+    else if(k==='platecalc') openLoading(null); },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -9303,6 +9321,7 @@ function render(){
   renderTabs();
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   const a=state.active; if(a&&a.restEndsAt) tickRest();
+  if(window.__routed) window.__routed('cal', state.route);
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['goals','Goals',I.target],['progress','Progress',I.chart],['library','Library',I.book]];
@@ -9323,7 +9342,7 @@ __root.addEventListener('click', e=>{
     case 'goal-toggle': { const card=el.closest('.goal-full'), open=!card.classList.contains('open');
       goalOpen[el.dataset.id]=open; card.classList.toggle('open',open); el.setAttribute('aria-expanded',String(open)); card.querySelector('.goal-body').hidden=!open; break; }
     case 'close-modal': closeModal(); break;
-    case 'settings': openSettings(); break;
+    case 'settings': if(window.__openSettings) window.__openSettings('cal'); else openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'evidence-lib': openEvidenceLib(); break;
     case 'ladder': openLadder(el.dataset.id); break;
@@ -9706,6 +9725,18 @@ if(window.__hub) window.__hub.reg('cal', {
   removeGoal(id){ const g=state.goals.find(x=>x.id===id&&!x.achieved); if(!g) return false;
     gone[id]=g; state.goals=state.goals.filter(x=>x!==g); save(); render(); return true; },
   restoreGoal(id){ const g=gone[id]; if(!g||state.goals.some(x=>x.id===id)) return false; delete gone[id]; state.goals.push(g); save(); render(); return true; },
+  // for the shell's one navigation: a page of this section, a fresh draw, its ladders and how-tos, the evidence
+  go(r){ state.route=['today','train','goals','progress','library'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  lib(){ return LADDER_ORDER.filter(id=>LADDERS[id]).map(id=>({id, n:LADDERS[id].n, steps:LADDERS[id].steps.map(st=>st.n)})); },
+  howto(id, i){ if(!LADDERS[id]) return; if(i==null) openLadder(id); else openRungHow(id, i); },
+  evidence(){ openEvidenceLib(); },
+  opts(){ return [{k:'rest', l:'Rest between sets', c:[60,90,120,180].map(n=>[n,n+' s']), v:state.settings.rest},
+    {k:'redo-place', l:'Redo the where-are-you survey', act:true},
+    {k:'reset-rungs', l:'Reset all rungs to the start', act:true, ask:'Every ladder goes back to its first rung, and your goals ask where you are again. Your logged sessions stay.'}]; },
+  opt(k, v){ if(k==='rest'){ state.settings.rest=+v; save(); }
+    else if(k==='redo-place'){ state.placed={}; state.said={}; state.placing=null; save(); render(); toast('Done. Your goals will ask where you are again.'); }
+    else if(k==='reset-rungs'){ LADDER_ORDER.forEach(x=>state.rung[x]=0); state.placed={}; state.said={}; state.advances=[]; save(); render(); toast('Rungs reset'); } },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -11721,6 +11752,7 @@ function render(){
   renderTabs();
   if(window.MiloDesign) window.MiloDesign.decorate(__root,state.route,state.history);
   tickRest();
+  if(window.__routed) window.__routed('str', state.route);
 }
 function renderTabs(){
   const tabs=[['today','Today',I.home],['train','Train',I.bar],['program','Plan',I.cal],['progress','Progress',I.chart],['tools','Tools',I.calc]];
@@ -11736,7 +11768,7 @@ __root.addEventListener('click', e=>{
   switch(act){
     case 'nav': state.route=el.dataset.route; save(); render(); window.scrollTo(0,0); break;
     case 'close-modal': closeModal(); break;
-    case 'settings': openSettings(); break;
+    case 'settings': if(window.__openSettings) window.__openSettings('str'); else openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'evidence-lib': openEvidenceLib(); break;
     case 'howto': openHowto(el.dataset.id, el.dataset.vi); break;
@@ -12148,6 +12180,22 @@ if(window.__hub) window.__hub.reg('str', {
     startProgramDay(nextDayIdx()); return state.active? state.active.id : null; },
   setup(){ state.route='today'; render(); window.scrollTo(0,0); openSetup(); },
   open(){ state.route=Parked.all(state).length?'train':'today'; render(); window.scrollTo(0,0); },
+  // for the shell's one navigation: a page of this section, a fresh draw, its lifts and how-tos, the evidence
+  go(r){ state.route=['today','train','program','progress','tools'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  lib(){ return Object.keys(EX).map(id=>{ const X=EX[id]; return {id, n:X.n, s:AREAS[X.a].n+' · '+kindText(id), chain:X.k==='bw'? X.chain.map(c=>c[1]) : null}; }); },
+  howto(id, vi){ openHowto(id, vi); },
+  evidence(){ openEvidenceLib(); },
+  opts(){ const s=state.settings; return [
+    {k:'warmups', g:'warm', l:'Warm-up sets', d:'A ramp of lighter sets up to the first heavy one.', c:[[1,'On'],[0,'Off']], v:s.warmups?1:0},
+    {k:'rest', l:'Rest after work sets', c:[[120,'2 min'],[180,'3 min'],[240,'4 min'],[300,'5 min']], v:s.rest},
+    {k:'tmPct', l:'Training max', d:'The share of your estimated max the plans work from.', c:[[85,'85%'],[90,'90%'],[95,'95%']], v:s.tmPct},
+    {k:'setup', l:'Strength’s own plan: areas and kit', act:true}]; },
+  opt(k, v){ const s=state.settings;
+    if(k==='warmups'){ s.warmups=String(v)==='1'; Prefs.set({warmups:s.warmups}); save(); render(); }
+    else if(k==='rest'){ s.rest=+v; save(); }
+    else if(k==='tmPct'){ s.tmPct=+v; save(); render(); }
+    else if(k==='setup'){ state.route='today'; render(); openSetup(); } },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
@@ -14620,13 +14668,114 @@ render();
   /* A pasted or loaded backup with a passphrase asks for it. */
   function paintLock(){ const on=MiloSecurity.sealed(document.getElementById('bk-in').value.trim()); document.getElementById('bk-lock').hidden=!on; return on; }
   document.getElementById('bk-in').addEventListener('input',paintLock);
-  function openBackup(){
-    say('bk-msg1',''); say('bk-msg2',''); say('yd-msg',''); ['bk-in','bk-pass','bk-rpass'].forEach(id=>{ document.getElementById(id).value=''; }); paintLock(); paintLast();
-    if(bk.showModal) bk.showModal(); else bk.setAttribute('open','');
+  /* ---- Settings: one sheet for the whole app ----
+     Units, sound, vibration, theme and your kit are one choice for every section (Prefs and Kit pass them on); the
+     program is Together's set-up; each section adds its own options (opts on its hub API) in a group that opens out;
+     Your data, the backup and its friends, sits at the bottom, where the header's Backup button opens it. */
+  const setBody=document.getElementById('set-body'), LBS=0.45359237;
+  const escS=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+  const unitNow=()=>Prefs.get('unit','kg')==='lb'? 'lb' : 'kg';
+  let setOpen={general:true}, setFor=null;
+  const SEC_N={lift:'Muscle', str:'Strength', cal:'Ladder'};
+  /* A row of choices: one pressed, or several when cur is a list. */
+  function pills(s, opts, cur, more){ return `<div class="pills">${opts.map(([v,l])=>{ const on=Array.isArray(cur)? cur.map(String).includes(String(v)) : String(cur)===String(v);
+    return `<button type="button" class="b" data-s="${s}" data-v="${escS(v)}"${more||''} aria-pressed="${on}">${l}</button>`; }).join('')}</div>`; }
+  let optN=0;
+  const opt=(l, d, body)=>{ const id='so'+(++optN); return `<div class="opt" role="group" aria-labelledby="${id}"><div class="ol" id="${id}">${l}</div>${d? `<div class="od">${d}</div>` : ''}${body}</div>`; };
+  const grp=(k, title, note, body)=>`<details class="grp" data-g="${k}"${setOpen[k]? ' open' : ''}><summary>${title}${note? `<span>${note}</span>` : ''}</summary>${body}</details>`;
+  /* The sections in use: in the program, or with training saved. */
+  function inUse(m){ const t=tgSaved(); return progType()===m || !!(t&&t.on&&Array.isArray(t.secs)&&t.secs.includes(m)) || hasData(m); }
+  function sectionOpts(m){ try{ const A=inUse(m)? hubApi(m) : null; return A&&A.opts? A.opts()||[] : []; }catch(e){ console.warn('options not read', m, e); return []; } }
+  function optRows(m, list){ return list.map(o=> o.act? `<div class="opt"><button type="button" class="b act" data-s="opt" data-m="${m}" data-k="${escS(o.k)}">${o.l}<span aria-hidden="true">›</span></button></div>`
+    : opt(o.l, o.d, pills('opt', o.c, o.v, ` data-m="${m}" data-k="${escS(o.k)}"`))).join(''); }
+  function paintSet(){
+    optN=0;
+    const u=unitNow(), K=Kit.get(u), lb=u==='lb', type=progType(), t=tgSaved()||{};
+    const on=(k,d)=>Prefs.get(k,d)? 1 : 0;
+    const general=opt('Units','',pills('unit',[['kg','Kilograms'],['lb','Pounds']],u))
+      +opt('Theme','',pills('theme',[['system','Auto'],['light','Light'],['dark','Dark']],theme))
+      +opt('Sound','A chime when rest ends.',pills('sound',[[1,'On'],[0,'Off']],on('sound',true)))
+      +opt('Vibration','A buzz when rest ends, on phones that can.',pills('vibrate',[[1,'On'],[0,'Off']],on('vibrate',true)))
+      +opt('Keep the screen on during a session','So you don’t unlock the phone for every set. Phones may still hold back alerts while the screen is locked.',pills('wake',[[1,'On'],[0,'Off']],on('wake',true)));
+    const types=[['mix','Together'],['lift','Muscle only'],['str','Strength only'],['cal','Ladder only']];
+    const fields=[['secs','What you train and its order'],['days','Days and weekdays'],['mins','Time for a session'],['kit','What you train with'],['exp','Experience'],['stage','Life stage'],['screen','Health check']];
+    const summary= type==='mix'? (t.on&&Array.isArray(t.secs)? t.secs.map(m=>SEC_N[m]).filter(Boolean).join(' + ')+' · '+(t.days||3)+' days' : 'Not set up yet') : SEC_N[type]+' on its own';
+    const program=opt('Program type','Together builds one week from every section you train. One section on its own runs that section’s own plan.',pills('type',types,type))
+      +(type==='mix'? `<div class="opt stack">${fields.map(([k,l])=>`<button type="button" class="b act" data-s="tg-setup" data-v="${k}">${l}<span aria-hidden="true">›</span></button>`).join('')}</div>`
+        : `<div class="opt"><button type="button" class="b act" data-s="sec-setup" data-v="${type}">${type==='cal'? 'Choose your Ladder goals' : 'Set up '+SEC_N[type]+'’s plan'}<span aria-hidden="true">›</span></button></div>`);
+    const plates=lb? [45,35,25,15,10,5,2.5,1.25,1,0.5] : [25,20,15,10,5,2.5,2,1.5,1.25,1,0.5,0.25];
+    const rack=Prefs.get(lb?'dbRackLb':'dbRackKg', null), rackList=Array.isArray(rack)? rack : rack&&Array.isArray(rack.list)? rack.list : [];
+    const bars=Prefs.get('bars', null)||{}, barVal=b=>bars[b]&&Number(bars[b][u])>0? bars[b][u] : '';
+    const collars=lb? [[0,'None'],[1,'1 lb'],[2,'2 lb'],[5,'5 lb']] : [[0,'None'],[0.5,'0.5 kg'],[1,'1 kg'],[2.5,'2.5 kg']];
+    const colOn=collars.find(c=>Math.abs(c[0]-K.collar)<0.01); if(!colOn) collars.push([Math.round(K.collar*100)/100, Math.round(K.collar*10)/10+' '+u]);
+    const kit=opt('Barbell','',`<div class="pills">${Kit.BARS.map(([n,bu])=>`<button type="button" class="b" data-s="bar" data-v="${n}" data-u="${bu}" aria-pressed="${Kit.barIs(n,bu,u)}">${n} ${bu}</button>`).join('')}</div>`)
+      +opt('Trap and EZ bars','Blank: the usual weight.',`<div class="kc"><label>Trap bar (${u})<input class="txt" inputmode="decimal" data-sf="bar" data-b="trap" value="${escS(barVal('trap'))}" placeholder="${escS(K.bars.trap)}"></label><label>EZ bar (${u})<input class="txt" inputmode="decimal" data-sf="bar" data-b="ez" value="${escS(barVal('ez'))}" placeholder="${escS(K.bars.ez)}"></label></div>`)
+      +opt('Plates you have ('+u+', per side)','',pills('plate',plates.map(p=>[p,String(p)]),K.plates))
+      +opt('Pairs of each','Blank: plenty. Loads never ask for more than you have.',`<div class="kc">${K.plates.map(p=>`<label>${p} ${u}<input class="txt" inputmode="numeric" data-sf="count" data-p="${p}" value="${K.count[p]!=null? escS(K.count[p]) : ''}" placeholder="any" aria-label="Pairs of ${p} ${u} plates"></label>`).join('')}</div>`)
+      +opt('Collars, each','',pills('collar',collars,colOn? colOn[0] : Math.round(K.collar*100)/100))
+      +opt('Dumbbell jumps','',pills('dbstep',(lb?[2.5,5,10]:[1,2,2.5]).map(v=>[v,v+' '+u]),K.dbStep))
+      +opt('Your dumbbells ('+u+')','Lightest to heaviest, with spaces. Blank: every jump, no top.',`<input class="txt" inputmode="decimal" data-sf="rack" value="${escS(rackList.join(' '))}" placeholder="${lb?'e.g. 5 10 15 20 25 30':'e.g. 2 4 6 8 10 12.5 15'}" aria-label="Your dumbbells">`)
+      +opt('Machine and cable jumps','',pills('stack',(lb?[5,10,15]:[2.5,5,7]).map(v=>[v,v+' '+u]),K.stack));
+    const S={lift:sectionOpts('lift'), str:sectionOpts('str'), cal:sectionOpts('cal')};
+    const warm=S.str.filter(o=>o.g==='warm');
+    let html=grp('general','General','',general)+grp('program','Program',escS(summary),program)+grp('kit','Your kit','',kit)
+      +(warm.length? grp('warm','Warm-ups','',optRows('str',warm)) : '');
+    ['lift','str','cal'].forEach(m=>{ const list=S[m].filter(o=>o.g!=='warm'); if(list.length) html+=grp(m, SEC_N[m], '', optRows(m, list)); });
+    setBody.innerHTML=MiloSecurity.html(html);
   }
-  window.__openBackup=openBackup;
+  setBody.addEventListener('toggle', e=>{ const d=e.target.closest&&e.target.closest('details.grp'); if(d) setOpen[d.dataset.g]=d.open; }, true);
+  function redrawActive(){ try{ if(inited[active]&&apis[active]&&apis[active].redraw) apis[active].redraw(); }catch(e){ console.error(e); } }
+  function closeSet(){ if(bk.close) bk.close(); else bk.removeAttribute('open'); }
+  setBody.addEventListener('click', async e=>{
+    const b=e.target.closest('[data-s]'); if(!b) return;
+    const s=b.dataset.s, v=b.dataset.v, u=unitNow(), lb=u==='lb';
+    if(s==='unit') Prefs.set({unit:v});
+    else if(s==='theme') window.__setTheme(v);
+    else if(s==='sound'||s==='vibrate'){ Prefs.set({[s]:v==='1'}); if(s==='vibrate'&&v==='1') try{ navigator.vibrate&&navigator.vibrate(60); }catch(_){} }
+    else if(s==='wake'){ Prefs.set({wake:v==='1'}); syncWake(); }
+    else if(s==='type'){ const A=hubApi('mix'); if(A&&A.setType) A.setType(v); }
+    else if(s==='tg-setup'){ closeSet(); goDest('today'); const A=hubApi('mix'); if(A&&A.setup) A.setup(v); return; }
+    else if(s==='sec-setup'){ closeSet(); show(v); const A=hubApi(v); if(A&&A.setup) A.setup(); return; }
+    else if(s==='bar') Kit.setBar(+v, b.dataset.u, u);
+    else if(s==='plate'){ const p=Number(v), have=Kit.get(u).plates, arr=have.filter(x=>x!==p);
+      if(arr.length===have.length){ arr.push(p); arr.sort((a,c)=>c-a); } else if(!arr.length){ toast('Keep at least one plate'); return; }
+      Kit.set({[lb?'platesLb':'platesKg']:arr}); }
+    else if(s==='collar') Kit.set({collarKg: lb? +v*LBS : +v});
+    else if(s==='dbstep') Kit.set({[lb?'dbStepLb':'dbStepKg']:+v});
+    else if(s==='stack') Kit.set({[lb?'stackStepLb':'stackStepKg']:+v});
+    else if(s==='opt'){ const m=b.dataset.m, A=hubApi(m), o=A&&A.opts? (A.opts()||[]).find(x=>x.k===b.dataset.k) : null; if(!o) return;
+      if(o.act){ if(o.ask && !await ask(o.l+'?', o.ask, o.l.split(' ').slice(0,2).join(' '))) return;
+        closeSet(); show(m); A.opt(o.k); return; }
+      A.opt(o.k, v); }
+    paintSet(); redrawActive();
+    const sel='[data-s="'+s+'"][data-v="'+(window.CSS&&CSS.escape? CSS.escape(v||'') : v)+'"]'+(b.dataset.k? '[data-k="'+b.dataset.k+'"]' : '');
+    const nb=setBody.querySelector(sel); if(nb) nb.focus();
+  });
+  /* Typed kit: trap and EZ bars, pairs of each plate, and your dumbbells, saved when you leave the box. */
+  setBody.addEventListener('change', e=>{
+    const el=e.target.closest('[data-sf]'); if(!el) return; const f=el.dataset.sf, u=unitNow();
+    if(f==='bar'){ const v=Num.parse(el.value), bars=JSON.parse(JSON.stringify(Prefs.get('bars', null)||{})), k=el.dataset.b;
+      bars[k]=Object.assign({}, bars[k]); if(v>0) bars[k][u]=v; else delete bars[k][u]; Kit.set({bars}); }
+    else if(f==='count'){ const v=Num.int(el.value), pc=JSON.parse(JSON.stringify(Prefs.get('plateCount', null)||{})), p=el.dataset.p;
+      pc[u]=Object.assign({}, pc[u]); if(v!=null&&v>=0) pc[u][p]=v; else delete pc[u][p]; Kit.set({plateCount:pc}); }
+    else if(f==='rack'){ const list=[...new Set(String(el.value).split(/[\s;/]+/).flatMap(t=>Num.parse(t)!=null? [t] : t.split(',')).map(Num.parse).filter(x=>x>0))].sort((a,c)=>a-c);
+      Kit.set({[u==='lb'?'dbRackLb':'dbRackKg']: list.length? list : null}); el.value=list.join(' '); }
+    redrawActive();
+  });
+  /* Open the sheet at the top, at a section's group (from its own settings button), or at Your data (part 'data'). */
+  function openSheet(part){
+    say('bk-msg1',''); say('bk-msg2',''); say('yd-msg',''); ['bk-in','bk-pass','bk-rpass'].forEach(id=>{ document.getElementById(id).value=''; }); paintLock(); paintLast();
+    if(SEC_N[part]) setOpen[part]=true;
+    paintSet(); setFor=part||null;
+    if(bk.showModal){ if(!bk.open) bk.showModal(); } else bk.setAttribute('open','');
+    const at= part==='data'? document.getElementById('bk-title') : SEC_N[part]? setBody.querySelector('[data-g="'+part+'"] summary') : null;
+    if(at){ at.scrollIntoView({block:'start'}); at.focus({preventScroll:true}); } else { bk.scrollTop=0; document.getElementById('set-title').focus({preventScroll:true}); }
+  }
+  function openBackup(){ openSheet('data'); }
+  window.__openBackup=openBackup; window.__openSettings=openSheet;
   document.getElementById('bkbtn').addEventListener('click',openBackup);
-  document.getElementById('bk-done').addEventListener('click',()=>{ if(bk.close) bk.close(); else bk.removeAttribute('open'); });
+  document.getElementById('setbtn').addEventListener('click',()=>openSheet(null));
+  document.getElementById('bk-done').addEventListener('click',closeSet);
   document.getElementById('bk-copy').addEventListener('click',async()=>{
     const locked=!!passOf('bk-pass'); let ok=false, txt='';
     if(!locked){ txt=backupText(); try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} }
@@ -14726,35 +14875,105 @@ render();
     }catch(e){} });
   };
 
-  /* ---- Which tabs show ----
-     Together comes first and is always there. A trainer's tab shows once you choose it in Together. Until Together
-     is set up, a trainer you already have training saved in shows too, so nothing you made goes missing. The open
-     one always shows: a link or a running session can open any of them. */
-  const trained={};
-  function hasTraining(m){
-    if(trained[m]==null){ trained[m]=false;
-      try{ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null');
-        trained[m]=!!o && ((o.history||[]).length>0 || !!o.active || (m==='lift'? (o.mesos||[]).length>0 : m==='str'? !!o.program : (o.goals||[]).length>0)); }catch(e){} }
-    return trained[m];
+  /* ---- One app: Today · Train · Progress · Library ----
+     The sections keep their pages and their saved data; one navigation reaches them. Today is Together's day (or, with
+     a program type of one section, that section's own Today), Train the session that's running, Progress and Library
+     one page each with a filter for the section. A section's own navigation is hidden: each tells the shell which page
+     it shows (__routed), so the navigation stays right however you got there. */
+  const DESTS=['today','train','progress','library'], FILTERS=['all','lift','str','cal'];
+  const NAMES={all:'All', lift:'Muscle', str:'Strength', cal:'Ladder'}, PLAN_ROUTE={lift:'plan', str:'program', cal:'goals'};
+  const routes={}, savedRun={};
+  let dest='today', routing=false, homeAfter=null, libQ='';
+  const filt={progress:'all', library:'all'};
+  try{ const f=JSON.parse(localStorage.getItem(SK+'.filter')||'null')||{}; ['progress','library'].forEach(k=>{ if(FILTERS.includes(f[k])) filt[k]=f[k]; }); }catch(e){}
+  function tgSaved(){ try{ return JSON.parse(localStorage.getItem('trainer.together')||'null'); }catch(e){ return null; } }
+  /* The program type: 'mix' (Together, the default) or the one section you train on its own. */
+  function progType(){ const A=apis.mix; if(A&&A.type) return A.type(); const t=tgSaved(); return t&&!t.on&&KEYS[t.type]? t.type : 'mix'; }
+  /* A section with a session open: its live state once it has started, else what it saved (read once: nothing else writes it). */
+  function runningIn(m){ try{
+    if(inited[m]&&apis[m]&&apis[m].info){ const i=apis[m].info(); return !!(i.busy || (i.open||[]).length); }
+    if(savedRun[m]==null){ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null'); savedRun[m]=!!(o&&(o.active || (Array.isArray(o.parked)&&o.parked.length))); }
+    return savedRun[m]; }catch(e){ return false; } }
+  /* Where a section's page sits in the navigation. */
+  function destOf(m, r){ if(m==='mix') return DESTS.includes(r)? r : 'today';
+    return r==='train'? 'train' : r==='progress'? 'progress' : r==='library'||r==='tools'? 'library' : 'today'; }
+  /* The section Train opens: the part of a Together day that's running, else the one section with a session open. */
+  function trainIn(){
+    let cur=null; try{ const A=hubApi('mix'); cur=A&&A.runPart&&A.runPart(); }catch(e){}
+    if(cur && runningIn(cur)) return cur;
+    const busy=['lift','str','cal'].filter(runningIn); return busy.length===1? busy[0] : 'mix';
   }
-  function chosenMods(){ try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); return t&&t.on&&Array.isArray(t.secs)? t.secs : null; }catch(e){ return null; } }
-  function visibleMods(){ const c=chosenMods(); return MODS.filter(m=> m==='mix' || m===active || (c? c.includes(m) : hasTraining(m))); }
-  function paintTabs(){ const v=visibleMods(); document.querySelectorAll('.seg').forEach(b=>{ b.hidden=!v.includes(b.dataset.m); }); }
-  /* A section with a session still going, from its saved state. */
-  function runningIn(m){ try{ const o=JSON.parse(localStorage.getItem(KEYS[m])||'null'); return !!(o&&o.active); }catch(e){ return false; } }
+  function paintNav(){
+    document.querySelectorAll('.seg').forEach(b=>{ const on=b.dataset.d===dest; b.classList.toggle('on',on);
+      if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+    const live=['lift','str','cal'].some(runningIn), tb=document.querySelector('.seg[data-d="train"]');
+    if(tb){ tb.classList.toggle('live', live); tb.setAttribute('aria-label', live? 'Train, session in progress' : 'Train'); }
+    paintSub();
+  }
+  /* The row under the header: the section filter on Progress and Library (with the one search box on Library), and
+     Today and Plan when you train one section on its own. */
+  const sub=document.getElementById('subnav'), chipsEl=document.getElementById('subchips'), qWrap=document.getElementById('libq-wrap'), qIn=document.getElementById('libq');
+  function paintSub(){
+    const type=progType(); let chips=null, cur=null;
+    if(dest==='progress'||dest==='library'){ chips=FILTERS.map(f=>[f, NAMES[f]]); cur=filt[dest]; }
+    else if(dest==='today' && type!=='mix'){ chips=[['today','Today'],[PLAN_ROUTE[type], type==='cal'? 'Goals' : 'Plan']]; cur= active===type && routes[type]===PLAN_ROUTE[type]? PLAN_ROUTE[type] : 'today'; }
+    sub.hidden=!chips; qWrap.hidden=dest!=='library';
+    if(!chips) return;
+    const html=chips.map(([v,l])=>`<button type="button" data-f="${v}" aria-pressed="${v===cur}">${l}</button>`).join('');
+    if(chipsEl.innerHTML!==html){ const f=document.activeElement&&chipsEl.contains(document.activeElement)? document.activeElement.dataset.f : null;
+      chipsEl.innerHTML=MiloSecurity.html(html); if(f){ const b=chipsEl.querySelector('[data-f="'+f+'"]'); if(b) b.focus(); } }
+    chipsEl.setAttribute('aria-label', dest==='today'? 'Your section' : 'Show a section');
+  }
+  chipsEl.addEventListener('click', e=>{
+    const b=e.target.closest('[data-f]'); if(!b) return; const v=b.dataset.f;
+    if(dest==='today'){ const t=progType(); if(t!=='mix'){ show(t); apiGo(t, v); dest='today'; paintNav(); } return; }
+    filt[dest]=v; try{ localStorage.setItem(SK+'.filter', JSON.stringify(filt)); }catch(e){}
+    goDest(dest, {keepFocus:true});
+  });
+  qIn.addEventListener('input', ()=>{ libQ=qIn.value.trim(); if(dest==='library') goDest('library', {keepFocus:true, typing:true}); });
+  function apiGo(m, r){ const A=hubApi(m); if(A&&A.go) A.go(r); routes[m]=r; }
+  /* Open one of the four places. Each knows which section's page to show. */
+  function goDest(d, o){
+    o=o||{}; if(!DESTS.includes(d)) d='today';
+    if(d==='today'){ const t=progType(); if(t!=='mix'){ show(t); apiGo(t, 'today'); } else { show('mix'); apiGo('mix','today'); } }
+    else if(d==='train'){ const m=trainIn(); show(m);
+      if(m==='mix') apiGo('mix','train');
+      else { const A=hubApi(m); if(A&&A.open) A.open(); routes[m]='train';
+        // a part of a Together day: finishing it leads on to the next part, as when it was started from Today
+        try{ const T=hubApi('mix'); if(T&&T.runPart&&T.runPart()===m) back={m, kind:'run', y:null, act0:null}; keepBack(); }catch(e){} } }
+    else if(d==='progress'){ const f=filt.progress; if(f==='all'){ show('mix'); apiGo('mix','progress'); } else { show(f); apiGo(f,'progress'); } }
+    else { const f=filt.library;
+      if(f==='lift'){ if(!(o.typing&&active==='lift')){ show('lift'); apiGo('lift','library'); } const A=apis.lift; if(A&&A.search) A.search(libQ); }
+      else if(f==='cal'&&!libQ){ show('cal'); apiGo('cal','library'); }
+      else if(o.typing&&active==='mix'&&routes.mix==='library'){ const A=apis.mix; if(A&&A.go) A.go('library'); }
+      else { show('mix'); apiGo('mix','library'); } }
+    dest=d; paintNav();
+  }
+  /* A section tells the shell which page it shows. On its own page Today belongs to Together, so a section going back
+     to its own Today (after a session ends, say) brings Together's Today back, once any sheet it opened is closed. */
+  window.__routed=function(m, r){
+    routes[m]=r;
+    if(routing || m!==active) return;
+    const d=destOf(m, r);
+    if(m!=='mix' && d==='today' && r==='today' && progType()!==m){
+      const A=apis[m]; if(A&&A.sheetOpen&&A.sheetOpen()){ homeAfter=m; return; }
+      setTimeout(()=>{ if(active===m && routes[m]==='today' && !(apis[m].sheetOpen&&apis[m].sheetOpen())) goDest('today', {focus:false}); }, 0); return; }
+    if(d!==dest){ dest=d; paintNav(); } else if(dest==='today') paintSub();
+  };
+  /* The way back to Together is kept for the tab's life, so a reload in the middle of a part still leads on to the next. */
+  function keepBack(){ try{ if(back) sessionStorage.setItem('milo.back', JSON.stringify(back)); else sessionStorage.removeItem('milo.back'); }catch(e){} }
 
   function show(m){
     if(!MODS.includes(m)) m='mix';
-    if(back && m!==back.m) back=null;   // going anywhere else yourself cancels the way back
+    if(back && m!==back.m){ back=null; keepBack(); }   // going anywhere else yourself cancels the way back
     active=m;
+    if(sessionOn && sessionOn!==m) window.__sessionMode(false);
     MODS.forEach(x=>{ hostOf(x).hidden=(x!==m); });
-    document.querySelectorAll('.seg').forEach(b=>{
-      const on=b.dataset.m===m; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1;
-    });
-    ensureInit(m);
-    paintBg(); paintTabs();
+    routing=true; try{ ensureInit(m); }finally{ routing=false; }
+    paintBg();
     try{ localStorage.setItem(SK+'.mod',m); }catch(e){}
     window.scrollTo(0,0);
+    dest=destOf(m, routes[m]||'today'); paintNav();
     hubChanged('show');
     keepStorage();
   }
@@ -14778,7 +14997,7 @@ render();
   const apis={}, listeners=[];
   function hasData(m){ if(inited[m]) return true; try{ return !!(KEYS[m]&&localStorage.getItem(KEYS[m])); }catch(e){ return false; } }
   function hubApi(m){ ensureInit(m); return apis[m]||null; }
-  function hubChanged(m){ if(KEYS[m]) trained[m]=null; if(m==='mix'||KEYS[m]) paintTabs();
+  function hubChanged(m){ if(KEYS[m]) savedRun[m]=null; if(m==='mix'||KEYS[m]) paintNav();
     listeners.slice().forEach(f=>{ try{ f(m); }catch(e){ console.error(e); } }); checkBack(m,'changed'); syncWake(); }
   /* ---- The screen stays on while a session is running ----
      Between sets the phone would lock and every set would start with unlocking it. The screen is held from the
@@ -14789,7 +15008,7 @@ render();
   function running(){ return ['lift','str','cal'].some(m=>{ try{ const t=inited[m] && apis[m] && apis[m].running && apis[m].running(); return !!t && Date.now()-t<WAKE_MAX; }catch(e){ return false; } }); }
   async function syncWake(){
     if(!('wakeLock' in navigator) || waking) return;
-    const need=!document.hidden && running();
+    const need=!document.hidden && running() && Prefs.get('wake',true)!==false;
     if(need===!!wake) return;
     waking=true;
     try{
@@ -14797,7 +15016,7 @@ render();
       else { const w=wake; wake=null; if(w) await w.release(); }
     }catch(e){ wake=null; }
     waking=false;
-    if(need!==(!document.hidden && running())) syncWake();   // things changed while it was being asked for
+    if(need!==(!document.hidden && running() && Prefs.get('wake',true)!==false)) syncWake();   // things changed while it was being asked for
   }
   document.addEventListener('visibilitychange', syncWake);
   setInterval(syncWake, 5000);   // a cheap check; not every way of starting a session tells the hub
@@ -14805,21 +15024,24 @@ render();
      finishing a session started there (kind 'run'), comes back to Together where you were. */
   let back=null;
   function away(m, kind){ const y= active==='mix'? window.scrollY : null; let act0=null; try{ const i=hubApi(m).info(); act0=i&&i.busy? i.activeId : null; }catch(e){}
-    show(m); back={m, kind, y, act0}; }
+    show(m); back={m, kind, y, act0}; keepBack(); }
   /* Continue on a session opened from Together picks it back up in its own section: you stay there to train it,
      and finishing or leaving it comes back to Together, as with a session started there. */
-  function stay(m){ if(back&&back.m===m) back.kind='run'; }
+  function stay(m){ if(back&&back.m===m){ back.kind='run'; keepBack(); } }
   function checkBack(m, why){
+    // a section that went back to its own Today while a sheet was open: Together's Today, now that it's closed
+    if(why==='closed' && homeAfter===m){ homeAfter=null;
+      setTimeout(()=>{ if(active===m && routes[m]==='today' && !back && !(apis[m].sheetOpen&&apis[m].sheetOpen()) && progType()!==m) goDest('today'); }, 90); }
     if(!back||back.m!==m||active!==m) return;
     setTimeout(()=>{ const b=back; if(!b||b.m!==m||active!==m) return;
       const api=apis[m];
       if(api&&api.sheetOpen&&api.sheetOpen()) return;                                  // a follow-up sheet opened
       // still training, or a session started there since (a goal's placement test, say)
       if(why!=='left' && api&&api.info){ try{ const i=api.info(); if(i.busy && (b.kind==='run' || i.activeId!==b.act0)) return; }catch(e){} }
-      back=null;
+      back=null; keepBack();
       // a part of a Together day finished: the next part starts straight away, so the day runs as one session
       if(b.kind==='run' && why!=='left' && window.__hub.advance && window.__hub.advance(m)) return;
-      show('mix'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
+      goDest('today'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
   }
   /* Muscles a Strength or Ladder set counts toward. Muscle's own table wins when it has the same exercise;
      otherwise the Strength area or the Ladder progression decides. [primary, secondary] */
@@ -14882,14 +15104,15 @@ render();
     api:hubApi, has:hasData, sets:tallySets, muscles:musclesOf,
     changed:hubChanged,
     on(f){ listeners.push(f); },
-    go(m){ show(m); },
+    go(m){ if(m==='mix'){ show('mix'); apiGo('mix','today'); } else show(m); },
+    dest:goDest, type:progType, libq:()=>({q:libQ, f:filt.library}), filter(d, f){ if(FILTERS.includes(f)&&filt[d]){ filt[d]=f; goDest(d); } },
     away, stay, closed(m){ checkBack(m,'closed'); }, left(m){ checkBack(m,'left'); },
     current(){ return active; },
   };
 
   /* Section headers stick just under the top bar, which grows while a combined day is running. */
   const shellbar=document.querySelector('.shellbar');
-  function syncShellTop(){ const mobile=matchMedia('(max-width:999px)').matches; const side=document.querySelector('.sidebar'); document.documentElement.style.setProperty('--shell-bar-height',shellbar.offsetHeight+'px'); document.documentElement.style.setProperty('--shell-top',(shellbar.offsetHeight+(mobile?side.offsetHeight:0))+'px'); document.querySelector('.sw').setAttribute('aria-orientation',mobile?'horizontal':'vertical'); }
+  function syncShellTop(){ const h=shellbar.offsetHeight; document.documentElement.style.setProperty('--shell-bar-height',h+'px'); document.documentElement.style.setProperty('--shell-top',h+'px'); }
   if(window.ResizeObserver) new ResizeObserver(syncShellTop).observe(shellbar);
   syncShellTop();
   window.addEventListener('resize',syncShellTop);
@@ -14902,8 +15125,10 @@ render();
     const host=hostOf(m);
     const r=host.attachShadow({mode:'open'});
     r.appendChild(document.getElementById('t-'+m).content.cloneNode(true));
-    const nav=r.getElementById('tabbar'), app=r.getElementById('app'), bar=r.querySelector('.appbar');
-    if(nav&&app&&bar) bar.after(nav);
+    // one navigation and one Settings for the whole app: each section's own bottom bar and settings button step aside
+    const own=document.createElement('style');
+    own.textContent='.tabbar{display:none!important}.appbar #setbtn,.appbar #gearbtn{display:none!important}.searchbar:has(#libsearch){display:none!important}';
+    r.appendChild(own);
     r.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"]')){e.preventDefault();e.target.click();} });
     roots[m]=r;
   });
@@ -14911,32 +15136,35 @@ render();
   try{ theme=localStorage.getItem(SK+'.theme')||'system'; }catch(e){}
   stampTheme();
 
-  document.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>show(b.dataset.m)));
-  /* Arrow keys, Home and End move between the tabs that show (only the open one is in the tab order). */
+  document.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>goDest(b.dataset.d)));
+  /* Arrow keys, Home and End move between the four places; Enter or Space opens one. */
   document.querySelector('.sw').addEventListener('keydown',e=>{
     if(e.ctrlKey||e.metaKey||e.altKey) return;
-    const V=visibleMods(), i=V.indexOf(active); let j=-1;
-    if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%V.length; else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i+V.length-1)%V.length;
-    else if(e.key==='Home') j=0; else if(e.key==='End') j=V.length-1;
+    const B=[...document.querySelectorAll('.seg')], i=B.indexOf(document.activeElement); let j=-1;
+    if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%B.length; else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i+B.length-1)%B.length;
+    else if(e.key==='Home') j=0; else if(e.key==='End') j=B.length-1;
     if(j<0) return;
-    e.preventDefault(); show(V[j]); document.querySelector('.seg[data-m="'+V[j]+'"]').focus();
+    e.preventDefault(); B[j].focus();
   });
+  /* A session's focus mode (the next-set card) asks for the whole screen: the header and the navigation step back
+     while it shows, and come back when it ends or you go somewhere else. */
+  let sessionOn=null;
+  window.__sessionMode=function(on){ sessionOn= on? active : null; document.documentElement.classList.toggle('focus-mode', !!on); syncShellTop(); };
 
   document.getElementById('shell-date').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-  document.getElementById('theme-toggle').addEventListener('click',()=>{
-    const dark=theme==='dark'||(theme==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);
-    window.__setTheme(dark?'light':'dark');
-    document.getElementById('theme-toggle').setAttribute('aria-label',dark?'Switch to dark theme':'Switch to light theme');
-  });
   document.querySelectorAll('[data-open-guide]').forEach(b=>b.addEventListener('click',()=>document.getElementById('guide').showModal()));
   document.getElementById('guide-done').addEventListener('click',()=>document.getElementById('guide').close());
-  // Together is home; a trainer with a session still going opens instead, so you land back in it
-  let start='mix';
-  try{ const last=localStorage.getItem(SK+'.mod'); if(KEYS[last] && runningIn(last)) start=last; }catch(e){}
-  // a home-screen shortcut or a link: index.html?m=str opens that section
-  try{ const q=new URLSearchParams(location.search).get('m');
-    if(MODS.includes(q)){ start=q; history.replaceState(history.state,'',location.pathname+location.hash); } }catch(e){}
-  show(start);
+  // Today is home; with a session still going Train opens instead, so you land back in it
+  let start='today', open=null;
+  try{ const last=localStorage.getItem(SK+'.mod'); if(KEYS[last] && runningIn(last)) start='train'; }catch(e){}
+  try{ back=JSON.parse(sessionStorage.getItem('milo.back')||'null'); if(!(back&&KEYS[back.m])) back=null; }catch(e){ back=null; }
+  // a home-screen shortcut or a link: ?m=mix opens Today, ?m=lift|str|cal that section's Progress (or its session), ?go= a place
+  try{ const P=new URLSearchParams(location.search), q=P.get('m'), g=P.get('go');
+    if(q==='mix') start='today';
+    else if(KEYS[q]){ if(runningIn(q)){ start='train'; open=q; } else { start='progress'; filt.progress=q; } }
+    else if(DESTS.includes(g)) start=g;
+    if(q||g) history.replaceState(history.state,'',location.pathname+location.hash); }catch(e){}
+  if(open){ show(open); const A=hubApi(open); if(A&&A.open) A.open(); } else goDest(start);
   booted=true; paintNudge();
   // Together keeps the combined-day strip up to date from any tab, so it starts with the app once it is in use
   try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); if(t&&t.on) ensureInit('mix'); }catch(e){}
