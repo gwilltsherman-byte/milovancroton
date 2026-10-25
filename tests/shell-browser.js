@@ -157,6 +157,9 @@
     check(doc.getElementById('bk').open && doc.getElementById('morebtn').getAttribute('aria-expanded')==='false', 'the narrow header opens Settings and closes its options');
     check(doc.getElementById('bk').scrollWidth<=doc.getElementById('bk').clientWidth+1, 'Settings fits the narrow viewport');
     doc.getElementById('bk-done').click();
+    frame.remove(); frame=null; reset({'milo.persist':'1','trainer.together':JSON.stringify(together)});
+    ({win,doc}=await load('m=mix')); frame.style.width='195px'; await pause(200);
+    check(doc.documentElement.scrollWidth<=195, 'Together’s workout prescriptions and program actions wrap at 195 px');
 
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){

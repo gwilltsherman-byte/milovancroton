@@ -64,7 +64,7 @@
       frame.style.width=width+'px';
       await until(()=>win.innerWidth===width && Number.parseFloat(doc.documentElement.style.getPropertyValue('--shell-bar-height'))===bar.offsetHeight,'Header height did not update');
       win.scrollTo(0,0);
-      check([doc.querySelector('.milo-brand'),...doc.querySelectorAll('.shell-tools button')].every(el=>el.getBoundingClientRect().top>=59),'Header controls clear the iPhone status area at '+width+'px');
+      check([doc.querySelector('.milo-brand'),...doc.querySelectorAll('.shell-tools button')].filter(el=>el.getClientRects().length).every(el=>el.getBoundingClientRect().top>=59),'Header controls clear the iPhone status area at '+width+'px');
       check(side.getBoundingClientRect().top>=bar.getBoundingClientRect().bottom-1 && Math.abs(side.getBoundingClientRect().bottom-win.innerHeight)<=1,'The navigation sits at the bottom, clear of the full inset header at '+width+'px');
       win.scrollTo(0,400); await pause(50);
       check(Math.abs(side.getBoundingClientRect().bottom-win.innerHeight)<=1,'The bottom navigation stays put while scrolling at '+width+'px');

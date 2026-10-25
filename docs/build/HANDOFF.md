@@ -31,14 +31,15 @@ Done and merged into `main`:
 | 1 together | Pain adjusts the right lifts, decided week 5, fixed day order, weekdays, safety layer (health check, illness, red flags, life stage). | #46 |
 | 1 muscle | Blocks from weekly targets, assisted and weighted loads, survey per muscle, RIR check during the set, adductors. | #47 |
 
-In progress when this was written (25 October 2026, 02:30 UTC). Check `git log --oneline origin/main` for
-"Merge wave 2" to see whether they landed:
+Wave 2 is implemented and verified on `codex/wave2-complete` (24 October 2026, Pacific time), ready for review.
+It has not yet been merged into `main`. See `WAVE2-RESULTS.md` for verification and device limits.
 - **Wave 2a, one app** (brief `wave2-shell.md`): one navigation (Today · Train · Progress · Library), one Settings,
   program types instead of separate trainers, start in two taps.
 - **Wave 2b, next-set screen** (brief `wave2-session.md`): focus mode, logging and accessibility fixes, rest-timer
   alerts.
 
-If they did not land, run both again from `main`. They are independent; run them side by side.
+Review and merge that branch before Wave 3. Do not rebuild Wave 2 from `main`; the completed shell and session
+work are already combined there. Check the remote branch and its pull request for the latest review state.
 
 Left to do, in order:
 1. **Wave 3, in parallel:** `wave3-conditioning.md` (K7, a fourth section for cardio) and `wave3-data.md` (outcome

@@ -45,7 +45,11 @@
     check(JSON.parse(localStorage.getItem('strlog.v2')).active.entries[0].sets[0].w===42.5,'Strength weight stepper uses the available kit jump');
     root.querySelector('[data-session="done"]').click();await pause(250);saved=JSON.parse(localStorage.getItem('strlog.v2'));
     check(saved.active.entries[0].sets[0].done&&saved.active.entries[0].sets[0].rpe===8&&saved.active.entries[0].sets[0].ra,'Strength logs the untouched effort target as assumed');
-    root.querySelector('[data-session="skip"]').click();root.querySelector('[data-session="list"]').click();await pause(50);
+    root.querySelector('[data-session="skip"]').click();
+    const effort=root.querySelector('[data-field="rpe"]'); effort.value='10'; effort.dispatchEvent(new win.Event('input',{bubbles:true}));
+    effort.parentElement.querySelector('[data-step]:last-child').click(); await pause(250);
+    check(root.querySelector('[data-field="rpe"]').value==='10','the effort stepper stops at RPE 10');
+    root.querySelector('[data-session="list"]').click();await pause(50);
     frame.style.width='195px';await pause(250);check(doc.documentElement.scrollWidth<=196,'Strength list fits 195 px');
     ({root,win,doc}=await seed('cal',{...base,v:2,rung:{legs:5},placed:{legs:true},tests:[],goals:[],active:active([{ladderId:'legs',stepIdx:5,kind:'reps',target:5,setup:{},clean:true,sets:[{v:null,done:false},{v:null,done:false}]}])}));
     check(root.querySelector('.session-count').textContent.includes('Left')&&!root.querySelector('[data-field="r"]'),'Ladder presents the left side first');
@@ -55,6 +59,21 @@
     check(saved.active.entries[0].sets[0].done&&saved.active.entries[0].sets[0].v===3,'Ladder logs the weaker side after both sides');
     root.querySelector('[data-session="skip"]').click();root.querySelector('[data-session="list"]').click();frame.style.width='195px';await pause(250);check(doc.documentElement.scrollWidth<=196,'Ladder list fits 195 px');
     win.MiloSession.restOver(root);await pause(50);check(root.querySelector('[role="status"][data-rest-status]').textContent==='Rest over','rest completion is announced to assistive technology');
+    ({root,win,doc}=await seed('cal',{...base,v:2,rung:{pull:0},placed:{pull:true},tests:[],goals:[],active:active([{ladderId:'pull',stepIdx:0,kind:'hold',target:5,setup:{},clean:true,sets:[{v:null,done:false},{v:null,done:false}]}])}));
+    root.querySelector('[data-act="hold-go"]').click(); await pause(1100);
+    check(Number(root.querySelector('[data-hold-live]').value)>=1,'a hold timer runs inside the focus card');
+    root.querySelector('[data-session="done"]').click(); await pause(250);
+    saved=JSON.parse(localStorage.getItem('proladder.v1'));
+    check(saved.active.entries[0].sets[0].done&&saved.active.entries[0].sets[0].v>=1&&saved.active.entries[0].sets[0].v<5,'stopping a hold logs its measured seconds');
+
+    ({root,win,doc}=await seed('lift',{...base,v:1,exercises:[],mesos:[],bodylog:[],active:active([{...entry,sg:'pair'},{...entry,sg:'pair',exId:'partner',name:'Partner row'}])}));
+    const weight=root.querySelector('[data-field="weight"]'), shown=Number(root.querySelector('[data-field="reps"]').value);
+    weight.value='50';weight.dispatchEvent(new win.Event('input',{bubbles:true}));
+    root.querySelector('[data-session="done"]').click();await pause(250);saved=JSON.parse(localStorage.getItem('hyplog.v1'));
+    check(saved.active.entries[0].sets[0].reps===shown&&saved.active.entries[0].sets[0].assumed,'changing weight still logs the untouched reps shown on the card');
+    check(saved.active.restDuration===20||saved.active.restDur===20,'supersets keep the short transition rest');
+    root.querySelector('[data-session="skip"]').click();await pause(150);
+    check(root.querySelector('.session-card h2').textContent==='Partner row','the focus card alternates exercises in a superset');
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   }catch(e){result.textContent=results.join('\n')+'\nFAIL '+e.stack;}
   finally{if(frame)frame.remove();Object.keys(localStorage).filter(k=>keys.test(k)).forEach(k=>localStorage.removeItem(k));Object.entries(original).forEach(([k,v])=>localStorage.setItem(k,v));sessionStorage.clear();Object.entries(originalSession).forEach(([k,v])=>sessionStorage.setItem(k,v));}
