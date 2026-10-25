@@ -1,7 +1,7 @@
 /* Backup validation and HTML rendering boundary. No third-party runtime dependencies. */
 (function (root) {
   'use strict';
-  const MAX_BYTES = 2 * 1024 * 1024;
+  const MAX_BYTES = 2 * 1024 * 1024, NODES = 100000, RECORDS = 20000;
   const STATE_KEYS = ['hyplog.v1', 'strlog.v2', 'proladder.v1', 'trainer.together'];
   const SHELL_KEYS = ['trainer.shell.theme', 'trainer.shell.mod'];
   const BACKUP_KEYS = [...STATE_KEYS, ...SHELL_KEYS, ...STATE_KEYS.map(k => k + '.corrupt')];
@@ -16,7 +16,7 @@
   function bounded(value) {
     let nodes = 0;
     function visit(v, key, depth) {
-      if (++nodes > 100000 || depth > 24) bad('This backup is too complex.');
+      if (++nodes > NODES || depth > 24) bad('This backup is too complex.');
       if (v === null) return;
       if (numeric.has(key) && (typeof v !== 'number' || !Number.isFinite(v))) bad();
       if (/^(id|exId|liftId|ladderId|mesoId|dayId)$/.test(key) && !id(v)) bad('An identifier in this backup is invalid.');
@@ -24,7 +24,7 @@
       if (typeof v === 'boolean') return;
       if (typeof v === 'string') { if (v.length > 20000 || /\u0000/.test(v)) bad(); return; }
       if (Array.isArray(v)) {
-        if (v.length > 20000) bad('This backup has too many records.');
+        if (v.length > RECORDS) bad('This backup has too many records.');
         v.forEach(x => visit(x, '', depth + 1)); return;
       }
       if (!record(v) || Object.keys(v).length > 2000) bad();
@@ -77,6 +77,27 @@
       if (!record(c) || !id(c.id) || typeof c.n !== 'string' || !Array.isArray(c.steps) || !c.steps.every(record)) bad('A custom ladder is invalid.');
     }
     return value;
+  }
+
+  /* Room for more history. A section's saved data loads only within the limits above, and data that doesn't is set
+     aside as unreadable on the next start. So before past sessions are added (an import), this says how many of recs
+     fit, in the order given (newest first, so what is left out is the oldest): saved and those together use no more
+     than share of each limit (three quarters unless said), leaving the rest for the training still to come. */
+  function weigh(value) {
+    const text = JSON.stringify(value); let nodes = 0;
+    (function visit(v) { nodes++; if (v && typeof v === 'object') for (const k of Object.keys(v)) visit(v[k]); })(JSON.parse(text));
+    return {bytes: bytes(text), nodes};
+  }
+  function room(saved, recs, share) {
+    share = share > 0 && share <= 1 ? share : 0.75;
+    const s = weigh(saved), len = record(saved) && Array.isArray(saved.history) ? saved.history.length : 0;
+    let b = s.bytes, n = s.nodes, k = 0;
+    for (const r of recs) {
+      const w = weigh(r);
+      if (b + w.bytes + 1 > MAX_BYTES * share || n + w.nodes > NODES * share || len + k + 1 > RECORDS * share) break;
+      b += w.bytes + 1; n += w.nodes; k++;
+    }
+    return k;
   }
 
   function parseSection(text, key) {
@@ -351,7 +372,7 @@
   }
 
   const api = Object.freeze({MAX_BYTES, STATE_KEYS, BACKUP_KEYS, section, parseSection, data, backup, snapshot, restore, html,
-    KDF_ITER, SEALED_BYTES, seal, sealed, unseal, owned, erase, IMPORT_BYTES, csv, workouts});
+    KDF_ITER, SEALED_BYTES, seal, sealed, unseal, owned, erase, IMPORT_BYTES, csv, workouts, room});
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.MiloSecurity = api;
 })(typeof window === 'object' ? window : globalThis);
