@@ -5748,6 +5748,15 @@ if(window.__hub) window.__hub.reg('lift', {
     Object.values(ex).forEach(x=>{ if(x.v.length<3) return; const k=Math.max(1,Math.floor(x.v.length/3)), a=Math.max(...x.v.slice(0,k)), b=Math.max(...x.v.slice(-k));
       x.p.forEach(mu=>{ out[mu]=(out[mu]||0)+(b-a)/a; n[mu]=(n[mu]||0)+1; }); });
     Object.keys(out).forEach(mu=>{ out[mu]/=n[mu]; }); return out; },
+  // for Together: each exercise's sessions since a date, one estimated max a session from the sets that can give one
+  // (Lift.usable), as Lift.trend reads them: [{id, p, pts:[{date, e1, rated}]}]. Holds and lighter weeks on purpose are left out.
+  points(since){ const ex={};
+    state.history.forEach(w=>{ if(w.date<since||mesoDeload(w)) return;
+      w.entries.forEach(en=>{ if(isHold(en.exId)) return; let best=0, rated=false;
+        en.sets.forEach(s=>{ if(!isWork(s)||!s.done||!(s.reps>0)||!Lift.usable(s.reps, s.rir)) return; const L=setLoad(en.exId, s, w.date), v=L>0? est1RM(L, s.reps, s.rir, en.exId) : 0;
+          if(v>best){ best=v; rated=s.rir!=null; } });
+        if(best>0) (ex[en.exId]||(ex[en.exId]={id:en.exId, p:(en.primary||[]).slice(), pts:[]})).pts.push({date:w.date, e1:best, rated}); }); });
+    return Object.values(ex); },
   table(){ return {muscles:MUSCLES, groups:GROUPS}; },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
@@ -10663,11 +10672,13 @@ function hubOptions(area, equip){
   return Object.keys(EX).filter(id=>EX[id].a===area && ok(id)).sort((x,y)=>EX[x].rank-EX[y].rank).map(id=>({id, n:EX[id].n, h:exHow(id)}));
 }
 function hubLift(id){ const X=EX[id]; if(!X) return null; const L=state.lifts[id];
-  return {id, n:exName(id), a:X.a, k:X.k, key:hubKey(id), e1:currentE1(id), work:L&&L.work!=null? L.work : null, bar:X.eq==='bar'}; }
+  return {id, n:exName(id), a:X.a, k:X.k, key:hubKey(id), e1:currentE1(id), work:L&&L.work!=null? L.work : null, bar:X.eq==='bar', lp1:!!X.lp1}; }
+/* Together's top set names its RPE (7 to 9): the top-set week that has it. */
+const tgWeek=sc=> sc&&sc.t==='top'&&sc.rpe>=7&&sc.rpe<=9? sc.rpe-6 : 1;
 /* What a scheme comes to for this lift today: its sets, and a short line like "100 kg × 5". */
 function hubPreview(id, sc){
   const X=EX[id]; if(!X) return null;
-  const pl=planSlot(id, sc, 1, 'together'), h=heaviest(pl)||pl[0]||{};
+  const pl=planSlot(id, sc, tgWeek(sc), 'together'), h=heaviest(pl)||pl[0]||{};
   const sum= X.k==='bw'? sc.lo+'&ndash;'+sc.hi+' reps'
     : X.k==='added'? sc.lo+'&ndash;'+sc.hi+' reps, '+(pl[0]&&pl[0].w? '+'+fmtW(pl[0].w)+' '+u() : 'bodyweight')
     : (h.tr||sc.reps)+' reps'+(h.trpe!=null? ' at RPE '+h.trpe : '')+', '+(h.w? fmtW(h.w)+' '+u() : 'pick a weight');
@@ -10677,7 +10688,7 @@ function hubPreview(id, sc){
    lift's own numbers (its working weight, or its estimated max from the sets you log). */
 function hubStartWith(spec){
   if(state.active) return null;
-  const entries=(spec.slots||[]).filter(x=>EX[x.id]).map(x=>makeEntry(x.id, planSlot(x.id, x.sc, 1, 'together'), x.sc, x.label||chipText(x.id, x.sc, 1, 'together')));
+  const entries=(spec.slots||[]).filter(x=>EX[x.id]).map(x=>makeEntry(x.id, planSlot(x.id, x.sc, tgWeek(x.sc), 'together'), x.sc, x.label||chipText(x.id, x.sc, tgWeek(x.sc), 'together')));
   if(!entries.length) return null;
   state.active={id:uid(), name:spec.name||'Together', startedAt:Date.now(), entries, restEndsAt:null, restDur:0, note:null, plan:null};
   save(); closeModal(); state.route='train'; render(); window.scrollTo(0,0);
@@ -10700,6 +10711,14 @@ if(window.__hub) window.__hub.reg('str', {
   // Together starts a part while another session is open here: that one stays open, out of the way
   park(){ if(!state.active) return false; parkActive(); return true; },
   pick:hubPick, options:hubOptions, lift:hubLift, preview:hubPreview, startWith:hubStartWith,
+  // for Together: each lift's sessions since a date, one estimated max a session, as Lift.trend reads them; your program's
+  // lighter weeks are left out. [{id, a, key, pts:[{date, e1, rated}]}]
+  points(since){ const out={};
+    state.history.forEach(h=>{ if(h.date<since || (h.plan&&isDeload(h.plan.model, h.plan.week))) return; const day={};
+      h.entries.forEach(en=>{ const id=en.liftId; if(!EX[id]||EX[id].k!=='load') return;
+        en.sets.forEach(s=>{ const v=setE1(s,id); if(v>0 && !(day[id]&&day[id].e1>=v)) day[id]={e1:v, rated:s.rpe!=null}; }); });
+      Object.keys(day).forEach(id=>{ (out[id]||(out[id]={id, a:EX[id].a, key:hubKey(id), pts:[]})).pts.push({date:h.date, e1:day[id].e1, rated:day[id].rated}); }); });
+    return Object.values(out); },
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
   info:hubInfo, work:hubWork, upcoming:hubUpcoming,
@@ -10850,8 +10869,9 @@ function load(){
   t.kit= Array.isArray(t.kit)? KIT.map(k=>k[0]).filter(k=>t.kit.includes(k)) : null;
   if(!EXP.some(e=>e[0]===t.exp)) t.exp='intermediate';
   if(!STAGES.some(s=>s[0]&&s[0]===t.stage)) t.stage=null;
-  // the health check: when you answered it, and which questions you said yes to (kept on this phone)
-  t.screen= t.screen && typeof t.screen==='object' && Array.isArray(t.screen.yes)? {at:+t.screen.at||0, yes:[...new Set(t.screen.yes.filter(i=>Number.isInteger(i)&&i>=0&&i<PARQ.length))]} : null;
+  // the health check: when you answered it, which questions you said yes to (kept on this phone), and the blocks done by then
+  t.screen= t.screen && typeof t.screen==='object' && Array.isArray(t.screen.yes)? {at:+t.screen.at||0, yes:[...new Set(t.screen.yes.filter(i=>Number.isInteger(i)&&i>=0&&i<PARQ.length))],
+    blk: Number.isInteger(t.screen.blk)&&t.screen.blk>=0? t.screen.blk : 0} : null;
   // blocks finished so far (null: not counted yet, worked out from the log)
   if(!(Number.isInteger(t.blocks)&&t.blocks>=0)) t.blocks=null;
   // gentler swaps you said yes to, for one day
@@ -10949,7 +10969,9 @@ function blocksDone(){ if(tg.blocks!=null) return tg.blocks; const at=(tg.plan&&
 function blockEnds(){ const P=tg.plan, n=blocksDone(); tg.blocks= P&&(tg.log||[]).some(e=>!e.skipped && (e.start||e.date)>=(P.at||0))? n+1 : n; }
 /* Gentler training, with RPE 7 at most and nothing to failure: under 18, pregnant or after a birth, or the first block
    after a yes on the health check (Lloyd et al. 2014; Mottola et al. 2018). */
-function gentle(){ return tg.stage==='u18' || tg.stage==='preg' || (!!(tg.screen&&tg.screen.yes.length) && blocksDone()===0); }
+function gentle(){ return tg.stage==='u18' || tg.stage==='preg' || screenGentle(); }
+/* A yes on the health check makes the block it was given in gentle, the first one when it came with the set-up. */
+function screenGentle(){ return !!(tg.screen&&tg.screen.yes.length) && blocksDone()<=tg.screen.blk; }
 /* New lifters practise the lifts with linear progression in their first block: the same sets each time, a little heavier
    when every rep was made, starting light. */
 function linear(){ return (tg.exp||'intermediate')==='beginner' && blocksDone()===0; }
@@ -11308,7 +11330,7 @@ const STRAIGHT=['frontlever','backlever','planche','planchepush','flag','press']
 const isStraight=x=>x.straight!=null? !!x.straight : STRAIGHT.includes(gid(x));
 /* Straight-arm work logged in Ladder in the last 48 hours: today's waits. */
 function straightRecent(at){ try{ if(!H.has('cal')) return false; const C=H.api('cal'), t=at==null? Date.now() : at;
-  return !!(C&&C.work) && C.work(t-48*3600e3, t).some(w=>STRAIGHT.includes(w.group)); }catch(e){ return false; } }
+  return !!(C&&C.work) && C.work(t-48*3600e3, t).some(w=>w.straight!=null? !!w.straight : STRAIGHT.includes(w.group)); }catch(e){ return false; } }
 /* ==================== FATIGUE ====================
    Hard sets from the last three days still weigh on a muscle, in the shape soreness takes: it peaks a day or two after
    training (Cheung et al. 2003), so yesterday's sets count at 0.6, the day before's in full and three days back at 0.6,
@@ -11622,7 +11644,7 @@ function jointAdjust(I, C){
    an assisted version in its own plan. Ladder decides what that covers; one without this simply goes on as before. */
 function holdLadder(joints){
   if(!joints||!joints.length||!tg.secs.includes('cal')) return;
-  try{ const L=H.api('cal'), f=L&&(L.painHold||L.holdFor||L.hold); if(typeof f==='function') f.call(L, joints, 7); }catch(e){ console.warn('Ladder couldn’t hold its work', e); }
+  try{ const L=H.api('cal'), f=L&&L.hold; if(typeof f==='function') joints.forEach(j=>f.call(L, j, 7)); }catch(e){ console.warn('Ladder couldn’t hold its work', e); }
 }
 /* Muscle asks how you feel when a session starts. With a check-in today it already knows, so it is told. */
 function readinessFor(C){
@@ -12065,7 +12087,9 @@ function ciSave(){
   if(d.painAsked!=null){ rec.pain={}; if(d.painAsked) Object.keys(d.pain).forEach(k=>{ if(JOINTS[k]) rec.pain[k]=d.pain[k]||0; }); }
   if(d.ill) rec.ill=d.ill;
   tg.checkins=(tg.checkins||[]).filter(c=>c.day!==rec.day).concat([rec]).sort((a,b)=>a.day-b.day).slice(-400);
-  ciEdit=false; ciDraft=null; ciBar=null; save(); render(); toast('Check-in saved');
+  // a badly sore wrist, elbow or shoulder: Ladder holds the work that loads it for a week, from now
+  const hold=['wrist','elbow','shoulder'].filter(j=>painLevel(j, rec)==='high');
+  ciEdit=false; ciDraft=null; ciBar=null; save(); holdLadder(hold); render(); toast('Check-in saved');
 }
 function ciSkip(){
   tg.checkins=(tg.checkins||[]).filter(c=>c.day!==startOfToday()).concat([{day:startOfToday(), at:Date.now(), skip:true}]).slice(-400);
@@ -12291,7 +12315,7 @@ function programCard(){
   const what={build:'a building dose', moderate:'a moderate dose', maintain:'a dose to keep what you have'};
   // what changes the program for you: the health check, your life stage, being new to it
   const who=[];
-  if(tg.screen&&tg.screen.yes.length&&blocksDone()===0) who.push('Your health check had a yes: see a doctor or physio before training hard. This first block stays gentle, at RPE 7 at most with nothing to failure.');
+  if(screenGentle()) who.push('Your health check had a yes: see a doctor or physio before training hard. This block stays gentle, at RPE 7 at most with nothing to failure.');
   if(tg.stage==='u18') who.push('Under 18: technique first, nothing to failure (RPE 7 at most), and a coach should watch your sessions.');
   if(tg.stage==='older') who.push('65 or over: lighter lifts are fast power work, balance work twice a week, more time to recover, and the keeping dose is twice a week.');
   if(tg.stage==='preg') who.push('Pregnant or after a birth: get the go-ahead from your midwife or doctor, keep to RPE 7, and after the first trimester avoid long spells lying flat.');
@@ -12437,7 +12461,7 @@ function screenField(d){
   return `<div class="field"><details class="rules" ${open?'open':''}><summary><span><b>Health check</b> <span class="hint">${d.asked||yes.length? (yes.length? plural(yes.length,'yes') : 'No to all') : '7 questions, about a minute'}</span></span>${IC.chev}</summary>
     <p class="hint" style="margin:8px 0">Tap any that apply to you. Your answers stay on this phone.</p>
     <div class="tlist">${PARQ.map((q,i)=>`<button class="tpick topt${yes.includes(i)?' on':''}" data-a="d-q" data-v="${i}" aria-pressed="${yes.includes(i)}"><span class="tn"><b>${q}</b></span>${yes.includes(i)? IC.check : ''}</button>`).join('')}</div>
-    ${yes.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: your first block stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
+    ${yes.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: ${tg.on? 'this block' : 'your first block'} stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
     ${basedOn('What this is based on', ['The questions follow the general health questions of the PAR-Q+, a screen used before people start exercising. Advice for under-18s, adults over 65 and pregnancy follows the position statements and guideline below: young people do well on resistance training that is supervised and technique-first; older adults gain from power and balance work and need more to keep muscle; in pregnancy, exercise is encouraged once cleared, at a moderate effort. None of this is medical advice.'], SAFETY_SOURCES)}
   </details></div>`;
 }
@@ -12732,7 +12756,16 @@ __root.addEventListener('click', e=>{
   const a=el.dataset.a, k=+el.dataset.k;
   switch(a){
     case 'd-sec': { const m=el.dataset.m, s=draft.secs; draft.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); break; }
-    case 'd-days': draft.days=+el.dataset.v; render(); break;
+    case 'd-days': draft.days=+el.dataset.v; draft.wd=null; render(); break;
+    // your weekdays: tap to train on one or not; the number of days follows, two at least
+    case 'd-wd': { const v=+el.dataset.v, cur=dWd(draft).slice(), i=cur.indexOf(v);
+      if(i>=0){ if(cur.length<=2){ toast('Two days a week at least.'); break; } cur.splice(i,1); } else cur.push(v);
+      draft.wd=cur.sort((a,b)=>a-b); draft.days=cur.length; render();
+      { const b=$(`[data-a="d-wd"][data-v="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'd-stage': draft.stage=el.dataset.v||''; render(); { const b=$(`[data-a="d-stage"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
+    // the health check: tap a question you say yes to, again to take it back
+    case 'd-q': { const v=+el.dataset.v, y=draft.yes||(draft.yes=[]), i=y.indexOf(v); if(i>=0) y.splice(i,1); else y.push(v); draft.asked=true; render();
+      { const b=$(`[data-a="d-q"][data-v="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 'd-mins': draft.mins=+el.dataset.v; render(); break;
     case 'd-kit': { const v=el.dataset.v, cur=draft.kit? draft.kit : KIT.map(k=>k[0]);
       draft.kit= cur.includes(v)? cur.filter(x=>x!==v) : KIT.map(k=>k[0]).filter(x=>cur.includes(x)||x===v); render(); break; }
@@ -12747,8 +12780,8 @@ __root.addEventListener('click', e=>{
       if(!tune.setup) remember(fresh? 'a new block started' : 'changes to this block');
       tg.tune=cleanTune(tune.T);
       // a new block starts on a fresh week, at Day 1; a day still running ends here, any session in it left open
-      const open= fresh&&tg.run? tg.run.parts.filter(p=>p.st==='run').map(p=>SEC[p.m].n) : [];
-      if(fresh){ closeRun(); tg.plan=null; tg.roundAt=Date.now(); tg.next=0; peekDay=null; }
+      const open= fresh&&tg.run? [...new Set(tg.run.parts.filter(p=>p.st==='run').map(p=>SEC[p.m].n))] : [];
+      if(fresh){ closeRun(); newBlock(); tg.roundAt=Date.now(); tg.next=0; peekDay=null; }
       tune=null; save(); render(); window.scrollTo(0,0);
       toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.${open.length? ' '+listText(open)+' is still open: finish or end it there.' : ''}` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, true); break; }
     case 't-cancel': tune=null; render(); window.scrollTo(0,0); break;
@@ -12819,9 +12852,12 @@ __root.addEventListener('click', e=>{
       if(tg.on) remember('changes to the set-up');
       tg.secs=draft.secs.slice(); tg.days=draft.days; tg.mins=draft.mins; tg.prio=(draft.prio||autoOrder(ALL, skillGoal())).slice(); tg.on=true;
       tg.kit= draft.kit&&draft.kit.length<KIT.length? draft.kit.slice() : null; tg.exp=draft.exp||'intermediate';
+      // weekdays you picked (the suggested ones are kept as none), life stage, and the health check, kept on this phone
+      tg.wd= Array.isArray(draft.wd)&&draft.wd.length===tg.days&&draft.wd.join()!==POS[tg.days].join()? draft.wd.slice() : null;
+      tg.stage=draft.stage||null;
+      if(draft.asked||(draft.yes||[]).length||tg.screen){ const yes=(draft.yes||[]).slice().sort((a,b)=>a-b), was=tg.screen;
+        tg.screen= was&&was.yes.join()===yes.join()? was : {at:Date.now(), yes, blk:tg.plan? blocksDone() : 0}; }
       Prefs.set({kit:tg.kit||KIT.map(k=>k[0])});
-      // a day already running takes the new order for what is left of it
-      if(tg.run){ const ord=orderParts(tg.run.parts.map(p=>p.m)); tg.run.parts.sort((x,y)=>ord.indexOf(x.m)-ord.indexOf(y.m)); }
       if(changed){ tg.custom=null; tg.next=(tg.next||0)%tg.days; }
       // a set-up that changes what the program is built from starts a new block, so it opens for you to customize
       draft=null; if(baseSig()!==was) tune={T:cleanTune(tg.tune), fresh:true, setup:true};
@@ -12856,7 +12892,7 @@ __root.addEventListener('click', e=>{
       // a day still running ends here, any session in it left open to finish
       closeRun();
       const P=plan();
-      if(a==='w-prev') P.week=Math.max(1, wk-1); else if(a==='w-next'){ if(last){ learnVolume(); tg.plan=null; } else P.week=wk+1; } else P.week=wk;
+      if(a==='w-prev') P.week=Math.max(1, wk-1); else if(a==='w-next'){ if(last) newBlock(); else P.week=wk+1; } else P.week=wk;
       // either way the week starts fresh, at Day 1
       tg.roundAt=Date.now(); tg.next=0; peekDay=null; pickOpen=false; save(); render(); window.scrollTo(0,0);
       toast(a==='w-next'&&last? `A new block starts: week 1 of ${BLOCK}, Day 1.` : `Week ${plan().week} of ${BLOCK} starts at Day 1.`, true); break; }
@@ -12872,6 +12908,10 @@ __root.addEventListener('click', e=>{
       W[d]= W[d].includes(m)? W[d].filter(x=>x!==m) : ALL.filter(x=>W[d].includes(x)||x===m);
       tg.custom=W; save(); render(); break;
     }
+    // the gentler swaps on offer for a sore joint, taken for today
+    case 'swap-yes': { const ids=(el.dataset.id||'').split(',').filter(Boolean); if(!ids.length) break;
+      remember('swaps for a sore joint'); const d=startOfToday(), cur=tg.swap&&tg.swap.day===d? tg.swap.ids : [];
+      tg.swap={day:d, ids:[...new Set(cur.concat(ids))].slice(0,40)}; save(); render(); toast('Swapped for today.', true); break; }
     case 'reset-week': remember('back to the suggested week'); tg.custom=null; save(); render(); toast('Back to the suggested week.', true); break;
     case 'retry': render(); break;
     case 'ci-w': { const f=el.dataset.f, v=+el.dataset.v; ciDraft.w[f]= ciDraft.w[f]===v? undefined : v;
@@ -12879,6 +12919,7 @@ __root.addEventListener('click', e=>{
       { const sv=$('#cisave'); if(sv) sv.disabled=!ciCanSave(); } break; }
     case 'ci-sore': ciDraft.soreAsked= el.dataset.v==='1'; render(); break;
     case 'ci-pain': ciDraft.painAsked= el.dataset.v==='1'; render(); break;
+    case 'ci-ill': { const v=el.dataset.v; ciDraft.ill= ciDraft.ill===v? null : v; render(); { const b=$(`[data-a="ci-ill"][data-v="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 'ci-add-sore': ciDraft.sore[el.dataset.k]=3; render(); break;
     case 'ci-add-pain': ciDraft.pain[el.dataset.k]=3; render(); break;
     case 'ci-save': ciSave(); break;
