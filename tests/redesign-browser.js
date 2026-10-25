@@ -286,8 +286,10 @@
       ({win,doc}=await load()); root=rootOf(doc,'lift');
       await until(()=>root.querySelector('.excard'),'The session did not open');
       check(root.querySelector('.excard').textContent.includes('Last: 100kg×5 @2 in Strength'),'Muscle starts the bench press from your newer Strength set, and says so');
-      const e1=win.__hub.api('str').lift('bench').e1;
-      check(Math.abs(e1-100/win.Lift.pct(7))<0.01,'Strength’s estimate uses its newest set, counting the 2 reps left');
+      // a smoothed estimate, not the best of recent sessions: both sets count, the newer more, each with its reps left
+      const e1=win.__hub.api('str').lift('bench').e1, L=win.Lift;
+      const want=L.estimate([{date:day(1), e1:100/L.pct(7), rated:true}, {date:day(6), e1:80/L.pct(10), rated:true}]).value;
+      check(Math.abs(e1-want)<0.01 && e1<100/L.pct(7) && e1>80/L.pct(10),'Strength’s estimate averages its set with Muscle’s, the newer counting more, with the 2 reps left');
       const b=doc.createElement('button'); b.dataset.act='set-unit'; b.dataset.v='lb'; b.hidden=true; root.getElementById('view').appendChild(b); b.click(); b.remove();
       await pause(300);
       check(JSON.parse(localStorage.getItem('strlog.v2')).settings.unit==='lb' && win.Prefs.get('unit')==='lb','Pounds chosen in Muscle are Strength’s units too');

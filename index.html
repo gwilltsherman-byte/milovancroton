@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=' 'sha256-BT5j46AINVOFhi5LTy9amxp0rWTq9f3lRX6bDReZrCs='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=' 'sha256-bayUD3mPXnW7C2+SF5UqFEBb+JOGY23r2BCWK1YVoQM='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -1610,6 +1610,14 @@ svg{width:18px; height:18px; flex:none}
 .setopt svg{width:16px; height:16px}
 .pl{grid-column:2/-1; font-size:11px; color:var(--muted); padding:0 2px 1px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .pl .short,.short{color:var(--warn); font-weight:700}
+/* an RPE logged from the target (the box was left untouched), apart from one you typed */
+.sinput.auto,.edin.auto{color:var(--muted); font-style:italic; border-style:dashed}
+span.auto{color:var(--muted); font-style:italic}
+button.pl.chk{display:flex; align-items:center; gap:5px; background:none; border:none; margin:0; padding:3px 2px 2px; font:inherit; font-size:11.5px; font-weight:600; color:var(--iron-ink); text-align:left; white-space:normal; cursor:pointer}
+.pl.chk svg{width:14px; height:14px; flex:none}
+.kitcount{display:flex; flex-wrap:wrap; gap:8px}
+.field label.kc{display:flex; align-items:center; gap:5px; margin:0; font-size:12.5px; letter-spacing:0; text-transform:none; color:var(--ink-2)}
+.field .kc input{width:58px; padding:8px 6px; text-align:center}
 .excard-actions{display:flex; gap:7px; padding:0 12px 13px; overflow-x:auto; scrollbar-width:none;
   -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent)}
 .excard-actions::-webkit-scrollbar{display:none}
@@ -2166,7 +2174,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=bdcf75ff0dbd294308b0" integrity="sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=053e63e3a00835538586" integrity="sha256-BT5j46AINVOFhi5LTy9amxp0rWTq9f3lRX6bDReZrCs=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=6dac940f798f5e75bb0b" integrity="sha256-bayUD3mPXnW7C2+SF5UqFEBb+JOGY23r2BCWK1YVoQM=" crossorigin="anonymous"></script>
 </body>
 </html>
 
