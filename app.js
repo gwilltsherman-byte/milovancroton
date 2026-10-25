@@ -5752,6 +5752,21 @@ if(window.__hub) window.__hub.reg('lift', {
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
+  // Workouts from Strong or Hevy (the shell's import): added as past sessions beside yours, leaving out an exercise you already
+  // logged that day; drop takes ids added before out again (Undo). add: [{id, date, name, note, durationSec, from, entries:[{id, note,
+  // sets:[{warm, kind, kg, reps, secs, rpe}]}]}]
+  past(add, drop){ const out={added:[], sets:0, skipped:0}, dk=t=>Day.key(t), n0=state.history.length;
+    if(drop&&drop.length) state.history=state.history.filter(h=>!drop.includes(h.id));
+    (add||[]).forEach(s=>{ if(state.history.some(h=>h.id===s.id)) return; const have=new Set(state.history.filter(h=>dk(h.date)===dk(s.date)).flatMap(h=>h.entries.map(e=>e.exId)));
+      const entries=s.entries.map(x=>{ const e=exById(x.id); if(!e) return null; if(have.has(e.id)){ out.skipped++; return null; }
+        const sets=x.sets.map(t=>({type:t.warm?'warmup':'work', weight:t.kg>0? t.kg : null, reps:isHold(e.id)? t.secs||t.reps : t.reps, rir:t.rpe!=null? Math.max(0,10-t.rpe) : null,
+          done:true, tag:t.kind==='drop'?'Drop set':t.kind==='failure'?'Failure':null, segments:[]})).filter(t=>t.reps>0);
+        return sets.some(isWork)? {exId:e.id, name:e.name, primary:e.primary.slice(), secondary:e.secondary.slice(), equipment:e.equipment,
+          target:{repLow:e.def.repLow, repHigh:e.def.repHigh, rir:e.def.rir, rest:e.def.rest}, note:x.note||null, sets} : null; }).filter(Boolean);
+      if(!entries.length) return;
+      insertRec({id:s.id, name:s.name, date:s.date, durationSec:s.durationSec||0, entries, prs:[], note:s.note||null, from:s.from});
+      out.added.push(s.id); entries.forEach(e=>{ out.sets+=e.sets.length; }); });
+    if(out.added.length||state.history.length!==n0){ save(); render(); if(window.__hub) window.__hub.changed('lift'); } return out; },
 });
 
 /* ==================== BOOT ==================== */
@@ -8737,6 +8752,8 @@ if(window.__hub) window.__hub.reg('cal', {
         const top=done.reduce((a,x)=>x.v>a.v? x : a); return {date:h.date, reps:top.v, rir:top.rir!=null? top.rir : null}; } }
     return null; },
   stamp:()=>ladVer,
+  // for the shell's spreadsheet export: a rung's name
+  name(id, i){ const st=LADDERS[id]&&stepsOf(id)[i]; return st? st.n : null; },
 });
 
 /* ==================== BOOT ==================== */
@@ -10710,6 +10727,20 @@ if(window.__hub) window.__hub.reg('str', {
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
+  // for the shell's spreadsheet export: a lift's name, in the variation a session did
+  name(id, vi){ return EX[id]? exName(id, vi) : null; },
+  // Workouts from Strong or Hevy (the shell's import): added as past sessions beside yours, leaving out a lift you already logged
+  // that day; drop takes ids added before out again (Undo). add: as Muscle's past, with Strength's lift ids
+  past(add, drop){ const out={added:[], sets:0, skipped:0}, dk=t=>Day.key(t), n0=state.history.length;
+    if(drop&&drop.length) state.history=state.history.filter(h=>!drop.includes(h.id));
+    (add||[]).forEach(s=>{ if(state.history.some(h=>h.id===s.id)) return; const have=new Set(state.history.filter(h=>dk(h.date)===dk(s.date)).flatMap(h=>h.entries.map(e=>e.liftId)));
+      const entries=s.entries.map(x=>{ const X=EX[x.id]; if(!X) return null; if(have.has(x.id)){ out.skipped++; return null; }
+        const sets=x.sets.filter(t=>t.reps>0).map(t=>({kind:t.warm?'warm':'work', w:X.k==='bw'||!(t.kg>0)? null : t.kg, reps:t.reps, tr:null, trHi:null, trpe:null, rpe:t.rpe, done:true}));
+        return sets.some(t=>t.kind!=='warm')? {liftId:x.id, label:'', sc:null, note:x.note||null, sets} : null; }).filter(Boolean);
+      if(!entries.length) return;
+      insertRec({id:s.id, name:s.name, date:s.date, durationSec:s.durationSec||0, entries, prs:[], plan:null, note:s.note||null, from:s.from});
+      out.added.push(s.id); entries.forEach(e=>{ out.sets+=e.sets.length; }); });
+    if(out.added.length||state.history.length!==n0){ save(); render(); if(window.__hub) window.__hub.changed('str'); } return out; },
 });
 
 /* ==================== BOOT ==================== */
@@ -12524,7 +12555,7 @@ render();
   /* ---- Backup and restore for the whole app ----
      A restore is parked in sessionStorage and applied on the next load, before any
      section starts, so a section's pending save can't write old data over it. */
-  const BK_APP='milovancroton', BK_PENDING='milo.restore';
+  const BK_APP='milovancroton', BK_PENDING='milo.restore', BK_ERASE='milo.erase';
   const BK_STAMP='milo.backup', BK_SINCE='milo.since', BK_BEFORE='milo.before', BK_ASKED='milo.persist';
   const DAY=864e5, DUE_AFTER=14*DAY;
   /* Keys that are the shell's own notes, and copies kept for taking a step back, never go into a backup. */
@@ -12533,6 +12564,12 @@ render();
     document.body.appendChild(d); setTimeout(()=>d.remove(), ms||3200); }
   window.__toast=toast;
   function note(k){ try{ const n=+localStorage.getItem(k); return n>0? n : 0; }catch(e){ return 0; } }
+  /* Erase everything (YOUR DATA ON SCREEN) is applied the same way, here on the next load: every Milo key goes
+     (MiloSecurity.erase), with any restore still waiting, and Milo starts as on its first run. */
+  try{
+    if(sessionStorage.getItem(BK_ERASE)){ MiloSecurity.erase(sessionStorage); MiloSecurity.erase(localStorage);
+      setTimeout(()=>toast('Everything erased. Milo is starting fresh.'),400); }
+  }catch(e){ console.error('erase failed',e); }
   try{
     const pend=sessionStorage.getItem(BK_PENDING);
     if(pend){ sessionStorage.removeItem(BK_PENDING);
@@ -12578,7 +12615,35 @@ render();
     try{ if(!booted||!navigator.storage||!navigator.storage.persist||localStorage.getItem(BK_ASKED)||!hasHistory()) return;
       localStorage.setItem(BK_ASKED,'1'); navigator.storage.persist(); }catch(e){}
   }
-  function backupName(){ return 'milo-backup-'+new Date().toISOString().slice(0,10)+'.json'; }
+  function backupName(locked){ return 'milo-backup-'+Day.key(Date.now())+(locked? '-locked' : '')+'.json'; }
+  /* The backup to copy or save: sealed with the passphrase when one is typed (MiloSecurity.seal), else plain. */
+  const passOf=id=>document.getElementById(id).value;
+  function backupOut(){ const p=passOf('bk-pass'); return p? MiloSecurity.seal(backupText(), p) : Promise.resolve(backupText()); }
+  /* A file through the share sheet where the browser has one, otherwise a download (share:false goes straight to the
+     download, which is what opens a calendar file on a phone). 'shared', 'saved', or '' when you cancelled. */
+  async function deliver(txt, name, type, share){
+    try{ const f=new File([txt],name,{type});
+      if(share!==false && navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name}); return 'shared'; }
+    }catch(e){ if(e && e.name==='AbortError') return ''; }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type}));
+    a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    return 'saved';
+  }
+  window.__deliver=deliver;
+  /* Asking before data is replaced: a sheet of the app's own, not the browser's confirm(). Resolves true or false. */
+  const askD=document.getElementById('bk-ask'); let asked=null;
+  function ask(title, text, yes){
+    if(!askD.showModal) return Promise.resolve(confirm(text));
+    document.getElementById('bk-ask-title').textContent=title; document.getElementById('bk-ask-text').textContent=text;
+    document.getElementById('bk-ask-yes').textContent=yes;
+    return new Promise(res=>{ asked=res; askD.showModal(); document.getElementById('bk-ask-no').focus(); });
+  }
+  function answer(v){ const f=asked; asked=null; if(askD.open) askD.close(); if(f) f(v); }
+  document.getElementById('bk-ask-yes').addEventListener('click',()=>answer(true));
+  document.getElementById('bk-ask-no').addEventListener('click',()=>answer(false));
+  askD.addEventListener('close',()=>answer(false));   // Escape
+  window.__ask=ask;
+  const whenText=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium', timeStyle:'short'});
   function say(id,t,bad){ const el=document.getElementById(id); el.textContent=t; el.classList.toggle('bad',!!bad); }
   let backupError='';
   function readBackup(txt){
@@ -12586,53 +12651,67 @@ render();
     catch(e){ backupError=e.message; return null; }
   }
   const bk=document.getElementById('bk');
+  /* A pasted or loaded backup with a passphrase asks for it. */
+  function paintLock(){ const on=MiloSecurity.sealed(document.getElementById('bk-in').value.trim()); document.getElementById('bk-lock').hidden=!on; return on; }
+  document.getElementById('bk-in').addEventListener('input',paintLock);
   function openBackup(){
-    say('bk-msg1',''); say('bk-msg2',''); document.getElementById('bk-in').value=''; paintLast();
+    say('bk-msg1',''); say('bk-msg2',''); say('yd-msg',''); ['bk-in','bk-pass','bk-rpass'].forEach(id=>{ document.getElementById(id).value=''; }); paintLock(); paintLast();
     if(bk.showModal) bk.showModal(); else bk.setAttribute('open','');
   }
   window.__openBackup=openBackup;
   document.getElementById('bkbtn').addEventListener('click',openBackup);
   document.getElementById('bk-done').addEventListener('click',()=>{ if(bk.close) bk.close(); else bk.removeAttribute('open'); });
   document.getElementById('bk-copy').addEventListener('click',async()=>{
-    const txt=backupText();
-    try{ await navigator.clipboard.writeText(txt); }
-    catch(e){ const ta=document.getElementById('bk-in'); ta.value=txt; ta.select();
-      let ok=false; try{ ok=document.execCommand('copy'); }catch(_){}
-      ta.value=''; if(!ok){ say('bk-msg1','Couldn’t copy. Try "Save as a file" instead.',true); return; } }
-    backedUp(); say('bk-msg1','Backup copied. Paste it into Notes as well, to keep a safe copy.');
+    const locked=!!passOf('bk-pass'), out=backupOut(); let ok=false, txt='';
+    if(locked) say('bk-msg1','Encrypting…');
+    // Safari copies only inside the tap, and encrypting takes a moment, so the text goes in as a promise where the browser takes one
+    try{ if(locked && window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+      await navigator.clipboard.write([new ClipboardItem({'text/plain':out.then(t=>new Blob([t],{type:'text/plain'}))})]); ok=true; } }catch(e){}
+    try{ txt=await out; }catch(e){ say('bk-msg1',e.message,true); return; }
+    if(!ok){ try{ await navigator.clipboard.writeText(txt); ok=true; }
+      catch(e){ const ta=document.getElementById('bk-in'); ta.value=txt; ta.select();
+        try{ ok=document.execCommand('copy'); }catch(_){}
+        ta.value=''; } }
+    if(!ok){ say('bk-msg1','Couldn’t copy. Try "Save as a file" instead.',true); return; }
+    backedUp(); say('bk-msg1', locked? 'Encrypted backup copied. You’ll need the passphrase to restore it.'
+      : 'Backup copied. Notes apps often sync to the cloud: add a passphrase before copying a backup you keep there.');
   });
   document.getElementById('bk-save').addEventListener('click',async()=>{
-    const txt=backupText(), name=backupName();
-    try{
-      const f=new File([txt],name,{type:'application/json'});
-      if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name});
-        backedUp(); say('bk-msg1','Backup saved.'); return; }
-    }catch(e){ if(e && e.name==='AbortError') return; }
-    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));
-    a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-    backedUp(); say('bk-msg1','Backup saved as '+name+'.');
+    const locked=!!passOf('bk-pass'), name=backupName(locked); let txt='';
+    if(locked) say('bk-msg1','Encrypting…');
+    try{ txt=await backupOut(); }catch(e){ say('bk-msg1',e.message,true); return; }
+    const r=await deliver(txt, name, 'application/json'); if(!r){ say('bk-msg1',''); return; }
+    backedUp(); say('bk-msg1',(locked? 'Encrypted backup saved' : 'Backup saved')+(r==='saved'? ' as '+name : '')+'.');
   });
   document.getElementById('bk-file').addEventListener('click',()=>document.getElementById('bk-fin').click());
   document.getElementById('bk-fin').addEventListener('change',e=>{
     const f=e.target.files&&e.target.files[0]; if(!f) return;
-    if(f.size > MiloSecurity.MAX_BYTES){ say('bk-msg2','This backup is too large (maximum 2 MB).',true); e.target.value=''; return; }
-    f.text().then(t=>{ document.getElementById('bk-in').value=t; say('bk-msg2','File loaded. Tap Restore.'); })
+    if(f.size > MiloSecurity.SEALED_BYTES){ say('bk-msg2','This backup is too large (maximum 2 MB).',true); e.target.value=''; return; }
+    f.text().then(t=>{ document.getElementById('bk-in').value=t;
+        say('bk-msg2', paintLock()? 'File loaded. Enter its passphrase, then tap Restore.' : 'File loaded. Tap Restore.'); })
       .catch(()=>say('bk-msg2','Couldn’t read that file.',true));
     e.target.value='';
   });
-  document.getElementById('bk-restore').addEventListener('click',()=>{
-    const o=readBackup(document.getElementById('bk-in').value);
+  document.getElementById('bk-restore').addEventListener('click',async()=>{
+    let txt=document.getElementById('bk-in').value.trim();
+    // a backup with a passphrase opens first (MiloSecurity.unseal), then is checked like any other
+    if(paintLock()){ const p=passOf('bk-rpass');
+      if(!p){ say('bk-msg2','This backup has a passphrase. Enter it above, then tap Restore.',true); document.getElementById('bk-rpass').focus(); return; }
+      say('bk-msg2','Opening…');
+      try{ txt=await MiloSecurity.unseal(txt, p); }catch(e){ say('bk-msg2',e.message,true); return; }
+      say('bk-msg2',''); }
+    const o=readBackup(txt);
     if(!o){ say('bk-msg2',backupError || 'That does not look like a Milo backup.',true); return; }
-    const when=o.created? new Date(o.created).toLocaleString() : 'an unknown date';
-    if(!confirm('Replace the data in this app with the backup from '+when+'?')) return;
+    const when=o.created? whenText(o.created) : 'an unknown date';
+    if(!await ask('Replace your data?', 'Everything Milo holds now is replaced with the backup from '+when+'. You can undo this afterwards.', 'Replace')) return;
     try{ sessionStorage.setItem(BK_PENDING, JSON.stringify(o.data)); }
     catch(e){ say('bk-msg2','Couldn’t restore: '+e.message,true); return; }
     location.reload();
   });
-  document.getElementById('bk-undo').addEventListener('click',()=>{
+  document.getElementById('bk-undo').addEventListener('click',async()=>{
     let b=null; try{ b=JSON.parse(localStorage.getItem(BK_BEFORE)||'null'); }catch(e){}
     if(!(b&&b.data)){ paintLast(); return; }
-    if(!confirm('Put back the data the app held before the restore from '+new Date(b.at).toLocaleString()+'? What it holds now is kept, so this can be undone too.')) return;
+    if(!await ask('Undo the restore?', 'Milo goes back to what it held before the restore on '+whenText(b.at)+'. What it holds now is kept, so this can be undone too.', 'Undo the restore')) return;
     try{ sessionStorage.setItem(BK_PENDING, JSON.stringify(b.data)); }
     catch(e){ say('bk-msg2','Couldn’t undo: '+e.message,true); return; }
     location.reload();
@@ -12896,6 +12975,411 @@ render();
   try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); if(t&&t.on) ensureInit('mix'); }catch(e){}
 })();
 
+
+;
+
+/* ==================== YOUR DATA ====================
+   Your data out and in, as plain functions that read saved data and change nothing: every set as a spreadsheet (CSV),
+   the planned training days and a calendar file of them, the numbers for a coach summary, and best guesses for exercise
+   names from Strong or Hevy. The controls that use them are in YOUR DATA ON SCREEN, below. S is the three sections'
+   saved data {lift, str, cal}; T is Together's. */
+window.MiloData=(function(){
+  const KG_PER_LB=0.45359237, SEC_N={lift:'Muscle', str:'Strength', cal:'Ladder'}, MODS=['lift','str','cal'];
+  const pad=n=>String(n).padStart(2,'0');
+  const local=ts=>{ const d=new Date(ts); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
+  const r2=n=>Math.round(n*100)/100;
+  const num=v=>typeof v==='number'&&Number.isFinite(v);
+  const hist=s=>s&&Array.isArray(s.history)? s.history.filter(h=>h&&Array.isArray(h.entries)&&num(h.date)) : [];
+  // Muscle's timed exercises (HOLDS there): their reps box holds seconds
+  const MUSCLE_HOLDS=['plank','side-plank','dead-hang'];
+  const STR_KIND={warm:'warm-up', work:'work', top:'top set', back:'back-off', plus:'plus set'};
+  // the sets each section counts as done: Muscle ticks each one, Strength and Ladder keep only ticked sets in a finished session
+  const doneSet=(m,s)=>!!s && (m==='lift'? !!s.done : s.done!==false);
+  const workSet=(m,s)=>doneSet(m,s) && (m==='lift'? s.type!=='warmup' : m==='str'? s.kind!=='warm' : true);
+  /* names: {str(liftId, vi), cal(ladderId, stepIdx)}, the names Strength and Ladder don't keep with a set. */
+  function exOf(m, en, names){ const nm=names||{};
+    return m==='lift'? en.name||en.exId : m==='str'? (nm.str&&nm.str(en.liftId, en.vi))||en.liftId : (nm.cal&&nm.cal(en.ladderId, en.stepIdx))||(en.ladderId+' '+en.stepIdx); }
+
+  /* ---- Every set, one row each ---- */
+  const HEAD=['date','section','session','exercise','set type','weight kg','weight lb','reps or seconds','RIR or RPE','assumed','notes'];
+  const TEXT=new Set([2,3,4,10]);
+  /* Ticked sets of finished sessions, oldest first: a session's note goes with its first row, an exercise's with its first set.
+     Muscle's drop-set steps are rows of their own. Bodyweight exercises give the weight added. */
+  function rows(S, names){
+    const out=[];
+    const push=(m, h, ex, type, kg, v, eff, assumed, note)=>out.push({t:h.date, r:[local(h.date), SEC_N[m], h.name||'', ex, type,
+      num(kg)? r2(kg) : '', num(kg)? r2(kg/KG_PER_LB) : '', num(v)? v : '', eff, assumed? 'yes' : 'no', note]});
+    MODS.forEach(m=>hist(S&&S[m]).forEach(h=>{ let first=true;
+      h.entries.forEach(en=>{ if(!en||!Array.isArray(en.sets)) return; let firstEx=true; const ex=exOf(m, en, names);
+        // Ladder's set-up for the rung: added load in kg, and what you wrote about bands, heights and support
+        const setup= m==='cal'&&en.setup&&typeof en.setup==='object'? en.setup : {};
+        const extra= Object.keys(setup).filter(k=>k!=='load'&&setup[k]!==''&&setup[k]!=null&&typeof setup[k]!=='object').map(k=>k+' '+setup[k]).join(', ');
+        en.sets.filter(s=>doneSet(m,s)).forEach(s=>{
+          const note=[first? h.note : '', firstEx? en.note : '', firstEx? extra : ''].filter(Boolean).join(' · ');
+          if(m==='lift'){ const hold=MUSCLE_HOLDS.includes(en.exId);
+            push(m, h, ex, s.type==='warmup'? 'warm-up' : hold? 'hold' : s.tag? String(s.tag).toLowerCase() : 'work', s.weight, s.reps, num(s.rir)? 'RIR '+s.rir : '', s.assumed, note);
+            (Array.isArray(s.segments)? s.segments : []).forEach(g=>{ if(g&&(num(g.weight)||num(g.reps))) push(m, h, ex, 'drop', g.weight, g.reps, '', false, ''); }); }
+          else if(m==='str') push(m, h, ex, STR_KIND[s.kind]||s.kind||'work', s.w, s.reps, num(s.rpe)? 'RPE '+s.rpe : '', s.ra, note);
+          else push(m, h, ex, en.kind==='hold'? 'hold' : 'work', setup.load, s.v, num(s.rir)? 'RIR '+s.rir : '', false, note);
+          first=firstEx=false; }); }); }));
+    return out.sort((a,b)=>a.t-b.t).map(x=>x.r);
+  }
+  /* One CSV field: quoted when it holds a comma, semicolon, quote, line break or edge spaces; text a spreadsheet would run
+     as a formula gets a leading apostrophe. */
+  function field(v, text){ if(v==null) return ''; let s=String(v); if(text && /^[=+\-@\t\r]/.test(s)) s="'"+s;
+    return /[",;\r\n]/.test(s) || /^\s|\s$/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s; }
+  /* The whole file: a byte-order mark so spreadsheets read it as UTF-8, and CRLF line ends (RFC 4180). */
+  function csv(S, names){ return '\uFEFF'+[HEAD].concat(rows(S, names)).map(r=>r.map((v,i)=>field(v, TEXT.has(i))).join(',')).join('\r\n')+'\r\n'; }
+
+  /* ---- Planned training days ---- */
+  // Together's suggested weekdays for each number of days (POS there), Monday 0
+  const WD_POS={1:[0], 2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,4,5], 6:[0,1,2,3,4,5], 7:[0,1,2,3,4,5,6]};
+  const mon=ts=>(new Date(ts).getDay()+6)%7;
+  /* The weekdays Together trains on, one for each of its n days: the ones you picked (wd), else the suggested ones. */
+  function weekdays(T, n){ n=n>=1&&n<=7? n : T&&T.days>=1&&T.days<=7? T.days : 4;
+    const w=T&&T.wd; return Array.isArray(w)&&w.length===n&&w.every(d=>Number.isInteger(d)&&d>=0&&d<=6)&&new Set(w).size===n? w.slice().sort((a,b)=>a-b) : WD_POS[n]; }
+  /* What each section plans on its own: {m: {per (a week), names:[...]}}. Ladder keeps no days, so its goals get three. */
+  function ownPlans(S){
+    const o={}, L=S&&S.lift, st=S&&S.str, lc=S&&S.cal;
+    const m=L&&Array.isArray(L.mesos)? L.mesos.find(x=>x&&x.status==='active'&&Array.isArray(x.days)&&x.days.length) : null;
+    if(m) o.lift={per:Math.min(7,m.days.length), names:m.days.map(d=>d&&d.name||'')};
+    if(st&&st.program&&st.setup&&st.setup.days>=1) o.str={per:Math.min(7,st.setup.days), names:[]};
+    if(lc&&Array.isArray(lc.goals)&&lc.goals.some(g=>g&&!g.achieved)) o.cal={per:3, names:[]};
+    return o;
+  }
+  /* Training days from the day of `from`, for `days` days: [{date (local midnight), day, secs, title}]. With Together on and
+     planned, its days fall on their weekdays; otherwise each section's own plan goes on the suggested weekdays for its
+     number of days a week. */
+  function planned(T, S, from, days){
+    const out=[], start=Day.start(from), list=Day.range(start, Day.add(start, Math.max(1,days)-1));
+    if(T&&T.on&&T.plan&&Array.isArray(T.plan.kinds)&&T.plan.kinds.length){
+      const secs=Array.isArray(T.secs)? T.secs : MODS, kinds=T.plan.kinds.map(k=>(Array.isArray(k)? k : []).filter(m=>SEC_N[m]&&secs.includes(m))), wd=weekdays(T, kinds.length);
+      list.forEach(d=>{ const i=wd.indexOf(mon(d)); if(i<0||!kinds[i].length) return;
+        out.push({date:d, day:i, secs:kinds[i].slice(), title:'Day '+(i+1)+': '+kinds[i].map(m=>SEC_N[m]).join(' + ')}); });
+      return out;
+    }
+    const own=ownPlans(S), seen={};
+    list.forEach(d=>{ const secs=[], parts=[];
+      Object.keys(own).forEach(m=>{ const p=own[m]; if(WD_POS[p.per].indexOf(mon(d))<0) return;
+        const k=seen[m]=(seen[m]||0)+1, nm=p.names.length? p.names[(k-1)%p.names.length] : '';
+        secs.push(m); parts.push(SEC_N[m]+(nm? ' ('+nm+')' : '')); });
+      if(secs.length) out.push({date:d, day:null, secs, title:parts.join(' + ')}); });
+    return out;
+  }
+  /* Whether the day of ts is done: every section planned for it (secs; any when none) has a session that day, or Together
+     skipped it. */
+  function doneOn(S, T, ts, secs){
+    const a=Day.start(ts), b=Day.add(a,1), inDay=t=>num(t)&&t>=a&&t<b, did=m=>hist(S&&S[m]).some(h=>inDay(h.date));
+    if(T&&Array.isArray(T.log)&&T.log.some(e=>e&&e.skipped&&inDay(e.date))) return true;
+    return secs&&secs.length? secs.every(did) : MODS.some(did);
+  }
+  /* The app badge: 1 on a planned training day not yet done, else 0. */
+  function badge(T, S, now){ const d=planned(T, S, now, 1)[0]; return d&&!doneOn(S, T, now, d.secs)? 1 : 0; }
+
+  /* ---- A calendar file (RFC 5545) ---- */
+  const icsText=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+  /* Lines longer than 75 bytes go on as continuation lines starting with a space, never splitting a character. */
+  function fold(line){
+    const out=[]; let cur='', n=0;
+    for(const ch of line){ const b=new TextEncoder().encode(ch).length;
+      if(n+b>(out.length? 74 : 75)){ out.push(cur); cur=''; n=0; }
+      cur+=ch; n+=b; }
+    out.push(cur); return out.join('\r\n ');
+  }
+  const ymd=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
+  const floating=d=>ymd(d)+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';
+  const utc=ts=>new Date(ts).toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  /* days from planned(); o: {time:'18:00', mins:60, now}. Each event starts at that time on the phone's clock (floating time,
+     so a trip abroad keeps it at 6 pm) with a reminder 30 minutes before. A UID per day means importing a newer file
+     updates the days already there instead of adding them twice. */
+  function ics(days, o){
+    o=o||{}; const m=/^(\d{1,2}):(\d{2})$/.exec(o.time||'')||[0,18,0], h=Math.min(23,+m[1]), mi=Math.min(59,+m[2]);
+    const mins=o.mins>=10&&o.mins<=600? Math.round(o.mins) : 60, now=o.now||Date.now();
+    const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Milo van Croton//Training days//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Milo training'];
+    days.forEach(x=>{ const d0=new Date(x.date), s=new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), h, mi), e=new Date(s.getFullYear(), s.getMonth(), s.getDate(), h, mi+mins);
+      const what='Milo: '+x.title;
+      L.push('BEGIN:VEVENT','UID:milo-'+ymd(s)+'@milovancroton','DTSTAMP:'+utc(now),'DTSTART:'+floating(s),'DTEND:'+floating(e),
+        'SUMMARY:'+icsText(what),'DESCRIPTION:'+icsText('Training day planned in Milo. Open Milo to start.'),
+        'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsText(what),'TRIGGER:-PT30M','END:VALARM','END:VEVENT'); });
+    L.push('END:VCALENDAR');
+    return L.map(fold).join('\r\n')+'\r\n';
+  }
+
+  /* ---- The coach summary ---- */
+  /* Main lifts with sessions in [from, to): [{key, name, sec, e1 (kg, Lift.estimate over every session before to), best:{e1, kg,
+     reps, eff}, n (sessions in the window)}]. info.lift(exId): Muscle's {comp, bw, p} for an exercise; info.str(liftId): Strength's
+     {n, k}. Muscle's loaded compounds and Strength's loaded lifts count; the same lift in both (SAME_LIFT) is one, named as
+     Strength names it. */
+  function lifts(S, from, to, info){
+    const L={}, same=window.SAME_LIFT||{};
+    const add=(key, name, sec, cls, h, kg, reps, rir, eff)=>{
+      if(!(kg>0&&reps>0&&reps<=12)) return; const e1=Lift.e1rm(kg, reps, rir, cls); if(!(e1>0)) return;
+      const x=L[key]||(L[key]={key, name, sec, by:{}, best:null, n:new Set()});
+      if(sec==='Strength'){ x.name=name; x.sec=sec; }
+      const p=x.by[h.id]||(x.by[h.id]={date:h.date, e1:0, rated:true}); if(e1>p.e1){ p.e1=e1; p.rated=rir!=null; }
+      if(h.date>=from&&h.date<to){ x.n.add(h.id); if(!x.best||e1>x.best.e1) x.best={e1, kg, reps, eff}; } };
+    hist(S&&S.lift).forEach(h=>{ if(h.date>=to) return; h.entries.forEach(en=>{ const i=info&&info.lift? info.lift(en.exId) : null; if(!i||!i.comp||i.bw) return;
+      const cls=Lift.cls({id:en.exId, name:en.name, comp:true, primary:i.p||en.primary||[]});
+      (en.sets||[]).forEach(s=>{ if(workSet('lift',s)) add(en.exId, en.name||en.exId, 'Muscle', cls, h, s.weight, s.reps, num(s.rir)? s.rir : null, num(s.rir)? 'RIR '+s.rir : ''); }); }); });
+    hist(S&&S.str).forEach(h=>{ if(h.date>=to) return; h.entries.forEach(en=>{ const i=info&&info.str? info.str(en.liftId) : null; if(!i||i.k!=='load') return;
+      const cls=Lift.cls({id:en.liftId, n:i.n, comp:true});
+      (en.sets||[]).forEach(s=>{ if(workSet('str',s)) add(same[en.liftId]||'str:'+en.liftId, i.n, 'Strength', cls, h, s.w, s.reps, num(s.rpe)? Math.max(0,10-s.rpe) : null, num(s.rpe)? 'RPE '+s.rpe : ''); }); }); });
+    return Object.values(L).filter(x=>x.n.size).map(x=>{ const est=Lift.estimate(Object.values(x.by));
+      return {key:x.key, name:x.name, sec:x.sec, e1:est? est.value : x.best.e1, best:x.best, n:x.n.size}; })
+      .sort((a,b)=>b.n-a.n||b.e1-a.e1).slice(0,12);
+  }
+  /* The summary's numbers for the four weeks up to the end of the day of now. x: what the sections say through the hub:
+     {unit, muscles:[{n, perWeek}], goals:[{n, step, pct}], info (as lifts()), names (as rows())}. */
+  function coach(S, now, x){
+    x=x||{}; const to=Day.add(Day.start(now),1), from=Day.add(to,-28), inW=h=>h.date>=from&&h.date<to;
+    const sessions=[], notes=[];
+    MODS.forEach(m=>hist(S&&S[m]).filter(inW).forEach(h=>{
+      sessions.push({date:h.date, sec:SEC_N[m], name:h.name||'', sets:h.entries.reduce((n,en)=>n+(en&&Array.isArray(en.sets)? en.sets.filter(s=>workSet(m,s)).length : 0),0)});
+      if(h.note) notes.push({date:h.date, text:String(h.note)});
+      h.entries.forEach(en=>{ if(en&&en.note) notes.push({date:h.date, text:exOf(m, en, x.names)+': '+en.note}); }); }));
+    sessions.sort((a,b)=>a.date-b.date); notes.sort((a,b)=>a.date-b.date);
+    const rungs=(S&&S.cal&&Array.isArray(S.cal.advances)? S.cal.advances : []).filter(v=>v&&num(v.date)&&v.date>=from&&v.date<to).map(v=>({date:v.date, name:String(v.name||'')}));
+    return {from, to, unit:x.unit==='lb'? 'lb' : 'kg', sessions, muscles:x.muscles||[], lifts:lifts(S, from, to, x.info), goals:x.goals||[], rungs, notes};
+  }
+  /* The summary as parts [{h, lines}]: the screen shows them, text() makes a message of them. */
+  function summary(D){
+    const u=D.unit, w=kg=>String(Math.round((u==='lb'? kg/KG_PER_LB : kg)*10)/10)+' '+u;
+    const day=ts=>new Date(ts).toLocaleDateString(undefined,{weekday:'short', day:'numeric', month:'short'});
+    const parts=[], by={};
+    D.sessions.forEach(s=>{ by[s.sec]=(by[s.sec]||0)+1; });
+    parts.push({h:'Sessions: '+D.sessions.length, lines:D.sessions.length?
+      [Object.keys(by).map(k=>k+' '+by[k]).join(', ')].concat(D.sessions.map(s=>day(s.date)+' · '+s.sec+' · '+s.name+' · '+s.sets+' set'+(s.sets===1?'':'s')))
+      : ['No sessions in these four weeks.']});
+    if(D.muscles.length) parts.push({h:'Hard sets a week, per muscle', lines:D.muscles.map(m=>m.n+': '+(Math.round(m.perWeek*10)/10))});
+    if(D.lifts.length) parts.push({h:'Main lifts', lines:D.lifts.map(x=>x.name+': estimated max '+w(x.e1)+'; best set '+w(x.best.kg)+' × '+x.best.reps+(x.best.eff? ' at '+x.best.eff : '')+' ('+x.n+' session'+(x.n===1?'':'s')+')')});
+    if(D.goals.length||D.rungs.length) parts.push({h:'Ladder', lines:D.goals.map(g=>g.n+': '+(g.step? 'on '+g.step+', ' : '')+g.pct+'% of the way')
+      .concat(D.rungs.map(r=>day(r.date)+': moved up to '+r.name))});
+    if(D.notes.length) parts.push({h:'Notes', lines:D.notes.map(n=>day(n.date)+': '+n.text)});
+    return parts;
+  }
+  function range(D){ return new Date(D.from).toLocaleDateString(undefined,{day:'numeric', month:'short'})+' to '+new Date(D.to-1).toLocaleDateString(undefined,{day:'numeric', month:'short', year:'numeric'}); }
+  function text(D){ return 'Training summary from Milo, '+range(D)+'\n\n'+summary(D).map(p=>p.h+'\n'+p.lines.map(l=>'- '+l).join('\n')).join('\n\n')+'\n'; }
+
+  /* ---- Exercise names from other apps ---- */
+  const EQUIP_W=['barbell','dumbbell','cable','machine','smith','kettlebell','band','ez','plate','bodyweight'];
+  /* Lower case, joined-up pull-ups and push-ups, common short forms written out, plurals made singular. */
+  const norm=s=>' '+String(s).toLowerCase().replace(/[\u2010-\u2015-]/g,' ').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim()+' ';
+  function canon(s){ return norm(s).replace(/ (pull|chin|push|sit|step) ups?(?= )/g,' $1up').replace(/ (pull|push) down(?= )/g,' $1down')
+    .replace(/ db(?= )/g,' dumbbell').replace(/ bb(?= )/g,' barbell').replace(/ kb(?= )/g,' kettlebell').replace(/ ohp(?= )/g,' overhead press').replace(/ rdl(?= )/g,' romanian deadlift')
+    .replace(/ (\w{3,}?)s(?= )/g,(a,w)=>/s$/.test(w)? a : ' '+w).trim(); }
+  const words=s=>new Set(canon(s).split(' ').filter(w=>w&&!['the','with','on','of','and','a','to'].includes(w)).map(w=>w==='flye'? 'fly' : w==='calve'? 'calf' : w));
+  // Strong's and Hevy's names for the barbell and bodyweight basics, as canon() leaves them without the equipment
+  const ALIAS={'squat':'back-squat','back squat':'back-squat','high bar squat':'back-squat','low bar squat':'back-squat','bench press':'barbell-bench',
+    'flat bench press':'barbell-bench','deadlift':'deadlift','conventional deadlift':'deadlift','overhead press':'ohp','strict press':'ohp','military press':'ohp',
+    'bent over row':'barbell-row','barbell row':'barbell-row','pendlay row':'pendlay-row','pullup':'pullup','chinup':'chin-up','pushup':'pushup','dip':'dip',
+    'chest dip':'dip','romanian deadlift':'romanian-deadlift','stiff leg deadlift':'romanian-deadlift','hip thrust':'hip-thrust','front squat':'front-squat',
+    'sumo deadlift':'sumo-deadlift','incline bench press':'incline-bench','close grip bench press':'close-grip-bench','good morning':'good-morning',
+    'shrug':'barbell-shrug','bicep curl':'barbell-curl','skullcrusher':'skullcrusher','lying leg curl':'lying-leg-curl','seated leg curl':'leg-curl'};
+  /* The exercise in list ([{id, name, equipment}], Muscle's catalogue) most like name, or null when nothing is close. Strong
+     and Hevy put the equipment in brackets: "Bench Press (Barbell)". */
+  function guess(name, list){
+    const raw=String(name), paren=(/\(([^)]*)\)\s*$/.exec(raw)||[])[1]||'', base=raw.replace(/\([^)]*\)\s*$/,'');
+    const eq=canon(paren), ids=new Set(list.map(x=>x.id)), alias=ALIAS[canon(base)];
+    if(alias && ids.has(alias) && (!eq || eq==='barbell' || eq==='bodyweight' || eq==='weighted' || eq==='assisted')) return alias;
+    const A=words(raw); let best=null, top=0;
+    list.forEach(x=>{ const B=words(x.name); const e=String(x.equipment||'').toLowerCase(); if(EQUIP_W.includes(e)&&e!=='bodyweight') B.add(e);
+      let both=0, core=0; A.forEach(w=>{ if(B.has(w)){ both++; if(!EQUIP_W.includes(w)) core++; } });
+      const sc=core? 2*both/(A.size+B.size) : 0;
+      if(sc>top+1e-9){ top=sc; best=x.id; } });
+    return top>=0.5? best : null;
+  }
+  /* Workouts read by MiloSecurity.workouts, as the sessions Muscle's and Strength's past() add: {lift:[...], str:[...]}. map:
+     {name lower-cased: {sec:'lift'|'str', id}} (a name left out is skipped); unit: what weights are in when the file doesn't say. */
+  function toPast(W, map, unit){
+    const out={lift:[], str:[]};
+    W.sessions.forEach((s,k)=>{ const by={lift:[], str:[]};
+      s.entries.forEach(e=>{ const m=map[e.name.toLowerCase()]; if(!m||!by[m.sec]) return;
+        const sets=e.sets.map(t=>{ const u=t.u||unit, kg=num(t.w)&&t.w>0? Math.round((u==='lb'? t.w*KG_PER_LB : t.w)*1e4)/1e4 : null;
+          return {warm:t.type==='warmup', kind:t.type, kg, reps:t.reps, secs:t.secs, rpe:t.rpe}; }).filter(t=>t.reps>0||t.secs>0);
+        const have=by[m.sec].find(x=>x.id===m.id);   // two names mapped to one exercise: one entry
+        if(have){ have.sets=have.sets.concat(sets); if(e.note) have.note=have.note? have.note+' · '+e.note : e.note; }
+        else if(sets.length) by[m.sec].push({id:m.id, note:e.note||'', sets}); });
+      MODS.slice(0,2).forEach(m=>{ if(by[m].length) out[m].push({id:'imp-'+W.app+'-'+m+'-'+s.start.toString(36)+'-'+k, date:s.start, name:s.name,
+        note:s.note||'', durationSec:s.durationSec||0, from:W.app, entries:by[m]}); }); });
+    return out;
+  }
+
+  return {HEAD, rows, csv, field, weekdays, planned, doneOn, badge, ics, fold, lifts, coach, summary, range, text, canon, guess, toPast};
+})();
+
+;
+
+/* ==================== YOUR DATA ON SCREEN ====================
+   The "Your data" part of the backup sheet (YOUR DATA has the workings): the spreadsheet of every set, importing from
+   Strong or Hevy with a preview and Undo, the coach summary, the calendar file, the app badge on a training day, and the
+   privacy page with Erase everything. */
+(function(){
+  const H=window.__hub, D=window.MiloData, $=id=>document.getElementById(id);
+  const KEYS={lift:'hyplog.v1', str:'strlog.v2', cal:'proladder.v1'};
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+  const read=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
+  /* What the sections have saved (a section saves a moment after each change) and Together's plan. */
+  function saved(){ const S={}; Object.keys(KEYS).forEach(m=>{ S[m]=read(KEYS[m]); }); return S; }
+  const together=()=>read('trainer.together');
+  // a section with saved data, started if it hasn't been yet; null without any
+  const api=m=>{ try{ return H&&H.has(m)? H.api(m) : null; }catch(e){ return null; } };
+  const names={str:(id,vi)=>{ const a=api('str'); return a&&a.name? a.name(id,vi) : null; }, cal:(id,i)=>{ const a=api('cal'); return a&&a.name? a.name(id,i) : null; }};
+  const say=(id,t,bad)=>{ const el=$(id); el.textContent=t; el.classList.toggle('bad',!!bad); };
+  const open=d=>{ if(d.showModal) d.showModal(); else d.setAttribute('open',''); };
+  const close=d=>{ if(d.close) d.close(); else d.removeAttribute('open'); };
+  const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+  const unit=()=>Prefs.get('unit','kg')==='lb'? 'lb' : 'kg';
+
+  /* ---- Every set as a spreadsheet ---- */
+  $('yd-csv').addEventListener('click',async()=>{
+    const S=saved(), n=D.rows(S, names).length, name='milo-sets-'+Day.key(Date.now())+'.csv';
+    if(!n){ say('yd-msg','No finished sessions to export yet.',true); return; }
+    const r=await window.__deliver(D.csv(S, names), name, 'text/csv');
+    if(r) say('yd-msg', plural(n,'set')+(r==='saved'? ' saved as '+name+'.' : ' exported.'));
+  });
+
+  /* ---- Training days in your calendar ---- */
+  try{ const t=localStorage.getItem('milo.caltime'); if(/^\d{2}:\d{2}$/.test(t||'')) $('yd-time').value=t; }catch(e){}
+  $('yd-cal').addEventListener('click',async()=>{
+    const T=together(), days=D.planned(T, saved(), Date.now(), 28), time=$('yd-time').value||'18:00';
+    if(!days.length){ say('yd-msg','No training days are planned yet. Set up Together, or a plan in Muscle, Strength or Ladder, first.',true); return; }
+    try{ localStorage.setItem('milo.caltime', time); }catch(e){}
+    const r=await window.__deliver(D.ics(days, {time, mins:T&&T.on&&T.mins>=10? T.mins : 60}), 'milo-training.ics', 'text/calendar', false);
+    if(r) say('yd-msg', plural(days.length,'training day')+' in the next four weeks, each with a reminder 30 minutes before. Open milo-training.ics to add them to your calendar.');
+  });
+
+  /* ---- The coach summary ---- */
+  let sumText='';
+  function coachData(){
+    const now=Date.now(), to=Day.add(Day.start(now),1), from=Day.add(to,-28), L=api('lift'), T=L&&L.table? L.table() : null, cat={};
+    let muscles=[], goals=[];
+    try{ const t=H.sets(from, to); muscles=Object.keys(t.direct).filter(k=>t.direct[k]>0)
+      .map(k=>({n:T&&T.muscles[k]? T.muscles[k].n : k, perWeek:t.direct[k]/4})).sort((a,b)=>b.perWeek-a.perWeek); }catch(e){ console.warn('summary: sets not counted', e); }
+    try{ const c=api('cal'); if(c&&c.goals) goals=c.goals(); }catch(e){}
+    try{ if(L) L.catalog().forEach(e=>{ cat[e.id]={comp:e.comp, bw:e.equipment==='Bodyweight', p:e.p}; }); }catch(e){}
+    const info={lift:id=>cat[id]||null, str:id=>{ const a=api('str'), l=a&&a.lift? a.lift(id) : null; return l? {n:l.n, k:l.k} : null; }};
+    return D.coach(saved(), now, {unit:unit(), muscles, goals, info, names});
+  }
+  $('yd-sum').addEventListener('click',()=>{
+    const C=coachData(); sumText=D.text(C);
+    $('sum-range').textContent='The four weeks from '+D.range(C);
+    $('sum-body').innerHTML=MiloSecurity.html(D.summary(C).map(p=>'<section><h3>'+esc(p.h)+'</h3><ul>'+p.lines.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul></section>').join(''));
+    say('sum-msg',''); open($('sum'));
+  });
+  $('sum-print').addEventListener('click',()=>window.print());
+  $('sum-share').addEventListener('click',async()=>{
+    try{ if(navigator.share){ await navigator.share({title:'Training summary', text:sumText}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+    try{ await navigator.clipboard.writeText(sumText); say('sum-msg','Summary copied as text, ready to paste into a message.'); }
+    catch(e){ say('sum-msg','Couldn’t share or copy it here. Print it instead.',true); }
+  });
+  $('sum-done').addEventListener('click',()=>close($('sum')));
+
+  /* ---- Importing from Strong or Hevy ----
+     The file is read and checked in MiloSecurity.workouts. Each exercise name gets Milo's closest exercise (MiloData.guess),
+     which you can change or skip; a lift Strength has goes there, the rest to Muscle. Muscle's and Strength's past() add the
+     sessions beside yours and say which, so Undo takes exactly those out again. */
+  let imp=null, lastImport=null;
+  const STR_OF={}; Object.keys(window.SAME_LIFT||{}).forEach(k=>{ STR_OF[SAME_LIFT[k]]=k; });
+  // a Muscle exercise Strength also has, and whether it is one of Strength's loaded lifts (those go to Strength)
+  function strLift(id){ const k=STR_OF[id]; if(!k) return null; const a=H.api('str'), l=a&&a.lift? a.lift(k) : null; return l? {id:k, load:l.k==='load'} : null; }
+  const pick=id=>{ const s=id&&strLift(id); return id? {id, sec:s&&s.load? 'str' : 'lift'} : {id:null, sec:'lift'}; };
+  $('yd-import').addEventListener('click',()=>$('yd-fin').click());
+  $('yd-fin').addEventListener('change',e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+    if(f.size>MiloSecurity.IMPORT_BYTES){ say('yd-msg','That file is too large (maximum 8 MB).',true); return; }
+    f.text().then(startImport).catch(()=>say('yd-msg','Couldn’t read that file.',true));
+  });
+  function startImport(text){
+    let W; try{ W=MiloSecurity.workouts(text); }catch(e){ say('yd-msg',e.message,true); return; }
+    const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], map={};
+    W.exercises.forEach(x=>{ map[x.name.toLowerCase()]=pick(D.guess(x.name, cat)); });
+    imp={W, cat, byId:Object.fromEntries(cat.map(e=>[e.id,e])), map, unit:W.unit||unit(), open:null, q:'', done:null};
+    say('yd-msg',''); say('imp-msg',''); paintImport(); open($('imp'));
+  }
+  // the exercises each section adds, keyed as MiloData.toPast takes them: Strength's lifts by Strength's ids
+  function pastMap(){ const o={}; Object.keys(imp.map).forEach(k=>{ const m=imp.map[k]; if(!m.id) return; const s=m.sec==='str'&&strLift(m.id);
+    o[k]= s? {sec:'str', id:s.id} : {sec:'lift', id:m.id}; }); return o; }
+  function listHtml(k){
+    const q=imp.q.trim().toLowerCase().split(/\s+/).filter(Boolean), cur=imp.map[k].id;
+    const list=imp.cat.filter(e=>q.every(w=>(e.name+' '+e.equipment).toLowerCase().includes(w)))
+      .sort((a,b)=>(b.id===cur)-(a.id===cur)||a.name.localeCompare(b.name)).slice(0,40);
+    return `<button data-imp="choose" data-id="" aria-pressed="${!cur}">Skip this exercise</button>`
+      +list.map(e=>`<button data-imp="choose" data-id="${esc(e.id)}" aria-pressed="${e.id===cur}">${esc(e.name)}<span>${esc(e.equipment)}</span></button>`).join('')
+      +(list.length? '' : '<p class="small">No Milo exercise matches that.</p>');
+  }
+  function paintImport(){
+    const W=imp.W, dt=t=>new Date(t).toLocaleDateString(undefined,{day:'numeric', month:'short', year:'numeric'}), P=D.toPast(W, pastMap(), imp.unit);
+    const n=new Set(P.lift.concat(P.str).map(s=>s.date+'|'+s.name)).size;
+    $('imp-title').textContent='Import from '+(W.app==='hevy'? 'Hevy' : 'Strong');
+    let h=`<p>${plural(W.sessions.length,'workout')} and ${plural(W.sets,'set')}, from ${dt(W.sessions[0].start)} to ${dt(W.sessions[W.sessions.length-1].start)}. They are added beside your own sessions; an exercise you already logged that day is left out.</p>`;
+    if(imp.done){ const d=imp.done;
+      h+=`<p class="ok">Added ${plural(d.added,'session')} with ${plural(d.sets,'set')}${d.skipped? '; '+plural(d.skipped,'exercise')+' already in Milo on those days left out' : ''}.</p>
+        <button class="b" data-imp="undo" style="width:100%">Undo the import</button>`;
+    } else {
+      if(!W.unitKnown) h+=`<p class="fld">Weights in this file are in</p><div class="row seg2">${['kg','lb'].map(u=>`<button class="b sm" data-imp="unit" data-v="${u}" aria-pressed="${imp.unit===u}">${u}</button>`).join('')}</div>`;
+      h+=`<h3 style="margin-top:14px">Exercises</h3><p class="small">Each is matched to the closest Milo exercise. Tap one to change it or skip it.</p>`;
+      W.exercises.slice().sort((a,b)=>b.sets-a.sets||a.name.localeCompare(b.name)).forEach(x=>{
+        const k=x.name.toLowerCase(), m=imp.map[k], e=m.id&&imp.byId[m.id], s=m.id&&STR_OF[m.id], on=imp.open===k;
+        h+=`<div class="imx"><div class="imx-n"><b>${esc(x.name)}</b><span>${plural(x.sets,'set')}</span></div>
+          <div class="row"><button class="b sm" data-imp="open" data-k="${esc(k)}" aria-expanded="${on}">${e? 'Milo: '+esc(e.name) : 'Skipped'}</button>
+          ${s? `<span class="seg2">${['lift','str'].map(v=>`<button class="b sm" data-imp="sec" data-k="${esc(k)}" data-v="${v}" aria-pressed="${m.sec===v}">${v==='lift'? 'Muscle' : 'Strength'}</button>`).join('')}</span>` : ''}</div>
+          ${on? `<input class="txt" type="search" id="imp-q" placeholder="Search Milo’s exercises" aria-label="Search Milo’s exercises" value="${esc(imp.q)}"><div class="imx-list" id="imp-list">${listHtml(k)}</div>` : ''}</div>`; });
+    }
+    $('imp-body').innerHTML=MiloSecurity.html(h);
+    const go=$('imp-go'); go.hidden=!!imp.done; go.disabled=!n; go.textContent= n? 'Import '+plural(n,'workout') : 'Nothing to import';
+    $('imp-cancel').textContent= imp.done? 'Done' : 'Cancel';
+  }
+  $('imp').addEventListener('click',e=>{
+    const b=e.target.closest('[data-imp]'); if(!b||!imp) return; const a=b.dataset.imp, k=b.dataset.k;
+    if(a==='open'){ imp.open= imp.open===k? null : k; imp.q=''; paintImport(); const q=$('imp-q'); if(q) q.focus(); }
+    else if(a==='choose'){ imp.map[imp.open]=pick(b.dataset.id||null); imp.open=null; paintImport(); }
+    else if(a==='sec'){ imp.map[k].sec=b.dataset.v; paintImport(); }
+    else if(a==='unit'){ imp.unit=b.dataset.v; paintImport(); }
+    else if(a==='undo'){ undoImport(imp.done); imp.done=null; paintImport(); say('imp-msg','Import undone.'); }
+  });
+  $('imp').addEventListener('input',e=>{ if(e.target.id!=='imp-q'||!imp||!imp.open) return; imp.q=e.target.value; $('imp-list').innerHTML=MiloSecurity.html(listHtml(imp.open)); });
+  $('imp-go').addEventListener('click',()=>{
+    if(!imp||imp.done) return;
+    const P=D.toPast(imp.W, pastMap(), imp.unit), d={res:{}, added:0, sets:0, skipped:0};
+    ['lift','str'].forEach(m=>{ if(!P[m].length) return; const a=H.api(m), r=a&&a.past? a.past(P[m]) : null; if(!r) return;
+      d.res[m]=r.added; d.added+=r.added.length; d.sets+=r.sets; d.skipped+=r.skipped; });
+    imp.done=d; lastImport=d.added? d : null; paintImport(); say('imp-msg','');
+  });
+  function undoImport(d){ if(!d) return; Object.keys(d.res).forEach(m=>{ const a=H.api(m); if(a&&a.past&&d.res[m].length) a.past(null, d.res[m]); }); if(lastImport===d) lastImport=null; paintUndo(); }
+  // after the sheet closes, the backup sheet keeps a way to take the last import back
+  function paintUndo(){ $('yd-undo').hidden=!lastImport; }
+  $('imp-cancel').addEventListener('click',()=>close($('imp')));
+  $('imp').addEventListener('close',()=>{ if(imp&&imp.done&&imp.done.added) say('yd-msg','Imported '+plural(imp.done.added,'session')+'.'); imp=null; paintUndo(); });
+  $('yd-undo').addEventListener('click',()=>{ undoImport(lastImport); say('yd-msg','Import undone.'); });
+
+  /* ---- The app badge ----
+     Installed on a phone, Milo's icon shows a badge on a planned training day until that day's training is done. */
+  function paintBadge(){
+    try{ if(!('setAppBadge' in navigator)) return;
+      const installed=matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; if(!installed) return;
+      const n=D.badge(together(), saved(), Date.now());
+      (n? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(()=>{}); }catch(e){}
+  }
+  let badgeT=null; const badgeSoon=()=>{ clearTimeout(badgeT); badgeT=setTimeout(paintBadge, 1500); };   // after the section's own save
+  if(H) H.on(badgeSoon);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) badgeSoon(); });
+  badgeSoon();
+
+  /* ---- Privacy, and erasing everything ----
+     Erasing is parked in sessionStorage and done on the next load (SHELL), before any section starts, so a section's
+     save on the way out can't write anything back. */
+  document.querySelectorAll('[data-open-privacy]').forEach(b=>b.addEventListener('click',()=>{
+    $('er-in').value=''; $('er-go').disabled=true; say('er-msg',''); open($('privacy')); }));
+  $('privacy-done').addEventListener('click',()=>close($('privacy')));
+  const typed=()=>$('er-in').value.trim().toLowerCase()==='erase';
+  $('er-in').addEventListener('input',()=>{ $('er-go').disabled=!typed(); });
+  $('er-go').addEventListener('click',()=>{
+    if(!typed()) return;
+    try{ sessionStorage.setItem('milo.erase','1'); }
+    catch(e){ try{ MiloSecurity.erase(localStorage); }catch(_){ say('er-msg','Couldn’t erase: '+e.message,true); return; } }
+    location.replace(location.pathname);
+  });
+})();
 
 ;
 

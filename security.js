@@ -245,13 +245,16 @@
     return rows;
   }
   const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-  /* A local date and time: 2024-01-15 07:30:00 (Strong) or 15 Jan 2024, 07:30 (Hevy). */
+  /* A local date and time: 2025-01-30 12:34:56 pm (Strong; older exports 2024-01-15 07:30:00, and a narrow space
+     before pm on some phones) or 30 Jan 2025, 12:34 (Hevy). */
   function when(v) {
-    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(v), y, mo, da, h = 12, mi = 0, se = 0;
-    if (m) { y = +m[1]; mo = +m[2] - 1; da = +m[3]; if (m[4] != null) { h = +m[4]; mi = +m[5]; se = +(m[6] || 0); } }
-    else if ((m = /^(\d{1,2}) ([A-Za-z]{3})[A-Za-z]*\.? (\d{4}),? (\d{1,2}):(\d{2})/.exec(v))) {
-      y = +m[3]; mo = MONTHS.indexOf(m[2].toLowerCase()); da = +m[1]; h = +m[4]; mi = +m[5];
+    v = String(v).replace(/[   ]/g, ' ');
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?(?: ?([ap])\.?m\.?)?)?/i.exec(v), y, mo, da, h = 12, mi = 0, se = 0, ap = null;
+    if (m) { y = +m[1]; mo = +m[2] - 1; da = +m[3]; if (m[4] != null) { h = +m[4]; mi = +m[5]; se = +(m[6] || 0); ap = m[7]; } }
+    else if ((m = /^(\d{1,2}) ([A-Za-z]{3})[A-Za-z]*\.? (\d{4}),? (\d{1,2}):(\d{2})(?: ?([ap])\.?m\.?)?/i.exec(v))) {
+      y = +m[3]; mo = MONTHS.indexOf(m[2].toLowerCase()); da = +m[1]; h = +m[4]; mi = +m[5]; ap = m[6];
     } else return null;
+    if (ap) { if (h < 1 || h > 12) return null; h = h % 12 + (ap.toLowerCase() === 'p' ? 12 : 0); }
     const t = new Date(y, mo, da, h, mi, se);
     return mo >= 0 && y >= 1990 && y <= 2100 && t.getDate() === da && h < 24 && mi < 60 ? t.getTime() : null;
   }
@@ -274,7 +277,7 @@
     } : {
       date: col('date'), end: -1, name: col('workout name'), note: col('workout notes'), ex: col('exercise name'), exNote: col('notes'),
       order: col('set order'), type: -1, w: col('weight', 'weight (kg)', 'weight (lbs)', 'weight (lb)'), unit: col('weight unit'), reps: col('reps'),
-      secs: col('seconds', 'duration (sec)'), rpe: col('rpe'), dur: col('duration'), durSec: col('duration (sec)')
+      secs: col('seconds', 'duration (sec)'), rpe: col('rpe'), dur: col('duration', 'workout duration'), durSec: col('duration (sec)')
     };
     const fileUnit = hevy ? (head.includes('weight_lbs') ? 'lb' : 'kg') : head.includes('weight (kg)') ? 'kg' : head.includes('weight (lbs)') || head.includes('weight (lb)') ? 'lb' : null;
     const txt = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max);
@@ -299,7 +302,8 @@
       if (!(reps > 0) && !(secs > 0)) return;                               // distance only, or an empty set
       const ru = get(C.unit).toLowerCase(), u = /^lbs?$/.test(ru) ? 'lb' : ru === 'kg' ? 'kg' : fileUnit;
       const st = hevy ? get(C.type).toLowerCase() : order;
-      const type = st === 'warmup' || st === 'w' ? 'warmup' : st === 'dropset' || st === 'drop_set' || st === 'd' ? 'drop' : st === 'failure' || st === 'f' ? 'failure' : 'work';
+      // Hevy: normal, warmup, dropset, failure; Strong marks the set order W, D or F
+      const type = /^warm/.test(st) || st === 'w' ? 'warmup' : /^drop/.test(st) || st === 'd' ? 'drop' : st === 'failure' || st === 'f' ? 'failure' : 'work';
       const key = hevy ? get(C.name) + '|' + get(C.date) + '|' + get(C.end) : get(C.date) + '|' + get(C.name);
       let s = sessions.get(key);
       if (!s) {

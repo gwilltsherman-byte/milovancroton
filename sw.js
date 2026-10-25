@@ -1,6 +1,6 @@
 /* Offline cache belongs only to this app and contains only its static assets. */
 const PREFIX = 'milo-app-';
-const CACHE = PREFIX + 'v59-1fd7c5a325e4d99ad7f6';
+const CACHE = PREFIX + 'v59-630c881672419dd773f4';
 const NAV_WAIT = 3000;
 const BASE = new URL('./', self.registration.scope);
 const SHELL = ['./', './index.html', './security.js', './app.js', './fonts.css', './shell.css', './trainer.css',

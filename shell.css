@@ -69,3 +69,45 @@ button,a,input,textarea{touch-action:manipulation}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .bk .msg.bad{color:#ffaaa1}}
 
 .shbtn:focus-visible{outline:3px solid var(--sh-focus);outline-offset:3px}
+
+/* Your data: passphrases, the import preview, the coach summary and privacy, in the shell's sheets. */
+.bk .fld{display:block;margin:6px 0 6px;font-size:14px;font-weight:600;color:var(--sh-ink)}
+.bk .fld span{font-weight:400;color:var(--sh-muted)}
+.bk .txt{display:block;width:100%;min-height:46px;margin:0 0 8px;padding:10px 12px;border-radius:8px;border:1px solid var(--sh-edge);background:var(--sh-well);color:var(--sh-ink);font:inherit;font-size:16px}
+.bk .small{font-size:12.5px;line-height:1.5;margin:0 0 12px}
+.bk .stack{display:grid;gap:8px}
+.bk .stack>.b{width:100%;text-align:left}
+.bk .calrow{flex-wrap:nowrap;align-items:center}
+.bk .calrow .b{text-align:left}
+.bk .tm{flex:none;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--sh-muted)}
+.bk .tm .txt{width:auto;margin:0;min-height:46px;padding:8px}
+.bk .b:disabled{opacity:.45;cursor:default;filter:none}
+.bk .b.danger{background:#b43636;border-color:transparent;color:#fff}
+.bk .b.sm{flex:1 1 auto;min-height:44px;padding:9px 12px;font-size:13.5px;text-align:left}
+.bk .b[aria-pressed="true"]{border-color:var(--sh-accent);box-shadow:inset 0 0 0 1px var(--sh-accent)}
+.bk .seg2{display:flex;gap:6px;flex:none}
+.bk .seg2 .b.sm{flex:none;text-align:center}
+.bk .ok{font-weight:600;color:var(--sh-ink)}
+.imx{border-top:1px solid var(--sh-border);padding:10px 0}
+.imx-n{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;overflow-wrap:anywhere}
+.imx-n span{flex:none;color:var(--sh-muted);font-size:12.5px}
+.imx .row{margin-top:6px}
+.imx .txt{margin-top:8px}
+.imx-list{max-height:260px;overflow:auto;display:grid;gap:4px;margin-top:2px}
+.imx-list button{display:flex;justify-content:space-between;gap:8px;min-height:44px;padding:8px 10px;border-radius:8px;border:1px solid var(--sh-border);background:var(--sh-solid);color:var(--sh-ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer}
+.imx-list button span{color:var(--sh-muted);font-size:12px;flex:none}
+.imx-list button[aria-pressed="true"]{border-color:var(--sh-accent)}
+.imp-foot{margin-top:14px}
+.sum section{margin:0 0 14px}
+.sum ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;overflow-wrap:anywhere}
+.shtoast button{margin-left:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--sh-edge);background:var(--sh-well);color:var(--sh-ink);font:inherit;font-weight:700;cursor:pointer}
+@media(max-width:380px){.bk .calrow{flex-wrap:wrap}}
+/* The coach summary prints on its own, in black on white. */
+@media print{
+  body{background:#fff!important}
+  body>*:not(#sum){display:none!important}
+  #sum{position:static;display:block;width:auto;max-width:none;max-height:none;overflow:visible;margin:0;padding:0;border:0;box-shadow:none;background:#fff;color:#000}
+  #sum::backdrop{display:none}
+  #sum .noprint{display:none!important}
+  #sum p,#sum .last{color:#000}
+}
