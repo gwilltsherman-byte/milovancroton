@@ -188,7 +188,7 @@
       frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture));
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
-    // exercises in both Muscle and Ladder share their sets: Ladder's latest pull-ups start Muscle's, and Muscle's count in Ladder as clean
+    // exercises in both Muscle and Ladder share their sets: Ladder's latest pull-ups start Muscle's, and Muscle's count in Ladder as volume, not proof
     { frame.remove(); frame=null;
       const day=n=>{ const d=new Date(); d.setDate(d.getDate()-n); d.setHours(12,0,0,0); return d.getTime(); };
       const pull=sets=>({exId:'pullup',name:'Pull-Up',primary:['lat'],secondary:['bi','uback'],equipment:'Bodyweight',sets});
@@ -207,7 +207,7 @@
       check(root.querySelector('.excard').textContent.includes('Last: BW×7 @') || root.querySelector('.excard').textContent.includes('Last: BW×7 in Ladder'),'Muscle starts pull-ups from your newer Ladder set');
       check(root.querySelector('.excard').textContent.includes('in Ladder'),'and says it came from Ladder');
       const C=win.__hub.api('cal');
-      check(C.catalog().find(c=>c.key==='pullup10').met===true,'Ladder counts the 10-rep pull-up sets logged in Muscle as clean, so the goal is met');
+      check(C.catalog().find(c=>c.key==='pullup10').met===false,'Ladder counts the 10-rep pull-up sets logged in Muscle as volume, not proof, so the goal is not met from them');
       check(win.__hub.sets(day(10), null, ['cal']).direct.lat===3,'Ladder’s weekly sets still count only its own, so nothing is counted twice');
       frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture)); localStorage.removeItem('proladder.v1');
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }

@@ -503,3 +503,330 @@ test('a couple of goals are all trained every session, as before', () => {
   const sessions = plain(api.evaluate('Array.from({length:4},(_,ahead)=>todayPlan(ahead))'));
   assert.ok(sessions.every(plan => ['pull', 'pushh'].every(id => plan.some(x => x.id === id))));
 });
+
+/* ==== Wave 1: spacing, proof, progress, dose, gates, holds ==== */
+const hour = 3600000;
+const goals = (api, ...keys) => { api.getState().goals = keys.map(k => api.evaluate(`makeGoal(${JSON.stringify(k)})`)); };
+const where = (api, sid) => plain(api.evaluate(`(()=>{ for(const l of Object.keys(LADDERS)){ const i=stepsOf(l).findIndex(s=>s.id===${JSON.stringify(sid)}); if(i>=0) return [l,i]; } return null; })()`));
+const planFor = (api, id, ahead = 0) => plain(api.evaluate(`todayPlan(${ahead})`)).find(x => x.id === id);
+const notesFor = (api, id, ahead = 0) => plain(api.evaluate(`todayPlan(${ahead}).notes`)).filter(n => n.id === id);
+const withRir = (rec, rirs) => { rec.entries[0].sets.forEach((s, k) => { s.rir = rirs[k]; }); return rec; };
+// Muscle, as Ladder reaches it through the hub: its ticked sets of shared exercises, and its bodyweight log
+function muscle(api, sessions, body = []) {
+  api.evaluate(`window.__hub={has:k=>k==='lift', api:()=>({sharedSets:ids=>${JSON.stringify(sessions)}.map(w=>({id:w.id, date:w.date, entries:w.entries.filter(e=>ids.includes(e.exId))})).filter(w=>w.entries.length),
+    stamp:()=>${Date.now() + Math.random()}, bodyLog:()=>${JSON.stringify(body)}})}`);
+}
+const mset = (exId, reps, date, rir = 2) => ({id: 'm' + date + exId, date, entries: [{exId, sets: reps.map(r => ({reps: r, rir}))}]});
+
+test('a hard straight-arm session waits about 48 hours, and Today says why', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'tuckplanche'); placed(api, 'planche', 1);
+  state.history.push(record('planche', 1, [10, 10, 10], {date: Date.now() - 24 * hour}));
+  const p = planFor(api, 'planche');
+  assert.ok(!p || (p.role === 'easy' && p.i !== 1), 'the day after a hard planche session plans an easier rung or nothing');
+  if (p) assert.equal(p.i, api.evaluate('previousRung("planche",1)'), 'the easier rung is the step before');
+  const n = notesFor(api, 'planche');
+  assert.equal(n.length, 1); assert.equal(n[0].why, 'rest'); assert.equal(n[0].f, 'straight');
+  assert.match(api.evaluate('noteText(todayPlan().notes.find(n=>n.id==="planche"))'), /rest until .*straight-arm/);
+  state.history[0].date = Date.now() - 49 * hour;
+  const q = planFor(api, 'planche');
+  assert.ok(q && q.role !== 'easy', 'after 48 hours the goal trains hard again');
+  assert.equal(notesFor(api, 'planche').length, 0);
+});
+
+test('planned straight-arm sessions never land on two days in a row, and an easier day is not a hard one', () => {
+  const api = ladder();
+  goals(api, 'tuckplanche'); placed(api, 'planche', 1);
+  const hard = Array.from({length: 6}, (_, k) => { const p = planFor(api, 'planche', k); return !!p && p.role !== 'easy'; });
+  assert.ok(hard.some(Boolean), 'it is still trained hard');
+  hard.forEach((h, k) => { if (k) assert.ok(!(h && hard[k - 1]), `sessions ${k - 1} and ${k} are both hard: ${hard}`); });
+  const api2 = ladder(), s2 = api2.getState();
+  goals(api2, 'tuckplanche'); placed(api2, 'planche', 1);
+  s2.history.push(Object.assign(record('planche', 5, [10, 10, 10], {date: Date.now() - 24 * hour}), {}));
+  s2.history[0].entries[0].role = 'easy';
+  assert.ok(planFor(api2, 'planche').role !== 'easy', 'sets on an easier day leave the next hard session where it was');
+});
+
+test('a session trains at most one straight-arm skill hard, and press is one of them', () => {
+  const api = ladder();
+  goals(api, 'tuckplanche', 'frontlever', 'tuckbl'); placed(api, 'planche', 1); placed(api, 'frontlever', 0); placed(api, 'backlever', 2);
+  assert.ok(api.evaluate('STRAIGHT_ARM.includes("press")'));
+  assert.equal(api.evaluate('hardFam("press",3)'), 'straight');
+  assert.equal(api.evaluate('hardFam("press",0)'), null, 'pike compression is not straight-arm work');
+  for (let k = 0; k < 4; k++) {
+    const plan = plain(api.evaluate(`todayPlan(${k})`));
+    const hard = plan.filter(x => x.role !== 'easy' && api.evaluate(`hardFam(${JSON.stringify(x.id)},${x.i})`) === 'straight');
+    assert.ok(hard.length <= 1, `session ${k} trains ${hard.map(x => x.id)} hard`);
+  }
+  const notes = plain(api.evaluate('todayPlan().notes'));
+  assert.ok(notes.some(n => n.why === 'one'), 'the others say why');
+});
+
+test('Nordics wait 72 hours in the first four weeks and 48 after, counting Muscle\'s Nordic sets', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'nordic'); placed(api, 'hinge', 4);
+  state.history.push(record('hinge', 4, [1, 1, 1], {date: Date.now() - 50 * hour}));
+  let n = notesFor(api, 'hinge');
+  assert.equal(n.length, 1, 'a first-month Nordic session 50 hours ago still rests'); assert.equal(n[0].f, 'nordic');
+  assert.match(api.evaluate('noteText(todayPlan().notes[0])'), /Nordic work/);
+  state.history.unshift(record('hinge', 4, [1, 1, 1], {date: Date.now() - 40 * day}));
+  assert.equal(notesFor(api, 'hinge').length, 0, 'after the first month, 48 hours is enough');
+  const api2 = ladder();
+  goals(api2, 'nordic'); placed(api2, 'hinge', 4);
+  muscle(api2, [mset('nordic-curl', [5, 5], Date.now() - 20 * hour)]);
+  assert.equal(notesFor(api2, 'hinge')[0].why, 'rest', 'a Nordic set logged in Muscle counts for spacing');
+});
+
+test('sets imported from Muscle are volume, not proof, and Muscle\'s Nordic curl is Nordic lowering', () => {
+  const api = ladder();
+  goals(api, 'pullup10'); placed(api, 'pull', 4);
+  muscle(api, [mset('pullup', [10, 10, 10], Date.now() - 3 * day), mset('pullup', [10, 10, 10], Date.now() - day), mset('nordic-curl', [6], Date.now() - day)]);
+  assert.equal(api.evaluate('bestFor("pull",4)'), 10, 'they show in the logged best');
+  assert.equal(api.evaluate('verifiedBestFor("pull",4)'), 0, 'but prove nothing');
+  assert.equal(api.evaluate('goalMet(activeGoals()[0])'), false, 'ten pull-ups in Muscle do not meet the goal');
+  assert.equal(api.evaluate('currentProof("pull",4).ready'), false);
+  assert.equal(api.evaluate('rungTarget("pull",4,"goal")'), 10, 'they tell today\'s dose where you are');
+  const imported = plain(api.evaluate('allHistory().filter(w=>w.muscle)')).flatMap(w => w.entries);
+  assert.ok(imported.every(e => e.clean === false && e.sets.every(s => s.clean === false)));
+  const nordic = imported.find(e => e.ladderId === 'hinge');
+  assert.equal(api.evaluate(`rungId("hinge",${nordic.stepIdx})`), 'nordic-negative');
+  assert.equal(api.evaluate('verifiedBestFor("hinge",4)'), 0);
+});
+
+test('goal progress and passed rungs never go backwards as the logs age', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'pullup10'); placed(api, 'pull', 4);
+  state.advances.push({date: Date.now() - 70 * day, id: 'pull', from: 3, to: 4, name: 'Pull-up'});
+  state.history.push(record('pull', 3, [8, 8, 8], {date: Date.now() - 72 * day, setup: {assist: 1}}));
+  state.history.push(record('pull', 4, [6, 6, 6], {date: Date.now() - 65 * day}));
+  const before = api.evaluate('goalProgress(activeGoals()[0])');
+  assert.ok(Math.abs(before - (4 + 0.6) / 5) < 1e-9, 'four steps behind you and 6 of 10 on the goal step: ' + before);
+  state.history.forEach(w => { w.date -= 200 * day; });
+  assert.equal(api.evaluate('goalProgress(activeGoals()[0])'), before, 'the same months later');
+  assert.equal(api.evaluate('currentProof("pull",3).ready'), false, 'readiness still uses the 42-day window');
+  assert.ok([0, 1, 2, 3].every(i => api.evaluate(`passed("pull",${i})`)), 'earlier steps show as passed');
+  assert.equal(api.evaluate('passed("pull",4)'), false);
+  assert.equal(api.evaluate('passed("pull",6)'), false);
+});
+
+test('the one-set maintenance check asks for the goal\'s standard, not the step\'s base target', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'oapush');
+  assert.equal(api.evaluate('stepsOf("sidecore")[0].v'), 30);
+  assert.equal(api.evaluate('rungTarget("sidecore",0,"maintenance")'), 45);
+  state.needClaims['side-plank|45'] = {v: 45, date: Date.now()};
+  const m = plain(api.evaluate('Array.from({length:6},(_,k)=>todayPlan(k)).flat()')).find(x => x.role === 'maintenance' && x.id === 'sidecore');
+  assert.ok(m, 'the side plank comes round as a maintenance check');
+  assert.equal(m.sets, 1); assert.equal(m.target, 45);
+});
+
+test('entry checks are about 40% of the target, at most 3 reps or 5 s, and 1 rep only for first-rep steps', () => {
+  const api = ladder();
+  const e = (sid) => { const [l, i] = where(api, sid); return api.evaluate(`entryMinimum(${JSON.stringify(l)},${i})`); };
+  assert.equal(e('pullup'), 1, 'first pull-up');
+  assert.equal(e('oap'), 1, 'one-arm pull-up');
+  assert.equal(e('strict-muscleup'), 1); assert.equal(e('kipping-muscleup'), 1);
+  assert.equal(e('dip'), 3, '40% of 10 is 4, capped at 3');
+  assert.equal(e('negative-pullup'), 2, '40% of 5');
+  assert.equal(e('weighted-dip'), 2);
+  assert.equal(e('full-planche-pushup'), 1, '40% of 2 rounds to 1');
+  assert.equal(e('dead-hang'), 5, 'holds cap at 5 s');
+  assert.equal(e('human-flag'), 2, '40% of 5 s');
+  assert.equal(e('assisted-oap'), 1, '40% of 3 rounds to 1');
+});
+
+test('risky steps wait for their gate: in plans, unlocks, and what a goal takes', () => {
+  const api = ladder(), state = api.getState();
+  const gate = sid => { const [l, i] = where(api, sid); return api.evaluate(`gateMet(${JSON.stringify(l)},${i})`); };
+  const log = (sid, v, ago = 200) => { const [l, i] = where(api, sid); state.history.push(record(l, i, [v], {date: Date.now() - ago * day})); };
+  [['freestanding-hspu', 'freestanding-handstand', 30], ['partial-wall-hspu', 'chest-to-wall-handstand', 30], ['freestanding-handstand', 'cartwheel-bail', 3],
+    ['clapping-pullup', 'explosive-pullup', 5], ['depth-jump', 'drop-landing', 5], ['dragon-squat', 'pistol-squat', 3]].forEach(([step, first, v]) => {
+    assert.equal(gate(step), false, step + ' is gated');
+    log(first, v - 1); assert.equal(gate(step), false, step + ' needs ' + v + ' of ' + first);
+    log(first, v); assert.equal(gate(step), true, step + ' opens after ' + first + ', however long ago');
+  });
+  assert.equal(gate('wall-hspu'), true, 'an ungated step');
+  const api2 = ladder(), s2 = api2.getState();
+  goals(api2, 'hspu'); placed(api2, 'pushv', 3);
+  const p = planFor(api2, 'pushv');
+  assert.equal(p.i, api2.evaluate('previousRung("pushv",3)'), 'the plan trains the step before');
+  assert.equal(notesFor(api2, 'pushv')[0].why, 'gate');
+  assert.match(api2.evaluate('noteText(todayPlan().notes[0])'), /first 30 s chest-to-wall handstand/);
+  const need = plain(api2.evaluate('goalNeeds(activeGoals()[0])')).find(n => n.gate);
+  assert.deepEqual([need.l, need.r, need.v], ['handstand', 1, 30], 'the gate joins what the goal takes');
+  s2.needClaims['chest-to-wall-handstand|30'] = {v: 30, date: Date.now()};
+  assert.equal(planFor(api2, 'pushv').i, 3, 'ticking that you can do it opens it');
+  const api3 = ladder(), s3 = api3.getState();
+  s3.history.push(record('handstand', 2, [8]), record('handstand', 1, [45]));
+  assert.ok(!plain(api3.evaluate('readyMoves()')).some(u => u.k === 'handstand'), 'no freestanding handstand unlock before the cartwheel bail');
+  s3.history.push(record('hsdrill', 0, [3]));
+  assert.ok(plain(api3.evaluate('readyMoves()')).some(u => u.k === 'handstand'));
+});
+
+test('rep steps train in a range with reps in reserve, and move on only at the top on two days 20 hours apart', () => {
+  const api = ladder(), state = api.getState();
+  assert.equal(api.evaluate('rungText("dip",3)'), '3 x 3&ndash;10');
+  assert.equal(api.evaluate('rungText("pull",4)'), '3 x 1&ndash;8');
+  placed(api, 'pull', 4);
+  assert.equal(api.evaluate('rungTarget("pull",4)'), 1, 'nothing logged: the bottom of the range');
+  state.tests.push({date: Date.now() - day, ladderId: 'pull', stepIdx: 4, v: 6, setup: {}, clean: true});
+  assert.equal(api.evaluate('rungTarget("pull",4)'), 5, 'a test of 6 starts at 5, a rep in reserve');
+  const at = (reps, rirs) => { state.history = [withRir(record('pull', 4, reps, {target: 5, date: Date.now() - day}), rirs)]; return api.evaluate('rungTarget("pull",4)'); };
+  assert.equal(at([5, 5, 5], [2, 2, 2]), 6, 'every set at the target with reps in reserve: a rep more');
+  assert.equal(at([5, 5, 5], [null, null, null]), 6, 'reps in reserve left blank count as fine');
+  assert.equal(at([5, 5, 5], [3, 4, 3]), 7, 'plenty left: starts where you are, a rep short');
+  assert.equal(at([5, 5, 5], [2, 2, 0]), 5, 'a set at 0 in reserve keeps the reps');
+  assert.equal(at([5, 4, 4], [null, null, null]), 5, 'some short: the same again');
+  assert.equal(at([3, 3, 2], [null, null, null]), 2, 'all short: where you are');
+  assert.equal(at([8, 8, 8], [3, 3, 3]), 8, 'never past the top of the range');
+  const proof = (dates, rirs) => { state.history = dates.map((d, k) => withRir(record('dip', 3, [10, 10, 10], {date: d}), rirs[k])); return api.evaluate('currentProof("dip",3).ready'); };
+  assert.equal(proof([Date.now() - 3 * day, Date.now() - day], [[1, 1, 1], [2, 1, 3]]), true);
+  assert.equal(proof([Date.now() - 3 * day, Date.now() - day], [[1, 1, 1], [2, 0, 3]]), false, 'a set called at 0 in reserve is not the top of the range');
+  assert.equal(proof([Date.now() - 2 * day, Date.now() - 2 * day + 20 * 60000], [[1, 1, 1], [1, 1, 1]]), false, '23:50 and 00:10 are one training day');
+  assert.equal(proof([Date.now() - 2 * day, Date.now() - 2 * day + 21 * hour], [[1, 1, 1], [1, 1, 1]]), true);
+});
+
+test('weighted steps ask for the weight added and go up by load at the top; assisted steps ask a help level and go down by one', () => {
+  const api = ladder(), state = api.getState();
+  assert.deepEqual(plain(api.evaluate('setupFields(stepsOf("pull")[6])')).map(f => f.key), ['load']);
+  placed(api, 'pull', 6);
+  state.history.push(record('pull', 6, [5, 5, 5], {date: Date.now() - 3 * day}));
+  assert.equal(api.evaluate('verifiedBestFor("pull",6)'), 0, 'a weighted set without its weight is not proof');
+  state.history = [withRir(record('pull', 6, [5, 5, 5], {date: Date.now() - day, setup: {load: 10}}), [1, 1, 1])];
+  assert.equal(api.evaluate('verifiedBestFor("pull",6)'), 5);
+  let d = plain(api.evaluate('dose("pull",6,"goal")'));
+  assert.equal(d.setup.load, 12.5, 'the next weight up');
+  assert.equal(d.target, 3, 'two reps fewer');
+  assert.match(d.why, /12\.5 kg added/);
+  state.history = [withRir(record('pull', 6, [4, 4, 4], {date: Date.now() - day, setup: {load: 10}, target: 4}), [1, 1, 1])];
+  d = plain(api.evaluate('dose("pull",6,"goal")'));
+  assert.equal(d.setup.load, 10, 'below the top the weight stays'); assert.equal(d.target, 5);
+  placed(api, 'pull', 3);
+  state.history = [withRir(record('pull', 3, [8, 8, 8], {date: Date.now() - day, setup: {assist: 3}}), [2, 2, 2])];
+  d = plain(api.evaluate('dose("pull",3,"goal")'));
+  assert.equal(d.setup.assist, 2, 'one level less help'); assert.equal(d.target, 6);
+  const entry = plain(api.evaluate('entryFor("pull",3)'));
+  assert.equal(entry.setup.assist, 2, 'a new session fills the number in'); assert.ok(entry.why);
+});
+
+test('holds train their total time in pieces, and balance skills as an 8-minute block of attempts', () => {
+  const api = ladder(), state = api.getState();
+  placed(api, 'frontlever', 0);
+  const e = plain(api.evaluate('planEntry({id:"frontlever",i:0,sets:3,role:"goal"})'));
+  assert.equal(e.total, e.target * 3);
+  const hs = api.evaluate('planEntry({id:"handstand",i:3,sets:3,role:"goal"})');
+  assert.equal(hs.block.min, 8); assert.equal(hs.sets.length, 1);
+  state.active = {id: 'a', name: 'S', startedAt: Date.now(), entries: [hs]};
+  hs.sets[0].v = 12; api.evaluate('toggleDone(0,0)');
+  assert.ok(hs.block.start > 0, 'the block starts with the first attempt');
+  assert.equal(hs.sets.length, 2, 'another attempt opens while time is left');
+  assert.equal(plain(api.evaluate('trimExtra(state.active.entries)'))[0].sets.length, 1, 'an attempt never made is not a set left undone');
+  hs.block.start = Date.now() - 9 * 60000; hs.sets[1].v = 15; api.evaluate('toggleDone(0,1)');
+  assert.equal(hs.sets.length, 2, 'no more once the time is up');
+  const tl = api.evaluate('planEntry({id:"frontlever",i:0,sets:3,role:"goal",target:10})');
+  state.active.entries = [tl];
+  [6, 6, 6].forEach((v, k) => { tl.sets[k].v = v; api.evaluate(`toggleDone(0,${k})`); });
+  assert.equal(tl.sets.length, 4, '18 of 30 s: another piece');
+});
+
+test('per-side exercises log left and right, the weaker side counts, and the hold timer logs both', () => {
+  const api = ladder(), state = api.getState();
+  const i = where(api, 'oa-lockoff-top')[1];
+  assert.ok(api.evaluate(`perSide(stepsOf("pull")[${i}])`));
+  const e = api.evaluate(`planEntry({id:"pull",i:${i},sets:3,role:"goal",target:10})`);
+  state.active = {id: 'a', name: 'S', startedAt: Date.now(), entries: [e]};
+  e.sets[0].lr = [12, 8]; api.evaluate('toggleDone(0,0)');
+  assert.equal(e.sets[0].v, 8, 'the weaker side');
+  api.evaluate('toggleDone(0,2)');
+  assert.deepEqual(plain(e.sets[2].lr), [10, 10], 'empty sides log the target');
+  api.evaluate('holdGo(0,1)');
+  assert.equal(api.evaluate('holdT.side'), 'l');
+  api.evaluate('holdT.start=Date.now()-12000; holdGo(0,1)');
+  assert.equal(e.sets[1].done, false); assert.equal(e.sets[1].lr[0], 12);
+  api.evaluate('holdGo(0,1)');
+  assert.equal(api.evaluate('holdT.side'), 'r');
+  api.evaluate('holdT.start=Date.now()-9000; holdGo(0,1)');
+  assert.deepEqual(plain(e.sets[1].lr), [12, 9]); assert.equal(e.sets[1].v, 9); assert.equal(e.sets[1].done, true);
+  assert.equal(api.evaluate('holdT'), null);
+  assert.equal(api.evaluate('clearsRung(state.active.entries[0])'), false, 'both sides must reach the target');
+  const j = api.evaluate(`planEntry({id:"frontlever",i:0,sets:3,role:"goal",target:10})`);
+  state.active.entries = [j];
+  api.evaluate('holdGo(0,0)'); assert.equal(api.evaluate('holdT.side'), null, 'a two-sided hold is one time');
+  api.evaluate('holdT.start=Date.now()-11000; toggleDone(0,0)');
+  assert.equal(j.sets[0].v, 11, 'the tick stops the timer and logs it'); assert.equal(j.sets[0].done, true);
+});
+
+test('static stretches leave the warm-up for the end, and balance attempts are not hard sets', () => {
+  const api = ladder(), state = api.getState();
+  placed(api, 'ankle', 0);
+  assert.deepEqual(plain(api.evaluate('orderIds(["ankle","pull"])')), ['pull', 'ankle'], 'a 45 s calf stretch comes last');
+  placed(api, 'ankle', 1);
+  assert.deepEqual(plain(api.evaluate('orderIds(["ankle","pull"])')), ['ankle', 'pull'], 'ankle rocks stay in the warm-up');
+  state.history.push(record('handstand', 3, [20, 20, 20]), record('hsdrill', 2, [5, 5, 5]));
+  assert.equal(api.evaluate('setsIn(7)'), 0);
+  assert.equal(plain(api.evaluate('hubWork(0, Date.now()+1)')).length, 0);
+  state.history.push(record('pull', 4, [5, 5, 5]));
+  assert.equal(api.evaluate('setsIn(7)'), 3);
+});
+
+test('a pain hold trains the assisted step of straight-arm work for a week, and leaves out wrist work with none', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'tuckplanche', 'handstand'); placed(api, 'planche', 1); placed(api, 'handstand', 3);
+  state.history.push(record('hsdrill', 0, [3]));
+  api.evaluate('holdJoint("elbow")');
+  const p = planFor(api, 'planche');
+  assert.equal(p.role, 'easy'); assert.equal(api.evaluate(`setupField(stepsOf("planche")[${p.i}]).key`), 'assist');
+  assert.equal(notesFor(api, 'planche')[0].why, 'pain');
+  assert.ok(planFor(api, 'handstand'), 'an elbow hold leaves the handstand alone');
+  api.evaluate('holdJoint("wrist")');
+  assert.equal(planFor(api, 'handstand'), undefined, 'a wrist hold leaves the handstand out');
+  assert.deepEqual(plain(api.evaluate('state.hold.joints')).sort(), ['elbow', 'wrist']);
+  assert.ok(api.evaluate('state.hold.until') > Date.now() + 7 * day - 1);
+  assert.equal(planFor(api, 'planche', 9).role !== 'easy' || !notesFor(api, 'planche', 9).some(n => n.why === 'pain'), true, 'it ends after a week');
+  assert.equal(api.evaluate('holdJoint("knee")'), null, 'only elbow, wrist and shoulder');
+  assert.equal(api.evaluate('normalize({hold:{until:"x"}}).hold'), null, 'a malformed hold is dropped');
+});
+
+test('placement keeps your answers through a reload and starts from your current step', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'pullup10'); placed(api, 'pull', 4);
+  api.evaluate('startPlacement(activeGoals())');
+  assert.equal(api.evaluate('surveyAns.pull'), 4, 'your current step is picked');
+  const saved = JSON.parse(JSON.stringify(api.evaluate('payload()')));
+  assert.deepEqual(saved.placing.survey[0], 'pull');
+  api.evaluate('place=null; surveyAns={}');
+  api.setState(saved);
+  api.evaluate('resumePlacement()');
+  assert.equal(api.evaluate('surveyAns.pull'), 4);
+  assert.deepEqual(plain(api.evaluate('place.survey')), saved.placing.survey);
+});
+
+test('a renamed rung of your own starts fresh, and goal times are realistic', () => {
+  const api = ladder(), state = api.getState();
+  state.custom = [{id: 'c-x', n: 'Mine', like: 'core', steps: [{n: 'Renamed', k: 'reps', sets: 3, v: 5, since: Date.now() - 2 * day}]}];
+  api.evaluate('registerCustom(state.custom)');
+  state.history.push(record('c-x', 0, [6, 6, 6], {date: Date.now() - 3 * day}));
+  assert.equal(api.evaluate('verifiedBestFor("c-x",0)'), 0, 'sets logged before the rename are not proof');
+  state.history.push(record('c-x', 0, [6, 6, 6], {date: Date.now() - day}));
+  assert.equal(api.evaluate('verifiedBestFor("c-x",0)'), 6);
+  assert.equal(api.evaluate('goalHint("pullup1")'), 'Often a few months');
+  assert.equal(api.evaluate('goalHint("handstand")'), 'Often 6 to 12 months');
+});
+
+test('new steps and goals: lock-offs, a strength base for one arm, a first muscle-up, a supported flag, Nordic lowering', () => {
+  const api = ladder();
+  const uni = plain(api.evaluate('LADDER_PATHS.pull.find(p=>p.key==="unilateral").steps'));
+  assert.ok(['oa-lockoff-top', 'oa-lockoff-90', 'oa-negative'].every(x => uni.indexOf(x) > uni.indexOf('archer-pullup') && uni.indexOf(x) < uni.indexOf('oap')));
+  assert.ok(plain(api.evaluate('LADDER_PATHS.flag[0].steps')).includes('support-flag'));
+  assert.equal(api.evaluate('rungId(GOALS.nordiclower.l,GOALS.nordiclower.r)'), 'nordic-negative');
+  assert.ok(plain(api.evaluate('pathFor("muscleup",GOALS.muscleup1)')).map(i => api.evaluate(`rungId("muscleup",${i})`)).includes('hip-to-bar-pull'));
+  goals(api, 'oapu');
+  const base = plain(api.evaluate('goalNeeds(activeGoals()[0])')).find(n => n.l === 'weightedpull');
+  assert.deepEqual([base.r, base.v], [0, 15], '15 strict pull-ups');
+  muscle(api, [], [{date: 0, kg: 80}]);
+  const st = api.getState();
+  st.history.push(record('weightedpull', 1, [1], {setup: {load: 30}}));
+  assert.equal(api.evaluate(`needMet(${JSON.stringify(base)})`), false, '30 kg is under 40% of 80 kg');
+  st.history.push(record('weightedpull', 1, [1], {setup: {load: 32.5}}));
+  assert.equal(api.evaluate(`needMet(${JSON.stringify(base)})`), true, 'one rep with 40% of bodyweight added also counts');
+});

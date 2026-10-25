@@ -6682,7 +6682,7 @@ const GATES={
   'freestanding-handstand':[['hsdrill',0,3]],
   'clapping-pullup':[['muscleup',1,5]],
   'depth-jump':[['landing',1,5]],
-  'dragon-squat':[['legs',5,3],['legs',4,3]],
+  'dragon-squat':[['legs',5,3]],
 };
 
 /* ==================== EVIDENCE ==================== */
@@ -7339,7 +7339,7 @@ function planCore(r, at, t, light){
 }
 /* Why a goal trains easier today, or not at all, in one short line for Today. */
 function noteText(n){ const g=goalsOn(n.id)[0], who=esc(g? g.n : LADDERS[n.id].n), step=n.i!=null? ' '+esc(stepsOf(n.id)[n.i].n)+' today.' : ' Support work today.';
-  if(n.why==='pain') return `${who}: held for your ${esc(n.joint)} until ${whenText(n.until)}.${n.i!=null? ' Assisted: '+esc(stepsOf(n.id)[n.i].n)+'.' : ''}`;
+  if(n.why==='pain') return `${who}: held for your ${esc(n.joint)} until ${esc(fmtDate(n.until))}.${n.i!=null? ' Assisted: '+esc(stepsOf(n.id)[n.i].n)+'.' : ''}`;
   if(n.why==='gate') return `${who}: first ${esc(n.gate)}.${n.i!=null? step : ''}`;
   if(n.why==='one') return `${who}: one straight-arm skill a session.${step}`;
   return `${who}: rest until ${whenText(n.until)} (${n.f==='nordic'?'Nordic':'straight-arm'} work).${step}`; }
@@ -7356,7 +7356,7 @@ function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+'
 /* ---- unlocks */
 function meets(l,r,v){ return !!LADDERS[l]&&verifiedBestFor(l,r)>=v; }
 function readyMoves(){
-  return UNLOCKS.filter(u=>LADDERS[u.l] && stepsOf(u.l)[u.r] && curIdx(u.l)!==u.r && verifiedBestFor(u.l,u.r)===0
+  return UNLOCKS.filter(u=>LADDERS[u.l] && stepsOf(u.l)[u.r] && curIdx(u.l)!==u.r && verifiedBestFor(u.l,u.r)===0 && gateMet(u.l,u.r)
     && u.req.every(line=>line.some(([l,r,v])=>meets(l,r,v))));
 }
 function newUnlocks(){ state.unlocked=state.unlocked||{}; return readyMoves().filter(u=>!state.unlocked[u.k]); }
@@ -8359,6 +8359,7 @@ function viewTrain(){
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
     </div>
     ${Parked.panel(state, setsDone, esc, `<button class="btn ghost block" data-act="park-today" style="margin-top:12px">${I.plus} Start another</button>`)}
+    ${done? '' : `<p class="muted" data-warm style="font-size:12.5px;line-height:1.5;margin:0 3px 12px">Warm up: a few easy minutes, then arm circles, leg swings and ankle rocks. Long stretches come last.</p>`}
     ${a.entries.map((e,ei)=>exCard(e,ei)).join('')}
     <button class="btn ghost block" data-act="pick-ex" style="margin-top:4px">${I.plus} Add exercise</button>
     <button class="btn ghost block" data-act="end-open" style="margin-top:8px">${I.flag} End without finishing</button>`;
