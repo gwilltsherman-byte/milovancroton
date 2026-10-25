@@ -167,7 +167,7 @@
     check(imp.textContent.includes('416 workouts and 9984 sets') && /more history than Milo can keep in Muscle, so the oldest \d+ sessions are left out/.test(imp.textContent), 'the preview says when there is more history than Milo can keep');
     doc.getElementById('imp-go').click(); await until(()=>imp.textContent.includes('Added'),'the big import did not finish',400);
     const rawL=localStorage.getItem('hyplog.v1'), BL=JSON.parse(rawL), kept=BL.history.filter(h=>h.from==='strong');
-    let loads=false; try{ MiloSecurity.parseSection(rawL,'hyplog.v1'); MiloSecurity.data({'hyplog.v1':rawL}); loads=true; }catch(e){}
+    let loads=false; try{ MiloSecurity.parseSection(rawL,'hyplog.v1'); MiloSecurity.backup(JSON.stringify({app:'milovancroton', version:1, created:new Date().toISOString(), data:MiloSecurity.snapshot(localStorage)})); loads=true; }catch(e){}
     check(loads && BL.history.some(h=>h.id==='m-1') && kept.length>100 && kept.length<416, 'what goes in still loads and backs up, beside your own sessions');
     check(Math.min(...kept.map(h=>h.date))>new Date(2023,0,2).getTime() && Math.max(...kept.map(h=>h.date))===Math.max(...win.MiloSecurity.workouts(big.join('\n')).sessions.map(x=>x.start))
       && imp.textContent.includes('Added '+kept.length+' workouts') && /the oldest \d+ sessions are left out/.test(imp.textContent), 'the newest workouts go in, and the result says the oldest were left out');
@@ -230,11 +230,17 @@
     const tabs=()=>[...doc.querySelectorAll('.seg')].filter(b=>!b.hidden).map(b=>b.dataset.m).join(',');
     check(tabs()==='mix' && !sessionStorage.getItem('milo.erase'), 'and Milo starts again as on its first run');
 
-    // someone new coming from Strong: their sections show as soon as the import is done, without a reload
+    // someone new coming from Strong, with a morning and an evening workout on one day: both go in whole, and their
+    // sections show as soon as the import is done, without a reload
+    const twice=['Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE',
+      '2025-02-03 7:00:00 am,"Morning",40m,"Squat (Barbell)",1,100,5,0,0,"","",8', '2025-02-03 7:00:00 am,"Morning",40m,"Plank",1,0,0,0,60,"","",',
+      '2025-02-03 6:00:00 pm,"Evening",40m,"Squat (Barbell)",1,80,8,0,0,"","",7', '2025-02-03 6:00:00 pm,"Evening",40m,"Plank",1,0,0,0,45,"","",'].join('\n');
     doc.getElementById('bkbtn').click();
-    const fin2=doc.getElementById('yd-fin'), dt3=new win.DataTransfer(); dt3.items.add(new win.File([strong],'strong.csv',{type:'text/csv'})); fin2.files=dt3.files; fin2.dispatchEvent(new win.Event('change'));
+    const fin2=doc.getElementById('yd-fin'), dt3=new win.DataTransfer(); dt3.items.add(new win.File([twice],'strong.csv',{type:'text/csv'})); fin2.files=dt3.files; fin2.dispatchEvent(new win.Event('change'));
     const imp2=doc.getElementById('imp'); await until(()=>imp2.open,'the import preview did not open on a fresh start');
     doc.getElementById('imp-go').click(); await until(()=>imp2.textContent.includes('Added'),'the fresh import did not finish');
+    check(imp2.textContent.includes('Added 2 workouts (4 sets).') && !imp2.textContent.includes('already in Milo') && saved('hyplog.v1').history.length===2 && saved('strlog.v2').history.length===2,
+      'two workouts on one day go in whole: the second’s exercises are not taken for ones already in Milo');
     doc.getElementById('imp-cancel').click(); doc.getElementById('bk-done')?.click(); await pause(100);
     check(tabs()==='mix,lift,str', 'after an import on a fresh start, Muscle and Strength show straight away');
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';

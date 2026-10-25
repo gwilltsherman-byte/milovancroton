@@ -364,14 +364,24 @@ test('a history too big for one section goes in only as far as it still loads, n
   const mine = {v: 1, settings: {unit: 'kg'}, history: [{id: 'mine', name: 'Mine', date: Date.now(), entries: [{exId: 'barbell-bench', name: 'Bench', sets: [{type: 'work', weight: 80, reps: 8, rir: 2, done: true}]}]}]};
   assert.equal(recs.length, 832);
   assert.throws(() => security.parseSection(JSON.stringify({...mine, history: mine.history.concat(recs)}), 'hyplog.v1'), /too (complex|large)/);   // all of it would not load
-  const k = security.room(mine, recs);
+  const {n: k, bytes} = security.room(mine, recs);
   assert.ok(k > 100 && k < recs.length, String(k));
+  assert.equal(bytes, recs.slice(0, k).reduce((n, r) => n + Buffer.byteLength(JSON.stringify(JSON.stringify(r))) - 1, 0));   // what they add to a backup
   const kept = JSON.stringify({...mine, history: mine.history.concat(recs.slice(0, k))});
   assert.ok(security.parseSection(kept, 'hyplog.v1'));
   assert.ok(Buffer.byteLength(kept) <= 0.75 * security.MAX_BYTES);
   assert.throws(() => security.parseSection(JSON.stringify({...mine, history: mine.history.concat(recs.slice(0, Math.ceil(k / 0.75) + 20))}), 'hyplog.v1'), /too (complex|large)/);   // 3/4 of the limit, not all of it
-  assert.equal(security.room(mine, recs.slice(0, 10)), 10);
-  assert.equal(security.room(mine, []), 0);
+  assert.equal(security.room(mine, recs.slice(0, 10)).n, 10);
+  assert.equal(security.room(mine, []).n, 0);
+  // a backup of everything has to fit too: with Strength already saved, Muscle takes fewer, and the backup still restores
+  const store = new Map([['strlog.v2', JSON.stringify({v: 2, history: recs.slice(0, 400).map(r => ({...r, entries: r.entries.map(e => ({liftId: 'squat', sets: e.sets}))}))})]]);
+  const storage = {getItem: key => store.has(key) ? store.get(key) : null};
+  const shared = security.room(mine, recs, {storage, key: 'hyplog.v1'}).n;
+  assert.ok(shared > 0 && shared < k, shared + ' < ' + k);
+  store.set('hyplog.v1', JSON.stringify({...mine, history: mine.history.concat(recs.slice(0, shared))}));
+  const file = JSON.stringify({app: 'milovancroton', version: 1, created: new Date().toISOString(), data: security.snapshot(storage)});
+  assert.ok(Buffer.byteLength(file) <= 0.75 * security.MAX_BYTES && security.backup(file));
+  assert.ok(security.room(mine, recs, {storage, key: 'hyplog.v1', extra: 2e5}).n < shared + 1);   // and less again with another import on its way
 });
 
 test('the coach summary counts the last four weeks: sessions, main lifts, Ladder and notes', () => {

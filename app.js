@@ -5754,9 +5754,10 @@ if(window.__hub) window.__hub.reg('lift', {
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
   // Workouts from Strong or Hevy (the shell's import): added as past sessions beside yours, leaving out one imported before (dup)
   // and an exercise you had logged that day before the import (skipped); drop takes ids added before out again (Undo). Only as
-  // many as still load go in, newest first (MiloSecurity.room; over: how many didn't fit). dry: only count. add: [{id, date, name,
+  // many as still load, and still fit a backup, go in, newest first (MiloSecurity.room; over: how many didn't fit; bytes: what
+  // they add to a backup). dry: only count, with extra: bytes another section's import would add. add: [{id, date, name,
   // note, durationSec, from, entries:[{id, note, sets:[{warm, kind, kg, reps, secs, rpe}]}]}]
-  past(add, drop, dry){ const out={added:[], sets:0, skipped:0, dup:[], over:0}, dk=t=>Day.key(t), prev=state.history, had={}, recs=[];
+  past(add, drop, dry, extra){ const out={added:[], sets:0, skipped:0, dup:[], over:0, bytes:0}, dk=t=>Day.key(t), prev=state.history, had={}, recs=[];
     if(drop&&drop.length) state.history=state.history.filter(h=>!drop.includes(h.id));
     const ids=new Set(state.history.map(h=>h.id)); state.history.forEach(h=>{ const k=dk(h.date); h.entries.forEach(e=>(had[k]||(had[k]=new Set())).add(e.exId)); });
     (add||[]).forEach(s=>{ if(ids.has(s.id)){ out.dup.push(s.id); return; } const have=had[dk(s.date)]||new Set();
@@ -5766,7 +5767,7 @@ if(window.__hub) window.__hub.reg('lift', {
         return sets.some(isWork)? {exId:e.id, name:e.name, primary:e.primary.slice(), secondary:e.secondary.slice(), equipment:e.equipment,
           target:{repLow:e.def.repLow, repHigh:e.def.repHigh, rir:e.def.rir, rest:e.def.rest}, note:x.note||null, sets} : null; }).filter(Boolean);
       if(entries.length) recs.push({id:s.id, name:s.name, date:s.date, durationSec:s.durationSec||0, entries, prs:[], note:s.note||null, from:s.from}); });
-    recs.sort((a,b)=>b.date-a.date); const k=MiloSecurity.room(storePayload(), recs); out.over=recs.length-k;
+    recs.sort((a,b)=>b.date-a.date); const fit=MiloSecurity.room(storePayload(), recs, {storage:localStorage, key:LS_KEY, extra}), k=fit.n; out.over=recs.length-k; out.bytes=fit.bytes;
     recs.slice(0,k).forEach(r=>{ out.added.push(r.id); r.entries.forEach(e=>{ out.sets+=e.sets.length; }); });
     if(dry){ state.history=prev; return out; }
     if(k){ const was=state.history.slice(); recs.slice(0,k).forEach(insertRec);
@@ -10737,7 +10738,7 @@ if(window.__hub) window.__hub.reg('str', {
   // for the shell's spreadsheet export: a lift's name, in the variation a session did
   name(id, vi){ return EX[id]? exName(id, vi) : null; },
   // Workouts from Strong or Hevy (the shell's import): as Muscle's past, with Strength's lift ids
-  past(add, drop, dry){ const out={added:[], sets:0, skipped:0, dup:[], over:0}, dk=t=>Day.key(t), prev=state.history, had={}, recs=[];
+  past(add, drop, dry, extra){ const out={added:[], sets:0, skipped:0, dup:[], over:0, bytes:0}, dk=t=>Day.key(t), prev=state.history, had={}, recs=[];
     if(drop&&drop.length) state.history=state.history.filter(h=>!drop.includes(h.id));
     const ids=new Set(state.history.map(h=>h.id)); state.history.forEach(h=>{ const k=dk(h.date); h.entries.forEach(e=>(had[k]||(had[k]=new Set())).add(e.liftId)); });
     (add||[]).forEach(s=>{ if(ids.has(s.id)){ out.dup.push(s.id); return; } const have=had[dk(s.date)]||new Set();
@@ -10745,7 +10746,7 @@ if(window.__hub) window.__hub.reg('str', {
         const sets=x.sets.filter(t=>t.reps>0).map(t=>({kind:t.warm?'warm':'work', w:X.k==='bw'||!(t.kg>0)? null : t.kg, reps:t.reps, tr:null, trHi:null, trpe:null, rpe:t.rpe, done:true}));
         return sets.some(t=>t.kind!=='warm')? {liftId:x.id, label:'', sc:null, note:x.note||null, sets} : null; }).filter(Boolean);
       if(entries.length) recs.push({id:s.id, name:s.name, date:s.date, durationSec:s.durationSec||0, entries, prs:[], plan:null, note:s.note||null, from:s.from}); });
-    recs.sort((a,b)=>b.date-a.date); const k=MiloSecurity.room(payload(), recs); out.over=recs.length-k;
+    recs.sort((a,b)=>b.date-a.date); const fit=MiloSecurity.room(payload(), recs, {storage:localStorage, key:LS_KEY, extra}), k=fit.n; out.over=recs.length-k; out.bytes=fit.bytes;
     recs.slice(0,k).forEach(r=>{ out.added.push(r.id); r.entries.forEach(e=>{ out.sets+=e.sets.length; }); });
     if(dry){ state.history=prev; return out; }
     if(k){ const was=state.history.slice(); recs.slice(0,k).forEach(insertRec);
@@ -13356,7 +13357,8 @@ window.MiloData=(function(){
   function trial(){
     const P=D.toPast(imp.W, pastMap(), imp.unit), key=JSON.stringify(pastMap())+imp.unit;
     if(!imp.trial||imp.trial.key!==key){ const r={};
-      ['lift','str'].forEach(m=>{ const a=P[m].length? H.api(m) : null; r[m]= a&&a.past? a.past(P[m], null, true) : {added:[], sets:0, skipped:0, dup:[], over:0}; });
+      // Strength's share of a backup after Muscle's, as the import itself will go
+      ['lift','str'].forEach(m=>{ const a=P[m].length? H.api(m) : null; r[m]= a&&a.past? a.past(P[m], null, true, m==='str'? r.lift.bytes : 0) : {added:[], sets:0, skipped:0, dup:[], over:0, bytes:0}; });
       imp.trial={key, P, r}; }
     return imp.trial;
   }

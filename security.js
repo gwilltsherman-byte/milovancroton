@@ -79,25 +79,33 @@
     return value;
   }
 
-  /* Room for more history. A section's saved data loads only within the limits above, and data that doesn't is set
-     aside as unreadable on the next start. So before past sessions are added (an import), this says how many of recs
-     fit, in the order given (newest first, so what is left out is the oldest): saved and those together use no more
-     than share of each limit (three quarters unless said), leaving the rest for the training still to come. */
+  /* Room for more history. A section's saved data loads only within the limits above, data that doesn't is set aside as
+     unreadable on the next start, and a backup of everything must fit in MAX_BYTES to be restored. So before past
+     sessions are added (an import), this says how many of recs fit, in the order given (newest first, so what is left out
+     is the oldest): the section with them, and a backup with them, use no more than share of each limit (three quarters
+     unless said), leaving the rest for the training still to come. opts: {share, storage and key (the section's own; the
+     other keys count as they are saved now), extra (bytes another section is about to add to a backup)}. Returns {n, bytes}:
+     how many fit, and what they add to a backup. */
   function weigh(value) {
     const text = JSON.stringify(value); let nodes = 0;
     (function visit(v) { nodes++; if (v && typeof v === 'object') for (const k of Object.keys(v)) visit(v[k]); })(JSON.parse(text));
-    return {bytes: bytes(text), nodes};
+    return {bytes: bytes(text), nodes, esc: bytes(JSON.stringify(text)) - 2};
   }
-  function room(saved, recs, share) {
-    share = share > 0 && share <= 1 ? share : 0.75;
+  function room(saved, recs, opts) {
+    const o = opts || {}, share = o.share > 0 && o.share <= 1 ? o.share : 0.75, cap = MAX_BYTES * share;
     const s = weigh(saved), len = record(saved) && Array.isArray(saved.history) ? saved.history.length : 0;
-    let b = s.bytes, n = s.nodes, k = 0;
+    let other = 0;
+    if (o.storage && o.key) {
+      try { const rest = snapshot(o.storage); delete rest[o.key];
+        other = bytes(JSON.stringify({app: 'milovancroton', version: 1, created: new Date().toISOString(), data: rest})) + bytes(JSON.stringify(o.key)) + 3; } catch (e) { other = 0; }
+    }
+    let b = s.bytes, n = s.nodes, bk = other + s.esc + (o.extra > 0 ? o.extra : 0), k = 0, add = 0;
     for (const r of recs) {
       const w = weigh(r);
-      if (b + w.bytes + 1 > MAX_BYTES * share || n + w.nodes > NODES * share || len + k + 1 > RECORDS * share) break;
-      b += w.bytes + 1; n += w.nodes; k++;
+      if (b + w.bytes + 1 > cap || n + w.nodes > NODES * share || len + k + 1 > RECORDS * share || (o.storage && bk + w.esc + 1 > cap)) break;
+      b += w.bytes + 1; n += w.nodes; bk += w.esc + 1; add += w.esc + 1; k++;
     }
-    return k;
+    return {n: k, bytes: add};
   }
 
   function parseSection(text, key) {
