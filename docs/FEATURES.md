@@ -32,6 +32,8 @@ Minutes, effort and activity type contribute a leg-recovery estimate. Running an
 
 Progress shows twelve weeks of aerobic minutes, activity counts and average effort. Keep Milo open for reliable interval cues; phone sleep can delay sound and vibration.
 
+Recent conditioning activities can be opened from Progress. For planned 2-minute hard/easy intervals, confirm the alternating intensity when logging; hard and easy minutes receive their respective weekly credit.
+
 ## Check-in and safety
 
 The optional health screen follows the general approach of PAR-Q+. A positive answer suggests professional advice and a gentler block. It does not diagnose a condition or certify readiness.

@@ -25,6 +25,11 @@ window.MiloDesign = {
   decorate(root, route, history) {
     const view=root.getElementById('view'); if(!view||!view.dataset) return;
     view.dataset.route=route;
+    const owner=(root.host&&root.host.id||'').replace('m-','');
+    if(route==='progress'&&['lift','str'].includes(owner)){
+      view.insertAdjacentHTML('afterbegin',MiloSecurity.html('<button class="btn" data-outcome-owner="'+owner+'">Set a goal</button>'));
+      view.querySelector('[data-outcome-owner]').addEventListener('click',()=>{const H=window.__hub;H.filter('progress','all');H.api('mix').openOutcomes(owner);});
+    }
     if(route==='today'){
       const stack=view.querySelector('.stack'), m=(root.host&&root.host.id||'').replace('m-','');
       if(stack){stack.classList.add('today-layout');stack.insertAdjacentHTML('beforeend',MiloSecurity.html(this.week(history)));
@@ -12650,7 +12655,7 @@ function kit(){ if(tg.kit) return tg.kit;
    new block; a change to your session time, kit, weekdays or life stage, or to which days a section is on, refills the
    days and keeps your week. */
 const GEN='g6';   // a fixed order within the day, heavy squats and hinges apart, real weekdays, adductors, no front raises after pressing
-function baseSig(){ return JSON.stringify([tg.secs, rankList(), tg.days, tg.exp||'intermediate']); }
+function baseSig(){ return JSON.stringify([tg.secs, orderParts(tg.secs), tg.days, tg.exp||'intermediate']); }
 /* The same, as plans saved before g6 kept it (session time and kit in it too), so their week carries over. */
 function oldBase(){ return JSON.stringify([tg.secs, rankList(), tg.days, tg.mins, kit(), tg.exp||'intermediate']); }
 function plan(){
@@ -13027,6 +13032,7 @@ function openDone(m, x){
   const api=H.api(m); if(!api) return;
   const id=x&&x.sid;
   if(!id||!(api.rec&&api.rec(id))){ toast(`That ${SEC[m].n} session is no longer in its history`); return; }
+  if(m==='cond'){condScreen='view:'+id;page='train';H.go('mix');render();return;}
   H.away(m,'rec'); api.openRec(id);
 }
 function nextIdx(W){ const D=W.length; for(let k=0;k<D;k++){ const d=((tg.next||0)+k)%D; if(W[d].length) return d; } return -1; }
@@ -13607,7 +13613,7 @@ H.nextAfter=function(m){
 };
 function startPart(k){
   const run=tg.run, p=run&&run.parts[k]; if(!p||p.st!=='todo') return;
-  if(p.m==='cond'){ const c=conditioningPlan(plan())[run.day]; if(c){ startConditioning(c); p.sid=tg.conditioning.active.id; p.st='run'; save(); } return; }
+  if(p.m==='cond'){ if(tg.conditioning.active){condScreen='timer';H.go('mix');render();toast('Finish the open conditioning session first.');return;} const c=conditioningPlan(plan())[run.day]; if(c){ startConditioning(c); p.sid=tg.conditioning.active.id; p.st='run'; save(); } return; }
   const api=H.api(p.m); if(!api) return;
   const i=api.info();
   // a session already going there stays open beside this part's, and you switch between them in the section
@@ -14559,17 +14565,17 @@ function cleanConditioning(c){
   return {target:Number.isFinite(c.target)&&c.target>=30&&c.target<=600?c.target:150,style:['easy','intervals','mixed'].includes(c.style)?c.style:'easy',log,
     active:c.active&&Number.isFinite(c.active.startedAt)&&Number.isFinite(c.active.minutes)&&c.active.minutes>0&&['easy','intervals'].includes(c.active.style)?c.active:null};
 }
-function condEquivalent(x){ return x.minutes*(x.intensity==='vigorous'?2:x.intensity==='light'?0:1); }
+function condEquivalent(x){ return x.intensity==='intervals'?x.minutes+Math.floor(x.minutes/4)*2+Math.min(2,x.minutes%4):x.minutes*(x.intensity==='vigorous'?2:x.intensity==='light'?0:1); }
 function condTarget(c,rank){ return Math.round(c.target*(rank===0?1:rank===1?2/3:1/3)); }
 function condFatigue(x){ return x.minutes*x.rpe*({run:1,sport:1.2,walk:.35,cycle:.4,row:.5,swim:.4,other:.6}[x.activity]||.6)/90; }
 function condPlacement(days,weekdays,budget,target,style){
-  const out=days.map(()=>null), heavy=days.map(d=>d.heavy), room=days.map(d=>Math.max(0,Math.floor((budget||90)-d.minutes))), order=days.map((_,i)=>i).sort((a,b)=>Number(heavy[a])-Number(heavy[b])||room[b]-room[a]);
+  const out=days.map(()=>null), heavy=days.map(d=>d.heavy), room=days.map(d=>budget?Math.max(0,Math.floor(budget-d.minutes)):target), order=days.map((_,i)=>i).sort((a,b)=>Number(heavy[a])-Number(heavy[b])||room[b]-room[a]);
   let left=target;
   order.forEach((i,k)=>{ if(left<=0||room[i]<5)return;
     // Adjacent calendar days could be less than 24 h apart; use easy work there.
     const nextHeavy=days.some((d,j)=>d.heavy&&(weekdays[j]-weekdays[i]+7)%7<=1);
     const hard=style!=='easy'&&!heavy[i]&&!nextHeavy&&(style==='intervals'||k%2===0);
-    const n=Math.min(room[i],45,Math.ceil(left/(order.length-k)/(hard?1.5:1)));
+    const n=Math.min(room[i],budget?60:target,Math.ceil(left/(order.length-k)/(hard?1.5:1)));
     if(n<5)return; const minutes=hard?Math.max(4,Math.floor(n/4)*4):n;
     out[i]={minutes,style:hard?'intervals':'easy'};left-=minutes*(hard?1.5:1);
   }); return out;
@@ -14584,7 +14590,7 @@ function condTitle(c){ return c.style==='intervals'?Math.max(1,Math.floor(c.minu
 function conditioningFields(d){ if(!d.secs.includes('cond'))return ''; const c=d.conditioning||tg.conditioning;
   return `<div class="field"><label for="cond-target">Weekly aerobic target (moderate-equivalent minutes)</label><input id="cond-target" type="number" min="30" max="600" step="1" value="${c.target}" data-cond-setting="target"><p class="hint">Default 150. Vigorous minutes count twice; light activity counts toward your log, not this target.</p><label for="cond-style">Style</label><select id="cond-style" data-cond-setting="style">${[['easy','Easy'],['intervals','Intervals'],['mixed','Mixed']].map(([v,n])=>`<option value="${v}" ${c.style===v?'selected':''}>${n}</option>`).join('')}</select></div>`;
 }
-let condScreen=null, goalForm=null, condAudio=null, lastCue=null;
+let condScreen=null, goalForm=null, condAudio=null, lastCue=null, condEndDay=false;
 const ACTIVITIES=['run','cycle','row','swim','walk','sport','other'];
 function conditioningCard(){
   const active=tg.conditioning.active, P=tg.on&&tg.secs.includes('cond')?conditioningPlan(plan()):[], allotted=P.reduce((n,x)=>n+(x?x.minutes*(x.style==='intervals'?1.5:1):0),0), target=condTarget(tg.conditioning,Math.max(0,orderParts(tg.secs).indexOf('cond')));
@@ -14597,13 +14603,14 @@ function startConditioning(c){
   save();condScreen='timer';lastCue=null;page='train';H.go('mix');render();window.scrollTo(0,0);
 }
 function conditioningScreen(){
+  if(condScreen&&condScreen.startsWith('view:')){const x=tg.conditioning.log.find(x=>x.id===condScreen.slice(5));return `<section class="card"><button class="btn" data-a="cond-back">Back</button><h2>Activity</h2>${x?`<p>${esc(cap(x.activity))} · ${x.minutes} minutes · ${esc(x.intensity||'moderate')}</p><p>Session effort ${x.rpe}/10 · ${fmtDay(x.date)}</p>${x.distance!=null?`<p>${x.distance} km</p>`:''}${x.hr!=null?`<p>Average heart rate ${x.hr}</p>`:''}`:'<p>This activity is no longer in the log.</p>'}</section>`;}
   const a=condScreen==='log'?null:tg.conditioning.active;
   if(condScreen==='timer'&&a)return `<div class="stack"><div class="spread"><button class="btn" data-a="cond-back">Back</button><h2>Conditioning</h2></div><section class="card cond-timer"><h3>${esc(condTitle(a))}</h3><p data-cond-cue role="status" aria-live="polite">${a.style==='intervals'?'Hard interval':'Easy pace'}</p><div class="cond-clock" data-cond-clock role="timer">0:00</div><p class="hint">Keep the app open for interval cues. Background timers and locked phones may delay sound.</p><button class="btn pri block" data-a="cond-done">Done</button></section></div>`;
   const min=a?Math.max(1,Math.round((Date.now()-a.startedAt)/60000)):30;
   return `<div class="stack"><section class="card"><div class="spread"><h2>Log activity</h2><button class="btn" data-a="cond-back">Cancel</button></div>
     <form id="cond-form"><div class="field"><label for="ca-min">Minutes</label><input id="ca-min" name="minutes" inputmode="decimal" type="number" min="0.1" max="1440" step="0.1" required value="${Math.min(1440,min)}"></div>
     <div class="field"><label for="ca-act">Activity</label><select id="ca-act" name="activity">${ACTIVITIES.map(v=>`<option value="${v}">${cap(v)}</option>`).join('')}</select></div>
-    <div class="field"><label for="ca-int">Intensity for weekly minutes</label><select id="ca-int" name="intensity"><option value="moderate">Moderate — can talk, cannot sing</option><option value="vigorous">Vigorous — only a few words</option><option value="light">Light — easy conversation and singing</option></select><p class="hint">For mixed intervals, select Moderate and log vigorous minutes separately if you want exact guideline credit.</p></div>
+    <div class="field"><label for="ca-int">Intensity for weekly minutes</label><select id="ca-int" name="intensity">${a&&a.style==='intervals'?'<option value="intervals" selected>Alternating 2 min vigorous, 2 min moderate</option>':''}<option value="moderate">Moderate — can talk, cannot sing</option><option value="vigorous">Vigorous — only a few words</option><option value="light">Light — easy conversation and singing</option></select><p class="hint">Confirm the intensity you actually sustained. The alternating option counts hard and easy minutes separately.</p></div>
     <div class="field"><label for="ca-rpe">How hard was the whole session? (RPE)</label><select id="ca-rpe" name="rpe">${['0 · Rest','1 · Very easy','2 · Easy','3 · Moderate','4 · Somewhat hard','5 · Hard','6 · Hard','7 · Very hard','8 · Very hard','9 · Near maximum','10 · Maximum'].map((v,i)=>`<option value="${i}" ${i===3?'selected':''}>${v}</option>`).join('')}</select></div>
     <div class="row2"><div class="field"><label for="ca-dist">Distance (km, optional)</label><input id="ca-dist" name="distance" type="number" inputmode="decimal" min="0" max="1000" step="0.01"></div><div class="field"><label for="ca-hr">Average heart rate (optional)</label><input id="ca-hr" name="hr" type="number" inputmode="numeric" min="30" max="250" step="1"></div></div>
     <p class="hint">Leg recovery uses minutes × effort and activity type. This is a planning estimate, not a measurement of muscle fatigue.</p><button class="btn pri block" type="submit">Save activity</button></form></section></div>`;
@@ -14625,6 +14632,7 @@ function conditioningProgress(){
   const ws=weekStart(), log=tg.conditioning.log, target=condTarget(tg.conditioning,Math.max(0,orderParts(tg.secs).indexOf('cond'))), counts=ACTIVITIES.map(a=>[a,log.filter(x=>x.activity===a).length]).filter(x=>x[1]);
   const rows=Array.from({length:12},(_,i)=>{const start=Day.add(ws,(i-11)*7),entries=log.filter(x=>x.date>=start&&x.date<Day.add(start,7));return {start,minutes:entries.reduce((n,x)=>n+condEquivalent(x),0),rpe:entries.length?entries.reduce((n,x)=>n+x.rpe,0)/entries.length:null};});
   return `<section class="card"><div class="spread"><h3>Conditioning</h3><button class="btn" data-a="cond-log">Log activity</button></div><p class="hint">Moderate-equivalent minutes · target ${target}/week. Effort is your whole-session RPE (0–10).</p><div class="cond-history"><table><thead><tr><th>Week of</th><th>Minutes / target</th><th>Average effort</th></tr></thead><tbody>${rows.map(x=>`<tr><th scope="row">${fmtDay(x.start)}</th><td>${Math.round(x.minutes)} / ${target}<progress max="${target}" value="${Math.min(target,x.minutes)}" aria-label="${fmtDay(x.start)}: ${Math.round(x.minutes)} minutes"></progress></td><td>${x.rpe==null?'—':x.rpe.toFixed(1)}</td></tr>`).join('')}</tbody></table></div><p class="hint">${counts.length?counts.map(([a,n])=>cap(a)+': '+n).join(' · '):'No activities logged yet.'}</p>
+    ${log.length?`<details class="rules"><summary>Recent activities</summary>${log.slice().sort((a,b)=>b.date-a.date).slice(0,30).map(x=>`<button class="btn block" data-a="cond-record" data-id="${esc(x.id)}">${fmtDay(x.date)} · ${esc(cap(x.activity))} · ${x.minutes} min</button>`).join('')}</details>`:''}
     <details class="rules"><summary>Evidence and planning estimates</summary><p class="hint"><a href="https://bjsm.bmj.com/content/54/24/1451" target="_blank" rel="noopener">WHO 2020 (Bull et al.)</a>: adults aim for 150–300 moderate or 75–150 vigorous minutes weekly. <a href="https://pubmed.ncbi.nlm.nih.gov/35228201/" target="_blank" rel="noopener">Momma 2022</a>: combined aerobic and strength activity is associated with lower mortality in observational studies. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8891239/" target="_blank" rel="noopener">Schumann 2022</a>: concurrent training generally preserves maximal strength and muscle growth; explosive strength may be affected by same-session training. Milo’s next-day interval guard and activity-to-fatigue weights are conservative planning estimates, not study-derived cutoffs.</p></details></section>`;
 }
 H.reg('cond',{
@@ -14641,15 +14649,16 @@ __root.addEventListener('submit',e=>{if(e.target.id!=='cond-form')return;e.preve
   if(!Number.isFinite(row.minutes)||row.minutes<=0||row.minutes>1440||!ACTIVITIES.includes(row.activity)||row.rpe<0||row.rpe>10)return;
   if(tg.conditioning.log.length>=1000){toast('The activity log is full. Export a backup before clearing old data.');return;}
   try{MiloSecurity.parseSection(JSON.stringify({...tg,conditioning:{...tg.conditioning,log:tg.conditioning.log.concat(row)}}),TG_KEY);}catch(err){toast('Storage limit reached. Export a backup first.');return;}
-  tg.conditioning.log.push(row);if(a)tg.conditioning.active=null;save();condScreen=null;fresh();page='today';render();toast('Activity saved');
+  tg.conditioning.log.push(row);if(a)tg.conditioning.active=null;if(condEndDay&&tg.run)tg.run.parts.forEach(p=>{if(p.st==='todo')p.st='skip';});condEndDay=false;save();condScreen=null;fresh();page='today';render();toast('Activity saved');
 });
 
 /* Outcome goals: stored by Muscle/Strength, calculated from logged performance only. */
 function outcomeProjection(points,target,now){
+  const days=new Map();(points||[]).filter(p=>p&&Number.isFinite(p.date)&&p.e1>0).forEach(p=>{const k=Day.key(p.date),old=days.get(k);if(!old||p.e1>old.e1)days.set(k,p);});points=[...days.values()];
   const E=Lift.estimate(points), T=Lift.trend(points), value=E?E.value:0, pct=target>0?Math.min(100,Math.max(0,value/target*100)):0;
   let projected=null;
   if(value>=target&&value>0)projected=now;
-  else if(value>0&&T.state==='up'&&T.slope>0){const weeks=Math.log(target/value)/Math.log(1+T.slope);if(Number.isFinite(weeks)&&weeks>=0&&weeks<=520)projected=now+weeks*7*DAY_MS;}
+  else if(value>0&&E.last>=now-90*DAY_MS&&points.length>=4&&T.state==='up'&&T.slope>0){const weeks=Math.log(target/value)/Math.log(1+T.slope);if(Number.isFinite(weeks)&&weeks>=0&&weeks<=520)projected=now+weeks*7*DAY_MS;}
   return {value,pct,projected,trend:T.state};
 }
 function allOutcomes(){return ['lift','str'].flatMap(m=>{const A=H.api(m);return (A&&A.outcomes?A.outcomes():[]).filter(g=>g&&['max','reps','sets'].includes(g.kind)&&Number.isFinite(g.target)&&g.target>0).map(g=>({...g,m}));});}
@@ -14850,6 +14859,7 @@ function viewLibraryAll(){
 /* What the shell asks of Together: its pages, the program type, opening the set-up at one question, and the section
    running a part of today's day. */
 H.reg('mix', {
+  openOutcomes(m){goalForm={kind:'max',m:['lift','str'].includes(m)?m:'str'};page='progress';render();},
   go(p){ page=PAGE_H[p]? p : 'today'; if(p==='today'){ offer=null; } render(); window.scrollTo(0,0); },
   redraw(){ render(); },
   type:progType, on:()=>!!tg.on,
@@ -14890,7 +14900,7 @@ function draw(){
   __root.querySelectorAll('.copyfold').forEach(x=>{x.open=opened.includes(x.dataset.fold);});
   const h=__root.querySelector('.appbar h1'); if(h) h.textContent=PAGE_H[page];
   $('#subtitle').innerHTML= MiloSecurity.html(page==='train'? 'Your sessions' : page==='progress'? 'Every section together' : page==='library'? 'Every exercise, and the evidence'
-    : tg.on&&!draft? `${rankList().map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
+    : tg.on&&!draft? `${orderParts(tg.secs).map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
   if(H.current()==='mix') window.scrollTo(0,y);
   if(window.__routed) window.__routed('mix', page);
   if(H.current()==='mix'&&window.__sessionMode){ window.__sessionMode(!!condScreen); document.documentElement.classList.toggle('session-focus-active',!!condScreen); }
@@ -14901,10 +14911,11 @@ __root.addEventListener('click', e=>{
   const el=e.target.closest('[data-a]'); if(!el||el.disabled) return;
   const a=el.dataset.a, k=+el.dataset.k;
   switch(a){
+    case 'cond-record': openDone('cond',{sid:el.dataset.id}); break;
     case 'cond-log': condScreen='log'; render(); window.scrollTo(0,0); break;
     case 'cond-resume': condScreen='timer'; render(); window.scrollTo(0,0); break;
     case 'cond-done': condScreen='log-active'; render(); break;
-    case 'cond-back': condScreen=null; render(); break;
+    case 'cond-back': condScreen=null; condEndDay=false; render(); break;
     case 'goal-new': goalForm={kind:'max',m:'str'}; render(); window.scrollTo(0,0); break;
     case 'goal-cancel': goalForm=null; render(); break;
     case 'goal-remove': {const A=H.api(el.dataset.m);if(A?.outcomes)A.setOutcomes(A.outcomes().filter(g=>g.id!==el.dataset.id));render();break;}
@@ -15075,6 +15086,7 @@ __root.addEventListener('click', e=>{
       const how=el.dataset.how, going=tg.run.parts.filter(p=>p.st==='run');
       // with a part still going, you choose what happens to its session first
       if(going.length && !how){ endAsk=true; render(); break; }
+      if(how==='save'&&going.some(p=>p.m==='cond')){condScreen='log-active';condEndDay=true;endAsk=false;render();return;}
       remember('Day '+(tg.run.day+1)+' ended early'); endAsk=false;
       if(how==='save'||how==='drop') going.forEach(p=>{ const api=H.api(p.m); if(api&&api.end) api.end(how==='save', p.sid); });
       refreshRun();
@@ -15098,7 +15110,7 @@ __root.addEventListener('click', e=>{
       tg.roundAt=Date.now(); tg.next=0; peekDay=null; pickOpen=false; save(); render(); window.scrollTo(0,0);
       toast(a==='w-next'&&last? `A new block starts: week 1 of ${BLOCK}, Day 1.` : `Week ${plan().week} of ${BLOCK} starts at Day 1.`, true); break; }
     case 'undo': undoLast(); break;
-    case 'open': { const api=H.api(el.dataset.m); if(api) api.open(); H.away(el.dataset.m,'run'); break; }
+    case 'open': { const api=H.api(el.dataset.m); if(api) api.open(); if(el.dataset.m!=='cond')H.away(el.dataset.m,'run'); break; }
     case 'short': tg.short=!tg.short; save(); render(); break;
     case 'pickday': pickOpen=!pickOpen; render(); break;
     case 'setnext': remember('the next day changed'); tg.next=+el.dataset.d; pickOpen=false; peekDay=null; save(); render(); window.scrollTo(0,0); toast(`Day ${tg.next+1} is next up.`, true); break;

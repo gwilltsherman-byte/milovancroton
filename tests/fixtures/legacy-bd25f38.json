@@ -1,0 +1,505 @@
+{
+  "source": "bd25f38",
+  "data": {
+    "hyplog.v1": {
+      "v": 1,
+      "route": "today",
+      "onboarded": false,
+      "settings": {
+        "unit": "kg",
+        "theme": "system",
+        "target": 10,
+        "sound": true,
+        "vibrate": true,
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "platesLb": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "equipment": [
+          "Barbell",
+          "Dumbbell",
+          "Machine",
+          "Cable",
+          "Bodyweight"
+        ],
+        "tempo": [
+          3,
+          0,
+          1,
+          0
+        ]
+      },
+      "exercises": [],
+      "history": [
+        {
+          "id": "mvo3r4g4tnsro",
+          "name": "Legacy muscle session",
+          "date": 1792949355663,
+          "durationSec": 0,
+          "entries": [
+            {
+              "exId": "barbell-bench",
+              "name": "Barbell Bench Press",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "fdelt",
+                "tri"
+              ],
+              "equipment": "Barbell",
+              "target": {
+                "repLow": 6,
+                "repHigh": 10,
+                "rir": 2,
+                "rest": 180
+              },
+              "note": null,
+              "sets": [
+                {
+                  "type": "work",
+                  "weight": 40,
+                  "reps": 8,
+                  "rir": 2,
+                  "done": true,
+                  "tag": null,
+                  "segments": []
+                }
+              ]
+            }
+          ],
+          "prs": [],
+          "note": null,
+          "partial": true,
+          "open": [
+            {
+              "exId": "barbell-bench",
+              "name": "Barbell Bench Press",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "fdelt",
+                "tri"
+              ],
+              "equipment": "Barbell",
+              "target": {
+                "repLow": 6,
+                "repHigh": 10,
+                "rir": 2,
+                "rest": 180
+              },
+              "note": null,
+              "sets": [
+                {
+                  "type": "work",
+                  "weight": 40,
+                  "reps": null,
+                  "rir": null,
+                  "done": false,
+                  "tag": null,
+                  "segments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "active": null,
+      "parked": [],
+      "repeat": null,
+      "mesos": [],
+      "bodylog": [],
+      "milestones": [],
+      "rirCal": []
+    },
+    "strlog.v2": {
+      "v": 2,
+      "onboarded": false,
+      "route": "train",
+      "settings": {
+        "unit": "kg",
+        "theme": "system",
+        "barKg": 20,
+        "platesKg": [
+          25,
+          20,
+          15,
+          10,
+          5,
+          2.5,
+          1.25
+        ],
+        "platesLb": [
+          45,
+          35,
+          25,
+          10,
+          5,
+          2.5
+        ],
+        "dbStepKg": 2,
+        "dbStepLb": 5,
+        "stackStepKg": 5,
+        "stackStepLb": 10,
+        "rest": 180,
+        "sound": true,
+        "vibrate": true,
+        "warmups": true,
+        "tmPct": 90,
+        "bw": null
+      },
+      "setup": null,
+      "lifts": {
+        "bench": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "dbbench": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "mchest": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "wdip": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "wpushup": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "pushchain": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "pbench": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "cgbench": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "incdb": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "row": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "dbrow": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "mrow": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "crow": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "rowchain": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "wpull": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "pulldown": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "pullchain": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "ohp": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "dbpress": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "mpress": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "pikechain": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "pushpress": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "squat": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "legpress": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "dbsplit": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "legchain": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "fsquat": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "psquat": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "goblet": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "deadlift": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "dbrdl": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "backext": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "hipchain": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "rdl": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        },
+        "sumo": {
+          "tm": null,
+          "work": null,
+          "fails": 0,
+          "seed": null,
+          "var": 0
+        }
+      },
+      "program": null,
+      "history": [],
+      "active": {
+        "id": "mvo3r5838owak",
+        "name": "Legacy open strength session",
+        "startedAt": 1792949356083,
+        "entries": [
+          {
+            "liftId": "bench",
+            "sc": {
+              "t": "rpe",
+              "sets": 2,
+              "reps": 5,
+              "rpe": 8
+            },
+            "label": "2&times;5 @ RPE 8",
+            "sets": [
+              {
+                "kind": "warm",
+                "w": 60,
+                "reps": 5,
+                "tr": 5,
+                "trHi": null,
+                "trpe": null,
+                "rpe": null,
+                "done": true,
+                "edited": true
+              },
+              {
+                "kind": "warm",
+                "w": 27.5,
+                "reps": null,
+                "tr": 3,
+                "trHi": null,
+                "trpe": null,
+                "rpe": null,
+                "done": false,
+                "edited": false
+              },
+              {
+                "kind": "warm",
+                "w": 35,
+                "reps": null,
+                "tr": 2,
+                "trHi": null,
+                "trpe": null,
+                "rpe": null,
+                "done": false,
+                "edited": false
+              },
+              {
+                "kind": "work",
+                "w": 42.5,
+                "reps": null,
+                "tr": 5,
+                "trHi": null,
+                "trpe": 8,
+                "rpe": null,
+                "done": false,
+                "edited": false
+              },
+              {
+                "kind": "work",
+                "w": 42.5,
+                "reps": null,
+                "tr": 5,
+                "trHi": null,
+                "trpe": 8,
+                "rpe": null,
+                "done": false,
+                "edited": false
+              }
+            ],
+            "note": null,
+            "vi": null
+          }
+        ],
+        "restEndsAt": 1792949431294,
+        "restDur": 75,
+        "note": null,
+        "plan": null,
+        "restDone": false,
+        "restWarm": true
+      },
+      "parked": [],
+      "repeat": null,
+      "progTab": "lifts",
+      "progLift": null,
+      "toolTab": "max"
+    }
+  }
+}

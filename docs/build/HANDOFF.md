@@ -38,23 +38,15 @@ See `WAVE2-RESULTS.md` for the original verification and the subsequent UI regre
 - **Wave 2b, next-set screen** (brief `wave2-session.md`): focus mode, logging and accessibility fixes, rest-timer
   alerts.
 
-The shell and session work are combined in `main`. Continue with Wave 3 after the UI repair is merged; do not
-rebuild Wave 2.
+The shell and session work are combined in `main`; do not rebuild Wave 2.
 
-Left to do, in order:
-1. **Wave 3, in parallel:** `wave3-conditioning.md` (K7, a fourth section for cardio) and `wave3-data.md` (outcome
-   goals and the weekly summary). Both build on wave 2's navigation, Progress and Settings.
-2. **Wave 4, in parallel:** `wave4-copy.md` (shorter on-screen text, K13) and `wave4-docs.md` (README, a new
-   QUICKSTART, the FEATURES reference, ladder-progression, CONTRIBUTING, PRODUCT).
-3. **Wave 5, verification** (no brief yet; write it from this list):
-   - Reviewers walk every flow at phone size (390×844, touch) starting from data saved by the original app
-     (commit bd25f38): first run, Today, a full Together day through all sections, focus-mode logging, finish,
-     Progress, Library, Settings, backup with encryption, CSV export and import, conditioning, goals.
-   - A maths reviewer simulates months of training through the final engine: no estimate ratchet; weekly sets
-     meet targets; progression with every plate setup; lighter weeks are not decided by chance.
-   - A checklist reviewer goes through every in-scope review item and K change: done, partly or missing.
-   - Fix what they find, run every check, merge to `main`.
-4. When everything is merged: ask the owner whether to delete this `docs/build` folder.
+| Later wave | Result | Pull request |
+| --- | --- | --- |
+| 3 | Conditioning, outcome goals, weekly recap, and the reported mobile workout overlap repair | #51 |
+| 4 | Shorter default screens and corrected product guides | #52 |
+| 5 | Original-app migration, full combined-day regression, backup round trips and final edge-case repairs | See WAVE5-RESULTS.md |
+
+The remaining wave implementation and verification are complete. `WAVE5-RESULTS.md` records the final check results and an item-by-item scope audit. It distinguishes completed behavior, partial proposals and the owner's explicit exclusions. It does not claim that every original proposal or every platform behavior is implemented. Keep this folder as the verification record.
 
 ## How each wave was run
 Per brief:
@@ -93,5 +85,4 @@ The machine had 4 cores, so expect browser suites to be slow while several build
 ## Starting a new chat
 Attach this repository, then say:
 
-> Read `docs/build/HANDOFF.md` and continue the build from the next unfinished wave. Merge each wave into
-> main as soon as it passes every check.
+> Read `docs/build/HANDOFF.md` and `WAVE5-RESULTS.md` before changing Milo. Preserve the old-data and mobile-layout regression coverage. Merge tested changes autonomously as authorized by the owner.

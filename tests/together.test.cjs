@@ -549,3 +549,35 @@ test('outcome projections require evidence and summary deduplicates sessions',()
   const n=T.call('summaryNumbers',[{m:'lift',id:'a',date:now},{m:'lift',id:'a',date:now}],now-1,now+1,3,{},1,[{date:now,minutes:30,intensity:'vigorous'}]);
   assert.equal(n.sessions,1);assert.equal(n.days,1);assert.equal(n.minutes,60);
 });
+
+test('changing Conditioning priority rebuilds doses and the saved plan',()=>{
+  const T=together();T.apis.str=strApi();
+  T.reset({on:true,secs:['str','cond'],prio:['str','lift','cal','cond'],days:3,mins:60});
+  const first=T.call('plan');assert.equal(first.dose.str,'build');
+  T.evaluate("tg.prio=['cond','str','lift','cal']");const next=T.call('plan');
+  assert.notEqual(next.sig,first.sig);assert.equal(next.dose.str,'moderate');assert.equal(next.dose.cond,'build');
+});
+test('goal dates do not use repeated sets as independent sessions or revive stale trends',()=>{
+  const T=together(),now=Date.now();
+  const repeated=[...Array.from({length:6},()=>({date:now-7*DAY,e1:80,rated:true})),...Array.from({length:6},()=>({date:now,e1:100,rated:true}))];
+  assert.equal(T.call('outcomeProjection',repeated,120,now).projected,null);
+  const stale=Array.from({length:8},(_,i)=>({date:now-(200-i*7)*DAY,e1:80+i*3,rated:true}));
+  assert.equal(T.call('outcomeProjection',stale,120,now).projected,null);
+});
+test('conditioning placement preserves time and next-day guards across weekly calendars',()=>{
+  const T=together();for(let n=2;n<=7;n++)for(const budget of [45,60,90])for(const style of ['easy','intervals','mixed']){
+    const weekdays=Array.from({length:n},(_,i)=>Math.floor(i*7/n));
+    for(let phase=0;phase<4;phase++){
+      const days=weekdays.map((_,i)=>({minutes:10+(i*11+phase*7)%budget,heavy:(i+phase)%3===0}));
+      const out=T.call('condPlacement',days,weekdays,budget,150,style);
+      out.forEach((x,i)=>{if(!x)return;assert.ok(x.minutes+days[i].minutes<=budget);if(x.style==='intervals')assert.ok(!days.some((d,j)=>d.heavy&&(weekdays[j]-weekdays[i]+7)%7<=1));});
+      assert.deepEqual(plain(out),plain(T.call('condPlacement',days,weekdays,budget,150,style)));
+    }
+  }
+});
+test('unlimited conditioning days have no hidden ninety-minute cap and mixed intervals count correctly',()=>{
+  const T=together(),p=T.call('condPlacement',[{minutes:120,heavy:false},{minutes:120,heavy:false}],[0,3],0,150,'easy');
+  assert.equal(p.reduce((n,x)=>n+x.minutes,0),150);
+  assert.equal(T.call('condEquivalent',{minutes:24,intensity:'intervals'}),36);
+  assert.equal(T.call('condEquivalent',{minutes:3,intensity:'intervals'}),5);
+});
