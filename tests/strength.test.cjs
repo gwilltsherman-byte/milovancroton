@@ -59,10 +59,10 @@ function plan(S, {model = 'linear', days = 3, exp = 'some', areas, choice} = {})
   S.T.state.setup = {areas, equip: ['bar', 'db', 'machine', 'cable', 'pullup', 'dip', 'load'], choice, days, model, exp};
   S.fn.resetProgram();
 }
-// Trains the next plan day: do(set, entry) fills each set (reps, rpe) before it is ticked; the session is finished as the
-// app finishes it, then the clock moves on.
+// Trains the next plan day: perform(set, entry) fills each work set (reps, rpe) before it is ticked (0 reps: not done);
+// the session is finished as the app finishes it, then the clock moves on gap days.
 function train(S, perform, gap = 2) {
-  const st = S.T.state, d = S.T.run('nextDayIdx()');
+  const d = S.T.run('nextDayIdx()');
   S.fn.startProgramDay(d);
   const a = S.T.state.active;
   a.entries.forEach((en, ei) => en.sets.forEach((s, si) => {
