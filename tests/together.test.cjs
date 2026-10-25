@@ -189,7 +189,7 @@ test('new lifters start with linear practice, and nothing goes to failure', () =
   const T = together();
   const x = {id: 'squat', a: 'legs', k: 'load', heavy: true, sets: 4, bar: true};
   T.reset({on: true, secs: ['str', 'lift'], exp: 'beginner'});
-  assert.deepEqual(plain(T.call('strScheme', x, 3, null)), {t: 'lp', sets: 3, reps: 5});
+  assert.deepEqual(plain(T.call('strScheme', x, 3, null)), {t: 'lp', sets: 3, reps: 5, intro: true});
   assert.equal(T.call('strScheme', Object.assign({}, x, {heavy: false}), 3, null).rpe, 6);
   assert.equal(T.evaluate('noFail()'), true);
   assert.ok(T.evaluate('LIFT_RIR_EASY').every(r => r >= 2), 'Muscle keeps 2 or more reps in reserve');
@@ -206,9 +206,10 @@ test('the end-of-block rule changes a muscle only with enough data, and only wit
   const good = {n: 4, sore: 2, hurt: false, low: 0};
   assert.equal(step({states: ['flat'], ...good}), null, 'one exercise is not enough');
   assert.equal(step({states: ['flat', 'unknown'], ...good}), null);
-  assert.equal(step({states: ['flat', 'flat'], ...good}).to, 2, 'stalled and recovering well: +2');
-  assert.equal(step({states: ['flat', 'flat'], n: 0, sore: null, hurt: false, low: null}), null, 'no check-ins: unknown, no change');
-  assert.equal(step({states: ['flat', 'flat'], ...good, cur: 6}), null, 'capped');
+  assert.equal(step({states: ['flat', 'flat'], stall: true, ...good}).to, 2, 'stalled and recovering well: +2');
+  assert.equal(step({states: ['flat', 'flat'], ...good}), null, 'flat only because the noise hides any trend: no change');
+  assert.equal(step({states: ['flat', 'flat'], stall: true, n: 0, sore: null, hurt: false, low: null}), null, 'no check-ins: unknown, no change');
+  assert.equal(step({states: ['flat', 'flat'], stall: true, ...good, cur: 6}), null, 'capped');
   assert.equal(step({states: ['down', 'down'], n: 3, sore: 6, hurt: false}).to, -2, 'falling while sore: −2');
   assert.equal(step({states: ['down', 'flat'], n: 0, sore: null, hurt: true}).to, -2, 'falling with a sore joint: −2');
   assert.equal(step({states: ['down', 'down'], n: 0, sore: null, hurt: false}), null, 'falling, recovery unknown');
@@ -309,4 +310,173 @@ test('a low day needs a bigger drop, or two low answers', () => {
   assert.equal(ready({day: start, w: w(4)}).ease, 0, 'an ordinary swing');
   assert.equal(ready({day: start, w: {sleep: 2, energy: 2, stress: 5, mood: 5}}).ease, 1, 'two answers at 1 or 2');
   assert.equal(ready({day: start, w: w(3)}).ease, 1, 'well below your usual');
+});
+
+// A repeatable random series, so the noisy-data checks below give the same answer every run.
+function rng(seed) { let s = seed; const u = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  return () => { let a = 0, b = 0; while (!a) a = u(); while (!b) b = u(); return Math.sqrt(-2 * Math.log(a)) * Math.cos(2 * Math.PI * b); }; }
+
+test('a muscle still gaining is not called stalled because the noise hides its trend', () => {
+  const T = together(), now = Date.now(), start = T.evaluate('Day.start')(now), randn = rng(7);
+  const series = (n, perWeek, sd) => Array.from({length: n}, (_, k) => { const d = 35 - k * (34 / (n - 1)); return {date: now - d * DAY, e1: 100 * Math.pow(1 + perWeek, (35 - d) / 7) * (1 + sd * randn()), rated: true}; });
+  const ci = Array.from({length: 10}, (_, k) => ({day: start - (33 - k * 3) * DAY, w: {sleep: 5, energy: 5, stress: 5, mood: 5}, sore: {chest: 2}}));
+  const share = (n, perWeek, sd) => { let plus = 0; const N = 200;
+    for (let i = 0; i < N; i++) {
+      T.apis.lift = {points: () => [{id: 'barbell-bench', p: ['chest'], pts: series(n, perWeek, sd)}, {id: 'incline-db', p: ['chest'], pts: series(n, perWeek, sd)}],
+        table: () => null, catalog: () => [], info: () => ({ready: true}), work: () => []};
+      T.reset({on: true, secs: ['lift'], checkins: ci});
+      T.tg().plan = {at: now - 35 * DAY, week: 5, weeks: 5};
+      T.evaluate('learnVolume()');
+      if ((T.tg().adj || {}).chest === 2) plus++;
+    }
+    return plus / N; };
+  // gaining 1% a week (5% a block), with 2 to 2.5% noise a session: almost never +2
+  assert.ok(share(8, 0.01, 0.02) < 0.1, 'eight sessions an exercise');
+  assert.ok(share(6, 0.01, 0.025) < 0.1, 'six sessions an exercise');
+  // really stalled, with steady numbers: +2 in most blocks
+  assert.ok(share(8, 0, 0.01) > 0.6, 'a real stall still gets two more sets');
+  // the stall test itself: two flat exercises with a narrow range, or one that can't rule progress out
+  const tr = (slope, se, n) => ({slope, se, n, state: 'flat'});
+  assert.equal(T.call('stalled', [tr(0, 0.001, 8), tr(0.001, 0.001, 8)]), true);
+  assert.equal(T.call('stalled', [tr(0.002, 0.005, 6), tr(0, 0.005, 6)]), false, 'too wide to tell');
+  assert.equal(T.call('stalled', [tr(0, 0.001, 8)]), false, 'one exercise is not enough');
+  assert.equal(T.call('stalled', [tr(0, 0.001, 8), {slope: 0.02, se: 0.002, n: 8, state: 'up'}]), false);
+});
+
+test('straight-arm skills count calendar days, and goal work stays on the day after one', () => {
+  const T = together();
+  const monEve = new Date(2026, 9, 19, 19, 0).getTime(), tue = new Date(2026, 9, 20, 18, 0).getTime(), wedEarly = new Date(2026, 9, 21, 7, 0).getTime();
+  T.apis.cal = {work: (a, b) => [{date: monEve, key: 'tuck-planche', group: 'planche', n: 3}].filter(w => w.date >= a && w.date < b), info: () => ({ready: true})};
+  T.reset({on: true, secs: ['cal']});
+  assert.equal(T.call('straightRecent', tue), true, 'the next day waits');
+  assert.equal(T.call('straightRecent', wedEarly), false, 'Monday evening to Wednesday morning is far enough, as the planner counts it');
+  assert.equal(T.call('tight', [0, 1], [0, 2]), 0);
+  const I = {cal: {ready: true, goals: ['Planche'], picks: [
+    {id: 'planche', key: 'tuck-planche', step: 'Tuck planche', target: '3 × 10 s', sets: 3, goal: true, skill: true},
+    {id: 'frontlever', key: 'tuck-fl', step: 'Tuck front lever', target: '3 × 8 s', sets: 3}]}};
+  const day = (at) => plain(T.call('planDay', [{m: 'cal'}], I, false, {carry: T.call('carryOver', at), runAt: at}).parts[0]);
+  let p = day(tue);
+  assert.deepEqual(p.drop, ['frontlever'], 'support work for a straight-arm skill waits');
+  assert.ok(p.notes.some(n => /keep Tuck planche easy/.test(n[1])), 'goal work stays, kept easy');
+  p = day(wedEarly);
+  assert.deepEqual(p.drop, []);
+});
+
+test('gentler blocks keep Muscle at 3 or more reps in reserve; new lifters at 2 or more', () => {
+  const T = together();
+  for (const stage of ['preg', 'u18']) {
+    T.reset({on: true, secs: ['lift'], stage});
+    assert.deepEqual([1, 2, 3, 4, 5].map(w => T.call('liftRir', w)), [3, 3, 3, 3, 3], stage);
+  }
+  T.reset({on: true, secs: ['lift'], screen: {at: 1, yes: [0], blk: 0}, blocks: 0});
+  assert.equal(T.call('liftRir', 5), 3, 'a yes on the health check');
+  T.reset({on: true, secs: ['lift'], exp: 'beginner'});
+  assert.deepEqual([3, 5].map(w => T.call('liftRir', w)), [2, 2]);
+  T.reset({on: true, secs: ['lift']});
+  assert.equal(T.call('liftRir', 5), 1, 'a top week otherwise keeps week 4’s 1 in reserve');
+});
+
+test('a new lifter’s first block has no top week: linear practice carries on, with a light start', () => {
+  const T = together();
+  T.apis.str = strApi();
+  T.reset({on: true, secs: ['str'], days: 3, kit: ['bar'], exp: 'beginner', blocks: 0, mins: 0});
+  const P = T.evaluate('plan()');
+  P.week = 5; P.w5 = {kind: 'top', why: [], at: Date.now()}; T.evaluate('fresh()');
+  const I = T.call('dayInfo', 0);
+  assert.equal(I.str.top, false);
+  assert.ok(!/top week/.test(I.str.weekName));
+  assert.ok(I.str.next.slots.filter(x => x.heavy).every(x => x.sc.t === 'lp'));
+  const notes = plain(T.call('planDay', [{m: 'str'}], I, false, {}).parts[0].notes).map(n => n[1]);
+  assert.ok(!notes.some(t => /Top week/.test(t)), 'no top-week note');
+  assert.ok(notes.some(t => /Linear practice/.test(t) && /RPE 7/.test(t)));
+  // with no numbers yet for a lift, the first weight starts light
+  T.apis.str.lift = id => EX[id] ? {id, n: EX[id].n, a: EX[id].a, k: 'load', key: id, e1: null, work: null, bar: true} : null;
+  T.evaluate('fresh()');
+  const notes2 = plain(T.call('planDay', [{m: 'str'}], T.call('dayInfo', 0), false, {}).parts[0].notes).map(n => n[1]);
+  assert.ok(notes2.some(t => /about 10 times/.test(t)));
+  // after the first block, week 5 is a top week again
+  T.reset({on: true, secs: ['str'], days: 3, kit: ['bar'], exp: 'beginner', blocks: 1, mins: 0});
+  const P2 = T.evaluate('plan()'); P2.week = 5; P2.w5 = {kind: 'top', why: [], at: Date.now()}; T.evaluate('fresh()');
+  assert.equal(T.call('dayInfo', 0).str.top, true);
+});
+
+test('from 65 the lighter lifts are power work at about half the max; lighter weeks are marked', () => {
+  const T = together();
+  const x = {id: 'squat', a: 'legs', k: 'load', heavy: false, sets: 2, bar: true};
+  T.reset({on: true, secs: ['str'], stage: 'older'});
+  const sc = plain(T.call('strScheme', x, 2, null));
+  assert.equal(sc.fast, true);
+  assert.ok(sc.pct >= 0.4 && sc.pct <= 0.6, 'power work under 60% of the max');
+  assert.equal(T.call('strScheme', Object.assign({}, x, {heavy: true}), 5, 'light').dl, true, 'a lighter week’s sets say so');
+  // a gentler block caps rep ranges and bodyweight progressions too
+  T.reset({on: true, secs: ['str'], stage: 'u18'});
+  assert.equal(T.call('strScheme', {id: 'wpull', a: 'lats', k: 'added', heavy: true, sets: 3}, 2, null).intro, true);
+  assert.equal(T.call('strScheme', {id: 'pushchain', a: 'chest', k: 'bw', heavy: true, sets: 3}, 2, null).intro, true);
+});
+
+test('Ladder’s core work goes last, after Muscle', () => {
+  const T = together();
+  T.reset({on: true, secs: ['lift', 'str', 'cal']});
+  const core = {id: 'core', goal: true}, row = {id: 'row'}, skill = {id: 'planche', skill: true};
+  const parts = (ms, picks) => plain(T.call('dayParts', ms, {cal: {picks}}));
+  assert.deepEqual(parts(['str', 'cal', 'lift'], [core]), [{m: 'str'}, {m: 'lift'}, {m: 'cal'}]);
+  assert.deepEqual(parts(['str', 'cal', 'lift'], [skill, row, core]), [{m: 'cal', seg: 'skill'}, {m: 'str'}, {m: 'cal', seg: 'mid'}, {m: 'lift'}, {m: 'cal', seg: 'core'}]);
+  assert.deepEqual(parts(['cal', 'lift'], [skill, row, core]), [{m: 'cal', seg: 'pre'}, {m: 'lift'}, {m: 'cal', seg: 'core'}]);
+  assert.deepEqual(parts(['str', 'cal'], [skill, row, core]), [{m: 'cal', seg: 'skill'}, {m: 'str'}, {m: 'cal', seg: 'main'}], 'with no Muscle, core stays in Ladder’s strength work');
+  assert.deepEqual(parts(['cal', 'lift'], []), [{m: 'cal'}, {m: 'lift'}], 'a Ladder with nothing planned keeps its place');
+  const picks = [skill, row, core];
+  assert.deepEqual(plain(T.call('segPicks', picks, 'mid')).map(x => x.id), ['row']);
+  assert.deepEqual(plain(T.call('segPicks', picks, 'pre')).map(x => x.id), ['planche', 'row']);
+  assert.deepEqual(plain(T.call('segPicks', picks, 'core')).map(x => x.id), ['core']);
+  assert.deepEqual(plain(T.call('segPicks', picks, 'main')).map(x => x.id), ['row', 'core']);
+});
+
+test('the default four days keep the lifts even: the once-a-week deadlift isn’t squeezed', () => {
+  const T = together();
+  T.apis.str = strApi();
+  for (const mins of [0, 60, 75]) {
+    T.reset({on: true, secs: ['str'], days: 4, kit: ['bar', 'db', 'machine', 'cable'], mins});
+    const P = T.evaluate('buildPlan()'), n = P.days.filter(d => d.str.length).map(d => d.str.length);
+    assert.ok(Math.max(...n) - Math.min(...n) <= 1, `${mins} min: lifts per day ${n}`);
+    const dl = P.days.flatMap(d => d.str).find(x => x.id === 'deadlift');
+    assert.equal(dl.sets, 4, `${mins} min: the week’s only deadlift keeps its sets`);
+  }
+});
+
+test('old check-ins are fitted on the carry they would have now, not the scale they were saved with', () => {
+  const T = together(), now = Date.now(), start = T.evaluate('Day.start')(now);
+  // chest trained every other day, 6 hard sets; each check-in two days after a session, chest 3 of 10 sore
+  const trained = Array.from({length: 42}, (_, k) => start - (82 - 2 * k) * DAY + 12 * 3600e3);
+  T.apis.lift = {work: (a, b) => trained.filter(t => t >= a && t < b).map(() => ({p: ['chest'], s: [], n: 6, f: 6})), table: () => null, info: () => ({ready: true})};
+  const ci = (x, cw) => Array.from({length: 40}, (_, k) => Object.assign({day: start - (80 - 2 * k) * DAY, at: start - (80 - 2 * k) * DAY, w: {sleep: 5, energy: 5, stress: 5, mood: 5}, sore: {chest: 3}, x: {chest: x}}, cw ? {cw} : {}));
+  const thr = list => { T.reset({on: true, secs: ['lift'], checkins: list}); T.evaluate('fitMemo=null'); return T.evaluate('fitModel()').by.chest.T; };
+  const old = thr(ci(3)), now2 = thr(ci(6, 2)), wrong = thr(ci(3, 2));
+  assert.ok(Math.abs(old - now2) < 1e-9, `old ${old} vs new ${now2}`);
+  assert.ok(wrong < now2 - 1, 'read at the old scale it would have been far lower');
+  assert.equal(T.tg().checkins[0].cw, 2, 'the carry version is kept when saved data loads');
+});
+
+test('a section in pieces is done only when every piece is', () => {
+  const T = together(), now = Date.now();
+  const recs = {s1: 'done', s2: 'done'};
+  T.apis.cal = {rec: id => recs[id] || null, recsIn: () => [{id: 's1', date: now - 3600e3}], info: () => ({ready: true})};
+  T.apis.str = Object.assign(strApi(), {rec: id => recs[id] || null, recsIn: () => [{id: 's2', date: now - 1800e3}]});
+  T.reset({on: true, secs: ['str', 'cal'], days: 3, log: [{date: now, start: now - 2 * 3600e3, day: 0,
+    parts: [['cal', 'done', 's1', 'skill'], ['str', 'done', 's2'], ['cal', 'skip', null, 'main']]}]});
+  assert.deepEqual(plain(T.call('doneParts', 0, 3)), {cal: {sid: 's1', part: true}, str: {sid: 's2'}});
+  T.reset({on: true, secs: ['str', 'cal'], days: 3, run: {day: 0, at: now, parts: [{m: 'cal', st: 'done', sid: 's1', seg: 'skill'}, {m: 'str', st: 'todo', sid: null}, {m: 'cal', st: 'todo', sid: null, seg: 'main'}]}});
+  assert.deepEqual(plain(T.call('doneParts', 0, 3)), {}, 'Ladder isn’t ticked while its strength work is still to do');
+});
+
+test('a yes on the health check given mid-block keeps the next block gentle too', () => {
+  const T = together(), now = Date.now();
+  T.reset({on: true, secs: ['str'], blocks: 1, plan: null, log: [{date: now - DAY, start: now - DAY, day: 0, parts: [['str', 'done', 'a']]}]});
+  T.tg().plan = {at: now - 3 * DAY, week: 2, weeks: 5};
+  assert.equal(T.call('screenBlk'), 2, 'trained in this block: this one and the next');
+  T.tg().plan = {at: now, week: 1, weeks: 5};
+  assert.equal(T.call('screenBlk'), 1, 'a block not trained in yet: that one');
+  T.tg().screen = {at: now, yes: [0], blk: 1};
+  assert.equal(T.evaluate('gentle()'), true);
+  T.call('blockEnds');
+  assert.equal(T.evaluate('gentle()'), true, 'still gentle when that block began without training');
 });

@@ -10996,6 +10996,8 @@ function screenBlk(){ const P=tg.plan, trained=!!P && (tg.log||[]).some(e=>!e.sk
 function linear(){ return (tg.exp||'intermediate')==='beginner' && blocksDone()===0; }
 /* Muscle keeps 2 or more reps in reserve: new lifters, and every gentler block. */
 function noFail(){ return gentle() || (tg.exp||'intermediate')==='beginner'; }
+/* Muscle's reps in reserve in a block week (week 5 keeps week 4's): 3 or more in a gentler block, 2 or more when new. */
+function liftRir(week){ return (gentle()? LIFT_RIR_GENTLE : noFail()? LIFT_RIR_EASY : LIFT_RIR)[Math.min(week, LIFT_RIR.length)-1]; }
 const older=()=>tg.stage==='older';
 /* Sessions a week for a section at its dose. From 65 the keeping dose is about two sessions a week (Fragala et al. 2019). */
 function sessionsOf(m, dose){ return Math.max(SESSIONS[m][dose], older()&&dose==='maintain'? 2 : 0); }
@@ -11281,7 +11283,7 @@ function dayInfo(d, ahead){
     const heavy=slots.filter(x=>x.heavy).length;
     I.str={ready:slots.length>0, name:DOSE_N[P.dose.str]+' strength', weekName:wn, deload:dl, top,
       next:{name: heavy===slots.length? 'Heavy lifts' : heavy? 'Heavy and lighter lifts' : 'Lighter lifts', slots}}; }
-  if(tg.secs.includes('lift')){ const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], rir=dl? 4 : (gentle()? LIFT_RIR_GENTLE : noFail()? LIFT_RIR_EASY : LIFT_RIR)[Math.min(week, LIFT_RIR.length)-1];
+  if(tg.secs.includes('lift')){ const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], rir=dl? 4 : liftRir(week);
     // compounds first, isolation next, core last; within each, the muscles you want more of first: exercises done early
     // in a session improve more (Simão et al. 2012)
     const exercises=day.lift.map(x=>{ const e=cat.find(c=>c.id===x.exId); return e? {exId:e.id, name:e.name, mu:x.mu, p:e.p.slice(), s:e.s.slice(), comp:e.comp, more:!!x.more, equipment:e.equipment,
