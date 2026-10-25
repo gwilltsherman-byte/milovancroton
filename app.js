@@ -12642,7 +12642,6 @@ render();
   document.getElementById('bk-ask-yes').addEventListener('click',()=>answer(true));
   document.getElementById('bk-ask-no').addEventListener('click',()=>answer(false));
   askD.addEventListener('close',()=>answer(false));   // Escape
-  window.__ask=ask;
   const whenText=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium', timeStyle:'short'});
   function say(id,t,bad){ const el=document.getElementById(id); el.textContent=t; el.classList.toggle('bad',!!bad); }
   let backupError='';
@@ -12662,16 +12661,17 @@ render();
   document.getElementById('bkbtn').addEventListener('click',openBackup);
   document.getElementById('bk-done').addEventListener('click',()=>{ if(bk.close) bk.close(); else bk.removeAttribute('open'); });
   document.getElementById('bk-copy').addEventListener('click',async()=>{
-    const locked=!!passOf('bk-pass'), out=backupOut(); let ok=false, txt='';
-    if(locked) say('bk-msg1','Encrypting…');
-    // Safari copies only inside the tap, and encrypting takes a moment, so the text goes in as a promise where the browser takes one
-    try{ if(locked && window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
-      await navigator.clipboard.write([new ClipboardItem({'text/plain':out.then(t=>new Blob([t],{type:'text/plain'}))})]); ok=true; } }catch(e){}
-    try{ txt=await out; }catch(e){ say('bk-msg1',e.message,true); return; }
-    if(!ok){ try{ await navigator.clipboard.writeText(txt); ok=true; }
-      catch(e){ const ta=document.getElementById('bk-in'); ta.value=txt; ta.select();
-        try{ ok=document.execCommand('copy'); }catch(_){}
-        ta.value=''; } }
+    const locked=!!passOf('bk-pass'); let ok=false, txt='';
+    if(!locked){ txt=backupText(); try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} }
+    else { say('bk-msg1','Encrypting…'); const out=backupOut();
+      // Safari copies only inside the tap, and encrypting takes a moment, so the text goes in as a promise where the browser takes one
+      try{ if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+        await navigator.clipboard.write([new ClipboardItem({'text/plain':out.then(t=>new Blob([t],{type:'text/plain'}))})]); ok=true; } }catch(e){}
+      try{ txt=await out; }catch(e){ say('bk-msg1',e.message,true); return; }
+      if(!ok){ try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} } }
+    if(!ok){ const ta=document.getElementById('bk-in'); ta.value=txt; ta.select();
+      try{ ok=document.execCommand('copy'); }catch(_){}
+      ta.value=''; }
     if(!ok){ say('bk-msg1','Couldn’t copy. Try "Save as a file" instead.',true); return; }
     backedUp(); say('bk-msg1', locked? 'Encrypted backup copied. You’ll need the passphrase to restore it.'
       : 'Backup copied. Notes apps often sync to the cloud: add a passphrase before copying a backup you keep there.');
@@ -13180,7 +13180,8 @@ window.MiloData=(function(){
   function guess(name, list){
     const raw=String(name), paren=(/\(([^)]*)\)\s*$/.exec(raw)||[])[1]||'', base=raw.replace(/\([^)]*\)\s*$/,'');
     const eq=canon(paren), ids=new Set(list.map(x=>x.id)), alias=ALIAS[canon(base)];
-    if(alias && ids.has(alias) && (!eq || eq==='barbell' || eq==='bodyweight' || eq==='weighted' || eq==='assisted')) return alias;
+    // (an assisted version is a different exercise: its weight is the help, not load)
+    if(alias && ids.has(alias) && (!eq || eq==='barbell' || eq==='bodyweight' || eq==='weighted')) return alias;
     const A=words(raw); let best=null, top=0;
     list.forEach(x=>{ const B=words(x.name); const e=String(x.equipment||'').toLowerCase(); if(EQUIP_W.includes(e)&&e!=='bodyweight') B.add(e);
       let both=0, core=0; A.forEach(w=>{ if(B.has(w)){ both++; if(!EQUIP_W.includes(w)) core++; } });

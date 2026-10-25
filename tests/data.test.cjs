@@ -278,7 +278,7 @@ test('exercise names from Strong and Hevy find the right Milo exercise', () => {
     'Bent Over Row (Barbell)': 'barbell-row', 'Pull Up': 'pullup', 'Chin Up': 'chin-up', 'Push Up': 'pushup', 'Romanian Deadlift (Barbell)': 'romanian-deadlift',
     'Hip Thrust (Barbell)': 'hip-thrust', 'Front Squat (Barbell)': 'front-squat', 'Leg Press': 'leg-press', 'Leg Extension (Machine)': 'leg-extension',
     'Lat Pulldown (Cable)': 'lat-pulldown', 'Lateral Raise (Dumbbell)': 'lateral-raise', 'Lateral Raise (Cable)': 'cable-lateral', 'Bench Press (Dumbbell)': 'db-bench',
-    'Seated Leg Curl (Machine)': 'leg-curl', 'Lying Leg Curl (Machine)': 'lying-leg-curl', 'Plank': 'plank', 'Bicep Curl (Barbell)': 'barbell-curl',
+    'Seated Leg Curl (Machine)': 'leg-curl', 'Pull Up (Assisted)': 'assisted-pullup', 'Pull Up (Weighted)': 'pullup', 'Lying Leg Curl (Machine)': 'lying-leg-curl', 'Plank': 'plank', 'Bicep Curl (Barbell)': 'barbell-curl',
   };
   Object.entries(want).forEach(([n, id]) => assert.equal(D.guess(n, CATALOGUE), id, n));
   assert.equal(D.guess('Zercher Wobble Thing', CATALOGUE), null);
