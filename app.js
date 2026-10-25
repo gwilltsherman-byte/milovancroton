@@ -5605,6 +5605,9 @@ function addCustomEx(d){
   return ex;
 }
 
+/* A part of a Together day finished: the next part is the main button, so the day runs on (it starts on Done too). */
+function nextBtn(){ const n=window.__hub&&window.__hub.nextAfter? window.__hub.nextAfter('lift') : null;
+  return n? `<button class="btn primary block" data-act="tg-next" style="margin-top:18px">Next: ${esc(n)} ${I.arrow}</button>` : `<button class="btn primary block" data-act="close-modal" style="margin-top:18px">Done</button>`; }
 function showReview(rec, sets, vol){
   nav.reg('review', ()=>showReview(rec, sets, vol));
   const dur=fmtDur(rec.durationSec||0);
@@ -5626,7 +5629,7 @@ function showReview(rec, sets, vol){
         <div class="rstat"><div class="v mono" style="font-size:19px">${dur}</div><div class="k">Duration</div></div>
       </div>
       ${prHtml}
-      <button class="btn primary block" data-act="close-modal" style="margin-top:18px">Done</button>
+      ${nextBtn()}
     </div>`, true);
 }
 
@@ -5745,6 +5748,7 @@ __root.addEventListener('click', e=>{
     case 'ev-lib': openEvidenceLibrary(); break;
     case 'techniques': openTechniques(); break;
     case 'close-modal': closeModal(); break;
+    case 'tg-next': closeModal(); if(window.__hub&&window.__hub.next) window.__hub.next('lift'); break;
     case 'sheet-back': nav.back(); break;
     case 'scrim': break;
     case 'start-empty': closeModal(); confirmNewSession(()=>startEmpty()); break;
@@ -6288,6 +6292,7 @@ if(window.__hub) window.__hub.reg('lift', {
   // for the shell's one navigation: a page of this section, a fresh draw, the library's search, how-tos and evidence
   go(r){ state.route=['today','train','plan','library','progress'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
   redraw(){ render(); },
+  quick(){ if(!state.active) startEmpty(); },
   search(q){ q=String(q||''); if(state.libSearch===q) return; state.libSearch=q; if(state.route==='library') render(); },
   lib(){ return state.exercises.map(e=>({id:e.id, n:e.name, s:e.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(', ')+' · '+e.equipment})); },
   howto(id){ exDetail(id); },
@@ -10864,7 +10869,8 @@ function showReview(rec, notes, cycle){
       <div class="metric"><div class="k">Time</div><div class="v" style="font-size:19px">${fmtDur(rec.durationSec)}</div></div>
     </div>
     ${prHtml}${topHtml}${noteHtml}${cycleHtml(cycle)}
-    <button class="btn primary block" data-act="close-modal" style="margin-top:18px">${I.check} Done</button></div>`);
+    ${(()=>{ const n=window.__hub&&window.__hub.nextAfter? window.__hub.nextAfter('str') : null;   // a part of a Together day: on to the next
+      return n? `<button class="btn primary block" data-act="tg-next" style="margin-top:18px">Next: ${esc(n)} ${I.arrow}</button>` : `<button class="btn primary block" data-act="close-modal" style="margin-top:18px">${I.check} Done</button>`; })()}</div>`);
 }
 function cycleHtml(cycle){
   if(!cycle||!cycle.length) return '';
@@ -11768,6 +11774,7 @@ __root.addEventListener('click', e=>{
   switch(act){
     case 'nav': state.route=el.dataset.route; save(); render(); window.scrollTo(0,0); break;
     case 'close-modal': closeModal(); break;
+    case 'tg-next': closeModal(); if(window.__hub&&window.__hub.next) window.__hub.next('str'); break;
     case 'settings': if(window.__openSettings) window.__openSettings('str'); else openSettings(); break;
     case 'evidence': openEvidence(el.dataset.k); break;
     case 'evidence-lib': openEvidenceLib(); break;
@@ -12183,6 +12190,7 @@ if(window.__hub) window.__hub.reg('str', {
   // for the shell's one navigation: a page of this section, a fresh draw, its lifts and how-tos, the evidence
   go(r){ state.route=['today','train','program','progress','tools'].includes(r)? r : 'today'; save(); render(); window.scrollTo(0,0); },
   redraw(){ render(); },
+  quick(){ if(!state.active) startFree(); },
   lib(){ return Object.keys(EX).map(id=>{ const X=EX[id]; return {id, n:X.n, s:AREAS[X.a].n+' · '+kindText(id), chain:X.k==='bw'? X.chain.map(c=>c[1]) : null}; }); },
   howto(id, vi){ openHowto(id, vi); },
   evidence(){ openEvidenceLib(); },
@@ -12331,6 +12339,7 @@ function toast(m, canUndo){ const t=$('#toast'), own=canUndo&&typeof canUndo==='
 
 /* ==================== STATE ==================== */
 let tg=load(), draft=null, pickOpen=false, weekEdit=false, peekDay=null, undos=[], endAsk=false;
+let page='today', first=null, offer=null;   // the page the shell shows, the first-run answers, the health check offered before Day 1
 function load(){
   let t=null, raw=null; try{ raw=localStorage.getItem(TG_KEY); t=raw? MiloSecurity.parseSection(raw, TG_KEY) : null; }catch(e){ Safe.rescue(TG_KEY, raw, e); }
   t=Object.assign({v:1, on:false, secs:[], days:4, mins:60, custom:null, prio:null, kit:null, exp:'intermediate', tune:null, plan:null, next:0, run:null, short:false, log:[], checkins:[], roundAt:0,
@@ -12347,7 +12356,9 @@ function load(){
       o.sore={}; o.x={}; Object.keys(c.sore||{}).forEach(k=>{ if(num(c.sore[k],0,10)){ o.sore[k]=c.sore[k]; if(num(c.x&&c.x[k],0,500)) o.x[k]=c.x[k]; } });
       if(c.pain&&typeof c.pain==='object'){ o.pain={}; Object.keys(c.pain).forEach(k=>{ if(num(c.pain[k],0,10)) o.pain[k]=c.pain[k]; }); }
       // unwell today: a cold above the neck, or a fever or symptoms below it
-      if(c.ill==='cold'||c.ill==='sick'||c.ill==='no') o.ill=c.ill; }
+      if(c.ill==='cold'||c.ill==='sick'||c.ill==='no') o.ill=c.ill;
+      // a one-tap check-in (Rough, OK, Great): the same answer to all four questions
+      if(['rough','ok','great'].includes(c.quick)) o.quick=c.quick; }
     return o; }).sort((a,b)=>a.day-b.day).slice(-400);
   t.secs=ALL.filter(m=>(t.secs||[]).includes(m));
   // your priority: all three sections, first to last, or null for the suggested order
@@ -12376,6 +12387,13 @@ function load(){
   if(t.plan && t.plan.w5 && !(t.plan.w5.kind==='light'||t.plan.w5.kind==='top')) delete t.plan.w5;
   if(t.custom && (!Array.isArray(t.custom)||t.custom.length!==t.days)) t.custom=null;
   if(t.run && !(t.run.parts&&t.run.parts.length)) t.run=null;
+  // the program type: Together (type null) or one section trained on its own (Together off, type that section)
+  if(!ALL.includes(t.type) || t.on) t.type=null;
+  // someone who trained only one section, and never Together, keeps that section as their program
+  if(!t.on && !t.type && !t.plan && !(t.log||[]).length){ try{ const had=ALL.filter(m=>{ const x=localStorage.getItem({lift:'hyplog.v1', str:'strlog.v2', cal:'proladder.v1'}[m]); return !!x && x.indexOf('"history":[{')>=0; });
+    if(had.length===1) t.type=had[0]; }catch(e){} }
+  // Today's first-run cards: the health check offered once before the first workout, Tune your program until closed
+  t.offered=!!t.offered; t.tuned=!!t.tuned;
   return t;
 }
 function save(){ Safe.put(TG_KEY, JSON.stringify(tg)); }
@@ -13375,6 +13393,13 @@ H.advance=function(m){
     startPart(k); return run.parts[k].st==='run';
   }catch(e){ console.error('Together couldn’t start the next part', e); return false; }
 };
+/* For a section's finish screen: the next part's name when a part of today's day in m has just finished. */
+H.nextAfter=function(m){
+  try{ refreshRun(); const run=tg.on&&tg.run; if(!run) return null;
+    const just=run.parts.filter(p=>p.m===m&&p.sid).pop(); if(!just||just.st!=='done') return null;
+    const k=run.parts.findIndex(p=>p.st==='todo'); return k>=0? partName(run.parts[k]) : null;
+  }catch(e){ return null; }
+};
 function startPart(k){
   const run=tg.run, p=run&&run.parts[k]; if(!p||p.st!=='todo') return;
   const api=H.api(p.m); if(!api) return;
@@ -13489,7 +13514,7 @@ const stripEl=document.getElementById('tgstrip');
 function strip(){
   if(!stripEl) return;
   // Together's own page shows the day at the top, so the strip is for the other tabs
-  const run=tg.on&&tg.run&&H.current()!=='mix'&&tg.run;
+  const run=tg.on&&tg.run&&(H.current()!=='mix'||page!=='today')&&tg.run;
   if(!run){ if(!stripEl.hidden){ stripEl.hidden=true; stripEl.innerHTML=MiloSecurity.html(''); } stripSpace(); return; }
   const cur=run.parts.find(p=>p.st==='run'), nxt=run.parts.findIndex(p=>p.st==='todo'), here=H.current();
   let btn='';
@@ -13509,7 +13534,7 @@ function stripSpace(){
 if(stripEl) stripEl.addEventListener('click', e=>{
   const b=e.target.closest('[data-tg]'); if(!b) return;
   const a=b.dataset.tg;
-  if(a==='home') H.go('mix');
+  if(a==='home') H.dest('today');
   else if(a==='open'){ const api=H.api(b.dataset.m); if(api) api.open(); H.away(b.dataset.m,'run'); }
   else if(a==='start') startPart(+b.dataset.k);
 });
@@ -13679,8 +13704,10 @@ function ciSummary(rec){
 function ciCard(){
   if(!tg.on) return '';
   const rec=ciToday();
-  if(ciEdit || (!rec && !tg.run)){ if(!ciDraft) ciStart(); return ciForm(carryOver()); }
-  if(!rec) return `<section class="card"><div class="spread"><span class="eyebrow">Check-in</span><button class="tog" data-a="ci-edit">Check in now</button></div><p class="hint" style="margin-top:6px">Not done today. It still shapes the parts of the day you haven’t started.</p></section>`;
+  if(ciEdit){ if(!ciDraft) ciStart(); return ciForm(carryOver()); }
+  // one line, one tap; the full check-in (soreness, joints, feeling unwell) opens from it
+  if(!rec) return `<section class="card ciline" id="cicard"><div class="spread"><span class="h3" id="ci-q">How do you feel?</span><div class="pills" role="group" aria-labelledby="ci-q">${QUICK.map(([k,l])=>`<button data-a="ci-q" data-v="${k}">${l}</button>`).join('')}</div></div>
+    <button class="tog" data-a="ci-edit" aria-expanded="false" style="margin-top:8px">${IC.sliders} Full check-in: soreness, joints, unwell</button></section>`;
   return ciSummary(rec);
 }
 const SOURCES=[
@@ -13740,11 +13767,11 @@ function heroNext(W){
   return `<section class="card">
     <div class="spread"><span class="eyebrow">Next up &middot; Day ${d+1} of ${D}</span>${ready?`<span class="chip">${IC.clock} about ${r5(P.mins)} min</span>`:''}</div>
     <div class="h2">${dayTitle(order)}</div>
-    ${ready? `<p class="hint" style="margin:4px 0 0">Warm up first: about 5 minutes of easy movement. Each part adds its own ramp-up sets.</p>` : ''}
+    ${offer&&offer.d===d? offerHtml(d) : `<div style="margin-top:12px"><button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button></div>`}
+    ${ready? `<p class="hint" style="margin:8px 0 0">Warm up first: about 5 minutes of easy movement. Each part adds its own ramp-up sets.</p>` : ''}
     <div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div>
     ${dayExtras(W, d, order, I).concat(dayNotes(order, I, P, C)).map(note).join('')}
     ${RED_FLAGS}
-    <div style="margin-top:14px"><button class="btn pri block" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start the day</button></div>
     <div class="row2"><button class="tog ${tg.short?'on':''}" data-a="short" aria-pressed="${tg.short?'true':'false'}">${IC.clock} Short on time</button>
       <button class="tog ${pickOpen?'on':''}" data-a="pickday" aria-expanded="${pickOpen?'true':'false'}">Another day</button></div>
     ${pickOpen? `<div class="pills" style="margin-top:10px">${W.map((x,i)=>`<button class="${i===d?'on':''}" data-a="setnext" data-d="${i}" ${x.length?'':'disabled'}>Day ${i+1}</button>`).join('')}</div>` : ''}
@@ -14038,7 +14065,7 @@ const STAGE_HINT={u18:'Technique first and nothing to failure: RPE 7 at most, wi
 /* The health check: a few yes-or-no questions, once, kept on this phone and changeable here. A yes never stops you. */
 function screenField(d){
   const yes=d.yes||[], open=!tg.on || !d.asked;
-  return `<div class="field"><details class="rules" ${open?'open':''}><summary><span><b>Health check</b> <span class="hint">${d.asked||yes.length? (yes.length? plural(yes.length,'yes') : 'No to all') : '7 questions, about a minute'}</span></span>${IC.chev}</summary>
+  return `<div class="field" id="su-screen"><details class="rules" ${open?'open':''}><summary><span><b>Health check</b> <span class="hint">${d.asked||yes.length? (yes.length? plural(yes.length,'yes') : 'No to all') : '7 questions, about a minute'}</span></span>${IC.chev}</summary>
     <p class="hint" style="margin:8px 0">Tap any that apply to you. Your answers stay on this phone.</p>
     <div class="tlist">${PARQ.map((q,i)=>`<button class="tpick topt${yes.includes(i)?' on':''}" data-a="d-q" data-v="${i}" aria-pressed="${yes.includes(i)}"><span class="tn"><b>${q}</b></span>${yes.includes(i)? IC.check : ''}</button>`).join('')}</div>
     ${yes.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: ${tg.on? 'this block' : 'your first block'} stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
@@ -14051,19 +14078,19 @@ function viewSetup(){
     <div class="eyebrow">${tg.on?'Change the set-up':'Your program'}</div>
     <div class="h2">${tg.on?'What you train':'What do you want to train?'}</div>
     <p class="lead">Pick one or more and rank them. Together builds one week from that: the right dose of each, sessions that fit your time, and one count of hard sets for every muscle. It uses your numbers from each trainer, never their own plans, and the trainers you pick appear as tabs.</p>
-    <div class="field"><label>Train</label>
+    <div class="field" id="su-secs"><label>Train</label>
       ${ALL.map(m=>`<button class="pick ${d.secs.includes(m)?'on':''}" data-a="d-sec" data-m="${m}" aria-pressed="${d.secs.includes(m)?'true':'false'}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
         <span class="pt2"><b>${SEC[m].n}</b><span>${statusLine(m)}</span></span></button>`).join('')}</div>
     ${prioField(d)}
-    <div class="field"><label>Days a week you can train</label><div class="pills">${[2,3,4,5,6,7].map(n=>`<button class="${d.days===n?'on':''}" data-a="d-days" data-v="${n}">${n}</button>`).join('')}</div>
+    <div class="field" id="su-days"><label>Days a week you can train</label><div class="pills">${[2,3,4,5,6,7].map(n=>`<button class="${d.days===n?'on':''}" data-a="d-days" data-v="${n}">${n}</button>`).join('')}</div>
       <div class="pills" role="group" aria-label="Which days" style="margin-top:8px">${WD.map((w,i)=>{ const on=dWd(d).includes(i); return `<button class="${on?'on':''}" data-a="d-wd" data-v="${i}" aria-pressed="${on}" aria-label="${WD_N[i]}">${w}</button>`; }).join('')}</div>
       <p class="hint" style="margin-top:6px">Tap the days you can train. Together spaces the hard work over them: heavy squats and hinges 48 hours apart, and straight-arm skills too.</p></div>
-    <div class="field"><label>Time for one session</label><div class="pills">${[[45,'45 min'],[60,'60 min'],[75,'75 min'],[90,'90 min'],[0,'No limit']].map(([v,l])=>`<button class="${d.mins===v?'on':''}" data-a="d-mins" data-v="${v}">${l}</button>`).join('')}</div></div>
-    ${d.secs.includes('str')||d.secs.includes('lift')? `<div class="field"><label id="kit-l">What you can train with</label><div class="pills" role="group" aria-labelledby="kit-l">${KIT.map(([k,l])=>`<button class="${dk.includes(k)?'on':''}" data-a="d-kit" data-v="${k}" aria-pressed="${dk.includes(k)?'true':'false'}">${l}</button>`).join('')}</div>
+    <div class="field" id="su-mins"><label>Time for one session</label><div class="pills">${[[45,'45 min'],[60,'60 min'],[75,'75 min'],[90,'90 min'],[0,'No limit']].map(([v,l])=>`<button class="${d.mins===v?'on':''}" data-a="d-mins" data-v="${v}">${l}</button>`).join('')}</div></div>
+    ${d.secs.includes('str')||d.secs.includes('lift')? `<div class="field" id="su-kit"><label id="kit-l">What you can train with</label><div class="pills" role="group" aria-labelledby="kit-l">${KIT.map(([k,l])=>`<button class="${dk.includes(k)?'on':''}" data-a="d-kit" data-v="${k}" aria-pressed="${dk.includes(k)?'true':'false'}">${l}</button>`).join('')}</div>
       <p class="hint" style="margin-top:6px">Bodyweight work is always on the list.</p></div>` : ''}
-    <div class="field"><label>Training so far</label><div class="pills">${EXP.map(([k,l])=>`<button class="${(d.exp||'intermediate')===k?'on':''}" data-a="d-exp" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="field" id="su-exp"><label>Training so far</label><div class="pills">${EXP.map(([k,l])=>`<button class="${(d.exp||'intermediate')===k?'on':''}" data-a="d-exp" data-v="${k}">${l}</button>`).join('')}</div>
       ${(d.exp||'intermediate')==='beginner'? `<p class="hint" style="margin-top:6px">Your first block is linear practice: easy effort, a little heavier each time, nothing to failure.</p>` : ''}</div>
-    <div class="field"><label id="stage-l">Life stage <span class="hint">(optional)</span></label><div class="pills" role="group" aria-labelledby="stage-l">${STAGES.map(([k,l])=>`<button class="${(d.stage||'')===k?'on':''}" data-a="d-stage" data-v="${k}" aria-pressed="${(d.stage||'')===k}">${l}</button>`).join('')}</div>
+    <div class="field" id="su-stage"><label id="stage-l">Life stage <span class="hint">(optional)</span></label><div class="pills" role="group" aria-labelledby="stage-l">${STAGES.map(([k,l])=>`<button class="${(d.stage||'')===k?'on':''}" data-a="d-stage" data-v="${k}" aria-pressed="${(d.stage||'')===k}">${l}</button>`).join('')}</div>
       ${d.stage? `<p class="hint" style="margin-top:6px">${STAGE_HINT[d.stage]}</p>` : ''}</div>
     ${screenField(d)}
     <div style="margin-top:20px"><button class="btn pri block" data-a="d-save" ${d.secs.length? '' : 'disabled'}>${IC.arrow} ${tg.on?'Save':'Build my week'}</button></div>
@@ -14145,8 +14172,10 @@ function viewTune(){
     <div class="h2">${tune.fresh? 'Make this block yours' : 'Customize this block'}</div>
     <p class="lead">${tune.fresh? 'Here is what this block holds. Change anything you like, then start it. Each part is still built into one week with the others, and every set counts once.' : 'Change anything you like. Together refills your days to match, and you stay on this week of the block.'}</p>
     ${R.map((m,k)=>`<div class="tpart"><div class="spread"><div class="h3">${k+1}. ${SEC[m].n}</div><span class="chip">${DOSE_N[P.dose[m]]}</span></div>${part[m]()}</div>`).join('')}
-    <div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start this block' : IC.check+' Save changes'}</button></div>
-    <button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">${tune.setup? 'Use it as it is' : tune.fresh? 'Keep my current block' : 'Cancel'}</button>
+    ${JSON.stringify(cleanTune(T))===JSON.stringify(cleanTune(tg.tune))? `<div style="margin-top:20px"><button class="btn pri block" data-a="${tune.fresh?'t-save':'t-cancel'}">${tune.fresh? IC.play+' Start this block' : IC.check+' Done'}</button></div>
+      ${tune.fresh? `<button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">Keep my current block</button>` : ''}`
+    : `<div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start with my changes' : IC.check+' Save my changes'}</button></div>
+      <button class="btn ghost block" data-a="t-discard" style="margin-top:8px">${IC.undo} Discard changes</button>`}
   </section></div>`;
 }
 /* ==================== RECOMMENDED LADDER GOALS ====================
@@ -14297,20 +14326,185 @@ function viewMain(){
   const u=undos[undos.length-1];
   return `<div class="stack">
     ${u? `<button class="undoline" data-a="undo">${IC.undo}<span>Undo: ${esc(u.label)}</span></button>` : ''}
-    ${ciCard()}
+    ${sessionCard()}
     ${tg.run? heroRun() : heroNext(W)}
+    ${ciCard()}
+    ${tuneCard()}
+    ${installCard()}
     ${missing.map(m=>`<section class="card"><div class="spread" style="align-items:flex-start"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n}</div>
       <p class="lead" style="margin-top:4px">${notReady(m,{})}</p></div>
       ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div>
       ${m==='cal'? recHtml(recModel(plan()), true) : ''}</section>`).join('')}
-    ${programCard()}
     ${weekCard(W, DM)}
-    ${volCard(dayInfo(Math.max(0,n)))}
-    ${recoveryCard()}
+    ${programCard()}
     ${rulesCard()}
     <button class="btn ghost block" data-a="edit">${IC.sliders} Change what you train, order, days or time</button>
   </div>`;
 }
+/* ==================== ONE APP: TODAY, TRAIN, PROGRESS, LIBRARY ====================
+   Together draws the pages that cover every section: Today (its day), Train when no single session is the one to
+   show, Progress's All and Library's All (and Strength, which has no library page of its own). The shell's navigation
+   picks the page (go); each section's own pages stay its own. */
+const QUICK=[['rough','Rough',2],['ok','OK',4],['great','Great',6]];
+const FIRST_LINE={lift:'Build muscle', str:'Lift heavier', cal:'Calisthenics skills, rung by rung'};
+const localUnit=()=>/-(US|LR|MM)\b/i.test(String(navigator.language||''))? 'lb' : 'kg';
+const PAGE_H={today:'Today', train:'Train', progress:'Progress', library:'Library'};
+function progType(){ return !tg.on && ALL.includes(tg.type)? tg.type : 'mix'; }
+function newFirst(){ return {secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit()}; }
+/* First run: what you train, how many days, and units. Everything else starts from a full gym, an hour and some
+   training behind you, and is yours to change once the first session is done. */
+function viewFirst(){
+  const f=first;
+  return `<div class="stack"><section class="card first">
+    <div class="eyebrow">Your first workout is two taps away</div>
+    <div class="h2">What do you want to train?</div>
+    <div class="field" role="group" aria-label="Train">${ALL.map(m=>`<button class="pick ${f.secs.includes(m)?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${f.secs.includes(m)}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
+      <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`).join('')}</div>
+    <div class="field"><label id="f-days-l">Days a week</label><div class="pills" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
+    <div class="spread"><span class="hint" id="f-unit-l" style="margin:0">Weights in</span><div class="pills" role="group" aria-labelledby="f-unit-l">${['kg','lb'].map(v=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${v}</button>`).join('')}</div></div>
+    <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length?'':'disabled'}>${IC.arrow} Build my week</button></div>
+    <p class="hint" style="text-align:center">${f.secs.length? 'Starts from a full gym, an hour a session and some training behind you. Change any of it later.' : 'Pick at least one.'}</p>
+    <button class="btn ghost block" data-a="f-backup">I have a backup</button>
+  </section></div>`;
+}
+/* Before the first workout, once: the health check as an optional 30 seconds. A yes never stops you. */
+function offerHtml(d){
+  const y=offer.yes;
+  return `<div class="offer" id="offer"><p class="lead" style="margin-top:10px"><b>A 30-second health check first?</b> Seven yes-or-no questions. It’s optional, and a yes never stops you. Tap any that apply.</p>
+    <div class="tlist">${PARQ.map((q,i)=>`<button class="tpick topt${y.includes(i)?' on':''}" data-a="o-q" data-v="${i}" aria-pressed="${y.includes(i)}"><span class="tn"><b>${q}</b></span>${y.includes(i)? IC.check : ''}</button>`).join('')}</div>
+    ${y.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: your first block stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
+    <button class="btn pri block" data-a="o-start" data-d="${d}" style="margin-top:12px">${IC.play} Start Day ${d+1}</button>
+    <button class="btn ghost block" data-a="o-skip" data-d="${d}" style="margin-top:8px">Skip the check</button></div>`;
+}
+/* Sessions open in a section outside today's day: Today leads with the way back to them. */
+function sessionCard(){
+  const run=tg.run, inRun=m=>!!run&&run.parts.some(p=>p.m===m&&p.st==='run');
+  const open=ALL.filter(m=>{ if(!H.has(m)) return false; const i=infoOf(m); return !!(i&&i.busy) && !inRun(m); });
+  if(!open.length) return '';
+  return `<section class="card backto">${open.map(m=>{ const i=infoOf(m);
+    return `<div class="spread"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n} &middot; in progress</div><div class="h3">${esc(i.activeName||'Your session')}</div></div>
+      <button class="btn pri" data-a="resume" data-m="${m}" style="flex:none">Back to your session ${IC.arrow}</button></div>`; }).join('')}</section>`;
+}
+/* After the first day: the defaults the program started from, each a tap from changing. */
+function tuneCard(){
+  if(!tg.on || tg.tuned || !(tg.log||[]).some(e=>(e.parts||[]).some(p=>p[1]==='done'||p[1]==='ended'))) return '';
+  const F=[['secs','Order'],['mins','Time'],['kit','Kit'],['exp','Experience'],['days','Weekdays'],['stage','Life stage'],['screen','Health check']];
+  return `<section class="card"><div class="spread"><div class="h3">Tune your program</div><button class="tog" data-a="tune-done">Looks good</button></div>
+    <p class="hint" style="margin-top:6px">Your first day is done. Milo started from a full gym, an hour a session and some training behind you: change what doesn’t fit.</p>
+    <div class="pills" style="margin-top:10px">${F.map(([k,l])=>`<button data-a="tune-go" data-v="${k}">${l}</button>`).join('')}</div></section>`;
+}
+/* After the first session: Milo on the home screen. The browser's own prompt where there is one; in Safari on an
+   iPhone or iPad, how to do it, and why it matters there. */
+function installCard(){
+  const I=window.__install; if(!I || !I.due()) return '';
+  const ios=I.ios();
+  return `<section class="card"><div class="spread"><div class="h3">Put Milo on your home screen</div><button class="tog" data-a="inst-no">Not now</button></div>
+    <p class="hint" style="margin-top:6px">${ios? 'Tap Share, then Add to Home Screen. Safari can delete a website’s saved data after seven days of use without a visit; from the home screen, Milo keeps it. Until then, Milo asks for a backup every 7 days.'
+      : 'It opens like an app, full screen and offline.'}</p>
+    ${ios? '' : `<button class="btn pri block" data-a="inst-go" style="margin-top:10px">${IC.arrow} Install Milo</button>`}</section>`;
+}
+/* Train with no single session to show: the ones in progress, today's workout, and one section on its own. */
+function viewTrainHub(){
+  const used=ALL.filter(m=>H.has(m)||tg.secs.includes(m)||progType()===m), type=progType();
+  const open=used.filter(m=>{ const i=infoOf(m); return !!(i&&(i.open||[]).length); });
+  const run=tg.on&&tg.run, nxt=run? run.parts.findIndex(p=>p.st==='todo') : -1, W=tg.on? weekOf() : null, d=W? nextIdx(W) : -1;
+  let today='';
+  if(run && nxt>=0) today=`<button class="btn pri block" data-a="part" data-k="${nxt}">${IC.play} Start ${partName(run.parts[nxt])}</button>`;
+  else if(run) today=`<p class="lead">Today’s day is under way. Its parts are on Today.</p>`;
+  else if(type==='mix' && tg.on && d>=0) today=`<button class="btn pri block" data-a="tr-day" data-d="${d}">${IC.play} Start today’s workout: Day ${d+1}</button><p class="hint">${dayTitle(dayParts(W[d], dayInfo(d)))}</p>`;
+  else if(type!=='mix') today=`<button class="btn pri block" data-a="tr-quick" data-m="${type}">${IC.play} Start today’s workout</button>`;
+  else today=`<p class="lead">Set up your week on Today, and its workouts start here.</p>`;
+  const quick=used.filter(m=>m!==type && !(infoOf(m)||{}).busy);
+  return `<div class="stack">
+    ${open.length? `<section class="card"><div class="eyebrow">${plural(open.length,'section')} with a session open</div>${open.map(m=>{ const i=infoOf(m), n=(i.open||[]).length;
+      return `<div class="spread" style="margin-top:10px"><div style="min-width:0"><b>${esc(i.activeName||SEC[m].n)}</b><div class="hint" style="margin:2px 0 0">${SEC[m].n}${n>1? ' &middot; '+n+' open' : ''}</div></div>
+        <button class="btn pri sm" data-a="resume" data-m="${m}" style="flex:none">Resume</button></div>`; }).join('')}</section>` : ''}
+    <section class="card"><div class="eyebrow">Today</div>${today}</section>
+    ${quick.length? `<section class="card"><div class="eyebrow">Or one section on its own</div><div class="stack" style="gap:8px;margin-top:10px">${quick.map(m=>
+      `<button class="btn block" data-a="tr-quick" data-m="${m}"><span class="dot" style="background:${SEC[m].c}"></span> ${SEC[m].n} session</button>`).join('')}</div>
+      <p class="hint">Its own next session, outside your week. It still counts toward each muscle’s weekly sets.</p></section>` : ''}
+  </div>`;
+}
+/* Progress, All: one summary across everything. */
+function weekStart(){ const t=startOfToday(); return Day.add(t, -((new Date(t).getDay()+6)%7)); }
+function recsAll(){ const out=[]; ALL.forEach(m=>{ if(!H.has(m)) return; try{ const A=H.api(m); if(A&&A.recsIn) A.recsIn(0, Infinity).forEach(r=>out.push(Object.assign({m}, r))); }catch(e){} }); return out; }
+function weekCount(){
+  const R=recsAll(), ws=weekStart(), now=R.filter(r=>r.date>=ws), days=new Set(now.map(r=>Day.start(r.date))).size;
+  // weeks in a row with a session, this one counting once it has one
+  let n=0, w=now.length? ws : Day.add(ws, -7);
+  while(R.some(r=>r.date>=w && r.date<Day.add(w, 7))){ n++; w=Day.add(w, -7); }
+  return `<section class="card"><div class="spread"><div class="h3">This week</div><span class="chip">${n? plural(n,'week')+' in a row' : 'No streak yet'}</span></div>
+    <div class="row3" style="margin-top:10px"><div class="stat"><b>${now.length}</b><span>${now.length===1?'session':'sessions'}</span></div><div class="stat"><b>${days}</b><span>${days===1?'day':'days'} trained</span></div><div class="stat"><b>${R.length}</b><span>all time</span></div></div>
+    ${!R.length? `<p class="hint">Your sessions from every section count here once you finish one.</p>` : ''}</section>`;
+}
+const fmtDay=ts=>new Date(ts).toLocaleDateString(undefined,{day:'numeric', month:'short'});
+function wtxt(kg){ const lb=Prefs.get('unit','kg')==='lb'; return (lb? Math.round(kg/0.45359237) : Math.round(kg*2)/2)+(lb?' lb':' kg'); }
+function liftsCard(){
+  const S=H.has('str')? H.api('str') : null, L=H.has('lift')? H.api('lift') : null;
+  let rows=[];
+  try{ if(S&&S.points) rows=S.points(0).map(x=>({n:S.name(x.id), pts:x.pts})); }catch(e){}
+  // without Strength, Muscle's most-trained exercises
+  if(!rows.length){ try{ if(L&&L.points){ const cat={}; (L.catalog? L.catalog() : []).forEach(e=>{ cat[e.id]=e; });
+    rows=L.points(0).filter(x=>cat[x.id]&&cat[x.id].comp).map(x=>({n:cat[x.id].name, pts:x.pts})); } }catch(e){} }
+  rows=rows.filter(x=>x.pts.length>=2).sort((a,b)=>b.pts.length-a.pts.length).slice(0,6);
+  if(!rows.length) return `<section class="card"><div class="h3">Your main lifts</div><p class="lead muted" style="font-size:13px">After two sessions of a lift, its estimated max and its trend show here.</p></section>`;
+  const body=rows.map(x=>{ const P=x.pts.slice().sort((a,b)=>a.date-b.date), E=Lift.estimate(P), T=Lift.trend(P);
+    let best=0, at=0; P.forEach(p=>{ if(p.e1>best+1e-9){ best=p.e1; at=p.date; } });
+    const lo=Math.min(...P.map(p=>p.e1)), hi=Math.max(...P.map(p=>p.e1)), sp=P.slice(-12), pts=sp.map((p,i)=>`${sp.length>1? Math.round(i/(sp.length-1)*96)+2 : 50},${hi>lo? Math.round(26-(p.e1-lo)/(hi-lo)*22) : 15}`).join(' ');
+    const word={up:'rising', down:'slipping', flat:'holding', unknown:'too early to say'}[T.state]||'';
+    return `<div class="lrow"><div style="min-width:0"><b>${esc(x.n)}</b><div class="hint" style="margin:2px 0 0">${E? 'About '+wtxt(E.value) : ''}${word? ' &middot; '+word+(T.state==='up'||T.state==='down'? ' '+Math.abs(T.slope*100).toFixed(1)+'% a week' : '') : ''} &middot; record ${fmtDay(at)}</div></div>
+      <svg class="spark" viewBox="0 0 100 30" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></div>`; }).join('');
+  return `<section class="card"><div class="spread"><div class="h3">Your main lifts</div><span class="chip">Estimated max</span></div>${body}
+    <p class="hint">The estimate weighs recent sessions most. A trend needs four sessions and shows only when it’s more than day-to-day noise.</p></section>`;
+}
+function goalsCard(){
+  if(!H.has('cal')) return '';
+  let G=[]; try{ const C=H.api('cal'); G=C&&C.goals? C.goals() : []; }catch(e){}
+  if(!G.length) return '';
+  return `<section class="card"><div class="h3">Ladder goals</div>${G.map(g=>`<div class="grow"><div class="spread"><b>${esc(g.n)}</b><span class="hint" style="margin:0">${g.placed? g.pct+'%' : 'Not placed yet'}</span></div>
+    <div class="gbar" role="img" aria-label="${esc(g.n)}: ${g.placed? g.pct+'% of the way' : 'not placed yet'}"><i style="width:${g.placed? g.pct : 0}%"></i></div>${g.step? `<div class="hint" style="margin:4px 0 0">Now: ${esc(g.step)}</div>` : ''}</div>`).join('')}</section>`;
+}
+function viewProgressAll(){
+  return `<div class="stack">${weekCount()}${volCard({lift:H.has('lift')? infoOf('lift') : null})}${liftsCard()}${goalsCard()}${recoveryCard()}</div>`;
+}
+/* Library, All (and Strength): every exercise in every section, one search. A section's own library has more:
+   Muscle's filters and your own exercises, Ladder's ladders rung by rung. */
+function libRows(m){ try{ const A=H.api(m); return A&&A.lib? A.lib() : []; }catch(e){ return []; } }
+function viewLibraryAll(){
+  const Q=H.libq? H.libq() : {q:'', f:'all'}, q=(Q.q||'').toLowerCase(), f=Q.f, secs=f==='all'? ALL : [f];
+  const hit=t=>!q || String(t||'').toLowerCase().includes(q);
+  const groups=secs.map(m=>{ let items=[];
+    if(m==='cal') libRows('cal').forEach(L=>{ if(hit(L.n)) items.push({n:L.n, s:plural(L.steps.length,'rung'), a:`data-a="lib-open" data-m="cal" data-id="${esc(L.id)}"`});
+      else L.steps.forEach((st,i)=>{ if(q&&hit(st)) items.push({n:st, s:L.n, a:`data-a="lib-open" data-m="cal" data-id="${esc(L.id)}" data-i="${i}"`}); }); });
+    else libRows(m).forEach(x=>{ if(hit(x.n)||hit(x.s)||(x.chain||[]).some(hit)) items.push({n:x.n, s:x.s, a:`data-a="lib-open" data-m="${m}" data-id="${esc(x.id)}"`}); });
+    return {m, items};
+  });
+  const cap0= q? 40 : f==='all'? 8 : 200, total=groups.reduce((t,g)=>t+g.items.length,0);
+  return `<div class="stack">
+    ${groups.map(({m, items})=>`<section class="card"><div class="spread"><div class="h3" style="color:${SEC[m].c}">${SEC[m].n}</div><span class="chip">${q? items.length+(items.length===1?' match':' matches') : plural(items.length,'exercise')}</span></div>
+      ${items.length? `<div class="liblist">${items.slice(0,cap0).map(x=>`<button class="librow" ${x.a}><span><b>${esc(x.n)}</b><span>${esc(x.s)}</span></span>${IC.chev}</button>`).join('')}</div>` : `<p class="hint">${q? 'Nothing here matches.' : 'Nothing yet.'}</p>`}
+      ${items.length>cap0? `<button class="btn ghost block" data-a="lib-more" data-m="${m}">See all ${items.length}</button>` : ''}
+      <div class="row2" style="margin-top:10px"><button class="btn sm" data-a="lib-ev" data-m="${m}">${IC.book} ${SEC[m].n}’s evidence</button>${m==='str'? `<button class="btn sm ghost" data-a="lib-tools">Calculators</button>` : ''}</div></section>`).join('')}
+    ${q&&!total? `<p class="hint" style="text-align:center">No exercise matches “${esc(Q.q)}”.</p>` : ''}
+  </div>`;
+}
+/* What the shell asks of Together: its pages, the program type, opening the set-up at one question, and the section
+   running a part of today's day. */
+H.reg('mix', {
+  go(p){ page=PAGE_H[p]? p : 'today'; if(p==='today'){ offer=null; } render(); window.scrollTo(0,0); },
+  redraw(){ render(); },
+  type:progType,
+  setType(t){ if(t===progType()) return;
+    if(t==='mix'){ tg.type=null; tg.on=tg.secs.length>0; }
+    else if(ALL.includes(t)){ if(tg.run) closeRun(); tg.on=false; tg.type=t; }
+    save(); H.changed('mix'); render(); },
+  setup(field){ page='today'; if(!tg.on){ render(); return; } draft=newDraft(); tune=null; render();
+    const el=$('#su-'+field); if(!el) { window.scrollTo(0,0); return; }
+    const det=el.querySelector('details'); if(det) det.open=true;
+    el.scrollIntoView({block:'start'}); const b=el.querySelector('button,input'); if(b) b.focus({preventScroll:true}); },
+  runPart(){ const p=tg.on&&tg.run&&tg.run.parts.find(x=>x.st==='run'); return p? p.m : null; },
+  sheetOpen:()=>false,
+});
 /* A drawing error shows what went wrong, with a retry, instead of taking the whole tab down. */
 function render(){
   try{ draw(); }
@@ -14323,11 +14517,19 @@ const newDraft=()=>({secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.p
   wd:tg.wd&&tg.wd.slice(), stage:tg.stage||'', yes:tg.screen? tg.screen.yes.slice() : [], asked:!!tg.screen});
 function draw(){
   fresh(); refreshRun(); strip();
-  if(!tg.on && !draft) draft=newDraft();
   const y=window.scrollY;
-  $('#view').innerHTML= MiloSecurity.html(draft? viewSetup() : tune? (tune.pick? viewPick() : viewTune()) : viewMain());
-  $('#subtitle').innerHTML= MiloSecurity.html(tg.on&&!draft? `${rankList().map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
+  let html;
+  if(page==='train') html=viewTrainHub();
+  else if(page==='progress') html=viewProgressAll();
+  else if(page==='library') html=viewLibraryAll();
+  else { if(!tg.on && !draft && !first) first=newFirst(); if(tg.on) first=null;
+    html= draft? viewSetup() : !tg.on? viewFirst() : tune? (tune.pick? viewPick() : viewTune()) : viewMain(); }
+  $('#view').innerHTML= MiloSecurity.html(html);
+  const h=__root.querySelector('.appbar h1'); if(h) h.textContent=PAGE_H[page];
+  $('#subtitle').innerHTML= MiloSecurity.html(page==='train'? 'Your sessions' : page==='progress'? 'Every section together' : page==='library'? 'Every exercise, and the evidence'
+    : tg.on&&!draft? `${rankList().map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
   if(H.current()==='mix') window.scrollTo(0,y);
+  if(window.__routed) window.__routed('mix', page);
 }
 
 /* ==================== ACTIONS ==================== */
@@ -14335,6 +14537,44 @@ __root.addEventListener('click', e=>{
   const el=e.target.closest('[data-a]'); if(!el||el.disabled) return;
   const a=el.dataset.a, k=+el.dataset.k;
   switch(a){
+    // first run: what you train, days a week, units, then build
+    case 'f-sec': { const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'f-days': first.days=+el.dataset.v; render(); { const b=$(`[data-a="f-days"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
+    case 'f-unit': first.unit=el.dataset.v==='lb'? 'lb' : 'kg'; render(); { const b=$(`[data-a="f-unit"][data-v="${first.unit}"]`); if(b) b.focus({preventScroll:true}); } break;
+    case 'f-backup': if(window.__openSettings) window.__openSettings('restore'); break;
+    case 'f-go': { const f=first; if(!f||!f.secs.length) break;
+      if(tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
+      tg.secs=f.secs.slice(); tg.days=f.days; tg.mins=60; tg.prio=autoOrder(ALL, skillGoal()).slice(); tg.on=true; tg.type=null;
+      tg.kit=null; tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
+      Prefs.set({unit:f.unit, kit:KIT.map(k=>k[0])});
+      first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Your week is built. Day 1 is ready.'); break; }
+    // the one-tap check-in
+    case 'ci-q': { const q=QUICK.find(x=>x[0]===el.dataset.v); if(!q) break;
+      const rec={day:startOfToday(), at:Date.now(), w:{}, sore:{}, x:{}, cw:2, quick:q[0]}; WELL.forEach(([k])=>{ rec.w[k]=q[2]; });
+      tg.checkins=(tg.checkins||[]).filter(c=>c.day!==rec.day).concat([rec]).sort((a,b)=>a.day-b.day).slice(-400);
+      save(); render(); toast('Check-in saved'); break; }
+    // the health check offered once before Day 1
+    case 'o-q': { const v=+el.dataset.v, y=offer.yes, i=y.indexOf(v); if(i>=0) y.splice(i,1); else y.push(v); render(); { const b=$(`[data-a="o-q"][data-v="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'o-start': case 'o-skip': { const d=+el.dataset.d;
+      if(a==='o-start') tg.screen={at:Date.now(), yes:offer.yes.slice().sort((x,z)=>x-z), blk:screenBlk()};
+      tg.offered=true; offer=null; save(); startDay(d); break; }
+    case 'tune-go': if(H.dest) H.dest('today'); page='today'; { const A=H.api('mix'); if(A) A.setup(el.dataset.v); } break;
+    case 'tune-done': tg.tuned=true; save(); render(); break;
+    case 'inst-go': if(window.__install) window.__install.prompt().then(()=>render()); break;
+    case 'inst-no': if(window.__install) window.__install.dismiss(); render(); break;
+    // Train, Progress and Library
+    case 'resume': { const m=el.dataset.m, api=H.api(m); if(!api) break; const p=tg.on&&tg.run&&tg.run.parts.find(x=>x.m===m&&x.st==='run');
+      api.open(); if(p) H.away(m,'run'); else H.go(m); break; }
+    case 'tr-day': page='today'; render(); { const b=$(`[data-a="start-day"][data-d="${el.dataset.d}"]`); if(b&&!b.disabled) b.click(); else window.scrollTo(0,0); } break;
+    case 'tr-quick': { const m=el.dataset.m, api=H.api(m); if(!api) break; const i=api.info();
+      if(i.busy){ api.open(); H.go(m); break; }
+      const id= i.ready&&api.start? api.start() : (api.quick? (api.quick(), 'quick') : null);
+      if(id){ api.open&&id!=='quick'&&api.open(); H.go(m); } else { H.go(m); if(api.setup) api.setup(); } break; }
+    // a how-to or the evidence opens in its section; closing it comes back here
+    case 'lib-open': { const m=el.dataset.m, api=H.api(m); if(!api||!api.howto) break; H.away(m,'rec'); api.howto(el.dataset.id, el.dataset.i!=null? +el.dataset.i : null); break; }
+    case 'lib-ev': { const m=el.dataset.m, api=H.api(m); if(!api||!api.evidence) break; H.away(m,'rec'); api.evidence(); break; }
+    case 'lib-tools': { const api=H.api('str'); if(api){ H.go('str'); api.go('tools'); } break; }
+    case 'lib-more': if(H.filter) H.filter('library', el.dataset.m); break;
     case 'd-sec': { const m=el.dataset.m, s=draft.secs; draft.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); break; }
     case 'd-days': draft.days=+el.dataset.v; draft.wd=null; render(); break;
     // your weekdays: tap to train on one or not; the number of days follows, two at least
@@ -14365,6 +14605,7 @@ __root.addEventListener('click', e=>{
       tune=null; save(); render(); window.scrollTo(0,0);
       toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.${open.length? ' '+listText(open)+' is still open: finish or end it there.' : ''}` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, true); break; }
     case 't-cancel': tune=null; render(); window.scrollTo(0,0); break;
+    case 't-discard': tune.T=cleanTune(tg.tune); render(); { const b=$('[data-a="t-save"],[data-a="t-cancel"]'); if(b) b.focus({preventScroll:true}); } break;
     case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, day:null, y:window.scrollY}; render(); pickTop(); break;
     case 't-day': { const K=tune.pick; K.day=+el.dataset.d; K.q=''; K.dy=window.scrollY; render(); pickTop(); break; }
     case 't-day-cancel': { const K=tune.pick, d=K.day; K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
@@ -14444,14 +14685,17 @@ __root.addEventListener('click', e=>{
         tg.screen= was&&was.yes.join()===yes.join()? was : {at:Date.now(), yes, blk:screenBlk()}; }
       Prefs.set({kit:tg.kit||KIT.map(k=>k[0])});
       if(changed){ tg.custom=null; tg.next=(tg.next||0)%tg.days; }
-      // a set-up that changes what the program is built from starts a new block, so it opens for you to customize
-      draft=null; if(baseSig()!==was) tune={T:cleanTune(tg.tune), fresh:true, setup:true};
-      save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(tune? 'Your week is built. Customize this block, then start it.' : 'Saved'); break;
+      // a set-up that changes what the program is built from starts a new block; customizing it is a link on Today
+      const rebuilt=baseSig()!==was; draft=null;
+      save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(rebuilt? 'Your week is built. Customize this block from Your program, or start Day 1.' : 'Saved'); break;
     }
     case 'd-cancel': draft=null; render(); break;
     case 'd-stop': remember('Together stopped'); tg.on=false; tg.run=null; draft=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Stopped. Each trainer carries on by itself.', true); break;
     case 'edit': draft=newDraft(); render(); window.scrollTo(0,0); break;
-    case 'start-day': startDay(+el.dataset.d); break;
+    case 'start-day': { const d=+el.dataset.d;
+      // before the very first workout, the health check is offered once (optional, about 30 seconds)
+      if(!tg.screen && !tg.offered){ offer={d, yes:[]}; render(); { const o=$('#offer'); if(o){ o.scrollIntoView({block:'nearest'}); const b=o.querySelector('button'); if(b) b.focus({preventScroll:true}); } } break; }
+      startDay(d); break; }
     case 'part': startPart(k); break;
     case 'skip': if(tg.run&&tg.run.parts[k]){ const n=partName(tg.run.parts[k]); remember(n+' skipped on Day '+(tg.run.day+1)); tg.run.parts[k].st='skip'; save(); render(); toast(n+' skipped.', true); } break;
     case 'unskip': if(tg.run&&tg.run.parts[k]){ tg.run.parts[k].st='todo'; save(); render(); } break;
@@ -14572,10 +14816,30 @@ render();
      section starts, so a section's pending save can't write old data over it. */
   const BK_APP='milovancroton', BK_PENDING='milo.restore', BK_ERASE='milo.erase';
   const BK_STAMP='milo.backup', BK_SINCE='milo.since', BK_BEFORE='milo.before', BK_ASKED='milo.persist';
-  const DAY=864e5, DUE_AFTER=14*DAY;
+  const DAY=864e5;
+  /* ---- Installing Milo ----
+     After the first finished session Today offers it: the browser's own install prompt where there is one
+     (beforeinstallprompt), and in Safari on an iPhone or iPad the Share, Add to Home Screen steps. Safari can delete a
+     website's saved data after seven days of use without a visit, so there, until Milo is installed, a backup is due
+     every 7 days instead of 14. */
+  const UA=navigator.userAgent||'', IOS=/iP(hone|ad|od)/.test(UA) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const SAFARI=/^((?!chrome|android|crios|fxios|edgios|opr).)*safari/i.test(UA);
+  const standalone=()=>{ try{ return navigator.standalone===true || matchMedia('(display-mode: standalone)').matches; }catch(e){ return false; } };
+  const dueAfter=()=> SAFARI && !standalone()? 7*DAY : 14*DAY;
+  let installEv=null;
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installEv=e; try{ if(apis.mix&&apis.mix.redraw&&active==='mix') apis.mix.redraw(); }catch(_){} });
+  window.addEventListener('appinstalled', ()=>{ installEv=null; try{ localStorage.setItem('milo.install','done'); }catch(e){} });
+  window.__install={
+    ios:()=>IOS && SAFARI,
+    due(){ if(standalone()||!hasHistory()) return false; try{ if(localStorage.getItem('milo.install')) return false; }catch(e){} return !!installEv || (IOS&&SAFARI); },
+    async prompt(){ const e=installEv; if(!e) return false; installEv=null;
+      try{ e.prompt(); const c=await e.userChoice; if(c&&c.outcome==='accepted') localStorage.setItem('milo.install','done'); }catch(_){} return true; },
+    dismiss(){ try{ localStorage.setItem('milo.install', String(Date.now())); }catch(e){} },
+  };
   /* Keys that are the shell's own notes, and copies kept for taking a step back, never go into a backup. */
   function snapshot(){ return MiloSecurity.snapshot(localStorage); }
   function toast(t, ms){ const d=document.createElement('div'); d.className='shtoast'; d.setAttribute('role','status'); d.textContent=t;
+    try{ if(active && routes[active]==='train') d.classList.add('top'); }catch(e){}
     document.body.appendChild(d); setTimeout(()=>d.remove(), ms||3200); }
   window.__toast=toast;
   function note(k){ try{ const n=+localStorage.getItem(k); return n>0? n : 0; }catch(e){ return 0; } }
@@ -14609,7 +14873,7 @@ render();
     if(!hasHistory()) return 0;
     let since=note(BK_SINCE); if(!since){ since=Date.now(); try{ localStorage.setItem(BK_SINCE,String(since)); }catch(e){} }
     const ref=Math.max(since, lastBackupAt());
-    return Date.now()-ref>DUE_AFTER? ref : 0;
+    return Date.now()-ref>dueAfter()? ref : 0;
   }
   function paintNudge(){
     const b=document.getElementById('bkbtn'), ref=overdue();
@@ -14768,7 +15032,7 @@ render();
     if(SEC_N[part]) setOpen[part]=true;
     paintSet(); setFor=part||null;
     if(bk.showModal){ if(!bk.open) bk.showModal(); } else bk.setAttribute('open','');
-    const at= part==='data'? document.getElementById('bk-title') : SEC_N[part]? setBody.querySelector('[data-g="'+part+'"] summary') : null;
+    const at= part==='data'? document.getElementById('bk-title') : part==='restore'? document.getElementById('bk-in') : SEC_N[part]? setBody.querySelector('[data-g="'+part+'"] summary') : null;
     if(at){ at.scrollIntoView({block:'start'}); at.focus({preventScroll:true}); } else { bk.scrollTop=0; document.getElementById('set-title').focus({preventScroll:true}); }
   }
   function openBackup(){ openSheet('data'); }
@@ -14953,9 +15217,11 @@ render();
      to its own Today (after a session ends, say) brings Together's Today back, once any sheet it opened is closed. */
   window.__routed=function(m, r){
     routes[m]=r;
+    // during a session toasts go to the top, clear of the set rows
+    const h=hostOf(m); if(h) h.classList.toggle('training', r==='train');
     if(routing || m!==active) return;
     const d=destOf(m, r);
-    if(m!=='mix' && d==='today' && r==='today' && progType()!==m){
+    if(m!=='mix' && d==='today' && r==='today' && progType()!==m && !(back&&back.m===m)){
       const A=apis[m]; if(A&&A.sheetOpen&&A.sheetOpen()){ homeAfter=m; return; }
       setTimeout(()=>{ if(active===m && routes[m]==='today' && !(apis[m].sheetOpen&&apis[m].sheetOpen())) goDest('today', {focus:false}); }, 0); return; }
     if(d!==dest){ dest=d; paintNav(); } else if(dest==='today') paintSub();
@@ -15024,7 +15290,8 @@ render();
      finishing a session started there (kind 'run'), comes back to Together where you were. */
   let back=null;
   function away(m, kind){ const y= active==='mix'? window.scrollY : null; let act0=null; try{ const i=hubApi(m).info(); act0=i&&i.busy? i.activeId : null; }catch(e){}
-    show(m); back={m, kind, y, act0}; keepBack(); }
+    const d= active==='mix'? (routes.mix||'today') : dest;
+    show(m); back={m, kind, y, act0, d}; keepBack(); }
   /* Continue on a session opened from Together picks it back up in its own section: you stay there to train it,
      and finishing or leaving it comes back to Together, as with a session started there. */
   function stay(m){ if(back&&back.m===m){ back.kind='run'; keepBack(); } }
@@ -15041,7 +15308,7 @@ render();
       back=null; keepBack();
       // a part of a Together day finished: the next part starts straight away, so the day runs as one session
       if(b.kind==='run' && why!=='left' && window.__hub.advance && window.__hub.advance(m)) return;
-      goDest('today'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
+      goDest(b.kind==='rec'&&DESTS.includes(b.d)? b.d : 'today'); if(b.y!=null) window.scrollTo(0,b.y); }, 80);
   }
   /* Muscles a Strength or Ladder set counts toward. Muscle's own table wins when it has the same exercise;
      otherwise the Strength area or the Ladder progression decides. [primary, secondary] */
@@ -15107,6 +15374,8 @@ render();
     go(m){ if(m==='mix'){ show('mix'); apiGo('mix','today'); } else show(m); },
     dest:goDest, type:progType, libq:()=>({q:libQ, f:filt.library}), filter(d, f){ if(FILTERS.includes(f)&&filt[d]){ filt[d]=f; goDest(d); } },
     away, stay, closed(m){ checkBack(m,'closed'); }, left(m){ checkBack(m,'left'); },
+    // the finish screen's Next button: on to the next part of today's day, or back to Today
+    next(m){ back=null; keepBack(); if(!(window.__hub.advance && window.__hub.advance(m))) goDest('today'); },
     current(){ return active; },
   };
 

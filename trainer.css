@@ -539,3 +539,6 @@ button.dchip {min-height:36px}
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after {animation:none!important; transition:none!important; scroll-behavior:auto!important}
 }
+
+/* During a session toasts sit at the top, clear of the set rows and the Done button. */
+:host(.training) #toast,:host(.training) .toast {top:calc(var(--shell-top,64px) + 10px); bottom:auto}

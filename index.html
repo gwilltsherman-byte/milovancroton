@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=' 'sha256-TwtX4901UCKqrbIIRDGExcTUIT3DeC3ondKSuKqpCQU='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=' 'sha256-G0SxQnbaLPbW1++7v9AyS8UgxjisMqeRj2aJvHs73SA='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -2261,6 +2261,30 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 .toast .tundo{flex:none; display:inline-flex; align-items:center; gap:5px; color:inherit; font:inherit; font-weight:800; padding:6px 8px; margin:-6px -8px -6px 0;
   background:none; border:0; border-radius:8px; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
 .toast .tundo svg{width:15px; height:15px}
+.btn.big{min-height:56px; font-size:16.5px}
+/* Today, Train, Progress and Library pages Together draws for the one app */
+.ciline .pills button{min-height:44px; min-width:64px}
+.ciline .spread{flex-wrap:wrap}
+.backto .spread+.spread{margin-top:12px}
+.first .pick{min-height:56px}
+.stat{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:12px; background:var(--well,var(--surface)); border:1px solid var(--border)}
+.stat b{font:800 22px/1.1 Archivo,"Public Sans",system-ui,sans-serif}
+.stat span{font-size:12px; color:var(--muted)}
+.lrow{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--border)}
+.lrow:first-of-type{border-top:0}
+.spark{width:96px; height:30px; flex:none; color:var(--gold)}
+.grow{padding:10px 0; border-top:1px solid var(--border)}
+.grow:first-of-type{border-top:0}
+.gbar{height:8px; border-radius:99px; background:var(--border); overflow:hidden; margin-top:6px}
+.gbar i{display:block; height:100%; background:#F2C14E; border-radius:99px}
+.liblist{display:grid; gap:6px; margin-top:10px}
+.librow{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:52px; width:100%; padding:8px 12px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--ink); text-align:left; font:inherit; cursor:pointer}
+.librow>span{display:flex; flex-direction:column; gap:2px; min-width:0}
+.librow b{font-size:14.5px; overflow-wrap:anywhere}
+.librow span span{font-size:12px; color:var(--muted)}
+.librow svg{width:16px; height:16px; flex:none; color:var(--muted)}
+.librow:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.btn .dot{width:10px; height:10px; border-radius:50%; flex:none}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 /* iPhones zoom the page when a field smaller than 16px is focused. Pinch zoom is allowed now, so keep fields at 16px there. */
 /* No double-tap zoom: a quick second tap (on +30s, a set button, a plus) should be a tap, not a zoom. Pinch zoom stays.
@@ -2293,7 +2317,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=87c787b298661d4f7501" integrity="sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=4f0b57e3dd355022aaad" integrity="sha256-TwtX4901UCKqrbIIRDGExcTUIT3DeC3ondKSuKqpCQU=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=1b44b14276da2cf6d6d7" integrity="sha256-G0SxQnbaLPbW1++7v9AyS8UgxjisMqeRj2aJvHs73SA=" crossorigin="anonymous"></script>
 </body>
 </html>
 
