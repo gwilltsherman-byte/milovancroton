@@ -13300,7 +13300,8 @@ window.MiloData=(function(){
       .map(k=>({n:T&&T.muscles[k]? T.muscles[k].n : k, sets:t.direct[k]})); }catch(e){ console.warn('summary: sets not counted', e); }
     try{ const c=api('cal'); if(c&&c.goals) goals=c.goals(); }catch(e){}
     try{ if(L) L.catalog().forEach(e=>{ cat[e.id]={comp:e.comp, bw:e.equipment==='Bodyweight', p:e.p}; }); }catch(e){}
-    const info={lift:id=>cat[id]||null, str:id=>{ const a=api('str'), l=a&&a.lift? a.lift(id) : null; return l? {n:l.n, k:l.k, e1:l.e1} : null; }};
+    // (once a lift: Strength works its estimated max out from all its sessions)
+    const lifts={}, info={lift:id=>cat[id]||null, str:id=>{ if(id in lifts) return lifts[id]; const a=api('str'), l=a&&a.lift? a.lift(id) : null; return lifts[id]= l? {n:l.n, k:l.k, e1:l.e1} : null; }};
     return D.coach(saved(), now, {unit:unit(), muscles, goals, info, names});
   }
   $('yd-sum').addEventListener('click',()=>{
