@@ -145,7 +145,10 @@ button,a,input,textarea{touch-action:manipulation}
 @media(max-width:999px){#main{padding-bottom:0}.tgstrip{bottom:calc(80px + env(safe-area-inset-bottom,0px))}}
 /* While a session is in its focus mode the frame steps back: no header, no navigation. */
 .focus-mode .shellbar,.focus-mode .sidebar,.focus-mode .subnav{display:none!important}
-.focus-mode #main{margin-left:0}
+/* The hidden header must not take the installed iPhone's safe area with it. */
+.focus-mode #main{margin-left:0;padding:var(--shell-safe-top) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+/* Keep scrolling workout text behind a solid status-area background. */
+html.focus-mode::before{content:"";position:fixed;inset:0 0 auto;height:var(--shell-safe-top);background:var(--sh-bg);z-index:60;pointer-events:none}
 /* Settings: one sheet, in groups that open out. */
 .bk.set{width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 24px)}
 .set .grp{border-top:1px solid var(--sh-border);padding:4px 0}

@@ -652,8 +652,8 @@ button.dchip {min-height:36px}
 progress {display:block;width:100%;height:10px;accent-color:var(--accent);margin:6px 0;max-width:100%}
 #cond-form input,#cond-form select,#goal-form input,#goal-form select,[data-cond-setting] {width:100%;min-width:0;max-width:100%;min-height:44px;background:var(--card);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:10px;font:inherit}
 
-:host(.session-running) header,:host(.session-running) #tabbar {display:none!important}
-:host(.session-running) main {padding-top:16px}
+:host(.session-running) .appbar,:host(.session-running) #tabbar {display:none!important}
+:host(.session-running) #view {padding-top:16px}
 :host(.session-running) .sheet {left:0}
 :host(.session-running) .scrim {padding-left:0}
 :host(.session-running) .toast {left:50%;top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto;max-width:calc(100vw - 32px)}
