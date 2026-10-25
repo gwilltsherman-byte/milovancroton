@@ -297,6 +297,40 @@
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
       root.querySelector('[data-a="t-new"]').click(); await pause(150); root.querySelector('[data-a="t-save"]').click(); await pause(300);
       check(saved().plan.days.some(d=>d.lift.some(x=>x.exId===alt.id && x.mu===x0.mu)), 'a new block picks the exercise you have logged for a muscle, so its weights carry on'); }
+    // the set-up asks for your weekdays, an optional life stage and a short health check; each day shows the stop signs,
+    // the check-in asks whether you are unwell, and a sore joint offers a gentler swap
+    { frame.remove(); frame=null; reset({'milo.persist':'1'});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      const tap=async sel=>{ root.querySelector(sel).click(); await pause(120); };
+      await tap('[data-a="d-sec"][data-m="str"]'); await tap('[data-a="d-days"][data-v="2"]');
+      await tap('[data-a="d-wd"][data-v="3"]');
+      check(root.querySelectorAll('[data-a="d-wd"].on').length===2, 'two training days a week at least');
+      for(const v of [5,0,6,3]) await tap(`[data-a="d-wd"][data-v="${v}"]`);
+      check(root.querySelector('[data-a="d-days"][data-v="2"]').classList.contains('on'), 'the number of days follows the weekdays you tap');
+      await tap('[data-a="d-stage"][data-v="older"]'); await tap('[data-a="d-q"][data-v="0"]');
+      check(root.textContent.includes('Check with a doctor or physio'), 'a yes on the health check suggests seeing a professional, without blocking anything');
+      await tap('[data-a="d-save"]'); await tap('[data-a="t-save"]');
+      const t=saved();
+      check(t.days===2 && t.wd.join()==='5,6' && t.stage==='older' && t.screen.yes.join()==='0', 'weekdays, life stage and the health check are kept');
+      check(root.textContent.includes('Sat and Sun') && root.textContent.includes('This block stays gentle'), 'back-to-back weekdays are named, and the block stays gentle');
+      check(!!root.querySelector('.redflag') && root.querySelector('.redflag').textContent.includes('chest pain'), 'the day shows when to stop and get help');
+      await tap('[data-a="ci-ill"][data-v="sick"]');
+      check(!root.querySelector('#cisave').disabled, 'Unwell today is enough for a check-in');
+      await tap('[data-a="ci-pain"][data-v="1"]'); await tap('[data-a="ci-add-pain"][data-k="back"]'); await tap('#cisave');
+      check(saved().checkins.slice(-1)[0].ill==='sick' && root.textContent.includes('rest today'), 'a fever or symptoms below the neck suggest rest');
+      const sw=root.querySelector('[data-a="swap-yes"]');
+      check(!!sw && /instead of/.test(sw.closest('.note').textContent), 'a sore lower back offers a gentler swap for the day');
+      sw.click(); await pause(200);
+      check(saved().swap && saved().swap.ids.length>0 && !root.querySelector('[data-a="swap-yes"]'), 'the swap is taken for today');
+      // a yes given mid-block, in a save that also starts a new block: that block ends and counts, and the new one is gentle
+      const mid=saved(), now=Date.now(); mid.screen=null; mid.blocks=0; mid.plan.at=now-3*86400000;
+      mid.log=[{date:now-3600000, start:now-7200000, day:0, parts:[['str','done','x1']]}];
+      frame.remove(); frame=null; localStorage.setItem('trainer.together', JSON.stringify(mid));
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      await tap('[data-a="edit"]'); await tap('[data-a="d-days"][data-v="3"]'); await tap('[data-a="d-q"][data-v="0"]');
+      await tap('[data-a="d-save"]'); await tap('[data-a="t-save"]');
+      const t2=saved();
+      check(t2.blocks===1 && t2.screen.blk===1 && t2.plan.week===1 && root.textContent.includes('This block stays gentle'), 'a yes given with a change that starts a new block makes that new block gentle'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;
