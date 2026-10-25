@@ -1,37 +1,39 @@
-# Ladder progression and evidence
+# Ladder progression
 
-The catalog now separates related progressions from movement alternatives. Weighted pulling and one-arm pulling have different paths; hip extension and Nordic knee flexion are separate; ring dips, straight-bar dips and front-lever rows can train alongside a main skill. Assisted movements, support heights and shorter levers bridge larger jumps.
+Ladder separates goals, supporting movements and movement alternatives. A place in a progression is not proof that every earlier standard has been met.
 
-## How readiness is established
+## Log the actual movement
 
-- Record the actual reps or seconds. Form is assumed clean unless you clear the box. Logging a blank set records the target it shows.
-- Setup (load, assistance, height, range or leverage) is not measured. Sets of the same movement count together whatever setup was used.
-- Repeat the current target on two distinct training days within 42 days, then check the actual next movement with control. Entry checks usually use three reps or five seconds, bounded by the exercise target.
-- Goals and supporting standards require the exact exercise and value. A later position in a path never substitutes for an earlier 12-rep or 60-second standard.
-- Recent proof and specific user confirmations are considered for 90 days. After a layoff, reconfirm the standard. Existing achieved goals and all historical records are retained.
+Record reps or seconds and whether form stayed clean. An untouched set can accept the displayed target; change it when performance differs. Unilateral movements record each side, and the weaker side governs completion.
 
-These counts and time windows are conservative product defaults based on coaching judgment. Research does not validate them as universal readiness thresholds or guarantee acquisition of the next skill. Body proportions, training history, technique and recovery affect progression.
+Setup matters. Record load, assistance and strict, assisted or lowering-only execution where available. A harder-looking movement with assistance does not automatically prove an unassisted standard.
 
-## Training toward a goal
+Muscle logs contribute volume and recovery context. They do not certify Ladder readiness or complete a goal merely because the exercise names match.
 
-Prescribed targets can grow by one rep or five seconds after two successful days, up to the relevant goal or supporting standard. This allows a 15-second handstand practice target to develop toward a 30-second goal or 60-second supporting standard.
+## Build repeatable performance
 
-Change one demand gradually. Reduce assistance or starting height where appropriate, or increase load, controlled range or leverage. Keep the movement controllable. The same approach continues at the final step.
+Rep prescriptions use ranges and reps in reserve. Hold work uses measured seconds; balance work can use timed practice blocks. Targets grow as repeatable performance supports them.
 
-Volume days use explicitly related movements, not whichever exercise happens to precede one in the catalog. Unmet earlier standards remain scheduled even if placement is farther along. Completed supporting qualities receive rotating maintenance. Balance and power practice come before demanding strength work; brief balance practice can be frequent, while challenging planche and lever work still needs recovery.
+Readiness uses the exact movement, target and qualifying setup. Repeated clean days lead to a controlled check of the next movement, rather than automatic advancement through every prerequisite.
 
-## Compatibility
+The default progression window is 42 days. Recent proof and specific confirmations are considered within 90 days. Returning after a break can require a fresh check; old history and achieved goals remain recorded.
 
-Existing exercise IDs and numeric rung indices are unchanged. New exercises are appended, and routes reference exercise IDs. Workouts, open sets, active sessions, custom ladders and backups retain their existing identities. Old logs remain visible, but records without explicit form confirmation do not certify new readiness. Users can confirm a specific current standard or perform a fresh check.
+Entry checks are movement-specific: normally about 40% of the target, capped at three reps or five seconds. First-repetition steps ask for one. Read the actual movement’s requirement.
 
-## Research supporting the design
+## Space demanding work
 
-- [ACSM 2026 position stand](https://pubmed.ncbi.nlm.nih.gov/41843416/): general resistance-training evidence supports individualized loading and bodyweight training. It does not validate advanced calisthenics paths or this app's numerical gates.
-- [Kotarsky et al. 2018](https://pubmed.ncbi.nlm.nih.gov/29466268/): a small, short trial supports strength gains from progressive push-up variations, with task-specific improvement. It does not establish transfer between every exercise here.
-- [Sánchez-Moreno et al. 2020](https://pubmed.ncbi.nlm.nih.gov/32213783/): a pull-up trial in trained men supports preserving repetition quality rather than maximizing fatigue. Velocity loss is not interchangeable with an exact reps-in-reserve prescription.
-- [Burrows et al. 2020](https://pubmed.ncbi.nlm.nih.gov/32569123/): assisted Nordic mechanics support assistance as a scalable training tool. Muscle activity measurements alone do not prove long-term strength transfer or a fixed advancement threshold.
-- [Lanza et al. 2019](https://pubmed.ncbi.nlm.nih.gov/31522276/): an isometric knee-extension experiment supports angle-specific adaptation. Applying that principle to levers and planches is an informed extrapolation.
+Demanding straight-arm, wrist and Nordic work has spacing constraints. Pain can hold or change work. Skills and power come before fatiguing strength work; long stretches come later.
 
-## Verification
+Supporting standards remain scheduled when needed, including earlier standards not yet demonstrated. Maintenance work rotates after supporting qualities are established.
 
-Run `node --test tests/*.test.cjs`, then `node tools/update-integrity.cjs` and `node tools/update-integrity.cjs --check`. Serve locally and open `tests/browser.html` and `tests/ladder-browser.html`. The Ladder browser fixture uses an isolated test origin, verifies controls at phone width, and restores the original Ladder save after finishing.
+## Interpret the gates
+
+These windows, counts and entry gates are coaching defaults. They are not validated universal thresholds or guarantees that the next skill is safe. Technique, body proportions and prior training affect transfer.
+
+Exercise-specific evidence and limitations are available from Library. Evidence for general resistance training does not validate every advanced calisthenics path.
+
+## Compatibility and checks
+
+Stable exercise IDs and legacy rung indices remain supported. New setup fields are additive. Unknown old setup does not silently become proof of a demanding current standard.
+
+Run `node --test tests/ladder.test.cjs tests/engine.test.cjs`, then the full browser suite. Ladder tests cover setup-qualified proof, legacy saves, goal standards, hold timing and unilateral work.

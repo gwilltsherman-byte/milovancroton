@@ -17,10 +17,10 @@ window.MiloDesign = {
   role(m){
     let t=null; try{ t=JSON.parse(localStorage.getItem('trainer.together')||'null'); }catch(e){}
     if(!(t&&t.on&&Array.isArray(t.secs)&&t.secs.includes(m))) return '';
-    const R={lift:'Together plans your muscle work and starts it from there. Here you see each muscle&rsquo;s weekly sets, how your exercises are progressing and how to do them, and a block of your own is here if you want to train muscle alone.',
-      str:'Together plans your heavy lifting and starts it from there. Here you keep your lifts: estimated maxes, records, plate maths and the evidence, and a program of your own is here if you want to train strength alone.',
-      cal:'Together trains toward the goals you choose here. Here you pick and track goals, see your rungs and take progress tests, and Ladder&rsquo;s own sessions are here if you want to train skills alone.'};
-    return R[m]? `<section class="tg-role"><p><b>Part of your Together program.</b> ${R[m]}</p><button class="tinybtn" data-go="mix">Open Together <span aria-hidden="true">&rarr;</span></button></section>` : '';
+    const R={lift:'Your muscle work and records. Your combined plan lives in Today.',
+      str:'Your lifts and records. Your combined plan lives in Today.',
+      cal:'Your goals, rungs and tests. Your combined plan lives in Today.'};
+    return R[m]? `<section class="tg-role"><p>${R[m]}</p><button class="tinybtn" data-go="mix">Open Together <span aria-hidden="true">&rarr;</span></button></section>` : '';
   },
   decorate(root, route, history) {
     const view=root.getElementById('view'); if(!view||!view.dataset) return;
@@ -1990,7 +1990,7 @@ window.MiloSession=(()=>{
     }
     const day=dayName(st.active);
     view.innerHTML=MiloSecurity.html(`<div class="session-top"><button class="btn ghost" data-session="list">List</button><div><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${esc(elapsed(st.active))}</span></div><button class="btn primary" data-act="finish">Finish</button></div>
-      <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
+      <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<p class="hint">${detail.effort==='rpe'?'RPE: effort from 1–10; 8 means about 2 reps left.':'RIR: reps left in the tank.'}</p><div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
       <section class="session-rest" hidden><h2>Rest</h2><div class="session-clock" role="timer" aria-label="Rest remaining"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="session-track" cx="50" cy="50" r="45"/><circle data-session-arc cx="50" cy="50" r="45"/></svg><span data-session-time></span></div><p>Next: ${esc(name)}${setText?' · '+esc(setText):''}</p><div class="session-rest-actions"><button class="btn ghost" data-session="add">+30 s</button><button class="btn primary" data-session="skip">Skip rest</button></div></section></div>`);
     plates(c); effort(c); tick(c);
     const restore=find(root,old)||view.querySelector('.session-rest:not([hidden]) button, .session-card:not([hidden]) .session-step input, .session-done');
@@ -13975,8 +13975,8 @@ function heroNext(W){
     <div class="spread"><span class="eyebrow">Next up &middot; Day ${d+1} of ${D}</span>${ready?`<span class="chip">${IC.clock} about ${r5(P.mins)} min</span>`:''}</div>
     <div class="h2">${dayTitle(order)}</div>
     ${offer&&offer.d===d? offerHtml(d) : `<div style="margin-top:12px"><button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button></div>`}
-    ${ready? `<p class="hint" style="margin:8px 0 0">Warm up first: about 5 minutes of easy movement. Each part adds its own ramp-up sets.</p>` : ''}
-    <div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div>
+    ${ready? `<p class="hint" style="margin:8px 0 0">Warm up: 5 easy minutes, then the prescribed warm-up sets.</p>` : ''}
+    <details class="rules copyfold" data-fold="workout"><summary>Workout details</summary><div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div></details>
     ${dayExtras(W, d, order, I).concat(dayNotes(order, I, P, C)).map(note).join('')}
     ${RED_FLAGS}
     <div class="row2"><button class="tog ${tg.short?'on':''}" data-a="short" aria-pressed="${tg.short?'true':'false'}">${IC.clock} Short on time</button>
@@ -14142,7 +14142,7 @@ function programCard(){
     <div class="row3"><button class="tog" data-a="w-prev" ${wk<=1?'disabled':''} aria-label="Back to week ${Math.max(1,wk-1)}">${IC.back} Week ${Math.max(1,wk-1)}</button>
       <button class="tog" data-a="w-again" aria-label="Start week ${wk} again">${IC.undo} Restart</button>
       <button class="tog" data-a="w-next" aria-label="${last? 'Skip to a new block' : 'Skip to week '+(wk+1)}">${last? 'New block' : 'Week '+(wk+1)} ${IC.chev}</button></div>
-    <p class="hint">Missed some days? Starting the week again usually beats skipping ahead: a week or two off costs little muscle or strength, and each week asks a little more than the last.${tg.run? ' Moving the week ends today’s day first.' : ''}</p>`}</section>`;
+    <p class="hint">Missed days? Restart the week. A short break usually costs little muscle or strength.${tg.run? ' Moving the week ends today’s day first.' : ''}</p>`}</section>`;
 }
 /* What you changed for this block, in a line. */
 function tuneLine(P){
@@ -14286,14 +14286,14 @@ function viewSetup(){
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tg.on?'Change the set-up':'Your program'}</div>
     <div class="h2">${tg.on?'What you train':'What do you want to train?'}</div>
-    <p class="lead">Pick one or more and rank them. Together builds one week from that: the right dose of each, sessions that fit your time, and one count of hard sets for every muscle. It uses your numbers from each trainer, never their own plans, and the trainers you pick appear as tabs.</p>
+    <p class="lead">Pick what you train and rank it. Your priorities set the dose; your weekdays and time shape the schedule.</p>
     <div class="field" id="su-secs"><label>Train</label>
       ${CHOICES.map(m=>`<button class="pick ${d.secs.includes(m)?'on':''}" data-a="d-sec" data-m="${m}" aria-pressed="${d.secs.includes(m)?'true':'false'}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
         <span class="pt2"><b>${SEC[m].n}</b><span>${statusLine(m)}</span></span></button>`).join('')}</div>
     ${prioField(d)}${conditioningFields(d)}
     <div class="field" id="su-days"><label>Days a week you can train</label><div class="pills">${[2,3,4,5,6,7].map(n=>`<button class="${d.days===n?'on':''}" data-a="d-days" data-v="${n}">${n}</button>`).join('')}</div>
       <div class="pills" role="group" aria-label="Which days" style="margin-top:8px">${WD.map((w,i)=>{ const on=dWd(d).includes(i); return `<button class="${on?'on':''}" data-a="d-wd" data-v="${i}" aria-pressed="${on}" aria-label="${WD_N[i]}">${w}</button>`; }).join('')}</div>
-      <p class="hint" style="margin-top:6px">Tap the days you can train. Together spaces the hard work over them: heavy squats and hinges 48 hours apart, and straight-arm skills too.</p></div>
+      <p class="hint" style="margin-top:6px">Choose your weekdays. Heavy leg work and demanding skills are spaced where possible.</p></div>
     <div class="field" id="su-mins"><label>Time for one session</label><div class="pills">${[[45,'45 min'],[60,'60 min'],[75,'75 min'],[90,'90 min'],[0,'No limit']].map(([v,l])=>`<button class="${d.mins===v?'on':''}" data-a="d-mins" data-v="${v}">${l}</button>`).join('')}</div></div>
     ${d.secs.includes('str')||d.secs.includes('lift')? `<div class="field" id="su-kit"><label id="kit-l">What you can train with</label><div class="pills" role="group" aria-labelledby="kit-l">${KIT.map(([k,l])=>`<button class="${dk.includes(k)?'on':''}" data-a="d-kit" data-v="${k}" aria-pressed="${dk.includes(k)?'true':'false'}">${l}</button>`).join('')}</div>
       <p class="hint" style="margin-top:6px">Bodyweight work is always on the list.</p></div>` : ''}
@@ -14379,8 +14379,8 @@ function viewTune(){
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tune.fresh? 'New block &middot; week 1 of '+BLOCK : 'Week '+Math.min(plan().week,BLOCK)+' of '+BLOCK}</div>
     <div class="h2">${tune.fresh? 'Make this block yours' : 'Customize this block'}</div>
-    <p class="lead">${tune.fresh? 'Here is what this block holds. Change anything you like, then start it. Each part is still built into one week with the others, and every set counts once.' : 'Change anything you like. Together refills your days to match, and you stay on this week of the block.'}</p>
-    ${R.map((m,k)=>`<div class="tpart"><div class="spread"><div class="h3">${k+1}. ${SEC[m].n}</div><span class="chip">${DOSE_N[P.dose[m]]}</span></div>${part[m]()}</div>`).join('')}
+    <p class="lead">${tune.fresh? 'Choose a section to customize, then start your block.' : 'Choose a section to customize. Your current week stays.'}</p>
+    ${R.map((m,k)=>`<details class="tpart rules copyfold" data-fold="tune-${m}"><summary class="spread"><span class="h3">${SEC[m].n}</span><span class="chip">${DOSE_N[P.dose[m]]}</span></summary>${part[m]()}</details>`).join('')}
     ${JSON.stringify(cleanTune(T))===JSON.stringify(cleanTune(tg.tune))? `<div style="margin-top:20px"><button class="btn pri block" data-a="${tune.fresh?'t-save':'t-cancel'}">${tune.fresh? IC.play+' Start this block' : IC.check+' Done'}</button></div>
       ${tune.fresh? `<button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">Keep my current block</button>` : ''}`
     : `<div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start with my changes' : IC.check+' Save my changes'}</button></div>
@@ -14536,8 +14536,8 @@ function viewMain(){
   return `<div class="stack">
     ${u? `<button class="undoline" data-a="undo">${IC.undo}<span>Undo: ${esc(u.label)}</span></button>` : ''}
     ${weeklySummary()}${outcomeToday()}
-    ${sessionCard()}${conditioningCard()}
-    ${tg.run? heroRun() : heroNext(W)}
+    ${sessionCard()}
+    ${tg.run? heroRun() : heroNext(W)}${conditioningCard()}
     ${ciCard()}
     ${tuneCard()}
     ${installCard()}
@@ -14545,10 +14545,10 @@ function viewMain(){
       <p class="lead" style="margin-top:4px">${notReady(m,{})}</p></div>
       ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div>
       ${m==='cal'? recHtml(recModel(plan()), true) : ''}</section>`).join('')}
-    ${weekCard(W, DM)}
-    ${programCard()}
+    <details class="rules copyfold" data-fold="week"><summary>Week schedule</summary>${weekCard(W, DM)}</details>
+    <details class="rules copyfold" data-fold="program"><summary>Your program</summary>${programCard()}</details>
     ${rulesCard()}
-    <button class="btn ghost block" data-a="edit">${IC.sliders} Change what you train, order, days or time</button>
+    <button class="btn ghost block" data-a="edit">${IC.sliders} Change program setup</button>
   </div>`;
 }
 /* Conditioning is saved with Together. Intensity minutes follow WHO; fatigue and the
@@ -14588,7 +14588,7 @@ let condScreen=null, goalForm=null, condAudio=null, lastCue=null;
 const ACTIVITIES=['run','cycle','row','swim','walk','sport','other'];
 function conditioningCard(){
   const active=tg.conditioning.active, P=tg.on&&tg.secs.includes('cond')?conditioningPlan(plan()):[], allotted=P.reduce((n,x)=>n+(x?x.minutes*(x.style==='intervals'?1.5:1):0),0), target=condTarget(tg.conditioning,Math.max(0,orderParts(tg.secs).indexOf('cond')));
-  return `<section class="card"><div class="spread"><h3>Conditioning</h3><button class="btn" data-a="cond-log">Log activity</button></div>${active?`<button class="btn pri block" data-a="cond-resume">Resume ${esc(condTitle(active))}</button>`:tg.secs.includes('cond')?`<p class="hint">${Math.round(allotted)} of ${target} moderate-equivalent minutes fit this week.${allotted<target?' Add easy activity outside your lifting sessions to reach your target.':''}</p>`:'<p class="hint">Log a walk, sport or other activity. Add planned sessions in program setup.</p>'}</section>`;
+  return `<section class="card"><div class="spread"><h3>Conditioning</h3><button class="btn" data-a="cond-log">Log activity</button></div>${active?`<button class="btn pri block" data-a="cond-resume">Resume ${esc(condTitle(active))}</button>`:tg.secs.includes('cond')?`<p class="hint">${Math.round(allotted)} / ${target} aerobic minutes planned.${allotted<target?' Add easy activity to reach your target.':''}</p>`:'<p class="hint">Log outside activity or add sessions in setup.</p>'}</section>`;
 }
 function startConditioning(c){
   if(!tg.conditioning.active)tg.conditioning.active={id:'cond-'+Date.now(),startedAt:Date.now(),minutes:c.minutes,style:c.style};
@@ -14876,7 +14876,7 @@ const newDraft=()=>({conditioning:{target:tg.conditioning.target,style:tg.condit
   wd:tg.wd&&tg.wd.slice(), stage:tg.stage||'', yes:tg.screen? tg.screen.yes.slice() : [], asked:!!tg.screen});
 function draw(){
   fresh(); refreshRun(); strip();
-  const y=window.scrollY;
+  const y=window.scrollY, opened=[...__root.querySelectorAll('.copyfold[open]')].map(x=>x.dataset.fold);
   let html;
   if(condScreen) html=conditioningScreen();
   else if(goalForm) html=outcomeForm();
@@ -14887,6 +14887,7 @@ function draw(){
   else { if(!tg.on && !draft && (!first||first.auto)) first=newFirst(); if(tg.on) first=null;
     html= draft? viewSetup() : !tg.on? viewFirst() : tune? (tune.pick? viewPick() : viewTune()) : viewMain(); }
   $('#view').innerHTML= MiloSecurity.html(html);
+  __root.querySelectorAll('.copyfold').forEach(x=>{x.open=opened.includes(x.dataset.fold);});
   const h=__root.querySelector('.appbar h1'); if(h) h.textContent=PAGE_H[page];
   $('#subtitle').innerHTML= MiloSecurity.html(page==='train'? 'Your sessions' : page==='progress'? 'Every section together' : page==='library'? 'Every exercise, and the evidence'
     : tg.on&&!draft? `${rankList().map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');

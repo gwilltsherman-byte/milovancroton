@@ -41,3 +41,7 @@ Manual workflows covered Muscle plan generation, starting a workout, entering a 
 One combined critique, accessibility and visual review identified hidden state labels, stale live theme settings, modified keyboard shortcuts, a clipped three-digit rest field, completed-state contrast, system-dark logo visibility, long explanatory lines and a tall desktop check-in. A coordinated correction pass addressed those findings and the affected screens were captured again. The original palette was later replaced by the 2026-10-14 Training Floor color system; inactive original glow rules are overridden; the deload marker retains a meaningful distinct pattern.
 
 Physical phone installation, standalone Safari behavior, screen-reader narration, actual device vibration/wake lock and a real disconnected service-worker session were not exercised. Existing service-worker unit checks passed. These are verification limits, not claims of completed device testing.
+
+## October 2026 structure update
+
+The trainer switcher was replaced by Today, Train, Progress and Library. Program and data controls moved to Settings. Next-set and full-list sessions hide global navigation; conditioning and goals are included in Progress. Older screenshots document the earlier visual work, not the current navigation.
