@@ -2899,6 +2899,10 @@ function bwWasBody(exId){
   if(state.active) state.active.entries.forEach(e=>{ if(e.exId===exId) e.overloadNote=suggestLoad(exId, e, !!(exById(exId)||{}).comp, !!(state.active.meso&&state.active.meso.deload)).note; });
   save(); render(); toast(`${esc((exById(exId)||{}).name||'It')} now counts your bodyweight on its own${keep? `, and ${fmtW(t)} ${unit()} is saved under Body as your bodyweight` : ''}.`);
 }
+function exerciseTargetSummary(en){
+  const t=en.target, rest=t.rest>0&&t.rest%60===0?`${t.rest/60} min`:`${t.rest} s`;
+  return `<span><b>${esc(t.repLow)}–${esc(t.repHigh)}</b> ${isHold(en.exId)?'s hold':'reps'}</span><span><b>${esc(t.rir)}</b> RIR</span><span><b>${esc(rest)}</b> rest</span>`;
+}
 function exerciseCard(en, ei){
   const ex = exById(en.exId) || en;
   const lp = lastPerf(en.exId), bw = isBW(en.exId), typed = bwTyped(en.exId);
@@ -2928,24 +2932,25 @@ function exerciseCard(en, ei){
       </div>
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
     </div>
+    <details class="exercise-targets">
+    <summary><span class="target-summary">${exerciseTargetSummary(en)}</span><span class="target-edit"><span class="target-edit-closed">Edit</span><span class="target-edit-open">Done</span></span></summary>
     <div class="target-row">
       <div class="tinput">
-        <label>Target</label>
-        <input class="tnum" inputmode="numeric" data-field="tRepLow" data-ex="${ei}" value="${t.repLow}" maxlength="2" aria-label="Target reps, lowest">
+        <label>${isHold(en.exId)?'Hold (seconds)':'Rep range'}</label>
+        <input class="tnum" inputmode="numeric" data-field="tRepLow" data-ex="${ei}" value="${t.repLow}" maxlength="${isHold(en.exId)?3:2}" aria-label="Target ${isHold(en.exId)?'seconds':'reps'}, lowest">
         <span class="dash">&ndash;</span>
         <input class="tnum" inputmode="numeric" data-field="tRepHigh" data-ex="${ei}" value="${t.repHigh}" maxlength="${isHold(en.exId)?3:2}" aria-label="Target ${isHold(en.exId)?'seconds':'reps'}, highest">
-        <span class="faint" style="font-size:11px">${isHold(en.exId)?'s':'reps'}</span>
       </div>
       <div class="tinput">
         <label>RIR</label>
         <input class="tnum" inputmode="numeric" data-field="tRir" data-ex="${ei}" value="${t.rir}" maxlength="1" aria-label="Target reps in reserve">
       </div>
       <div class="tinput">
-        <label>Rest</label>
+        <label>Rest (s)</label>
         <input class="tnum" inputmode="numeric" data-field="tRest" data-ex="${ei}" value="${t.rest}" maxlength="3" aria-label="Rest in seconds">
-        <span class="faint" style="font-size:11px">s</span>
       </div>
     </div>
+    </details>
     <div class="setgrid">
       <div class="setrow-head">
         <span>Set</span><span>${bw?'+':isAssisted(en.exId)?'&minus;':''}${unit()==='kg'?'Kg':'Lb'}</span><span>${isHold(en.exId)?'Secs':'Reps'}</span><span>RIR</span><span></span><span></span>
@@ -6143,6 +6148,8 @@ __root.addEventListener('input', e=>{
       const t=state.active.entries[ei].target;
       const v=Num.int(el.value)||0;
       if(f==='tRepLow') t.repLow=v; else if(f==='tRepHigh') t.repHigh=v; else if(f==='tRir') t.rir=v; else t.rest=v;
+      const summary=el.closest('.exercise-targets')?.querySelector('.target-summary');
+      if(summary) summary.innerHTML=exerciseTargetSummary(state.active.entries[ei]);
       save();
     } else if(f==='loadw'){ loadingState.weight=Num.parse(el.value)||0; refreshLoading(); }
     else if(f==='metro'){ const i=+el.dataset.i; metro.tempo[i]=Num.parse(el.value)||0; state.settings.tempo=metro.tempo.slice(); save(); }
