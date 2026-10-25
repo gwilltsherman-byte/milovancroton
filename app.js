@@ -9098,10 +9098,11 @@ function stepDisp(eq){ return Kit.step(eq, u()); }
 /* round a load to something you can actually set up */
 function roundLoad(kg, eq){ return Kit.round(kg, eq, 'near', u()); }
 /* Progression moves to the next load you can set up at or past the step (Kit.next), so a step smaller than your rack's,
-   1 kg past 10 kg dumbbells, still goes up rather than rounding back down; Kit.next also says when that is a big jump
-   (more than twice the step), so reps can come first. A reset is kg*f to the nearest, or the next one down when that
-   rounds back to kg. */
-function upLoad(kg, id){ return Kit.next(kg, incKg(id, kg), eqOf(id), u()); }
+   1 kg past 10 kg dumbbells, still goes up rather than rounding back down. It is a big jump, so reps come first, when it
+   is more than twice the step (Kit.next) or more than one and a half usual steps (tmInc): with 5 kg your smallest plate,
+   the squat would otherwise jump 10 kg a session, and with 2.5 kg the bench 5. A reset is kg*f to the nearest, or the
+   next one down when that rounds back to kg. */
+function upLoad(kg, id){ const nx=Kit.next(kg, incKg(id, kg), eqOf(id), u()); if(nx.kg!=null && nx.kg-kg>1.5*tmInc(id)+1e-6) nx.big=true; return nx; }
 function lighter(kg, f, eq){ const w=roundLoad(kg*f, eq); return w!=null && w<kg-1e-6? w : Kit.next(kg, -1e-3, eq, u()).kg; }
 /* The step a lift goes up by. Plate-loaded: 2.5 kg (5 lb) on the upper body and 5 kg (10 lb) on the lower, but no more
    than 4 or 6 percent of the weight, so a 30 kg press isn't asked to jump 8 percent: with plates that can't make a step
@@ -9275,7 +9276,7 @@ function schemeFor(id, exposure, model, lite){
   if(X.k==='bw') return lite? {t:'var', sets:2, lo:4, hi:8, lite:true} : {t:'var', sets:4, lo:4, hi:8};
   if(X.k==='added') return lite? {t:'dp', sets:2, lo:5, hi:8, lite:true} : {t:'dp', sets:3, lo:5, hi:8};
   if(model==='linear'){ const sc= X.eq==='bar'? {t:'lp', sets:X.lp1?1:3, reps:5} : {t:'dp', sets:3, lo:5, hi:8}; if(lite){ sc.sets=Math.min(sc.sets,2); sc.lite=true; } return sc; }
-  if(lite) return {t:'rpe', sets:3, reps:6, rpe:7};
+  if(lite) return {t:'rpe', sets:3, reps:6, rpe:7, lite:true};
   if(model==='wave') return exposure===1? (X.bw? {t:'rpe', sets:3, reps:5, rpe:8} : {t:'wave'}) : {t:'rpe', sets:3, reps:6, rpe:7};
   return exposure===1? {t:'top', reps:5, n:3, bor:5} : exposure===2? {t:'top', reps:3, n:3, bor:5} : {t:'rpe', sets:3, reps:6, rpe:7};
 }
