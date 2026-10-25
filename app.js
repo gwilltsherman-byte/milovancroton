@@ -5915,7 +5915,7 @@ const LADDERS={
     {id:'assisted-full-fl', n:'Assisted full front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together and body level. Use enough help for a controlled hold, then reduce it without losing the shape.'},
   ]},
   planche:{n:'Planche', p:'Skill', ic:'push', skill:true, practice:'strength', m:'Shoulders, chest, core', steps:[
-    {id:'planche-lean', n:'Planche lean', k:'hold', sets:3, v:20, cue:'Elbows straight, shoulder blades pushed apart. Measure how far the shoulders pass the wrists with the same hand and foot setup; add a little lean while keeping the body rigid.'},
+    {id:'planche-lean', n:'Planche lean', k:'hold', sets:3, v:20, cue:'Elbows straight, shoulder blades pushed apart. Keep the same hand and foot setup each time, and add a little lean only while the body stays rigid.'},
     {id:'tuck-planche', n:'Tuck planche', k:'hold', sets:3, v:15, cue:'Shoulders well in front of the hands, upper back rounded, knees tight to the chest, hips at shoulder height or above.'},
     {id:'adv-tuck-planche', n:'Advanced tuck planche', k:'hold', sets:3, v:12, cue:'Back flat and level, thighs at about 90 degrees to the torso, leaning further forward than in the tuck. A big jump.'},
     {id:'straddle-planche', n:'Straddle planche', k:'hold', sets:3, v:8, cue:'Legs straight and wide, hips at shoulder height, body level, elbows straight. This is demanding strength work; build exposure gradually and recover between hard sessions.'},
@@ -5994,7 +5994,7 @@ const LADDERS={
     {id:'bw-calf-raise', n:'Calf raise', k:'reps', sets:3, v:20, cue:'Balls of both feet on the step edge, heels hanging off. Full stretch at the bottom, rise through the big toes, pause at the top.'},
     {id:'single-leg-calf-raise', n:'Single-leg calf raise', k:'reps', sets:3, v:15, cue:'Ball of one foot on the step, other foot hooked behind the ankle, fingertips on the wall. Full stretch to full height.'},
     {id:'deficit-calf-raise', n:'Single-leg deficit calf raise', k:'reps', sets:3, v:12, cue:'Use a step with enough heel clearance for your controlled ankle range. A taller step adds no range once the heel clears. Lower steadily, knee straight.'},
-    {id:'weighted-calf-raise', n:'Weighted single-leg calf raise', k:'reps', sets:3, v:10, cue:'A dumbbell in the same-side hand, the other hand on the wall. Full stretch to full height, knee straight.'},
+    {id:'weighted-calf-raise', n:'Weighted single-leg calf raise', k:'reps', sets:3, v:10, cue:'A dumbbell in the same-side hand, the other hand on the wall. Full stretch to full height, knee straight. Log the dumbbell weight.'},
   ]},
   legraise:{n:'Leg raise', p:'Core', ic:'core', m:'Abs, hip flexors, grip', steps:[
     {id:'lying-leg-raise', n:'Lying leg raise', k:'reps', sets:3, v:12, cue:'Lower back pressed down, hands under the hips. Straight legs up to vertical, down until just before the back lifts.'},
@@ -6827,7 +6827,7 @@ function defaultState(){
   return { v:2, onboarded:false, route:'today',
     settings:{theme:'system', rest:120, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true)},
     rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, parked:[], repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull',
-    hold:null, placing:null };
+    hold:null, placing:null, setupFrom:0 };
 }
 /* Fill in anything missing and upgrade version 1 data (no goals, no placement). */
 function normalize(p){
@@ -6849,6 +6849,8 @@ function normalize(p){
   s.goals=s.goals.filter(g=>g&&LADDERS[g.l]&&LADDERS[g.l].steps[g.r]);
   Object.keys(s.rung).forEach(id=>{if(s.paths[id]||!LADDER_PATHS[id]||!LADDERS[id])return;
     const rid=rungId(id,s.rung[id]),route=LADDER_PATHS[id].find(p=>p.steps.includes(rid));if(route)s.paths[id]=route.key;});
+  // when sets began to need their help level or added weight (SESSION): data from before then is kept as it was
+  s.setupFrom= Number.isFinite(p.setupFrom)? p.setupFrom : Date.now();
   if(s.route==='ladders') s.route='library';
   if(!['today','train','goals','progress','library'].includes(s.route)) s.route='today';
   if(!PATTERNS.includes(s.libTab)) s.libTab='Pull';
@@ -6873,7 +6875,7 @@ function load(){
 let saveTimer=null;
 function payload(){ return {v:state.v,onboarded:state.onboarded,route:state.route,settings:state.settings,rung:state.rung,paths:state.paths,needClaims:state.needClaims,placed:state.placed,said:state.said,
   advances:state.advances, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab,
-  hold:state.hold, placing:state.placing}; }
+  hold:state.hold, placing:state.placing, setupFrom:state.setupFrom}; }
 let ladVer=0;   // moves on every change, so Muscle knows when to read Ladder's sets again
 function save(){ ladVer++; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
@@ -6971,12 +6973,12 @@ function proofSets(id,i,days){
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{};
-      if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,rir:s.rir,target:e.target||st.v}); });
+      if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupOk(st,setup,w.date)) out.push({date:w.date,v:s.v,setup,rir:s.rir,target:e.target||st.v}); });
   }));
   return out;
 }
 function cleanTests(id,i,from){ const st=stepsOf(id)[i], rid=rungId(id,i), since=Math.max(from, stepSince(st));
-  return state.tests.filter(t=>t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupValid(st,t.setup||{})); }
+  return state.tests.filter(t=>t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupOk(st,t.setup||{},t.date)); }
 function verifiedBestFor(id,i){
   let best=proofSets(id,i,PROOF_DAYS).reduce((m,s)=>Math.max(m,s.v),0);
   cleanTests(id,i,Date.now()-PROOF_DAYS*86400000).forEach(t=>{ best=Math.max(best,t.v||0); });
@@ -6992,7 +6994,7 @@ function currentProof(id,i){
   const st=stepsOf(id)[i], since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st)), rid=rungId(id,i), runs=[];
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
-    const ok=(e.sets||[]).filter(s=>s.done&&s.clean===true&&s.v>=st.v&&rirOk(s)&&setupValid(st,s.setup||e.setup||{}))
+    const ok=(e.sets||[]).filter(s=>s.done&&s.clean===true&&s.v>=st.v&&rirOk(s)&&setupOk(st,s.setup||e.setup||{},w.date))
       .map(s=>setupVal(st,s.setup||e.setup||{})).sort((a,b)=>harder(st,b,a)? (harder(st,a,b)? 0 : 1) : -1);
     if(ok.length>=st.sets) runs.push({date:w.date, val:ok[st.sets-1]});   // the setting every planned set reached
   }));
@@ -7017,8 +7019,8 @@ function needStandard(id,i){ let v=0; activeGoals().forEach(g=>goalNeeds(g).forE
    Strength rep steps train in a range: from the entry check (about 40% of the target) up to the target, or up to a goal's
    higher standard. Today's reps start where you are, about one rep short of failure, and go up when every set reached
    them with a rep or more in reserve; a set called at 0 in reserve says that was all you had, so the reps stay. Reps in
-   reserve left blank count as fine: you did what was asked. With nothing logged yet, the first session starts at the
-   bottom and asks for what you can do with a rep or two left, so the next one starts there.
+   reserve left blank count as fine: you did what was asked. With nothing logged yet, the first session asks for the
+   step's own target, or what you can do with a rep or two left if that is too many, so the next one starts there.
    Holds, and the reps of prep, balance and power work (no reps in reserve there: quality is the measure), keep their
    target and grow 5 s or a rep once it is met on two days at least 20 hours apart; holds under the target are trained
    as a total time, in as many pieces as it takes.
@@ -7032,7 +7034,7 @@ const clamp=(v,lo,hi)=>Math.max(lo, Math.min(hi, v));
 function lastOn(id,i){
   const st=stepsOf(id)[i], rid=rungId(id,i), since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st)); let out=null;
   allHistory().forEach(w=>{ if(w.date<since||w.date>Date.now()||(out&&w.date<=out.date)) return;
-    (w.entries||[]).forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)!==rid) return;
+    (w.entries||[]).forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)!==rid||e.lite) return;   // a light day says nothing of where you are
       const sets=(e.sets||[]).filter(s=>s.done&&Number.isFinite(s.v)&&s.v>0&&(s.clean===true||w.muscle));
       if(sets.length) out={date:w.date, e, sets}; }); });
   return out;
@@ -7044,7 +7046,8 @@ function dose(id,i,role){
   if(role==='maintenance') return {target:needStandard(id,i), setup, why:''};
   if(!ranged(id,i)) return fixedDose(id,i,setup);
   const {lo,hi}=repRange(id,i), last=lastOn(id,i);
-  if(!last){ const b=bestClean(id,i); return {target:clamp(b? b-1 : lo, lo, hi), setup, why:'', first:!b}; }
+  // nothing logged lately: a rep short of your best clean set, or with none, the step's own target, as before ranges
+  if(!last){ const b=bestClean(id,i); return {target:clamp(b? b-1 : st.v, lo, hi), setup, why:'', first:!b}; }
   const t=last.e.target||st.v, ests=last.sets.map(s=>s.v+(s.rir==null? 0 : Math.max(0,s.rir)));
   const met=last.sets.every(s=>s.v>=t), spent=last.sets.some(s=>s.rir===0);
   const target= met&&!spent? Math.max(t+1, Math.min(...ests)-1) : last.sets.some(s=>s.v>=t)? t : Math.max(...ests)-1;
@@ -7060,7 +7063,8 @@ function fixedDose(id,i,setup){
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     const t=Math.max(st.v,e.target||st.v);
     // only sets at today's setting or a harder one count: more help proves nothing about less of it
-    const n=(e.sets||[]).filter(s=>{ const su=s.setup||e.setup||{}; return s.done&&s.clean===true&&s.v>=t&&setupValid(st,su)&&harder(st,setupVal(st,su),cur); }).length;
+    const n=(e.sets||[]).filter(s=>{ const su=s.setup||e.setup||{}, old=!setupValid(st,su)&&setupOk(st,su,w.date);   // an old set counts as today's setting
+      return s.done&&s.clean===true&&s.v>=t&&setupOk(st,su,w.date)&&(old||harder(st,setupVal(st,su),cur)); }).length;
     if(n>=st.sets) met.set(t,(met.get(t)||[]).concat(w.date));
     target=Math.max(target,Math.min(limit,t));
   }));
@@ -7070,6 +7074,8 @@ function fixedDose(id,i,setup){
   return {target:Math.min(limit,target), setup, why:''};
 }
 function rungTarget(id,i,role){ return dose(id,i,role).target; }
+/* A light day on a resting goal's easier step: about 70% of that step's dose, so the tendons it rests get a break. */
+function liteTarget(id,i){ const st=stepsOf(id)[i]; return Math.max(st.k==='hold'? 5 : 1, Math.round(rungTarget(id,i)*0.7)); }
 /* Does a logged entry meet today's target? All planned sets at or above it. */
 function clearsRung(entry){
   const st=stepsOf(entry.ladderId)[entry.stepIdx]; if(!st) return false;
@@ -7091,6 +7097,10 @@ function setsIn(days){ const since=daysAgo(days-1); let n=0;
 /* GATES: [[ladder, rung, at least]] for a step, or null; met by a clean set at that standard, ever, or by your word. */
 function gateOf(id,i){ const st=LADDERS[id]&&stepsOf(id)[i]; return st&&GATES[st.id]? GATES[st.id].filter(([l,r])=>LADDERS[l]&&stepsOf(l)[r]) : null; }
 function gateMet(id,i){ const g=gateOf(id,i); return !g||!g.length||g.some(([l,r,v])=>bestClean(l,r)>=v||!!((state.needClaims||{})[rungId(l,r)+'|'+v])); }
+/* A gate holds the move onto a step, not a step you already train: if it is your rung and you have logged it, it stays
+   (and the plan adds the gate's skill to the session). */
+function trainedOn(id,i){ const rid=rungId(id,i); return state.history.some(w=>(w.entries||[]).some(e=>rungId(e.ladderId,e.stepIdx)===rid&&(e.sets||[]).some(s=>s.done))); }
+function gateOk(id,i){ return gateMet(id,i)||(!!state.placed[id]&&curIdx(id)===i&&trainedOn(id,i)); }
 function gateText(id,i){ const g=gateOf(id,i); if(!g||!g.length) return ''; const [l,r,v]=g[0], st=stepsOf(l)[r];
   return st.k==='hold'? v+' s '+st.n.toLowerCase() : v+' × '+st.n.toLowerCase(); }
 /* Ladders that share an exercise (side plank, dead hang, chin-up...) share the credit: a set logged on one
@@ -7250,17 +7260,21 @@ const WRIST_LOAD=['handstand','planche','planchepush','armbalance','press','onea
    Nordics load the hamstrings hard while they lengthen; tendons, and that kind of soreness, take longer to settle than
    a muscle feels. So a hard session of each family waits about 48 hours for the next one (about 72 hours in your first
    4 weeks of Nordics), and a session trains at most one straight-arm skill hard. Otherwise the plan gives that goal its
-   easier step for the day, or leaves it to its support work. Sets on an easier step (role easy) aren't hard sessions. */
+   easier step for the day, or leaves it to its support work. Sets on an easier step (role easy) aren't hard sessions.
+   The wait counts from when the hard session started, and it is 44 hours (68 for new Nordics): the same time two days
+   later, or a little earlier, is a hard day again, as "about 48 hours" means. With two or more straight-arm goals, the
+   one whose last hard session is oldest gets the hard slot, so each takes its turn. */
 const NOT_STRAIGHT=['side-plank','pike-compression','pseudo-planche-pushup'];
 const NORDIC_IDS=['nordic-negative','nordic-curl','assisted-nordic-curl','partial-nordic-curl'];
-const SPACE_H=48, NORDIC_NEW_H=72, NORDIC_NEW_DAYS=28;
+const SPACE_H=44, NORDIC_NEW_H=68, NORDIC_NEW_DAYS=28;
 function hardFam(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; if(!st) return null;
   if(NORDIC_IDS.includes(st.id)) return 'nordic';
   return (STRAIGHT_ARM.includes(id)||STRAIGHT_ARM.includes(L.like))&&!NOT_STRAIGHT.includes(st.id)? 'straight' : null; }
-/* When each family was trained hard, Muscle's Nordic sets included. */
-function hardTimes(){ const t={straight:[], nordic:[]};
+/* When each family was trained hard (the session's start), Muscle's Nordic sets included; by: the same per ladder. */
+function startOf(w){ const d=Number(w.durationSec); return w.date-(Number.isFinite(d)&&d>0? Math.min(d, 6*3600) : 0)*1000; }
+function hardTimes(){ const t={straight:[], nordic:[], by:{}};
   allHistory().forEach(w=>(w.entries||[]).forEach(e=>{ const f=hardFam(e.ladderId,e.stepIdx);
-    if(f&&e.role!=='easy'&&(e.sets||[]).some(s=>s.done!==false)) t[f].push(w.date); })); return t; }
+    if(f&&e.role!=='easy'&&(e.sets||[]).some(s=>s.done!==false)){ const at=startOf(w); t[f].push(at); (t.by[e.ladderId]=t.by[e.ladderId]||[]).push(at); } })); return t; }
 function gapH(f,t){ return f==='nordic'&&t.nordic.length&&Math.min(...t.nordic)>Date.now()-NORDIC_NEW_DAYS*86400000? NORDIC_NEW_H : SPACE_H; }
 function restUntil(t,at){ const u={}; ['straight','nordic'].forEach(f=>{ const ts=t[f].filter(x=>x<=at); u[f]= ts.length? Math.max(...ts)+gapH(f,t)*3600000 : 0; }); return u; }
 
@@ -7287,32 +7301,37 @@ function spacingMatters(){ const {mains,sups,needs}=planIds(); return mains.conc
 function todayPlan(ahead){
   ahead=ahead||0; const t=hardTimes(), now=Date.now(), from= ahead&&spacingMatters()? 0 : ahead; let P=null;
   for(let k=from;k<=ahead;k++){ const at=now+k*86400000; P=planCore(rotation()+k, at, t, k<ahead);
-    if(k<ahead) P.forEach(x=>{ const f=x.role==='easy'||x.role==='maintenance'? null : hardFam(x.id,x.i); if(f) t[f].push(at); }); }
+    if(k<ahead) P.forEach(x=>{ const f=x.role==='easy'||x.role==='maintenance'? null : hardFam(x.id,x.i); if(f){ t[f].push(at); (t.by[x.id]=t.by[x.id]||[]).push(at); } }); }
   return P;
 }
 /* light: the plan is only looked at for what it trains hard, so targets are left out. */
 function planCore(r, at, t, light){
-  const {mains,sups,needs,maintenance}=planIds(), out=[], seen=new Set(), fams=new Set(), notes=[], until=restUntil(t,at);
+  const {mains,sups,needs,maintenance}=planIds(), out=[], seen=new Set(), fams=new Set(), notes=[], gates=[], until=restUntil(t,at);
   const note=(id,why,o)=>{ if(!notes.some(n=>n.id===id)) notes.push(Object.assign({id,why},o)); };
   const bal=id=>practiceOf(id)==='balance';
   const goalTurns=turns(spread(mains.filter(id=>!bal(id))), GOAL_CAP, r).concat(turns(spread(mains.filter(bal)), BALANCE_CAP, r))
     .sort((a,b)=>mains.indexOf(a[0])-mains.indexOf(b[0]));
-  // the one straight-arm skill trained hard this session: goals take turns at it
+  // the one straight-arm skill trained hard this session: the goal that waited longest since its last hard session,
+  // in turn order when that is a tie (none trained yet)
   const sa=goalTurns.map(x=>x[0]).filter(id=>hardFam(id,curIdx(id))==='straight'&&!heldBy(id,at));
-  const chosen= sa.length&&!(until.straight>at)? sa[r%sa.length] : null; let straightHard=false;
+  const lastHard=id=>(t.by&&t.by[id]||[]).filter(x=>x<=at).reduce((m,x)=>Math.max(m,x),0), turn=j=>(j-r%sa.length+sa.length)%sa.length;
+  const chosen= sa.length&&!(until.straight>at)? sa.map((id,j)=>[id,lastHard(id),turn(j)]).sort((a,b)=>a[1]-b[1]||a[2]-b[2])[0][0] : null; let straightHard=false;
   // → [step, role], or null to leave it out
   const tame=(id,i,role)=>{
     const held=heldBy(id,at);
     if(held){ const k=assistedStep(id,i); note(id,'pain',{joint:held, i:k, until:state.hold.until}); return k==null? null : [k,'easy']; }
-    if(!gateMet(id,i)){ const k=previousRung(id,i); note(id,'gate',{i:k, gate:gateText(id,i)}); if(k==null) return null; i=k; }
+    if(!gateMet(id,i)){ const g=gateOf(id,i)[0]; if(!gates.some(x=>x[0]===g[0]&&x[1]===g[1])) gates.push(g);   // its skill joins the session
+      if(!gateOk(id,i)){ const k=previousRung(id,i); note(id,'gate',{i:k, gate:gateText(id,i)}); if(k==null) return null; i=k; } }
     const f=hardFam(id,i); if(!f||role==='easy') return [i,role];
     const why= until[f]>at? 'rest' : f==='straight'&&(chosen? id!==chosen : straightHard)? 'one' : '';
     if(!why){ if(f==='straight') straightHard=true; return [i,role]; }
-    const k=previousRung(id,i); note(id,why,{f, i:k, until:until[f]}); return k==null? null : [k,'easy'];
+    const k=previousRung(id,i); note(id,why,{f, i:k, until:until[f]}); return k==null? null : [k,'easy',true];
   };
+  // a resting goal's easier step is a light day (lite): two sets at about 70% of that step's own dose
+  const item=(id,i,sets,role,lite)=>Object.assign({id,i,sets:lite? Math.min(2,sets) : sets,role,target:light? null : lite? liteTarget(id,i) : rungTarget(id,i,role)}, lite? {lite:true} : {});
   const add=(id,i,sets,role)=>{ const tm=tame(id,i,role); if(!tm) return false; [i,role]=tm;
     const st=stepsOf(id)[i]; if(!st||seen.has(st.id)||out.some(x=>x.id===id)) return false;
-    seen.add(st.id); fams.add(famOf(id)); out.push({id,i,sets,role,target:light? null : rungTarget(id,i,role)}); return true; };
+    seen.add(st.id); fams.add(famOf(id)); out.push(item(id,i,sets,role,tm[2])); return true; };
   // each goal alternates by its own turns, so one that skips sessions still gets both its target and volume days
   goalTurns.forEach(([id,tn])=>{ const k=mains.indexOf(id);
     const cur=curIdx(id), st=stepsOf(id)[cur], vi=st.volume?stepsOf(id).findIndex(x=>x.id===st.volume):-1;
@@ -7337,16 +7356,18 @@ function planCore(r, at, t, light){
   const plan=out.slice(), more=[], taken=new Set(plan.map(x=>stepsOf(x.id)[x.i].id));
   const put=(id,i,role)=>{ const tm=tame(id,i,role); if(!tm) return; [i,role]=tm;
     const st=stepsOf(id)[i]; if(!st||taken.has(st.id)||plan.some(x=>x.id===id)||more.some(x=>x.id===id)) return;
-    taken.add(st.id); more.push({id,i,sets:role==='maintenance'?1:st.sets,role,target:light? null : rungTarget(id,i,role)}); };
+    taken.add(st.id); more.push(item(id,i,role==='maintenance'?1:st.sets,role,tm[2])); };
   const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), first= ns.length>k&&k? (r*k)%ns.length : 0;
   for(let j=0;j<k;j++){ const n=ns[(first+j)%ns.length], p=pathFor(n.l), cur=curIdx(n.l), target=p.indexOf(n.r);
     put(n.l,state.placed[n.l]&&target>=0?p[Math.min(p.indexOf(cur),target)]:p[0],isPrep(n.l)?'prep':'need'); }
+  // a gate's skill, from where you are on its ladder (unless that ladder is already in the session)
+  gates.forEach(([l,r])=>{ const p=pathFor(l), at=p.indexOf(r); put(l, state.placed[l]&&at>=0? p[Math.min(p.indexOf(curIdx(l)),at)] : at>=0? p[0] : r, isPrep(l)?'prep':'need'); });
   if(maintenance.length){const n=maintenance[r%maintenance.length];put(n.l,n.r,'maintenance');}
   if(LADDERS.wrist && plan.concat(more).some(x=>WRIST_LOAD.includes(LADDERS[x.id].like||x.id))) put('wrist', state.placed.wrist?curIdx('wrist'):pathFor('wrist')[0], 'prep');
   const res=plan.concat(more); res.notes=notes; return res;
 }
 /* Why a goal trains easier today, or not at all, in one short line for Today. */
-function noteText(n){ const g=goalsOn(n.id)[0], who=esc(g? g.n : LADDERS[n.id].n), step=n.i!=null? ' '+esc(stepsOf(n.id)[n.i].n)+' today.' : ' Support work today.';
+function noteText(n){ const g=goalsOn(n.id)[0], who=esc(g? g.n : LADDERS[n.id].n), step=n.i!=null? ' '+esc(stepsOf(n.id)[n.i].n)+(n.why==='rest'||n.why==='one'? ', two light sets' : '')+' today.' : ' Support work today.';
   if(n.why==='pain') return `${who}: held for your ${esc(n.joint)} until ${esc(fmtDate(n.until))}.${n.i!=null? ' Assisted: '+esc(stepsOf(n.id)[n.i].n)+'.' : ''}`;
   if(n.why==='gate') return `${who}: first ${esc(n.gate)}.${n.i!=null? step : ''}`;
   if(n.why==='one') return `${who}: one straight-arm skill a session.${step}`;
@@ -7357,7 +7378,7 @@ function whenText(ts){ const d=Day.diff(ts, Date.now()), t=new Date(ts).toLocale
 const ROLE_N={goal:'goal', volume:'goal &middot; volume day', easy:'goal &middot; easier today', support:'support', extra:'extra', new:'new to you', need:'what your goal needs',maintenance:'maintain and recheck'};
 const WHEN_S={warm:'warm-up', early:'while fresh', mid:'with the main work', end:'at the end'};
 function roleText(x){ return x.role==='prep'? (WHEN_S[whenOf(x.id,x.i)]||'prep') : ROLE_N[x.role]||''; }
-function planEntry(x){ const d=dose(x.id,x.i,x.role); return newEntry(x.id, x.i, x.sets, x.target||d.target, d, x.role); }
+function planEntry(x){ const d=dose(x.id,x.i,x.role), e=newEntry(x.id, x.i, x.sets, x.target||(x.lite? liteTarget(x.id,x.i) : d.target), d, x.role); if(x.lite) e.lite=true; return e; }
 function planText(x){ const st=stepsOf(x.id)[x.i]; return `${x.sets} x ${x.target||rungTarget(x.id,x.i,x.role)}${unitS(st)}`; }
 
 function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
@@ -7458,20 +7479,22 @@ let place=null, surveyAns={};
 function keepPlace(){ state.placing= place? {survey:place.survey.slice(), total:place.total, tests:place.tests.slice(), gids:(place.gids||[]).slice(), ans:Object.assign({},surveyAns)} : null; save(); }
 function resumePlacement(){ const p=state.placing; if(!p||!p.survey.length){ state.placing=null; save(); render(); return; }
   place={survey:p.survey.slice(), total:p.total, tests:p.tests.slice(), gids:(p.gids||[]).slice()}; surveyAns=Object.assign({},p.ans); nextPlacement(); }
-function startPlacement(goals){
+/* hub: the goals came from Together, which takes you back when this is done; "Skip the test" then goes back to your plan
+   rather than starting a Ladder session of its own. */
+function startPlacement(goals, hub){
   surveyAns={};
   const need=[], mains=[...new Set(goals.map(g=>g.l))];
   goals.forEach(g=>[g.l].concat(g.sup||[]).forEach(id=>{ if((mains.includes(id)||!state.placed[id])&&!need.includes(id)) need.push(id); }));
   mains.forEach(id=>{ if(state.placed[id]) surveyAns[id]=curIdx(id); });   // start from where you are now: your step is picked
-  place={survey:need, total:need.length, tests:mains, gids:goals.map(g=>g.id)};
+  place={survey:need, total:need.length, tests:mains, gids:goals.map(g=>g.id), hub:!!hub};
   nextPlacement();
 }
 function nextPlacement(){
   if(place.survey.length){ keepPlace(); openSurvey(place.survey[0]); return; }
-  const tests=place.tests, gids=place.gids||[]; place=null; keepPlace();
+  const tests=place.tests, gids=place.gids||[], hub=!!place.hub; place=null; keepPlace();
   const done=checkGoals();
   // test the rung you said you can do, on each goal ladder where you picked one
-  const toTests=()=>openTestOffer(tests.filter(id=>goalsOn(id).length && surveyAns[id]!=null && surveyAns[id]>=0));
+  const toTests=()=>openTestOffer(tests.filter(id=>goalsOn(id).length && surveyAns[id]!=null && surveyAns[id]>=0), hub);
   const then=()=>openNeedCheck(activeGoals().filter(g=>gids.includes(g.id)), toTests);
   if(done.length) celebrate(done,0,then); else then();
 }
@@ -7511,8 +7534,8 @@ function needOf(id){ for(const g of activeGoals()){ const n=goalNeeds(g).find(x=
 function openSurvey(id){
   const L=LADDERS[id], steps=stepsOf(id), n=place.total-place.survey.length+1;
   const gs=goalsOn(id), was=surveyAns[id], nd=!gs.length&&needOf(id);
-  const p={survey:place.survey.slice(), total:place.total, tests:place.tests.slice(), gids:(place.gids||[]).slice()};
-  nav.reg('survey:'+id+':'+n, ()=>{ place={survey:p.survey.slice(), total:p.total, tests:p.tests.slice(), gids:p.gids.slice()}; openSurvey(id); }, true);
+  const p={survey:place.survey.slice(), total:place.total, tests:place.tests.slice(), gids:(place.gids||[]).slice(), hub:!!place.hub};
+  nav.reg('survey:'+id+':'+n, ()=>{ place={survey:p.survey.slice(), total:p.total, tests:p.tests.slice(), gids:p.gids.slice(), hub:p.hub}; openSurvey(id); }, true);
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Where are you now?</h3><span class="chip">${n} of ${place.total}</span><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
@@ -7524,16 +7547,16 @@ function openSurvey(id){
       <button class="btn ${was===-1?'primary':'ghost'} block" data-act="survey-pick" data-id="${id}" data-i="-1" style="margin-top:4px">None of these yet</button>
     </div>`);
 }
-function openTestOffer(ids){
+function openTestOffer(ids, hub){
   if(!ids.length){ closeModal(); state.route='goals'; render(); toast('Your plan is ready'); return; }
-  nav.reg('offer:'+ids.join(','), ()=>openTestOffer(ids), true);
+  nav.reg('offer:'+ids.join(','), ()=>openTestOffer(ids, hub), true);
   const picks=ids.map(id=>surveyAns[id]);
   openModal(`<div class="sheet-grab"></div><div class="sheet-body">
     <div style="text-align:center;padding:4px 0 6px"><div class="celebico">${I.test}</div>
       <h2 class="disp" style="font-size:25px;margin:0 0 8px;text-transform:uppercase">Show what you can do</h2>
       <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:320px">Check ${ids.map((id,k)=>`<b style="color:var(--ink)">${esc(stepsOf(id)[picks[k]].n)}</b>`).join(' and ')}. Warm up, stop before form changes, and record the clean result. Your plan starts on the movement you demonstrated.</p></div>
     <button class="btn primary block" data-act="test-verify" data-ids="${ids.join(',')}" data-is="${picks.join(',')}">${I.test} Test now</button>
-    <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}" style="margin-top:8px">${I.play} Skip the test, start training</button>
+    <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}"${hub?' data-hub="1"':''} style="margin-top:8px">${hub? I.arrow+' Skip the test' : I.play+' Skip the test, start training'}</button>
   </div>`);
 }
 let testCtx=null, tseq=0;
@@ -7576,7 +7599,7 @@ function recordTest(v){
   if(testCtx.advance){
     if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&clean&&setupValid(st,setup)&&gateMet(id,i)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
     else toast('Keep building the current movement or use a more manageable assisted setup');
-  }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)&&gateMet(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
+  }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)&&gateOk(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
   save();testCtx.results.push({id,at,v,i});
   nextTestLadder();
 }
@@ -7626,7 +7649,8 @@ function celebrate(list,i,then){
 /* ==================== GOAL PICKER ==================== */
 let gsel=null, cg=null;
 let gcat=null;
-function openGoalPicker(){ gsel=new Set(); gcat=null; renderGoalPicker(); }
+let gHub=false;   // the picker was opened from Together (see startPlacement)
+function openGoalPicker(hub){ gsel=new Set(); gcat=null; gHub=!!hub; renderGoalPicker(); }
 function goalRow(k, have){
   const G=GOALS[k], act=have.has(k), on=gsel.has(k), lv=GOAL_LV[k]||2;
   return `<button class="pick ${on||act?'on':''}" data-act="gpick" data-k="${k}" ${act?'disabled':''}><span class="ck">${I.check}</span>
@@ -7683,9 +7707,9 @@ function openGoalMenu(gid){
       <button class="actitem danger" data-act="goal-rm" data-id="${esc(g.id)}">${I.trash}<span>Remove this goal<div class="muted" style="font-size:11.5px;font-weight:500">Your rungs and history stay</div></span></button>
     </div>`);
 }
-function addGoals(list){
+function addGoals(list, hub){
   state.goals.push(...list); state.onboarded=true; save();
-  startPlacement(list);
+  startPlacement(list, hub);
 }
 
 /* ==================== SESSION ==================== */
@@ -7699,7 +7723,7 @@ const WEIGHTED_IDS=['weighted-pullup','weighted-dip','weighted-chin-up','weighte
 const ASSIST_IDS=['low-bar-transition','low-ring-transition','fingertip-oahs','german-hang-feet','support-flag'];
 const LB=0.45359237;
 function setupField(st){ if(!st||!st.id) return null;
-  if(WEIGHTED_IDS.includes(st.id)) return {key:'load', label:'Added', type:'number', unit:'kg', min:0, step:0.5};
+  if(WEIGHTED_IDS.includes(st.id)) return {key:'load', label:st.id==='weighted-calf-raise'? 'Dumbbell' : 'Added', type:'number', unit:'kg', min:0, step:0.5};
   if(st.id==='counterbalance-pistol') return {key:'counter', label:'Counterweight', type:'number', unit:'kg', min:0, step:0.5};
   if(/^(assisted|band|feet-assisted)-/.test(st.id)||ASSIST_IDS.includes(st.id)) return {key:'assist', label:'Help', type:'number', min:0, max:5, step:1};
   return null; }
@@ -7707,6 +7731,10 @@ function setupFields(st){ const f=setupField(st); return f? [f] : []; }
 function setupVal(st,setup){ const f=setupField(st); if(!f||!setup) return null; return Num.parse(setup[f.key]); }
 function setupValid(st,setup){ const f=setupField(st); if(!f) return true; const v=setupVal(st,setup);
   return v!=null&&(f.key==='load'? v>0 : v>=0)&&(f.max==null||v<=f.max); }
+/* Sets logged before the app asked for the number (state.setupFrom) had nowhere to put it: they still count, as they
+   did then, compared as one with the rest. Only sets logged since without it are practice. */
+function legacySet(date){ return Number.isFinite(date)&&date<(state.setupFrom||0); }
+function setupOk(st,setup,date){ return setupValid(st,setup)||(legacySet(date)&&setupVal(st,setup)==null); }
 /* Is setting a at least as hard as b? More added weight, or less help. Anything compares on a step with no number. */
 function harder(st,a,b){ const f=setupField(st); if(!f||b==null) return true; if(a==null) return false; return f.key==='load'? a>=b-1e-9 : a<=b+1e-9; }
 /* The weight unit you chose (Prefs), for showing and typing; weights are kept in kg. */
@@ -7721,10 +7749,11 @@ function nextVal(st,val){ const f=setupField(st); if(!f||val==null) return null;
   if(f.key==='assist') return val>0? val-1 : null;
   if(f.key==='counter') return val>0? Math.max(0, val-1) : null;
   const u=wUnit(), inc=u==='lb'? 5*LB : 2.5;
-  try{ const n=Kit.next(val, inc, 'added', u); return n&&n.kg>val+1e-9? n.kg : null; }catch(e){ return val+inc; } }
+  // the calf raise holds a dumbbell, so it moves along your dumbbell rack; the rest add plates on a belt
+  try{ const n=Kit.next(val, inc, st.id==='weighted-calf-raise'? 'db' : 'added', u); return n&&n.kg>val+1e-9? n.kg : null; }catch(e){ return val+inc; } }
 function moveWhy(st,nv,top){ const f=setupField(st), u=st.k==='hold'?' s':'';
   return f.key==='assist'? `Help ${nv} today: every set reached ${top}${u} at ${nv+1}.` : f.key==='counter'? `${fmtW(nv)} counterweight today: every set reached ${top}${u}.`
-    : `${fmtW(nv)} added today: every set reached ${top}${u}.`; }
+    : `${fmtW(nv)} ${f.label==='Dumbbell'? 'dumbbell' : 'added'} today: every set reached ${top}${u}.`; }
 function missText(st){ const f=setupField(st); return f? 'No '+(f.key==='assist'?'help level':'weight')+': counts as practice' : ''; }
 function setupSummary(st,setup){ const f=setupField(st), v=setupVal(st,setup); if(!f||v==null) return '';
   return f.unit==='kg'? f.label+' '+fmtW(v) : f.label+' '+v; }
@@ -7755,8 +7784,17 @@ function setupInputs(st,setup,attrs,disabled){
 function makeSet(){ return {v:null, rir:null, done:false}; }
 function entryFor(id,idx){ const i= idx==null? curIdx(id) : idx, st=stepsOf(id)[i], d=dose(id,i); return newEntry(id,i,st.sets,d.target,d); }
 /* Left and right on per-side exercises: each set keeps both (lr), and its value is the weaker side, so both must reach
-   the target. */
-function perSide(st){ return /per side|each side/i.test(st&&st.cue||''); }
+   the target. Marked here by exercise, not read from the cue: every step done on one arm or one leg, and the one-sided
+   stretches, drills and planks. Walking lunges and one-leg L-sits swap sides within or between sets, so they log one number. */
+const PER_SIDE=['archer-pullup','assisted-archer-pullup','assisted-oap','oap','oa-lockoff-top','oa-lockoff-90','oa-negative',
+  'archer-row','assisted-archer-row','one-arm-row','incline-one-arm-row','archer-pushup','one-arm-pushup','incline-one-arm-pushup','assisted-one-arm-pushup',
+  'split-squat','bulgarian-split-squat','shrimp-squat','assisted-shrimp-squat','pistol-squat','box-pistol','assisted-pistol','counterbalance-pistol',
+  'single-leg-glute-bridge','dead-bug','assisted-one-arm-hang','one-arm-hang','reverse-lunge','lateral-lunge','cossack-squat','skater-squat',
+  'single-leg-calf-raise','deficit-calf-raise','weighted-calf-raise','side-plank','star-side-plank','short-copenhagen','copenhagen-plank',
+  'vertical-flag','tuck-flag','straddle-flag','human-flag','support-flag','one-arm-elbow-lever','fingertip-oahs','oahs',
+  'calf-wall-stretch','ankle-rock-8','ankle-rock-10','ankle-rock-12','sl-stand','sl-stand-soft','sl-stand-eyes-closed','sl-reach',
+  'seated-leg-lift','half-kneel-hip-flexor','couch-stretch','couch-stretch-upright','hop-stick'];
+function perSide(st){ return !!st&&PER_SIDE.includes(st.id); }
 /* Balance skills train as a time-boxed block of attempts: 8 minutes, logging every hold, and the target met by as many
    holds as the step has sets. Other holds train their total time (target × sets) in pieces as long as you can manage. */
 const BLOCK_IDS=['freestanding-handstand','straddle-handstand','weight-shift-hs','fingertip-oahs','oahs','frog-stand','crow-pose','crane-pose','elbow-lever','one-arm-elbow-lever'];
@@ -7881,7 +7919,7 @@ function startRepeat(){
 }
 function addToSession(id,idx){
   const i= idx==null? curIdx(id) : idx;
-  if(!gateMet(id,i)){ toast('First: '+esc(gateText(id,i))); return; }
+  if(!gateOk(id,i)){ toast('First: '+esc(gateText(id,i))); return; }
   if(!state.active) state.active={id:uid(), name:'Session', startedAt:Date.now(), entries:[], restEndsAt:null, restDur:0};
   if(state.active.entries.some(e=>e.ladderId===id)){ toast('Already in this session'); closeModal(); return; }
   state.active.entries.push(entryFor(id,idx));
@@ -7890,7 +7928,7 @@ function addToSession(id,idx){
 function toggleDone(ei,si){
   const e=state.active.entries[ei], s=e.sets[si]; if(!s) return;
   const st=stepsOf(e.ladderId)[e.stepIdx], tgt=e.target==null?st.v:e.target;
-  if(holdT&&holdT.ei===ei&&holdT.si===si){ holdGo(ei,si); return; }   // the tick stops the timer and logs its time
+  if(holdOn(ei,si)){ holdGo(ei,si); return; }   // the tick stops the timer and logs its time
   if(!s.done){
     // an empty box logs the grey target it shows; on a per-side exercise each empty side does, and the weaker side counts
     let v=s.v==null? tgt : s.v;
@@ -7909,7 +7947,9 @@ function toggleDone(ei,si){
 /* What a finished or ended session keeps of an exercise: the sets done, and the role it had (an easier day's sets
    aren't a hard session: RECOVERY SPACING). */
 function keepEntry(e){ const k={ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)};
-  if(e.role) k.role=e.role; return k; }
+  // a per-side set counts its weaker side, however the boxes were changed after the tick
+  k.sets.forEach(s=>{ if(s.lr&&s.lr.length===2&&s.lr.every(Number.isFinite)) s.v=Math.min(s.lr[0],s.lr[1]); });
+  if(e.role) k.role=e.role; if(e.lite) k.lite=true; return k; }
 function finishWorkout(){
   const a=state.active; if(!a) return;
   const entries=a.entries.filter(e=>e.sets.some(s=>s.done)).map(keepEntry);
@@ -8002,8 +8042,11 @@ function tickRest(){
 
 /* ==================== HOLD TIMER ====================
    Tap to start, tap to stop: the seconds go into the set and it is logged. On a per-side hold the first stop is the
-   left side and the second the right. A beep and a buzz mark the target, per your sound and vibration settings. */
+   left side and the second the right. A beep and a buzz mark the target, per your sound and vibration settings.
+   The timer belongs to its exercise and set, not their places: removing or moving another exercise leaves it on its own
+   set, and removing or replacing its own set stops it. */
 let holdT=null, holdTick=null, audioCtx=null;
+function holdOn(ei,si){ const a=state.active, e=a&&a.entries[ei]; return !!holdT&&!!e&&holdT.e===e&&holdT.s===e.sets[si]; }
 function primeAudio(){ try{ if(!audioCtx){ const AC=window.AudioContext||window.webkitAudioContext; if(AC) audioCtx=new AC(); } if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} }
 function beep(){ if(!state.settings.sound) return;
   try{ primeAudio(); if(!audioCtx) return; const now=audioCtx.currentTime;
@@ -8016,17 +8059,17 @@ function stopHold(){ holdT=null; clearInterval(holdTick); holdTick=null; }
 function holdGo(ei,si){
   const a=state.active, e=a&&a.entries[ei], s=e&&e.sets[si]; if(!s||s.done) return;
   const st=stepsOf(e.ladderId)[e.stepIdx];
-  if(holdT&&holdT.ei===ei&&holdT.si===si){   // stop: the seconds go in
+  if(holdOn(ei,si)){   // stop: the seconds go in
     const secs=holdSecs(), side=holdT.side; stopHold();
     if(side==='l'){ s.lr=[secs, s.lr&&s.lr[1]!=null? s.lr[1] : null]; save(); render(); toast('Left '+secs+' s. Now the right'); return; }
     if(side==='r'){ s.lr=[s.lr&&s.lr[0]!=null? s.lr[0] : secs, secs]; s.v=null; } else s.v=secs;
     toggleDone(ei,si); return; }
   stopHold(); primeAudio(); stopRest(); save();
-  holdT={ei, si, side: perSide(st)? (s.lr&&s.lr[0]!=null? 'r' : 'l') : null, start:Date.now(), target:e.target==null?st.v:e.target, rang:false};
+  holdT={e, s, side: perSide(st)? (s.lr&&s.lr[0]!=null? 'r' : 'l') : null, start:Date.now(), target:e.target==null?st.v:e.target, rang:false};
   render(); holdTick=setInterval(tickHold,200);
 }
 function tickHold(){
-  const a=state.active; if(!holdT||!a||!a.entries[holdT.ei]){ stopHold(); return; }
+  const a=state.active; if(!holdT||!a||!a.entries.includes(holdT.e)||!holdT.e.sets.includes(holdT.s)||holdT.s.done){ stopHold(); return; }
   const secs=holdSecs(), el=__root.querySelector('[data-hold-live]'); if(el) el.value=secs;
   if(!holdT.rang&&secs>=holdT.target){ holdT.rang=true; beep(); buzz(); }
 }
@@ -8103,7 +8146,7 @@ function viewToday(){
     const turnNote= waiting.length? `<p class="sub" style="margin:10px 0 0;font-size:12.5px">Your ${goals.length} goals take turns so each session stays short.${next.length? ' Next session: '+next.flatMap(id=>goalsOn(id).map(g=>esc(g.n))).join(' &middot; ')+'.' : ''} ${evChip('session','Why')}</p>` : '';
     // a goal resting, held for pain or waiting on a gate says why, in a line each
     const ns=(P.notes||[]).filter(n=>mains.includes(n.id)), spaced=ns.some(n=>n.why==='rest'||n.why==='one');
-    const restNote= ns.length? `<div style="margin:10px 0 0">${ns.map(n=>`<p class="sub" style="margin:0 0 4px;font-size:12.5px">${noteText(n)}</p>`).join('')}${spaced?evChip(ns.some(n=>n.f==='nordic')?'nordic':'tendon','Why rest'):''}</div>` : '';
+    const restNote= ns.length? `<div style="margin:10px 0 0">${ns.map(n=>`<p class="sub" style="margin:0 0 4px;font-size:12.5px">${noteText(n)}</p>`).join('')}${spaced?evChip(ns.some(n=>n.f==='nordic')?'frequency':'tendon','Why rest'):''}</div>` : '';
     hero=`<div class="hero"><h2>Today&rsquo;s session</h2>
       <div class="nxlist">${xs.map(x=>{ const st=stepsOf(x.id)[x.i]; return `<button class="nx" data-act="how" data-id="${esc(x.id)}" data-i="${x.i}"><span>${esc(st.n)}</span><b class="mono">${planText(x)}</b>
         <i>${esc(LADDERS[x.id].n)} &middot; ${roleText(x)}</i></button>`; }).join('')}</div>
@@ -8379,11 +8422,11 @@ function exCard(e,ei){
   const target=e.target==null?st.v:e.target, f=setupField(st), practice=st.practice||L.practice, showRir=!hold&&practice!=='balance'&&practice!=='power';
   const nextIdx=e.sets.findIndex(s=>!s.done);
   const cleared=clearsRung(e), gs=goalsOn(e.ladderId);
-  const box=(s,si,k)=>{ const field=k==null? 'v' : k? 'r' : 'l', run=!!holdT&&holdT.ei===ei&&holdT.si===si&&(k==null? !holdT.side : holdT.side===field);
+  const box=(s,si,k)=>{ const field=k==null? 'v' : k? 'r' : 'l', run=holdOn(ei,si)&&(k==null? !holdT.side : holdT.side===field);
     const val=k==null? s.v : s.lr&&s.lr[k]!=null? s.lr[k] : s.done? s.v : null;
     return `<input class="sinput" inputmode="numeric" data-field="${field}" data-ex="${ei}" data-set="${si}" value="${run? holdSecs() : val!=null?val:''}" placeholder="${target}"${run?' data-hold-live="1" readonly':''} aria-label="Set ${si+1}${k==null?'':k?' right':' left'} ${hold?'seconds':'reps'}">`; };
   const rows=e.sets.map((s,si)=>{
-    const isNext=!s.done&&si===nextIdx, run=!!holdT&&holdT.ei===ei&&holdT.si===si;
+    const isNext=!s.done&&si===nextIdx, run=holdOn(ei,si);
     const third= showRir? `<input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve, optional">`
       : hold&&!s.done? `<button class="donebtn holdbtn${run?' on':''}" data-act="hold-go" data-ex="${ei}" data-set="${si}" aria-label="${run?'Stop the timer and log it':'Time set '+(si+1)+(side? s.lr&&s.lr[0]!=null? ', right side' : ', left side' : '')}">${run?I.stop:I.timer}</button>` : '<span aria-hidden="true"></span>';
     const note=s.done? [s.clean===true?'Clean form confirmed':s.clean===false?'Practice attempt; form standard not met':'Form was not recorded',
@@ -8431,8 +8474,9 @@ function doseLine(e,ei,st,target){
   if(e.block){ const hits=done.filter(s=>s.v>=target).length, best=done.reduce((m,s)=>Math.max(m,s.v||0),0);
     return line(`Attempts for ${e.block.min} min. ${done.length? `Best ${best} s &middot; ${hits} of ${st.sets} at ${target} s` : `Aim for ${st.sets} holds of ${target} s`} &middot; <span data-block-left="${ei}">${blockLeft(e)}</span>`); }
   if(e.total) return line(`${done.reduce((t,s)=>t+(s.v||0),0)} of ${e.total} s total. As many holds as it takes.`);
-  if(ranged(e.ladderId,e.stepIdx)){ const {lo,hi}=repRange(e.ladderId,e.stepIdx); if(lo<hi) return line(e.first&&!done.length? `First time: as many as you can with 1 or 2 left, from ${lo} to ${hi}.`
-    : `Range ${lo}&ndash;${hi}. A rep more next time when every set has 1 or more in reserve.`); }
+  if(e.lite) return line('A light day: stop well short of your limit.');
+  if(ranged(e.ladderId,e.stepIdx)){ const {lo,hi}=repRange(e.ladderId,e.stepIdx); if(lo<hi) return line(e.first&&!done.length? `First time: ${target} if you can, or as many as you can with 1 or 2 left.`
+    : `Range ${lo}&ndash;${hi}. Next time: what you could do with 1 left.`); }
   return '';
 }
 function blockLeft(e){ const end=blockEnd(e); if(end===Infinity) return 'starts with your first attempt'; const s=Math.round((end-Date.now())/1000);
@@ -8551,7 +8595,7 @@ function progHistory(){
         const done=e.sets.filter(s=>s.done!==false), vals=done.map(s=>(s.lr&&s.lr.length===2? s.lr[0]+'/'+s.lr[1] : s.v)+(e.kind==='hold'?'s':'')).join(', ');
         const setups=[...new Set(done.map(s=>setupSummary(st,s.setup||e.setup)).filter(Boolean))];
         return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div>
-          <div class="b">${vals||'no sets completed'}${setups.length?'<br>'+setups.map(esc).join('<br>'):setupFields(st).length?'<br>'+missText(st):''}</div></div></div>`; }).join('')}
+          <div class="b">${vals||'no sets completed'}${setups.length?'<br>'+setups.map(esc).join('<br>'):setupFields(st).length&&!legacySet(w.date)?'<br>'+missText(st):''}</div></div></div>`; }).join('')}
       <div style="margin-top:6px;text-align:right"><button class="tinybtn" data-act="ed-open" data-id="${esc(w.id)}" style="padding:5px 9px">${I.pen} Edit</button></div>
     </div>`; }).join('');
 }
@@ -8724,13 +8768,13 @@ __root.addEventListener('click', e=>{
       if(window._unl) showUnlocks(window._unl.list, window._unl.then); else closeModal();
       if(window.__hub) window.__hub.changed('cal'); break; }
     case 'gpick': { const k=el.dataset.k; if(gsel.has(k)) gsel.delete(k); else gsel.add(k); el.classList.toggle('on',gsel.has(k)); const b=$('#gsave'); if(b) b.innerHTML=MiloSecurity.html(gsave()); break; }
-    case 'gsave': { if(!gsel||!gsel.size){ toast('Pick at least one goal'); break; } addGoals([...gsel].map(makeGoal)); gsel=null; break; }
-    case 'goal-custom': openCustomGoal(el.dataset.l); break;
+    case 'gsave': { if(!gsel||!gsel.size){ toast('Pick at least one goal'); break; } addGoals([...gsel].map(makeGoal), gHub); gsel=null; break; }
+    case 'goal-custom': if(el.dataset.l) gHub=false; openCustomGoal(el.dataset.l); break;   // from a ladder: Ladder's own
     case 'cg-l': cg.l=el.dataset.id; cg.r=nextRung(cg.l,curIdx(cg.l))??curIdx(cg.l); cg.std=''; renderCustom(); break;
     case 'cg-r': cg.r=+el.dataset.i; cg.std=''; renderCustom(); break;
     case 'cg-save': { const st=stepsOf(cg.l)[cg.r]; const std=Math.max(1,Num.int(($('#cgstd')||{}).value)||st.v);
       const g={id:uid(), key:'custom', n:st.n+', '+(st.k==='hold'? std+' s' : std+' rep'+(std===1?'':'s')), l:cg.l, r:cg.r, std, sup:supFor(cg.l), added:Date.now(), achieved:null};
-      cg=null; addGoals([g]); break; }
+      cg=null; addGoals([g], gHub); break; }
     case 'goal-quickadd': { const k=el.dataset.k; state.goals.push(makeGoal(k)); save(); el.disabled=true; el.classList.add('on'); toast(GOALS[k].n+' added'); break; }
     case 'celeb-next': { const c=window._celeb; window._celeb=null; if(c) celebrate(c.list,c.i+1,c.then); else closeModal(); render(); break; }
     case 'goal-menu': openGoalMenu(el.dataset.id); break;
@@ -8738,7 +8782,7 @@ __root.addEventListener('click', e=>{
     case 'goal-rm': state.goals=state.goals.filter(x=>x.id!==el.dataset.id); save(); closeModal(); render(); toast('Goal removed'); break;
     case 'place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) startPlacement([g]); break; }
     case 'survey-pick': { const id=el.dataset.id; let i=+el.dataset.i;
-      if(i>=0&&!gateMet(id,i)){ const was=i; i=previousRung(id,i)??pathFor(id)[0]; toast('First: '+esc(gateText(id,was))+'. You start on '+esc(stepsOf(id)[i].n)); }
+      if(i>=0&&!gateOk(id,i)){ const was=i; i=previousRung(id,i)??pathFor(id)[0]; toast('First: '+esc(gateText(id,was))+'. You start on '+esc(stepsOf(id)[i].n)); }
       surveyAns[id]=i; moveTo(id,i>=0?i:pathFor(id)[0]);
       if(place){ place.survey.shift(); nextPlacement(); } break; }
     case 'need-place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) openNeedCheck([g], ()=>{ closeModal(); render(); toast('Saved. Your sessions follow it from now on'); }); break; }
@@ -8749,10 +8793,11 @@ __root.addEventListener('click', e=>{
     case 'test-verify': { const ids=(el.dataset.ids||'').split(','), is=(el.dataset.is||'').split(',').map(Number), pk={};
       ids.forEach((id,k)=>{ if(LADDERS[id]) pk[id]=is[k]; }); beginTests(Object.keys(pk), null, pk); break; }
     case 'test-go': { const ids=(el.dataset.ids||'').split(',').filter(x=>LADDERS[x]); if(!ids.length) break;
-      if(el.dataset.i!=null&&!gateMet(ids[0],+el.dataset.i)){ toast('First: '+esc(gateText(ids[0],+el.dataset.i))); break; }
+      if(el.dataset.i!=null&&!gateOk(ids[0],+el.dataset.i)){ toast('First: '+esc(gateText(ids[0],+el.dataset.i))); break; }
       beginTests(ids, el.dataset.i!=null? +el.dataset.i : null); break; }
     case 'test-later': { (el.dataset.ids||'').split(',').forEach((id,k)=>{const i=+(el.dataset.is||'').split(',')[k];if(LADDERS[id]&&i>=0)moveTo(id,i);});
-      closeModal(); const ids=defaultPicks();   // straight into today's session
+      // straight into today's session, unless Together sent you here: it plans the day, so you go back to it
+      closeModal(); const ids=el.dataset.hub? [] : defaultPicks();
       if(ids.length) confirmStart(()=>beginSession(ids)); else { state.route='goals'; save(); render(); toast('Your plan is ready'); } break; }
     case 'test-record': { const v=Num.int(($('#testv')||{}).value); if(v==null||v<0){ toast('Enter your reps or seconds'); break; } recordTest(v); break; }
     case 'test-zero': recordTest(0); break;
@@ -8888,7 +8933,8 @@ __root.addEventListener('input', e=>{
   const s=en.sets[si]; if(!s) return;
   const n=Num.int(el.value);
   if(f==='v') s.v=n; else if(f==='rir') s.rir=n;
-  else if(f==='l'||f==='r'){ s.lr=s.lr||[null,null]; s.lr[f==='l'?0:1]=n; }
+  else if(f==='l'||f==='r'){ s.lr=s.lr||[null,null]; s.lr[f==='l'?0:1]=n;
+    if(s.done&&s.lr.every(Number.isFinite)) s.v=Math.min(s.lr[0],s.lr[1]); }   // a ticked set still counts its weaker side
   else return;
   save();
 });
@@ -8918,7 +8964,7 @@ function renderEdit(){
         <button class="edx" data-act="ed-rm-set" data-e="${ei}" data-s="${si}" aria-label="Remove set">${I.x}</button></div>
       <div style="margin:0 0 12px 28px">
         ${edit.view?`<p class="muted" style="font-size:11.5px;margin:0 0 6px">${x.clean===true?'Clean form confirmed':x.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}</p>`:`<label style="display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px"><input type="checkbox" data-ed="clean" data-e="${ei}" data-s="${si}"${x.clean===true?' checked':''}>Clean form on set ${si+1}</label>`}
-        ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||missText(st))}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
+        ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||(legacySet(r.date)?'':missText(st)))}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
       </div>`).join('');
     return `<div class="edex"><div class="edh"><div><b>${esc(st.n)}</b><small>${esc(LADDERS[e.ladderId].n)} &middot; target ${goalText(Object.assign({},st,{v:e.target==null?st.v:e.target}))}</small></div><button class="tinybtn" data-act="ed-rm-ex" data-e="${ei}">Remove</button></div>
       ${e.sets.length? `<div class="edrow two head"><span></span><span>${e.kind==='hold'?'Secs':'Reps'}</span><span>${showRir?'RIR':''}</span><span></span></div>${rows}` : '<p class="edwhy" style="margin:0 0 8px">'+(e.left&&e.left.length?'Not started.':'No sets left.')+'</p>'}
@@ -9013,11 +9059,13 @@ function hubWork(since, until){
   return out;
 }
 /* easy: a goal's easier step for the day; why: what made it so ('rest' recovery spacing, 'one' straight-arm skill a
-   session, 'pain' a hold, 'gate' a skill it needs first). */
+   session, 'pain' a hold, 'gate' a skill it needs first). Together also shows these for days ahead, which may be
+   later than the plan's own guess, so a rest says until when rather than "today". */
 function hubPicks(ahead){
   const P=todayPlan(ahead), N=P.notes||[];
   return orderIds(P.map(x=>x.id),P).map(id=>{ const x=P.find(p=>p.id===id), st=stepsOf(id)[x.i], n=N.find(z=>z.id===id);
-    return {id, grp:LADDERS[id].like||id, ladder:LADDERS[id].n, step:st.n+(x.role==='volume'?' (volume day)':x.role==='easy'?' (easier today)':''), key:st.id, kind:st.k, sets:x.sets,
+    const easy= n&&n.why==='rest'? ' (easier until '+whenText(n.until)+')' : ' (easier)';
+    return {id, grp:LADDERS[id].like||id, ladder:LADDERS[id].n, step:st.n+(x.role==='volume'?' (volume day)':x.role==='easy'?easy:''), key:st.id, kind:st.k, sets:x.sets,
       target:planText(x), skill:isSkill(id), goal:x.role==='goal'||x.role==='volume'||x.role==='easy', easy:x.role==='easy', why:n? n.why : null,
       role:x.role, placed:!!state.placed[id], prep:isPrep(id)}; });
 }
@@ -9044,7 +9092,7 @@ if(window.__hub) window.__hub.reg('cal', {
   start(o){ if(state.active) return null; const drop=(o&&o.drop)||[];
     const ids=orderIds(o&&o.ids? o.ids.filter(id=>LADDERS[id]) : defaultPicks()).filter(id=>!drop.includes(id)); if(!ids.length) return null;
     beginSession(ids, o&&o.sets); return state.active? state.active.id : null; },
-  setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(); },
+  setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(true); },
   open(){ state.route=Parked.all(state).length?'train':'today'; render(); window.scrollTo(0,0); },
   // your goals, for Together to show and change: where you are on each, and removing or putting one back
   goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null, p=pathFor(g.l,g);
@@ -9072,7 +9120,7 @@ if(window.__hub) window.__hub.reg('cal', {
     finally{ state.goals=keep; } },
   // standard goals added from Together, through the same placement as choosing them here
   addGoals(keys){ const list=(keys||[]).filter(k=>GOALS[k]&&!activeGoals().some(g=>g.key===k)).map(makeGoal); if(!list.length) return false;
-    state.route='today'; render(); window.scrollTo(0,0); addGoals(list); return true; },
+    state.route='today'; render(); window.scrollTo(0,0); addGoals(list, true); return true; },
   removeGoal(id){ const g=state.goals.find(x=>x.id===id&&!x.achieved); if(!g) return false;
     gone[id]=g; state.goals=state.goals.filter(x=>x!==g); save(); render(); return true; },
   restoreGoal(id){ const g=gone[id]; if(!g||state.goals.some(x=>x.id===id)) return false; delete gone[id]; state.goals.push(g); save(); render(); return true; },

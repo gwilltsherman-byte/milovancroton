@@ -672,7 +672,7 @@ test('rep steps train in a range with reps in reserve, and move on only at the t
   assert.equal(api.evaluate('rungText("plyopush",0)'), '3 x 8', 'so does power work');
   assert.equal(api.evaluate('rungText("hsdrill",1)'), '3 x 6', 'and balance drills');
   placed(api, 'pull', 4);
-  assert.equal(api.evaluate('rungTarget("pull",4)'), 1, 'nothing logged: the bottom of the range');
+  assert.equal(api.evaluate('rungTarget("pull",4)'), 8, 'nothing logged: the step\'s own target, not the bottom of the range');
   assert.equal(api.evaluate('entryFor("pull",4).first'), true, 'and the first session asks for what you can do');
   state.tests.push({date: Date.now() - day, ladderId: 'pull', stepIdx: 4, v: 6, setup: {}, clean: true});
   assert.equal(api.evaluate('rungTarget("pull",4)'), 5, 'a test of 6 starts at 5, a rep in reserve');
@@ -839,4 +839,204 @@ test('new steps and goals: lock-offs, a strength base for one arm, a first muscl
   assert.equal(api.evaluate(`needMet(${JSON.stringify(base)})`), false, '30 kg is under 40% of 80 kg');
   st.history.push(record('weightedpull', 1, [1], {setup: {load: 32.5}}));
   assert.equal(api.evaluate(`needMet(${JSON.stringify(base)})`), true, 'one rep with 40% of bodyweight added also counts');
+});
+
+/* ==== Wave 1 review fixes ==== */
+const straightHard = (api, plan) => plan.filter(x => x.role !== 'easy' && api.evaluate(`hardFam(${JSON.stringify(x.id)},${x.i})`) === 'straight').map(x => x.id);
+
+test('with two straight-arm goals, each takes its turn at the hard session, over ten days of daily training', () => {
+  for (const keys of [['tuckplanche', 'frontlever'], ['tuckplanche', 'tuckbl']]) {
+    const api = ladder(), state = api.getState();
+    goals(api, ...keys); state.goals.forEach(g => placed(api, g.l, g.r));
+    const ids = state.goals.map(g => g.l), hardDays = {};
+    for (let d = 0; d < 10; d++) {
+      // a day passes: everything logged so far moves a day back, and today's plan is trained as planned
+      state.history.forEach(w => { w.date -= day; });
+      const plan = plain(api.evaluate('todayPlan()'));
+      straightHard(api, plan).forEach(id => { hardDays[id] = (hardDays[id] || 0) + 1; });
+      const entries = plan.filter(x => api.evaluate(`hardFam(${JSON.stringify(x.id)},${x.i})`)).map(x => {
+        const e = plain(api.evaluate(`planEntry(${JSON.stringify(x)})`)); e.sets.forEach(s => { s.v = e.target; s.done = true; s.clean = true; s.rir = 2; });
+        return plain(api.evaluate(`keepEntry(${JSON.stringify(e)})`)); });
+      state.history.push({id: 'd' + d, name: 'S', date: Date.now() - hour, durationSec: 3600, entries, cleared: []});
+    }
+    ids.forEach(id => assert.ok(hardDays[id] >= 2, `${keys}: ${id} trained hard on ${hardDays[id] || 0} of 10 days`));
+    const api2 = ladder(), s2 = api2.getState();
+    goals(api2, ...keys); s2.goals.forEach(g => placed(api2, g.l, g.r));
+    s2.history.push(record(ids[0], s2.goals[0].r, [5, 5, 5], {date: Date.now() - 3 * day}), record(ids[1], s2.goals[1].r, [5, 5, 5], {date: Date.now() - 5 * day}));
+    assert.deepEqual(straightHard(api2, plain(api2.evaluate('todayPlan()'))), [ids[1]], 'the goal that waited longest goes hard');
+  }
+});
+
+test('the 48-hour wait counts from the start of the session, with a little slack: the same time two days later is hard', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'tuckplanche'); placed(api, 'planche', 1);
+  // started 47 hours ago, finished an hour later
+  state.history.push(Object.assign(record('planche', 1, [10, 10, 10], {date: Date.now() - 46 * hour}), {durationSec: 3600}));
+  assert.notEqual(planFor(api, 'planche').role, 'easy', 'about 48 hours later is a hard day again');
+  state.history[0].date = Date.now() - 39 * hour;
+  const n = notesFor(api, 'planche');
+  assert.equal(n[0].why, 'rest');
+  assert.ok(Math.abs(n[0].until - (Date.now() - 40 * hour + 44 * hour)) < 5000, 'rest until 44 hours after it started');
+  // every other day, sessions an hour long: every one is hard
+  const api2 = ladder(), s2 = api2.getState();
+  goals(api2, 'tuckplanche'); placed(api2, 'planche', 1);
+  for (let d = 0; d < 6; d++) {
+    s2.history.forEach(w => { w.date -= 2 * day; });
+    const p = planFor(api2, 'planche');
+    assert.notEqual(p.role, 'easy', `session ${d} 48 hours after the last is hard`);
+    s2.history.push(Object.assign(record('planche', p.i, [10, 10, 10], {date: Date.now() + hour}), {durationSec: 3600}));
+  }
+  const api3 = ladder(), s3 = api3.getState();
+  goals(api3, 'nordic'); placed(api3, 'hinge', 4);
+  s3.history.push(Object.assign(record('hinge', 4, [1, 1, 1], {date: Date.now() - 71 * hour}), {durationSec: 3600}));
+  assert.equal(notesFor(api3, 'hinge').length, 0, 'a new Nordic trainer three days later at the same time trains hard');
+});
+
+test('an easier day on a resting goal is light: two sets at about 70%, and it leaves the next dose where it was', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'tuckplanche'); placed(api, 'planche', 1);
+  state.history.push(record('planche', 1, [10, 10, 10], {date: Date.now() - 20 * hour}));
+  const p = planFor(api, 'planche'), full = api.evaluate(`rungTarget("planche",${p.i})`);
+  assert.equal(p.role, 'easy'); assert.equal(p.lite, true); assert.equal(p.sets, 2);
+  assert.equal(p.target, Math.max(5, Math.round(full * 0.7)));
+  assert.match(api.evaluate('noteText(todayPlan().notes[0])'), /two light sets today/);
+  const e = api.evaluate(`planEntry(${JSON.stringify(p)})`);
+  assert.equal(e.lite, true); assert.equal(e.sets.length, 2); assert.equal(e.target, p.target);
+  e.sets.forEach(s => { s.v = p.target; s.done = true; s.clean = true; });
+  state.history.push({id: 'light', name: 'S', date: Date.now() - hour, entries: [plain(api.evaluate(`keepEntry(${JSON.stringify(plain(e))})`))], cleared: []});
+  assert.equal(api.evaluate(`rungTarget("planche",${p.i})`), full, 'a light day does not set the next target');
+  const api2 = ladder();
+  goals(api2, 'tuckplanche'); placed(api2, 'planche', 1); api2.evaluate('holdJoint("elbow")');
+  assert.ok(!planFor(api2, 'planche').lite, 'a pain hold trains its assisted step in full');
+});
+
+test('every step on one arm or one leg logs left and right, marked by exercise rather than read from the cue', () => {
+  const api = ladder();
+  const steps = plain(api.evaluate('Object.keys(LADDERS).flatMap(l=>stepsOf(l).map(s=>({id:s.id, n:s.n, side:perSide(s)})))'));
+  const oneSided = /one-arm|one arm|single-leg|archer|pistol|shrimp|split squat|cossack|skater|copenhagen|\bflag\b|reverse lunge|lateral lunge|side plank|one-arm handstand/i;
+  const swaps = ['Walking lunge', 'Tuck dragon flag', 'Dragon flag negative', 'One-leg dragon flag', 'Dragon flag'];
+  const missing = steps.filter(s => oneSided.test(s.n) && !swaps.includes(s.n) && !s.side).map(s => s.id);
+  assert.deepEqual([...new Set(missing)], [], 'one-sided steps without left and right');
+  const goalSteps = plain(api.evaluate('Object.keys(GOALS).map(k=>[k, stepsOf(GOALS[k].l)[GOALS[k].r].id, perSide(stepsOf(GOALS[k].l)[GOALS[k].r])])'));
+  ['oapush', 'cossack', 'skater', 'calf25', 'copenhagen', 'humanflag', 'oahs', 'pistol'].forEach(k => {
+    const g = goalSteps.find(x => x[0] === k); if (g) assert.equal(g[2], true, k + ' (' + g[1] + ') is per side');
+  });
+  assert.equal(api.evaluate('perSide({id:"pullup", cue:"each side"})'), false, 'the cue no longer decides');
+});
+
+test('a per-side set corrected after its tick counts its weaker side', () => {
+  const api = ladder(), state = api.getState();
+  const [l, i] = where(api, 'pistol-squat');
+  const e = api.evaluate(`planEntry({id:${JSON.stringify(l)},i:${i},sets:3,role:"goal",target:5})`);
+  state.active = {id: 'a', name: 'S', startedAt: Date.now(), entries: [e]};
+  api.evaluate('toggleDone(0,0)');
+  assert.equal(e.sets[0].v, 5);
+  e.sets[0].lr[1] = 3;   // what the input box does to the right side; keepEntry settles it on the way into history
+  const kept = plain(api.evaluate('keepEntry(state.active.entries[0])'));
+  assert.equal(kept.sets[0].v, 3, 'the weaker side counts');
+  assert.equal(api.evaluate('clearsRung(keepEntry(state.active.entries[0]))'), false);
+});
+
+test('with nothing logged, a strength step starts at its own target, not the bottom of its range', () => {
+  const api = ladder(), state = api.getState();
+  placed(api, 'pull', 4); placed(api, 'row', 0); placed(api, 'hinge', 0);
+  assert.equal(api.evaluate('rungTarget("pull",4)'), 8, 'pull-up 3 x 8');
+  assert.equal(api.evaluate('rungTarget("row",0)'), api.evaluate('stepsOf("row")[0].v'), 'incline row at its target');
+  assert.equal(api.evaluate('rungTarget("hinge",0)'), api.evaluate('stepsOf("hinge")[0].v'), 'glute bridge at its target');
+  const e = api.evaluate('entryFor("pull",4)');
+  assert.equal(e.first, true); assert.equal(e.target, 8);
+  assert.match(api.evaluate('doseLine(entryFor("pull",4),0,stepsOf("pull")[4],8)'), /First time: 8 if you can/);
+  state.history.push(record('pull', 4, [5, 5, 5], {date: Date.now() - 100 * day}));
+  assert.equal(api.evaluate('rungTarget("pull",4)'), 4, 'an old best still starts a rep short of it');
+  state.history = [withRir(record('pull', 4, [5, 5, 5], {date: Date.now() - day, target: 5}), [2, 2, 2])];
+  assert.match(api.evaluate('doseLine(entryFor("pull",4),0,stepsOf("pull")[4],6)'), /Range 1&ndash;8\. Next time: what you could do with 1 left\./);
+});
+
+test('sets logged before help levels and added weights existed still count; newer ones without the number are practice', () => {
+  const api = ladder();
+  const old = Date.now() - 3 * day;
+  api.setState({v: 2, rung: {pull: 3, legs: 8}, placed: {pull: true, legs: true}, goals: [], tests: [],
+    history: [record('pull', 3, [9, 9, 9], {date: old - day}), record('pull', 3, [8, 8, 8], {date: old})]});
+  const state = api.getState();
+  assert.ok(state.setupFrom >= Date.now() - 5000, 'the time numbers began is set on the first load');
+  assert.equal(api.evaluate('verifiedBestFor("pull",3)'), 9, 'old band pull-ups keep their best');
+  assert.equal(api.evaluate('currentProof("pull",3).ready'), true, 'and their readiness');
+  assert.equal(api.evaluate('payload().setupFrom'), state.setupFrom, 'it is saved');
+  assert.doesNotMatch(api.evaluate('progHistory()'), /counts as practice/, 'history doesn\'t call them practice');
+  state.setupFrom = Date.now() - 1000;
+  state.history.push(record('pull', 3, [10, 10, 10], {date: Date.now() - 1}));
+  assert.equal(api.evaluate('verifiedBestFor("pull",3)'), 9, 'a set since then without its help level is practice');
+  assert.match(api.evaluate('progHistory()'), /No help level: counts as practice/, 'and history says so');
+  state.tests.push({date: old, ladderId: 'legs', stepIdx: 8, v: 6, setup: {}, clean: true});
+  assert.equal(api.evaluate('verifiedBestFor("legs",8)'), 6, 'old tests count too');
+  const fresh = ladder();
+  assert.equal(fresh.getState().setupFrom, 0, 'a new install has nothing from before');
+});
+
+test('a gate holds the move onto a step, not a step you already train, and its skill joins the session', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'handstand'); placed(api, 'handstand', 3);
+  state.history.push(record('handstand', 3, [21, 18, 15], {date: Date.now() - 2 * day}));
+  const p = planFor(api, 'handstand');
+  assert.equal(p.i, 3, 'freestanding handstand stays your step');
+  assert.equal(notesFor(api, 'handstand').length, 0);
+  const bail = plain(api.evaluate('todayPlan()')).find(x => x.id === 'hsdrill');
+  assert.ok(bail && bail.i === 0, 'the cartwheel bail is in the same session');
+  assert.equal(api.evaluate('gateOk("handstand",3)'), true);
+  assert.equal(api.evaluate('gateMet("handstand",3)'), false, 'the unlock itself still waits for the bail');
+  // placed there but never trained: the step before, with the gate's skill beside it
+  const api2 = ladder();
+  goals(api2, 'hspu'); placed(api2, 'pushv', 3);
+  const P = plain(api2.evaluate('todayPlan()'));
+  assert.equal(P.find(x => x.id === 'pushv').i, api2.evaluate('previousRung("pushv",3)'));
+  assert.ok(P.some(x => x.id === 'handstand'), 'the wall handstand ladder it needs is in that session');
+});
+
+test('"Skip the test" from Together goes back to the plan; from Ladder it starts training', () => {
+  const api = ladder(), state = api.getState();
+  const g = api.evaluate('makeGoal("pullup1")');
+  api.evaluate(`addGoals([${JSON.stringify(g)}], true)`);
+  assert.equal(api.evaluate('place.hub'), true, 'goals added from Together carry that through the placement');
+  assert.equal(plain(api.evaluate('state.placing')).hub, undefined, 'and it is not saved: a reload starts here');
+  api.evaluate('surveyAns.pull=3; openTestOffer(["pull"], true)');
+  let html = api.evaluate('$("#sheet").innerHTML');
+  assert.match(html, /data-act="test-later"[^>]*data-hub="1"/); assert.doesNotMatch(html, /start training/);
+  api.evaluate('openTestOffer(["pull"])');
+  html = api.evaluate('$("#sheet").innerHTML');
+  assert.doesNotMatch(html, /data-hub/); assert.match(html, /Skip the test, start training/);
+  api.evaluate('openGoalPicker(true)'); assert.equal(api.evaluate('gHub'), true);
+  api.evaluate('openGoalPicker()'); assert.equal(api.evaluate('gHub'), false, 'Ladder\'s own picker is Ladder\'s');
+});
+
+test('the hold timer stays on its own set when another exercise is removed', () => {
+  const api = ladder(), state = api.getState();
+  state.route = 'train';
+  state.active = {id: 'a', name: 'S', startedAt: Date.now(), entries: [api.evaluate('entryFor("wrist",0)'), api.evaluate('entryFor("frontlever",1)'), api.evaluate('entryFor("pull",3)')]};
+  api.evaluate('holdGo(1,0)');
+  assert.equal(api.evaluate('holdOn(1,0)'), true);
+  api.evaluate('state.active.entries.splice(0,1); render()');   // what removing the first exercise does
+  assert.equal(api.evaluate('holdOn(0,0)'), true, 'the timer moved with its exercise');
+  assert.equal(api.evaluate('holdOn(1,0)'), false, 'the pull-up row did not take it over');
+  api.evaluate('toggleDone(1,0)');
+  assert.equal(state.active.entries[1].sets[0].v, api.evaluate('state.active.entries[1].target'), 'ticking the pull-up logs its own reps');
+  assert.equal(api.evaluate('holdT!==null'), true, 'and leaves the timer running');
+  api.evaluate('state.active.entries.splice(0,1); tickHold()');
+  assert.equal(api.evaluate('holdT'), null, 'removing its own exercise stops it');
+});
+
+test('Together\'s preview of a resting goal says until when, not "today"', () => {
+  const api = ladder(), state = api.getState();
+  goals(api, 'tuckplanche'); placed(api, 'planche', 1);
+  state.history.push(record('planche', 1, [10, 10, 10], {date: Date.now() - 20 * hour}));
+  const x = plain(api.evaluate('hubPicks(0)')).find(p => p.id === 'planche');
+  assert.equal(x.easy, true); assert.match(x.step, /\(easier until .+\)$/); assert.doesNotMatch(x.step, /today/);
+});
+
+test('the weighted calf raise asks for the dumbbell and moves along the dumbbell rack', () => {
+  const api = ladder();
+  const [l, i] = where(api, 'weighted-calf-raise');
+  assert.equal(api.evaluate(`setupField(stepsOf(${JSON.stringify(l)})[${i}]).label`), 'Dumbbell');
+  assert.match(api.evaluate(`stepsOf(${JSON.stringify(l)})[${i}].cue`), /Log the dumbbell weight/);
+  assert.equal(api.evaluate(`nextVal(stepsOf(${JSON.stringify(l)})[${i}], 10)`), api.evaluate('Kit.next(10, 2.5, "db", "kg").kg'));
+  assert.doesNotMatch(api.evaluate('stepsOf("planche")[0].cue'), /Measure/);
 });
