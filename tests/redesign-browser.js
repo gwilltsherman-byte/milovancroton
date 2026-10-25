@@ -112,7 +112,7 @@
         check(light(doc),'Light theme survives render: '+module+'/'+route);
       }
       if(module==='mix'){
-        check(!!root.querySelector('[data-a="f-go"]') && root.querySelectorAll('[data-a="f-sec"]').length===3,'A first run asks what you train, in two taps');
+        check(!!root.querySelector('[data-a="f-go"]') && root.querySelectorAll('[data-a="f-sec"]').length===4,'A first run asks what you train, in two taps');
         win.__hub.api('mix').setup('secs'); await pause(100);
         check(!!root.querySelector('[data-a="d-save"]'),'Together setup retains its schedule workflow');
         const order=()=>[...root.querySelectorAll('.prow b')].map(b=>b.textContent).join(' > ');

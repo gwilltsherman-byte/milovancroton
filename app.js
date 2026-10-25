@@ -1869,6 +1869,7 @@ window.Safe=(function(){
 window.MiloSession=(()=>{
   const views=new Map(), esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  function elapsed(a){ const secs=Math.max(0,Math.floor((Date.now()-a.startedAt)/1000)); return secs>=12*3600? 'Open since '+new Date(a.startedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : fmt(secs)+' elapsed'; }
   const icon=(kind)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="${kind==='plus'?'M5 12h14M12 5v14':'M5 12h14'}"/></svg>`;
   const ios=()=>/iP(ad|hone|od)/.test(navigator.userAgent)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
   const alertsAvailable=()=>!ios()&&'Notification' in window&&'serviceWorker' in navigator;
@@ -1901,7 +1902,7 @@ window.MiloSession=(()=>{
   function active(c){ return c.st.route==='train'&&!!c.st.active; }
   function focus(c){ return c.st.settings.sessionView!=='list'; }
   function syncShell(root){
-    const c=views.get(root), on=!!(c&&active(c)&&focus(c));
+    const c=views.get(root), on=!!(c&&active(c));
     document.documentElement.classList.toggle('session-focus-active',on);
     if(window.__sessionMode)window.__sessionMode(on);
   }
@@ -1956,7 +1957,8 @@ window.MiloSession=(()=>{
     if(!active(c))return;
     const next=first(st.active), old=c.returnTo;
     if(!on){
-      view.insertAdjacentHTML('afterbegin',MiloSecurity.html('<div class="session-switch"><button class="btn ghost" data-session="focus">Next set</button></div>'));
+      const head=view.querySelector('.train-head');
+      if(head) head.insertAdjacentHTML('beforeend',MiloSecurity.html('<button class="btn ghost session-switch" data-session="focus">Next set</button>'));
       let target=find(root,old);
       if(old&&old.act==='toggle-done'){
         const buttons=[...view.querySelectorAll('[data-act="toggle-done"]')], button=buttons.find(b=>{ const e=st.active.entries[+b.dataset.ex]; return e&&!e.sets[+b.dataset.set].done; });
@@ -1987,7 +1989,7 @@ window.MiloSession=(()=>{
       setup=detail.setup||'';
     }
     const day=dayName(st.active);
-    view.innerHTML=MiloSecurity.html(`<div class="session-top"><button class="btn ghost" data-session="list">List</button><div><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${fmt(Math.max(0,Math.floor((Date.now()-st.active.startedAt)/1000)))} elapsed</span></div><button class="btn primary" data-act="finish">Finish</button></div>
+    view.innerHTML=MiloSecurity.html(`<div class="session-top"><button class="btn ghost" data-session="list">List</button><div><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${esc(elapsed(st.active))}</span></div><button class="btn primary" data-act="finish">Finish</button></div>
       <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
       <section class="session-rest" hidden><h2>Rest</h2><div class="session-clock" role="timer" aria-label="Rest remaining"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="session-track" cx="50" cy="50" r="45"/><circle data-session-arc cx="50" cy="50" r="45"/></svg><span data-session-time></span></div><p>Next: ${esc(name)}${setText?' · '+esc(setText):''}</p><div class="session-rest-actions"><button class="btn ghost" data-session="add">+30 s</button><button class="btn primary" data-session="skip">Skip rest</button></div></section></div>`);
     plates(c); effort(c); tick(c);
@@ -2005,7 +2007,7 @@ window.MiloSession=(()=>{
     const day=c.root.querySelector('[data-session-day]'); if(day)day.textContent=dayName(a);
   }
   setInterval(()=>views.forEach(tick),250);
-  return {mount,restOver,alertsAvailable,requestAlerts,syncShell};
+  return {mount,restOver,alertsAvailable,requestAlerts,syncShell,elapsed};
 })();
 
 const MOD_INIT = {
@@ -2451,7 +2453,7 @@ function storePayload(){
   return { v:state.v, route:state.route, onboarded:state.onboarded, settings:state.settings,
     exercises: state.exercises.filter(e=>e.custom),
     history: state.history, active: state.active, parked: state.parked, repeat: state.repeat, mesos: state.mesos, bodylog: state.bodylog, milestones: state.milestones,
-    rirCal: state.rirCal, readyDay: state.readyDay||null, readyAns: state.readyAns||null };
+    outcomeGoals:state.outcomeGoals||[], rirCal: state.rirCal, readyDay: state.readyDay||null, readyAns: state.readyAns||null };
 }
 /* Finishing or ending a session, deleting one or saving changes to one can be taken back (TakeBack, shared). */
 const tb=TakeBack.make({key:LS_KEY+'.undo', data:()=>storePayload(), load:c=>hydrate(c),
@@ -2842,7 +2844,7 @@ function viewTrain(){
     <button class="iconbtn" data-act="leave-session" aria-label="Leave the session running">${I.back}</button>
     <div class="tt">
       <h2>${esc(a.name)}</h2>
-      <div class="el mono" id="elapsed">${fmtDur(elapsed)} elapsed &middot; ${doneSets} sets</div>
+      <div class="el mono" id="elapsed">${window.MiloSession?window.MiloSession.elapsed(a):fmtDur(elapsed)+' elapsed'} &middot; ${doneSets} sets</div>
       ${mesoTag}
     </div>
     <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
@@ -6208,7 +6210,7 @@ setInterval(()=>{
     const el=__root.getElementById('elapsed');
     if(el){ const s=Math.floor((Date.now()-state.active.startedAt)/1000);
       const doneSets=state.active.entries.reduce((x,en)=>x+en.sets.filter(z=>isWork(z)&&z.done).length,0);
-      el.innerHTML=MiloSecurity.html(fmtDur(s)+' elapsed &middot; '+doneSets+' sets'); }
+      el.innerHTML=MiloSecurity.html(MiloSession.elapsed(state.active)+' &middot; '+doneSets+' sets'); }
   }
 },1000);
 
@@ -6408,6 +6410,9 @@ if(window.__hub) window.__hub.reg('lift', {
   syncTheme(t){ if(state&&state.settings) state.settings.theme=t; },
   syncPrefs(o){ if(!state||!state.settings) return; let ch=false; ['unit','sound','vibrate','platesKg','platesLb','barKg'].forEach(k=>{ if(k in o && state.settings[k]!==o[k]){ state.settings[k]=o[k]; ch=true; } }); if(ch) save(); },
   sheetOpen:()=>modalOn, running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
+  goalSets(id){ return state.history.flatMap(h=>h.entries.filter(e=>e.exId===id).flatMap(e=>e.sets.filter(s=>s.done&&isWork(s)&&s.reps>0).map(s=>({date:h.date,weight:s.weight||0,reps:s.reps})))); },
+  outcomes:()=>JSON.parse(JSON.stringify(state.outcomeGoals||[])),
+  setOutcomes(g){ state.outcomeGoals=g.slice(-20); save(); },
   info:hubInfo, work:hubWork, start:hubStart, setup:hubSetup, upcoming:hubUpcoming, catalog:hubCatalog, startWith:hubStartWith,
   equipment:()=>CUSTOM_EQUIP.slice(),
   // Together ends a day's open session (id, or the one on screen): keep:true saves the sets you logged, false drops it (Take back still works)
@@ -9170,7 +9175,7 @@ function viewTrain(){
   return `<div class="train-head">
       <button class="iconbtn" data-act="leave-session" aria-label="Leave the session running">${I.back}</button>
       <div class="tt"><h2>${esc(a.name)}</h2>
-        <div class="el" id="elapsed">${fmtDur(elapsed)} elapsed &middot; ${done} sets</div></div>
+        <div class="el" id="elapsed">${window.MiloSession?window.MiloSession.elapsed(a):fmtDur(elapsed)+' elapsed'} &middot; ${done} sets</div></div>
       <button class="setmenu" data-act="session-menu" aria-label="Session options">${I.dots}</button>
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
     </div>
@@ -9723,7 +9728,7 @@ __root.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='tes
 setInterval(()=>{ const a=state.active, el=__root.getElementById('elapsed');
   if(a&&el&&state.route==='train'){
     const done=a.entries.reduce((n,x)=>n+x.sets.filter(s=>s.done).length,0);
-    el.textContent=fmtDur(Math.floor((Date.now()-a.startedAt)/1000))+' elapsed · '+done+' sets';
+    el.textContent=MiloSession.elapsed(a)+' · '+done+' sets';
     __root.querySelectorAll('[data-block-left]').forEach(b=>{ const en=a.entries[+b.dataset.blockLeft]; if(en&&en.block) b.textContent=blockLeft(en); });
   } }, 1000);
 
@@ -10252,7 +10257,7 @@ function load(){
 }
 let saveTimer=null;
 function payload(){ return {v:state.v, onboarded:state.onboarded, route:state.route, settings:state.settings, setup:state.setup, lifts:state.lifts,
-  program:state.program, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, calLast:state.calLast, progTab:state.progTab, progLift:state.progLift, toolTab:state.toolTab}; }
+  outcomeGoals:state.outcomeGoals||[], program:state.program, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, calLast:state.calLast, progTab:state.progTab, progLift:state.progLift, toolTab:state.toolTab}; }
 let strVer=0;   // moves on every change, so Muscle knows when to read Strength's sets again
 function save(){ strVer++; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
@@ -11282,7 +11287,7 @@ function viewTrain(){
   const wk=a.plan&&MODELS[a.plan.model]? (MODELS[a.plan.model].weeks? 'Week '+a.plan.week+' &middot; '+weekName(a.plan.model,a.plan.week) : MODELS[a.plan.model].n) : '';
   return `<div class="train-head">
       <button class="iconbtn" data-act="leave-session" aria-label="Leave the session running">${I.back}</button>
-      <div class="tt"><h2>${esc(a.name)}</h2><div class="el" id="elapsed">${fmtDur(elapsed)} elapsed &middot; ${done} work set${done===1?'':'s'}</div>
+      <div class="tt"><h2>${esc(a.name)}</h2><div class="el" id="elapsed">${window.MiloSession?window.MiloSession.elapsed(a):fmtDur(elapsed)+' elapsed'} &middot; ${done} work set${done===1?'':'s'}</div>
         ${wk?`<span class="chip iron" style="margin-top:6px">${wk}</span>`:''}</div>
       <button class="setmenu" data-act="session-menu" aria-label="Session options">${I.dots}</button>
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
@@ -12164,7 +12169,7 @@ __root.addEventListener('change', e=>{
 });
 setInterval(()=>{ const a=state.active, el=__root.getElementById('elapsed');
   if(a&&el&&state.route==='train'){ const done=a.entries.reduce((n,x)=>n+x.sets.filter(s=>s.done&&s.kind!=='warm').length,0);
-    el.textContent=fmtDur(Math.floor((Date.now()-a.startedAt)/1000))+' elapsed · '+done+' work set'+(done===1?'':'s'); } },1000);
+    el.textContent=MiloSession.elapsed(a)+' · '+done+' work set'+(done===1?'':'s'); } },1000);
 
 /* ==================== EDIT A FINISHED SESSION ==================== */
 /* A copy is edited and replaces the saved session only on Save. Estimated maxes and records read from history,
@@ -12371,6 +12376,9 @@ if(window.__hub) window.__hub.reg('str', {
     return Object.values(out); },
   running:()=>state.active? (state.active.startedAt||Date.now()) : 0,
   sheetOpen:()=>$('#sheet').classList.contains('on'),
+  goalSets(id){ return state.history.flatMap(h=>h.entries.filter(e=>e.liftId===id).flatMap(e=>e.sets.filter(s=>s.done!==false&&s.kind!=='warm'&&s.reps>0).map(s=>({date:h.date,weight:s.w||0,reps:s.reps})))); },
+  outcomes:()=>JSON.parse(JSON.stringify(state.outcomeGoals||[])),
+  setOutcomes(g){ state.outcomeGoals=g.slice(-20); save(); },
   info:hubInfo, work:hubWork, upcoming:hubUpcoming,
   start(){ if(state.active) return null; const D=progDef(); if(!state.program||!D) return null;
     startProgramDay(nextDayIdx()); return state.active? state.active.id : null; },
@@ -12440,7 +12448,8 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flush();
 const $=s=>__root.querySelector(s);
 const H=window.__hub;
 const SEC={lift:{n:'Muscle', c:'#FF5C3C', ink:'#fff'}, str:{n:'Strength', c:'#5B8CFF', ink:'#fff'}, cal:{n:'Ladder', c:'#F2C14E', ink:'#1C1606'}};
-const ALL=['lift','str','cal'];
+const ALL=['lift','str','cal'], CHOICES=[...ALL,'cond'];
+SEC.cond={n:'Conditioning',c:'#74B8A1',ink:'#101A17'};
 const TG_KEY='trainer.together';
 const DAY_MS=86400000;
 /* The program Together builds (THE PROGRAM, below). */
@@ -12549,9 +12558,10 @@ function load(){
       // a one-tap check-in (Rough, OK, Great): the same answer to all four questions
       if(['rough','ok','great'].includes(c.quick)) o.quick=c.quick; }
     return o; }).sort((a,b)=>a.day-b.day).slice(-400);
-  t.secs=ALL.filter(m=>(t.secs||[]).includes(m));
+  t.secs=CHOICES.filter(m=>(t.secs||[]).includes(m));
+  t.conditioning=cleanConditioning(t.conditioning);
   // your priority: all three sections, first to last, or null for the suggested order
-  t.prio= Array.isArray(t.prio) && t.prio.length===ALL.length && ALL.every(m=>t.prio.includes(m))? t.prio.slice() : null;
+  t.prio= Array.isArray(t.prio) && t.prio.length>=ALL.length && ALL.every(m=>t.prio.includes(m))? [...new Set(t.prio.filter(m=>CHOICES.includes(m))).values()].concat(t.secs.includes('cond')&&!t.prio.includes('cond')? ['cond']:[]) : null;
   if(!(t.days>=2&&t.days<=7)) t.days=4;
   // your weekdays, one for each training day, or null for the suggested ones
   t.wd= Array.isArray(t.wd) && t.wd.length===t.days && t.wd.every(x=>Number.isInteger(x)&&x>=0&&x<=6) && new Set(t.wd).size===t.wd.length? t.wd.slice().sort((a,b)=>a-b) : null;
@@ -12630,8 +12640,8 @@ function muscleName(k){ const T=table(); return T&&T.muscles[k]? T.muscles[k].n 
    starts (WEEK 5): lighter when you seem to need it, otherwise a top week; then Together builds the next from your new
    numbers. */
 /* Your order, first to last: the one you set, or the suggested one. */
-function rankList(secs){ return orderParts(secs||tg.secs); }
-function doses(){ const o={}; rankList().forEach((m,k)=>{ o[m]=DOSE[k]; }); return o; }
+function rankList(secs){ return orderParts(secs||tg.secs).filter(m=>m!=='cond'); }
+function doses(){ const o={}; orderParts(tg.secs).forEach((m,k)=>{ o[m]=DOSE[Math.min(k,2)]; }); return o; }
 /* Your kit: everything until you say otherwise; none of it means bodyweight only. */
 function kit(){ if(tg.kit) return tg.kit;
   // before Together is set up, the kit you gave Strength
@@ -12646,9 +12656,9 @@ function oldBase(){ return JSON.stringify([tg.secs, rankList(), tg.days, tg.mins
 function plan(){
   // the order sets each section's dose, so the program keeps the order it was built with: a suggestion that would
   // shift later (a new skill goal moves Ladder first) never swaps doses mid-block
-  if(!tg.prio) tg.prio=autoOrder(ALL, skillGoal());
+  if(!tg.prio) tg.prio=autoOrder(tg.secs.includes('cond')?CHOICES:ALL, skillGoal());
   // GEN: how the plan is built; a change to it rebuilds saved plans once, keeping your week
-  const sig=GEN+'|'+baseSig()+'|'+JSON.stringify([tg.mins, kit(), wdays(), tg.stage||null])+'|'+JSON.stringify(tg.custom||null)+'|'+JSON.stringify(tg.tune||{}), P=tg.plan;
+  const sig=GEN+'|'+baseSig()+'|'+JSON.stringify([tg.mins, kit(), wdays(), tg.stage||null, tg.conditioning.target, tg.conditioning.style])+'|'+JSON.stringify(tg.custom||null)+'|'+JSON.stringify(tg.tune||{}), P=tg.plan;
   if(P && P.sig===sig && P.days && P.days.length===tg.days) return P;
   const keep= P && (P.base===baseSig() || P.base===oldBase()) && P.days && P.days.length===tg.days;
   tg.plan=buildPlan(); tg.plan.sig=sig; tg.plan.base=baseSig();
@@ -12749,7 +12759,7 @@ const minsCal=ps=>ps.length? calMins(ps) : 0;
 
 function buildPlan(T){
   T=T||tg.tune||cleanTune(null);
-  const D=tg.days, B=tg.mins||0, R=rankList(), dose=doses(), exp=tg.exp||'intermediate', S=strLifts(T), PW=wdays(D);
+  const D=tg.days, B=tg.mins?(tg.secs.includes('cond')?Math.max(15,tg.mins-Math.ceil(condTarget(tg.conditioning,orderParts(tg.secs).indexOf('cond'))/D)):tg.mins):0, R=rankList(), dose=doses(), exp=tg.exp||'intermediate', S=strLifts(T), PW=wdays(D);
   const days=Array.from({length:D},()=>({str:[], lift:[], cal:null}));
   // ---- which sections go on which days: the first in your order spread first, then the others on the emptiest days
   let W;
@@ -12943,7 +12953,7 @@ function buildPlan(T){
   return {v:1, at:Date.now(), week:1, weeks:BLOCK, kinds:W, dose, days, noRoom:(noRoom||[]).filter(mu=>!got.has(mu)), cov:cov||{}, goal};
 }
 /* The sections on each day: those the plan put there, less any it found nothing for (every muscle already covered). */
-function weekOf(){ const P=plan(); return P.kinds.map((d,i)=>d.filter(m=>tg.secs.includes(m) && (m!=='str'||P.days[i].str.length) && (m!=='lift'||P.days[i].lift.length))); }
+function weekOf(){ const P=plan(), C=conditioningPlan(P); return P.kinds.map((d,i)=>d.filter(m=>tg.secs.includes(m) && (m!=='str'||P.days[i].str.length) && (m!=='lift'||P.days[i].lift.length)).concat(C[i]?['cond']:[])); }
 /* Ladder sessions before day d this time round, from the next day (or today's open one): which of Ladder's upcoming
    sessions day d gets. */
 function calAhead(d){ const ks=upcomingK(weekOf(), d); return ks&&('cal' in ks)? ks.cal : 0; }
@@ -12975,6 +12985,7 @@ function dayInfo(d, ahead){
       next: exercises.length? {name:listText(gs)||'Muscle', rir, exercises} : null, why:'empty'}; }
   if(tg.secs.includes('cal')){ const i=infoOf('cal'), dose= day.cal? (dl? 'maintain' : day.cal.dose) : P.dose.cal;
     I.cal= i&&i.ready? Object.assign({}, i, {picks:calPicks(dose, ahead!=null? ahead : calAhead(d)), dose}) : i; }
+  const c=conditioningPlan(P)[d]; if(c) I.cond={ready:true,plan:c};
   return memo[key]=I;
 }
 /* The days done so far this time round the week: walking the log back from the newest, while day numbers keep
@@ -13048,6 +13059,7 @@ function dayParts(ms, I){
   if(has('cal') && mid) out.push(cal(!last? 'main' : sk? 'mid' : 'pre'));
   if(has('lift')) out.push({m:'lift'});
   if(has('cal') && last) out.push(cal('core'));
+  if(has('cond')) out.push({m:'cond'});
   return out;
 }
 /* A Ladder part's work: all of it, or its piece of the day. */
@@ -13058,8 +13070,8 @@ function liftRank(x, e){ const p=(e&&e.p)||x.p||[], core=p.length>0 && p.every(q
 /* The suggested ranking, which sets each section's dose: Ladder first when your goals include a balance or straight-arm
    skill, then the heavy lifting, then growth work. */
 function autoOrder(ms, skill){
-  const rank=m=> m==='cal'? (skill?0:2) : m==='str'? 1 : 3;
-  return ALL.filter(m=>ms.includes(m)).sort((a,b)=>rank(a)-rank(b));
+  const rank=m=> m==='cal'? (skill?0:2) : m==='str'? 1 : m==='cond'?4:3;
+  return CHOICES.filter(m=>ms.includes(m)).sort((a,b)=>rank(a)-rank(b));
 }
 /* Your ranking, first to last: the one you set, or the suggested one until you do. It sets the dose, not the day's order. */
 function orderParts(ms){ return tg.prio? tg.prio.filter(m=>ms.includes(m)) : autoOrder(ms, tg.secs.includes('cal')&&skillGoal()); }
@@ -13089,6 +13101,7 @@ function fatigue(since, until){
     api.work(since, until).forEach(w=>{ if(!w.n) return; const mm= w.p? {p:w.p, s:w.s||[]} : H.muscles(w.key, w.group), f= w.f!=null? w.f : w.n;
       const add=(q,v)=>{ const b=by[q]||(by[q]={}); b[m]=(b[m]||0)+v; };
       mm.p.forEach(q=>add(q, f)); (mm.s||[]).forEach(q=>add(q, f*0.5)); }); }catch(e){ console.warn('Together couldn’t read '+m+'’s sets', e); } });
+  (tg.conditioning?.log||[]).filter(x=>x.date>=since&&x.date<(until==null?Infinity:until)).forEach(x=>{ for(const mu of ['quad','ham','glute','calf']){ const z=by[mu]||(by[mu]={}); z.cond=(z.cond||0)+condFatigue(x); } });
   return by;
 }
 
@@ -13293,6 +13306,7 @@ function carryOver(at){
    count are those of the sections named in mods (Muscle plans its own recovery, so it asks for the others);
    what you reported or a sore joint counts whatever its cause. */
 function tiredFrom(C, mods){
+  mods=[...new Set(mods.concat('cond'))];
   const out={}; if(!C) return out;
   new Set(Object.keys(C.by).concat(Object.keys(C.rep||{}), Object.keys(C.pain||{}))).forEach(mu=>{
     const T=thrFor(mu,C.fit), sets=mods.reduce((t,m)=>t+((C.by[mu]||{})[m]||0),0);
@@ -13303,11 +13317,12 @@ function tiredFrom(C, mods){
   });
   return out;
 }
-function tiredSecs(C, mu, mods){ return mods.filter(m=>(C.by[mu]||{})[m]>=1).map(m=>SEC[m].n); }
+function tiredSecs(C, mu, mods){ return [...new Set(mods.concat('cond'))].filter(m=>(C.by[mu]||{})[m]>=1).map(m=>SEC[m].n); }
 /* In words, what is holding a muscle back. */
 function causeOf(C, mu, mods){
+  mods=[...new Set(mods.concat('cond'))];
   const T=thrFor(mu,C.fit), sets=mods.reduce((t,m)=>t+((C.by[mu]||{})[m]||0),0), out=[];
-  if(sets>=T) out.push(`recent ${listText(tiredSecs(C,mu,mods))} work`);
+  if(sets>=T) out.push(`recent ${listText(tiredSecs(C,mu,mods))} work${(C.by[mu]||{}).cond?' (conditioning recovery estimate)':''}`);
   if(C.rep&&C.rep[mu]) out.push(`${C.soreRaw[mu]} of 10 soreness you reported`);
   if(C.pain&&C.pain[mu]) out.push(`your ${JOINTS[C.pain[mu].joint].n.toLowerCase()}, ${C.pain[mu].p} of 10`);
   return listText(out);
@@ -13455,6 +13470,7 @@ function planDay(order, I, short, ctx){
     if(st && st!=='todo'){ return; }     // started or finished: the section itself shows the detail
     if(!st && k===firstOf(m) && trainedToday(m)) p.notes.push(['info', `You already trained ${SEC[m].n} today. Skip it once the day starts, or do it anyway; anything that overlaps is trimmed.`]);
     (A.notes[m]||[]).forEach(t=>{ if(m!=='cal' || k===calNote) p.notes.push(['warn', t]); });
+    if(m==='cond'){ p.title=condTitle(i.plan); p.mins=i.plan.minutes; p.lines=[esc(p.title)]; p.sub='After lifting'; }
     if(m==='str'){
       const d=i.next; p.title=esc(d.name); p.sub=esc(i.name)+(i.weekName? ' &middot; '+i.weekName : '');
       d.slots.forEach(x=>{ p.lines.push(`${esc(x.name)} <span class="n">${x.sets}&nbsp;${x.sets===1? 'set' : 'sets'}${x.sum? ' &middot; '+x.sum : ''}</span>`); add(H.muscles(x.key,x.area), x.sets, m); before.keys[x.key]={sec:'Strength'}; });
@@ -13591,6 +13607,7 @@ H.nextAfter=function(m){
 };
 function startPart(k){
   const run=tg.run, p=run&&run.parts[k]; if(!p||p.st!=='todo') return;
+  if(p.m==='cond'){ const c=conditioningPlan(plan())[run.day]; if(c){ startConditioning(c); p.sid=tg.conditioning.active.id; p.st='run'; save(); } return; }
   const api=H.api(p.m); if(!api) return;
   const i=api.info();
   // a session already going there stays open beside this part's, and you switch between them in the section
@@ -13724,7 +13741,7 @@ if(stripEl) stripEl.addEventListener('click', e=>{
   const b=e.target.closest('[data-tg]'); if(!b) return;
   const a=b.dataset.tg;
   if(a==='home') H.dest('today');
-  else if(a==='open'){ const api=H.api(b.dataset.m); if(api) api.open(); H.away(b.dataset.m,'run'); }
+  else if(a==='open'){ const api=H.api(b.dataset.m); if(api) api.open(); if(b.dataset.m!=='cond')H.away(b.dataset.m,'run'); }
   else if(a==='start') startPart(+b.dataset.k);
 });
 
@@ -13771,7 +13788,8 @@ function dayMuscles(order, I){
   [...new Set(order.map(o=>o.m||o))].forEach(m=>{ if(!usable(m,I[m])) return;
     if(m==='str') I.str.next.slots.forEach(x=>H.muscles(x.key,x.area).p.forEach(q=>s.add(q)));
     else if(m==='lift') I.lift.next.exercises.forEach(e=>e.p.forEach(q=>s.add(q)));
-    else I.cal.picks.forEach(x=>ladMuscles(x).p.forEach(q=>s.add(q))); });
+    else if(m==='cal') I.cal.picks.forEach(x=>ladMuscles(x).p.forEach(q=>s.add(q)));
+    else if(m==='cond') ['quad','ham','glute','calf'].forEach(q=>s.add(q)); });
   return s;
 }
 function dayNotes(order, I, P, C){
@@ -14227,13 +14245,14 @@ const FOCUS_SOURCES=[
 ];
 /* What each section brings to Together, for the set-up. */
 function statusLine(m){
+  if(m==='cond') return 'Aerobic minutes, after lifting or on an easier day.';
   if(m==='lift') return 'Hard sets for each muscle. Loads come from your last sets of each exercise.';
   if(m==='str') return 'Heavy compound lifts. Loads come from your estimated maxes; a new lift starts at a weight you pick.';
   const i=infoOf('cal');
   return i&&i.ready? `Your Ladder ${i.goals.length===1?'goal':'goals'}: ${i.goals.map(esc).join(' &middot; ')}` : 'Calisthenics skills. Choose your goals in Ladder; until then its days are empty.';
 }
 /* The sections picked in the set-up, first to last: your order, or the suggested one. */
-function draftOrder(d){ return d.prio? d.prio.filter(m=>d.secs.includes(m)) : autoOrder(d.secs, d.secs.includes('cal')&&skillGoal()); }
+function draftOrder(d){ return d.prio? [...d.prio,...(!d.prio.includes('cond')?['cond']:[])].filter(m=>d.secs.includes(m)) : autoOrder(d.secs, d.secs.includes('cal')&&skillGoal()); }
 function prioField(d){
   if(d.secs.length<2) return '';
   const order=draftOrder(d), last=order.length-1;
@@ -14241,7 +14260,7 @@ function prioField(d){
   const hint=(own? 'Your order.' : 'Suggested: Ladder first when your goals include a balance or straight-arm skill, then heavy lifting, then growth work.')
     +' First gets a building dose, second a moderate one'+(order.length>2? ', third enough to keep what you have' : '')+'. Every day runs skills first, then heavy lifts, then the rest, whatever the order.';
   return `<div class="field"><div class="spread"><label id="prio-l">What comes first</label><span class="chip">${own?'Your order':'Suggested'}</span></div>
-    <ol class="prio" role="list" aria-labelledby="prio-l">${order.map((m,k)=>`<li class="prow"><span class="rn" aria-hidden="true">${k+1}</span><span class="pt2"><b>${SEC[m].n}</b><span>${DOSE_N[DOSE[k]]}</span></span>
+    <ol class="prio" role="list" aria-labelledby="prio-l">${order.map((m,k)=>`<li class="prow"><span class="rn" aria-hidden="true">${k+1}</span><span class="pt2"><b>${SEC[m].n}</b><span>${DOSE_N[DOSE[Math.min(k,2)]]}</span></span>
       <button class="mv" data-a="d-up" data-m="${m}" aria-label="Move ${SEC[m].n} earlier (now ${k+1} of ${last+1})" ${k?'':'disabled'}>${IC.up}</button>
       <button class="mv" data-a="d-down" data-m="${m}" aria-label="Move ${SEC[m].n} later (now ${k+1} of ${last+1})" ${k<last?'':'disabled'}>${IC.down}</button></li>`).join('')}</ol>
     <p class="hint" style="margin-top:2px">${hint}</p>
@@ -14269,9 +14288,9 @@ function viewSetup(){
     <div class="h2">${tg.on?'What you train':'What do you want to train?'}</div>
     <p class="lead">Pick one or more and rank them. Together builds one week from that: the right dose of each, sessions that fit your time, and one count of hard sets for every muscle. It uses your numbers from each trainer, never their own plans, and the trainers you pick appear as tabs.</p>
     <div class="field" id="su-secs"><label>Train</label>
-      ${ALL.map(m=>`<button class="pick ${d.secs.includes(m)?'on':''}" data-a="d-sec" data-m="${m}" aria-pressed="${d.secs.includes(m)?'true':'false'}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
+      ${CHOICES.map(m=>`<button class="pick ${d.secs.includes(m)?'on':''}" data-a="d-sec" data-m="${m}" aria-pressed="${d.secs.includes(m)?'true':'false'}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
         <span class="pt2"><b>${SEC[m].n}</b><span>${statusLine(m)}</span></span></button>`).join('')}</div>
-    ${prioField(d)}
+    ${prioField(d)}${conditioningFields(d)}
     <div class="field" id="su-days"><label>Days a week you can train</label><div class="pills">${[2,3,4,5,6,7].map(n=>`<button class="${d.days===n?'on':''}" data-a="d-days" data-v="${n}">${n}</button>`).join('')}</div>
       <div class="pills" role="group" aria-label="Which days" style="margin-top:8px">${WD.map((w,i)=>{ const on=dWd(d).includes(i); return `<button class="${on?'on':''}" data-a="d-wd" data-v="${i}" aria-pressed="${on}" aria-label="${WD_N[i]}">${w}</button>`; }).join('')}</div>
       <p class="hint" style="margin-top:6px">Tap the days you can train. Together spaces the hard work over them: heavy squats and hinges 48 hours apart, and straight-arm skills too.</p></div>
@@ -14516,7 +14535,8 @@ function viewMain(){
   const u=undos[undos.length-1];
   return `<div class="stack">
     ${u? `<button class="undoline" data-a="undo">${IC.undo}<span>Undo: ${esc(u.label)}</span></button>` : ''}
-    ${sessionCard()}
+    ${weeklySummary()}${outcomeToday()}
+    ${sessionCard()}${conditioningCard()}
     ${tg.run? heroRun() : heroNext(W)}
     ${ciCard()}
     ${tuneCard()}
@@ -14531,25 +14551,175 @@ function viewMain(){
     <button class="btn ghost block" data-a="edit">${IC.sliders} Change what you train, order, days or time</button>
   </div>`;
 }
+/* Conditioning is saved with Together. Intensity minutes follow WHO; fatigue and the
+   next-day interval guard are conservative planning estimates, not physiological conversions. */
+function cleanConditioning(c){
+  c=c&&typeof c==='object'?c:{};
+  const log=(Array.isArray(c.log)?c.log:[]).filter(x=>x&&Number.isFinite(x.date)&&Number.isFinite(x.minutes)&&x.minutes>0&&x.minutes<=1440&&Number.isFinite(x.rpe)&&x.rpe>=0&&x.rpe<=10&&['run','cycle','row','swim','walk','sport','other'].includes(x.activity)).slice(-1000);
+  return {target:Number.isFinite(c.target)&&c.target>=30&&c.target<=600?c.target:150,style:['easy','intervals','mixed'].includes(c.style)?c.style:'easy',log,
+    active:c.active&&Number.isFinite(c.active.startedAt)&&Number.isFinite(c.active.minutes)&&c.active.minutes>0&&['easy','intervals'].includes(c.active.style)?c.active:null};
+}
+function condEquivalent(x){ return x.minutes*(x.intensity==='vigorous'?2:x.intensity==='light'?0:1); }
+function condTarget(c,rank){ return Math.round(c.target*(rank===0?1:rank===1?2/3:1/3)); }
+function condFatigue(x){ return x.minutes*x.rpe*({run:1,sport:1.2,walk:.35,cycle:.4,row:.5,swim:.4,other:.6}[x.activity]||.6)/90; }
+function condPlacement(days,weekdays,budget,target,style){
+  const out=days.map(()=>null), heavy=days.map(d=>d.heavy), room=days.map(d=>Math.max(0,Math.floor((budget||90)-d.minutes))), order=days.map((_,i)=>i).sort((a,b)=>Number(heavy[a])-Number(heavy[b])||room[b]-room[a]);
+  let left=target;
+  order.forEach((i,k)=>{ if(left<=0||room[i]<5)return;
+    // Adjacent calendar days could be less than 24 h apart; use easy work there.
+    const nextHeavy=days.some((d,j)=>d.heavy&&(weekdays[j]-weekdays[i]+7)%7<=1);
+    const hard=style!=='easy'&&!heavy[i]&&!nextHeavy&&(style==='intervals'||k%2===0);
+    const n=Math.min(room[i],45,Math.ceil(left/(order.length-k)/(hard?1.5:1)));
+    if(n<5)return; const minutes=hard?Math.max(4,Math.floor(n/4)*4):n;
+    out[i]={minutes,style:hard?'intervals':'easy'};left-=minutes*(hard?1.5:1);
+  }); return out;
+}
+function conditioningPlan(P){
+  if(!tg.secs.includes('cond'))return P.days.map(()=>null);
+  const days=P.days.map((d,i)=>({heavy:d.str.some(x=>x.heavy&&['legs','hips'].includes(x.a))||d.lift.some(x=>['quad','ham','glute'].includes(x.mu))||!!(d.cal&&calPicks(d.cal.dose,i).some(x=>gid(x)==='jump'||gid(x)==='plyopush')),
+    minutes:minsStr(d.str)+minsLift(d.lift)+(d.cal?minsCal(calPicks(d.cal.dose,i)):0)}));
+  return condPlacement(days,wdays(),tg.mins,condTarget(tg.conditioning,orderParts(tg.secs).indexOf('cond')),gentle()?'easy':tg.conditioning.style);
+}
+function condTitle(c){ return c.style==='intervals'?Math.max(1,Math.floor(c.minutes/4))+' × 2 min hard, 2 min easy':c.minutes+' min easy: talk in full sentences'; }
+function conditioningFields(d){ if(!d.secs.includes('cond'))return ''; const c=d.conditioning||tg.conditioning;
+  return `<div class="field"><label for="cond-target">Weekly aerobic target (moderate-equivalent minutes)</label><input id="cond-target" type="number" min="30" max="600" step="1" value="${c.target}" data-cond-setting="target"><p class="hint">Default 150. Vigorous minutes count twice; light activity counts toward your log, not this target.</p><label for="cond-style">Style</label><select id="cond-style" data-cond-setting="style">${[['easy','Easy'],['intervals','Intervals'],['mixed','Mixed']].map(([v,n])=>`<option value="${v}" ${c.style===v?'selected':''}>${n}</option>`).join('')}</select></div>`;
+}
+let condScreen=null, goalForm=null, condAudio=null, lastCue=null;
+const ACTIVITIES=['run','cycle','row','swim','walk','sport','other'];
+function conditioningCard(){
+  const active=tg.conditioning.active, P=tg.on&&tg.secs.includes('cond')?conditioningPlan(plan()):[], allotted=P.reduce((n,x)=>n+(x?x.minutes*(x.style==='intervals'?1.5:1):0),0), target=condTarget(tg.conditioning,Math.max(0,orderParts(tg.secs).indexOf('cond')));
+  return `<section class="card"><div class="spread"><h3>Conditioning</h3><button class="btn" data-a="cond-log">Log activity</button></div>${active?`<button class="btn pri block" data-a="cond-resume">Resume ${esc(condTitle(active))}</button>`:tg.secs.includes('cond')?`<p class="hint">${Math.round(allotted)} of ${target} moderate-equivalent minutes fit this week.${allotted<target?' Add easy activity outside your lifting sessions to reach your target.':''}</p>`:'<p class="hint">Log a walk, sport or other activity. Add planned sessions in program setup.</p>'}</section>`;
+}
+function startConditioning(c){
+  if(!tg.conditioning.active)tg.conditioning.active={id:'cond-'+Date.now(),startedAt:Date.now(),minutes:c.minutes,style:c.style};
+  // AudioContext must be created from this user gesture. No sound unless opted in.
+  if(Prefs.get('sound',true)){try{const A=window.AudioContext||window.webkitAudioContext;if(A){condAudio=condAudio||new A();condAudio.resume().catch(()=>{});}}catch(e){}}
+  save();condScreen='timer';lastCue=null;page='train';H.go('mix');render();window.scrollTo(0,0);
+}
+function conditioningScreen(){
+  const a=condScreen==='log'?null:tg.conditioning.active;
+  if(condScreen==='timer'&&a)return `<div class="stack"><div class="spread"><button class="btn" data-a="cond-back">Back</button><h2>Conditioning</h2></div><section class="card cond-timer"><h3>${esc(condTitle(a))}</h3><p data-cond-cue role="status" aria-live="polite">${a.style==='intervals'?'Hard interval':'Easy pace'}</p><div class="cond-clock" data-cond-clock role="timer">0:00</div><p class="hint">Keep the app open for interval cues. Background timers and locked phones may delay sound.</p><button class="btn pri block" data-a="cond-done">Done</button></section></div>`;
+  const min=a?Math.max(1,Math.round((Date.now()-a.startedAt)/60000)):30;
+  return `<div class="stack"><section class="card"><div class="spread"><h2>Log activity</h2><button class="btn" data-a="cond-back">Cancel</button></div>
+    <form id="cond-form"><div class="field"><label for="ca-min">Minutes</label><input id="ca-min" name="minutes" inputmode="decimal" type="number" min="0.1" max="1440" step="0.1" required value="${Math.min(1440,min)}"></div>
+    <div class="field"><label for="ca-act">Activity</label><select id="ca-act" name="activity">${ACTIVITIES.map(v=>`<option value="${v}">${cap(v)}</option>`).join('')}</select></div>
+    <div class="field"><label for="ca-int">Intensity for weekly minutes</label><select id="ca-int" name="intensity"><option value="moderate">Moderate — can talk, cannot sing</option><option value="vigorous">Vigorous — only a few words</option><option value="light">Light — easy conversation and singing</option></select><p class="hint">For mixed intervals, select Moderate and log vigorous minutes separately if you want exact guideline credit.</p></div>
+    <div class="field"><label for="ca-rpe">How hard was the whole session? (RPE)</label><select id="ca-rpe" name="rpe">${['0 · Rest','1 · Very easy','2 · Easy','3 · Moderate','4 · Somewhat hard','5 · Hard','6 · Hard','7 · Very hard','8 · Very hard','9 · Near maximum','10 · Maximum'].map((v,i)=>`<option value="${i}" ${i===3?'selected':''}>${v}</option>`).join('')}</select></div>
+    <div class="row2"><div class="field"><label for="ca-dist">Distance (km, optional)</label><input id="ca-dist" name="distance" type="number" inputmode="decimal" min="0" max="1000" step="0.01"></div><div class="field"><label for="ca-hr">Average heart rate (optional)</label><input id="ca-hr" name="hr" type="number" inputmode="numeric" min="30" max="250" step="1"></div></div>
+    <p class="hint">Leg recovery uses minutes × effort and activity type. This is a planning estimate, not a measurement of muscle fatigue.</p><button class="btn pri block" type="submit">Save activity</button></form></section></div>`;
+}
+function condTick(){
+  const a=tg.conditioning.active, clock=$('[data-cond-clock]');if(!a||!clock)return;
+  const seconds=Math.max(0,Math.floor((Date.now()-a.startedAt)/1000)), complete=seconds>=a.minutes*60, phase=Math.floor(seconds/120), remain=Math.max(0,a.minutes*60-seconds);
+  clock.textContent=Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
+  const cue=complete?'Target time reached — finish when ready':a.style==='intervals'?(phase%2?'Easy recovery':'Hard interval'):'Easy pace: full sentences';
+  const el=$('[data-cond-cue]');if(el.textContent!==cue)el.textContent=cue;
+  const key=complete?'done':a.style==='intervals'?phase:'easy';
+  if(lastCue!=null&&lastCue!==key&&!document.hidden){
+    if(Prefs.get('vibrate',true)&&navigator.vibrate)navigator.vibrate([120,80,120]);
+    if(Prefs.get('sound',true)&&condAudio){try{const o=condAudio.createOscillator(),g=condAudio.createGain();o.connect(g);g.connect(condAudio.destination);g.gain.value=.08;o.frequency.value=complete?660:880;o.start();o.stop(condAudio.currentTime+.2);}catch(e){}}
+  }lastCue=key;
+}
+setInterval(condTick,500);
+function conditioningProgress(){
+  const ws=weekStart(), log=tg.conditioning.log, target=condTarget(tg.conditioning,Math.max(0,orderParts(tg.secs).indexOf('cond'))), counts=ACTIVITIES.map(a=>[a,log.filter(x=>x.activity===a).length]).filter(x=>x[1]);
+  const rows=Array.from({length:12},(_,i)=>{const start=Day.add(ws,(i-11)*7),entries=log.filter(x=>x.date>=start&&x.date<Day.add(start,7));return {start,minutes:entries.reduce((n,x)=>n+condEquivalent(x),0),rpe:entries.length?entries.reduce((n,x)=>n+x.rpe,0)/entries.length:null};});
+  return `<section class="card"><div class="spread"><h3>Conditioning</h3><button class="btn" data-a="cond-log">Log activity</button></div><p class="hint">Moderate-equivalent minutes · target ${target}/week. Effort is your whole-session RPE (0–10).</p><div class="cond-history"><table><thead><tr><th>Week of</th><th>Minutes / target</th><th>Average effort</th></tr></thead><tbody>${rows.map(x=>`<tr><th scope="row">${fmtDay(x.start)}</th><td>${Math.round(x.minutes)} / ${target}<progress max="${target}" value="${Math.min(target,x.minutes)}" aria-label="${fmtDay(x.start)}: ${Math.round(x.minutes)} minutes"></progress></td><td>${x.rpe==null?'—':x.rpe.toFixed(1)}</td></tr>`).join('')}</tbody></table></div><p class="hint">${counts.length?counts.map(([a,n])=>cap(a)+': '+n).join(' · '):'No activities logged yet.'}</p>
+    <details class="rules"><summary>Evidence and planning estimates</summary><p class="hint"><a href="https://bjsm.bmj.com/content/54/24/1451" target="_blank" rel="noopener">WHO 2020 (Bull et al.)</a>: adults aim for 150–300 moderate or 75–150 vigorous minutes weekly. <a href="https://pubmed.ncbi.nlm.nih.gov/35228201/" target="_blank" rel="noopener">Momma 2022</a>: combined aerobic and strength activity is associated with lower mortality in observational studies. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8891239/" target="_blank" rel="noopener">Schumann 2022</a>: concurrent training generally preserves maximal strength and muscle growth; explosive strength may be affected by same-session training. Milo’s next-day interval guard and activity-to-fatigue weights are conservative planning estimates, not study-derived cutoffs.</p></details></section>`;
+}
+H.reg('cond',{
+  info:()=>({ready:true,busy:!!tg.conditioning.active,activeId:tg.conditioning.active?.id,open:tg.conditioning.active?[tg.conditioning.active.id]:[]}),
+  rec:id=>tg.conditioning.log.some(x=>x.id===id)?'done':null,
+  recsIn:(from,to)=>tg.conditioning.log.filter(x=>x.date>=from&&x.date<to),
+  open(){condScreen='timer';page='train';H.go('mix');render();},
+  end(keep){if(keep){condScreen='log';H.go('mix');render();return false;}tg.conditioning.active=null;save();return true;}
+});
+__root.addEventListener('change',e=>{const k=e.target.dataset.condSetting;if(!k)return;const d=draft||first;if(!d)return;d.auto=false;d.conditioning=d.conditioning||{target:150,style:'easy'};if(k==='target'){const n=Num.parse(e.target.value);d.conditioning.target=n!=null&&n>=30&&n<=600?n:150;e.target.value=d.conditioning.target;}else d.conditioning.style=e.target.value;});
+__root.addEventListener('submit',e=>{if(e.target.id!=='cond-form')return;e.preventDefault();if(!e.target.reportValidity())return;
+  const f=new FormData(e.target),a=condScreen==='log-active'?tg.conditioning.active:null;
+  const row={id:a?a.id:'activity-'+Date.now(),date:Date.now(),minutes:Number(f.get('minutes')),activity:f.get('activity'),intensity:f.get('intensity'),rpe:Number(f.get('rpe')),distance:f.get('distance')===''?null:Number(f.get('distance')),hr:f.get('hr')===''?null:Number(f.get('hr'))};
+  if(!Number.isFinite(row.minutes)||row.minutes<=0||row.minutes>1440||!ACTIVITIES.includes(row.activity)||row.rpe<0||row.rpe>10)return;
+  if(tg.conditioning.log.length>=1000){toast('The activity log is full. Export a backup before clearing old data.');return;}
+  try{MiloSecurity.parseSection(JSON.stringify({...tg,conditioning:{...tg.conditioning,log:tg.conditioning.log.concat(row)}}),TG_KEY);}catch(err){toast('Storage limit reached. Export a backup first.');return;}
+  tg.conditioning.log.push(row);if(a)tg.conditioning.active=null;save();condScreen=null;fresh();page='today';render();toast('Activity saved');
+});
+
+/* Outcome goals: stored by Muscle/Strength, calculated from logged performance only. */
+function outcomeProjection(points,target,now){
+  const E=Lift.estimate(points), T=Lift.trend(points), value=E?E.value:0, pct=target>0?Math.min(100,Math.max(0,value/target*100)):0;
+  let projected=null;
+  if(value>=target&&value>0)projected=now;
+  else if(value>0&&T.state==='up'&&T.slope>0){const weeks=Math.log(target/value)/Math.log(1+T.slope);if(Number.isFinite(weeks)&&weeks>=0&&weeks<=520)projected=now+weeks*7*DAY_MS;}
+  return {value,pct,projected,trend:T.state};
+}
+function allOutcomes(){return ['lift','str'].flatMap(m=>{const A=H.api(m);return (A&&A.outcomes?A.outcomes():[]).filter(g=>g&&['max','reps','sets'].includes(g.kind)&&Number.isFinite(g.target)&&g.target>0).map(g=>({...g,m}));});}
+function outcomeStatus(g){
+  const A=H.api(g.m), now=Date.now();
+  if(g.kind==='sets'){
+    let count=0,ws=weekStart(),start=Day.start(g.created||now);
+    for(let i=0;i<Math.min(52,g.weeks||1);i++){const w=Day.add(ws,-7*i);if(Day.add(w,7)<=start)break;const n=H.sets(w,Math.min(now,Day.add(w,7)),ALL).direct[g.key]||0;if(n>=g.target)count++;else if(i>0)break;}
+    return {value:count,pct:Math.min(100,count/(g.weeks||1)*100),projected:count>=(g.weeks||1)?now:null,detail:count+' / '+g.weeks+' weeks at '+g.target+' hard sets'};
+  }
+  const points=g.kind==='max'?(A.points(0).find(x=>x.id===g.key)?.pts||[]):(A.goalSets?A.goalSets(g.key):[]).filter(x=>x.weight>=g.load&&x.reps>0).map(x=>({date:x.date,e1:x.reps,rated:true}));
+  const out=outcomeProjection(points,g.target,now);
+  if(g.kind==='reps'){out.value=points.length?Math.max(...points.map(x=>x.e1)):0;out.pct=Math.min(100,out.value/g.target*100);if(out.value>=g.target)out.projected=now;}
+  out.detail=g.kind==='max'?wtxt(out.value)+' / '+wtxt(g.target)+' estimated max':out.value+' / '+g.target+' reps at '+wtxt(g.load);
+  return out;
+}
+function outcomeCard(){
+  const gs=allOutcomes();return `<section class="card"><div class="spread"><h3>Your goals</h3><button class="btn" data-a="goal-new">Set a goal</button></div>${gs.length?gs.map(g=>{const x=outcomeStatus(g);return `<div class="grow"><div class="spread"><b>${esc(g.name)}</b><button class="btn sm ghost" data-a="goal-remove" data-m="${g.m}" data-id="${esc(g.id)}" aria-label="Remove goal ${esc(g.name)}">Remove</button></div><p>${esc(x.detail)}</p><progress max="100" value="${x.pct}" aria-label="${esc(g.name)}: ${Math.round(x.pct)} percent"></progress><p class="hint">By ${fmtDay(g.due)} · ${x.pct>=100?'Goal reached':x.projected?'Projected '+fmtDay(x.projected)+' (estimate)':g.kind==='sets'?'Keep meeting the weekly target':'Not enough sessions or a clear upward trend to project a date'}.</p></div>`;}).join(''):'<p class="hint">Aim for an estimated max, reps at a load, or steady weekly muscle work.</p>'}</section>`;
+}
+function outcomeToday(){const gs=allOutcomes().map(g=>({g,x:outcomeStatus(g)})).filter(({g,x})=>x.pct<100&&(x.pct>=85||g.due<Date.now()||x.projected&&x.projected>g.due));return gs.length?`<p class="hint">${gs.map(({g,x})=>esc(g.name)+': '+(g.due<Date.now()||x.projected&&x.projected>g.due?'behind your target date':'close — '+Math.round(x.pct)+'%')).join(' · ')}</p>`:'';}
+function outcomeForm(){
+  const kind=goalForm.kind||'max',m=goalForm.m||'str',A=H.api(m),opts=kind==='sets'?LIFT_MUSCLES.map(k=>({id:k,n:muscleName(k)})):A.lib();
+  const due=Day.key(Day.add(startOfToday(),84));
+  return `<div class="stack"><section class="card"><div class="spread"><h2>Set a goal</h2><button class="btn" data-a="goal-cancel">Cancel</button></div><form id="goal-form"><div class="field"><label for="goal-kind">Goal</label><select id="goal-kind" data-goal-kind>${[['max','Estimated max'],['reps','Reps at a load'],['sets','Weekly hard sets']].map(([v,n])=>`<option value="${v}" ${v===kind?'selected':''}>${n}</option>`).join('')}</select></div>
+    ${kind==='sets'?'':`<div class="field"><label for="goal-owner">Section</label><select id="goal-owner" data-goal-owner><option value="str" ${m==='str'?'selected':''}>Strength</option><option value="lift" ${m==='lift'?'selected':''}>Muscle</option></select></div>`}
+    <div class="field"><label for="goal-key">${kind==='sets'?'Muscle':'Exercise'}</label><select name="key" id="goal-key">${opts.map(x=>`<option value="${esc(x.id)}">${esc(x.n)}</option>`).join('')}</select></div>
+    <div class="field"><label for="goal-target">${kind==='max'?'Estimated max ('+Prefs.get('unit','kg')+')':kind==='reps'?'Reps':'Hard sets per week'}</label><input id="goal-target" name="target" required type="number" inputmode="decimal" min="1" max="${kind==='max'?2000:kind==='reps'?100:40}" step="${kind==='max'?'0.5':'1'}"></div>
+    ${kind==='reps'?`<div class="field"><label for="goal-load">Load (${Prefs.get('unit','kg')})</label><input id="goal-load" name="load" required type="number" inputmode="decimal" min="0" max="2000" step="0.5"></div>`:''}
+    ${kind==='sets'?'<div class="field"><label for="goal-weeks">Weeks to keep it up</label><input id="goal-weeks" name="weeks" required type="number" min="1" max="52" step="1" value="4"></div>':''}
+    <div class="field"><label for="goal-due">Target date</label><input id="goal-due" name="due" required type="date" min="${Day.key(startOfToday())}" value="${due}"></div><p class="hint">A projected date is an estimate from your logged trend, not a promise. Weekly muscle sets count across all three training sections.</p><button class="btn pri block" type="submit">Save goal</button></form></section></div>`;
+}
+function summaryNumbers(recs,from,to,planned,sets,records,activities){return {sessions:new Set(recs.filter(x=>x.date>=from&&x.date<to).map(x=>x.m+':'+x.id)).size,days:new Set(recs.filter(x=>x.date>=from&&x.date<to).map(x=>Day.key(x.date))).size,planned,sets,records,minutes:activities.filter(x=>x.date>=from&&x.date<to).reduce((n,x)=>n+condEquivalent(x),0)};}
+function weeklySummary(){
+  const ws=weekStart();if(tg.summarySeen===ws)return '';const from=Day.add(ws,-7),recs=recsAll(),activities=tg.conditioning.log;
+  // No empty report on a first-ever visit. Only completed weeks with recorded activity count.
+  if(!recs.some(x=>x.date<ws)&&!activities.some(x=>x.date<ws))return '';
+  const targets=tg.on?plan().goal||{}:{},sets=H.sets(from,ws,ALL).direct;
+  const records=liftPoints(0).filter(x=>{const past=x.pts.filter(p=>p.date<from).reduce((n,p)=>Math.max(n,p.e1),0);return x.pts.some(p=>p.date>=from&&p.date<ws&&p.e1>past);}).length;
+  const n=summaryNumbers(recs,from,ws,tg.days,sets,records,activities),gs=allOutcomes();
+  return `<section class="card"><div class="spread"><h3>Last week</h3><button class="btn sm ghost" data-a="summary-dismiss">Dismiss</button></div><p>${n.days} of ${n.planned} planned training days · ${n.sessions} section sessions · ${n.records} lifts with new records.</p><p>${Math.round(n.minutes)} moderate-equivalent conditioning minutes.</p><details class="rules"><summary>Sets and goals</summary>${Object.keys({...targets,...sets}).map(k=>`<p class="hint">${esc(muscleName(k))}: ${Math.round(sets[k]||0)}${targets[k]?' / '+targets[k]:''} hard sets</p>`).join('')}${gs.map(g=>`<p class="hint">${esc(g.name)}: ${Math.round(outcomeStatus(g).pct)}% now</p>`).join('')}${goalsCard()}</details></section>`;
+}
+__root.addEventListener('change',e=>{if(e.target.hasAttribute('data-goal-kind')){goalForm.kind=e.target.value;if(goalForm.kind==='sets')goalForm.m='lift';render();}if(e.target.hasAttribute('data-goal-owner')){goalForm.m=e.target.value;render();}});
+__root.addEventListener('submit',e=>{if(e.target.id!=='goal-form')return;e.preventDefault();if(!e.target.reportValidity())return;
+  const f=new FormData(e.target),kind=goalForm.kind,m=kind==='sets'?'lift':goalForm.m,A=H.api(m),gs=A.outcomes(),unit=Prefs.get('unit','kg'),factor=unit==='lb'?.45359237:1;
+  if(gs.length>=20){toast('Remove an old goal before adding another.');return;}
+  const key=f.get('key'),label=e.target.querySelector('[name="key"]').selectedOptions[0]?.textContent||key;
+  const g={id:'goal-'+Date.now(),kind,key,name:label,target:Number(f.get('target'))*(kind==='max'?factor:1),load:kind==='reps'?Number(f.get('load'))*factor:null,weeks:kind==='sets'?Number(f.get('weeks')):null,due:new Date(f.get('due')+'T23:59:59').getTime(),created:Date.now()};
+  if(!Number.isFinite(g.target)||g.target<=0||!Number.isFinite(g.due))return;
+  A.setOutcomes(gs.concat(g));goalForm=null;page='progress';render();toast('Goal saved');
+});
+
 /* ==================== ONE APP: TODAY, TRAIN, PROGRESS, LIBRARY ====================
    Together draws the pages that cover every section: Today (its day), Train when no single session is the one to
    show, Progress's All and Library's All (and Strength, which has no library page of its own). The shell's navigation
    picks the page (go); each section's own pages stay its own. */
 const QUICK=[['rough','Rough',2],['ok','OK',4],['great','Great',6]];
-const FIRST_LINE={lift:'Build muscle', str:'Lift heavier', cal:'Calisthenics skills, rung by rung'};
+const FIRST_LINE={lift:'Build muscle', str:'Lift heavier', cal:'Calisthenics skills, rung by rung',cond:'Aerobic fitness and activity'};
 const localUnit=()=>/-(US|LR|MM)\b/i.test(String(navigator.language||''))? 'lb' : 'kg';
 const PAGE_H={today:'Today', train:'Train', progress:'Progress', library:'Library'};
 function progType(){ return !tg.on && ALL.includes(tg.type)? tg.type : 'mix'; }
-function newFirst(){ return {secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit(), auto:true}; }
+function newFirst(){ return {conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit(), auto:true}; }
 /* First run: what you train, how many days, and units. Everything else starts from a full gym, an hour and some
    training behind you, and is yours to change once the first session is done. */
 function viewFirst(){
   const f=first;
   return `<div class="stack"><section class="card first">
     <div class="h2">What do you want to train?</div>
-    <div class="field" role="group" aria-label="Train">${ALL.map(m=>`<button class="pick ${f.secs.includes(m)?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${f.secs.includes(m)}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
+    <div class="field" role="group" aria-label="Train">${CHOICES.map(m=>`<button class="pick ${f.secs.includes(m)?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${f.secs.includes(m)}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
       <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`).join('')}</div>
-    <div class="field"><label id="f-days-l">Days a week</label><div class="pills" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
+    ${conditioningFields(f)}<div class="field"><label id="f-days-l">Days a week</label><div class="pills" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
     <div class="spread"><span class="hint" id="f-unit-l" style="margin:0">Weights in</span><div class="pills" role="group" aria-labelledby="f-unit-l">${['kg','lb'].map(v=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${v}</button>`).join('')}</div></div>
     <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length?'':'disabled'}>${IC.arrow} Build my week</button></div>
     <p class="hint" style="text-align:center">${f.secs.length? 'Starts from a full gym, an hour a session and some training behind you. Change any of it later.' : 'Pick at least one.'}</p>
@@ -14607,7 +14777,7 @@ function viewTrainHub(){
     ${open.length? `<section class="card"><div class="eyebrow">${plural(open.length,'section')} with a session open</div>${open.map(m=>{ const i=infoOf(m), n=(i.open||[]).length;
       return `<div class="spread" style="margin-top:10px"><div style="min-width:0"><b>${esc(i.activeName||SEC[m].n)}</b><div class="hint" style="margin:2px 0 0">${SEC[m].n}${n>1? ' &middot; '+n+' open' : ''}</div></div>
         <button class="btn pri sm" data-a="resume" data-m="${m}" style="flex:none">Resume</button></div>`; }).join('')}</section>` : ''}
-    <section class="card"><div class="eyebrow">Today</div>${today}</section>
+    ${conditioningCard()}<section class="card"><div class="eyebrow">Today</div>${today}</section>
     ${quick.length? `<section class="card"><div class="eyebrow">Or one section on its own</div><div class="stack" style="gap:8px;margin-top:10px">${quick.map(m=>
       `<button class="btn block" data-a="tr-quick" data-m="${m}"><span class="dot" style="background:${SEC[m].c}"></span> ${SEC[m].n} session</button>`).join('')}</div>
       <p class="hint">Its own next session, outside your week. It still counts toward each muscle’s weekly sets.</p></section>` : ''}
@@ -14654,7 +14824,7 @@ function goalsCard(){
     <div class="gbar" role="img" aria-label="${esc(g.n)}: ${g.placed? g.pct+'% of the way' : 'not placed yet'}"><i style="width:${g.placed? g.pct : 0}%"></i></div>${g.step? `<div class="hint" style="margin:4px 0 0">Now: ${esc(g.step)}</div>` : ''}</div>`).join('')}</section>`;
 }
 function viewProgressAll(){
-  return `<div class="stack">${weekCount()}${volCard({lift:H.has('lift')? infoOf('lift') : null})}${liftsCard()}${goalsCard()}${recoveryCard()}</div>`;
+  return `<div class="stack">${weekCount()}${volCard({lift:H.has('lift')? infoOf('lift') : null})}${liftsCard()}${outcomeCard()}${goalsCard()}${conditioningProgress()}${recoveryCard()}</div>`;
 }
 /* Library, All (and Strength): every exercise in every section, one search. A section's own library has more:
    Muscle's filters and your own exercises, Ladder's ladders rung by rung. */
@@ -14691,7 +14861,7 @@ H.reg('mix', {
     const el=$('#su-'+field); if(!el) { window.scrollTo(0,0); return; }
     const det=el.querySelector('details'); if(det) det.open=true;
     el.scrollIntoView({block:'start'}); const b=el.querySelector('button,input'); if(b) b.focus({preventScroll:true}); },
-  runPart(){ const p=tg.on&&tg.run&&tg.run.parts.find(x=>x.st==='run'); return p? p.m : null; },
+  runPart(){ const p=tg.on&&tg.run&&tg.run.parts.find(x=>x.st==='run'); return p? (p.m==='cond'?'mix':p.m) : null; },
   sheetOpen:()=>false,
 });
 /* A drawing error shows what went wrong, with a retry, instead of taking the whole tab down. */
@@ -14702,14 +14872,16 @@ function render(){
       <p class="muted" style="margin:0 0 14px;font-size:13px;line-height:1.5">Your training data is safe. If this keeps happening, send a screenshot of this message:<br><code style="font-size:12px;word-break:break-word">${esc(String(err&&err.message||err))}</code></p>
       <button class="btn" data-a="retry">Try again</button> <button class="btn" data-a="edit">Change the setup</button></div>`); }
 }
-const newDraft=()=>({secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice(), kit:kit().length<KIT.length? kit().slice() : null, exp:tg.exp||'intermediate',
+const newDraft=()=>({conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice(), kit:kit().length<KIT.length? kit().slice() : null, exp:tg.exp||'intermediate',
   wd:tg.wd&&tg.wd.slice(), stage:tg.stage||'', yes:tg.screen? tg.screen.yes.slice() : [], asked:!!tg.screen});
 function draw(){
   fresh(); refreshRun(); strip();
   const y=window.scrollY;
   let html;
-  if(page==='train') html=viewTrainHub();
-  else if(page==='progress') html=viewProgressAll();
+  if(condScreen) html=conditioningScreen();
+  else if(goalForm) html=outcomeForm();
+  else if(page==='train') html=viewTrainHub();
+  else if(page==='progress') html=H.progressFilter&&H.progressFilter()==='cond'? '<div class="stack">'+conditioningProgress()+'</div>' : viewProgressAll();
   else if(page==='library') html=viewLibraryAll();
   // the first run picks the sections you have training in (an import, say) until you pick for yourself
   else { if(!tg.on && !draft && (!first||first.auto)) first=newFirst(); if(tg.on) first=null;
@@ -14720,6 +14892,7 @@ function draw(){
     : tg.on&&!draft? `${rankList().map(m=>SEC[m].n).join(' + ')} &middot; ${plural(tg.days,'day')} a week` : 'Your whole week, in one program');
   if(H.current()==='mix') window.scrollTo(0,y);
   if(window.__routed) window.__routed('mix', page);
+  if(H.current()==='mix'&&window.__sessionMode){ window.__sessionMode(!!condScreen); document.documentElement.classList.toggle('session-focus-active',!!condScreen); }
 }
 
 /* ==================== ACTIONS ==================== */
@@ -14727,14 +14900,22 @@ __root.addEventListener('click', e=>{
   const el=e.target.closest('[data-a]'); if(!el||el.disabled) return;
   const a=el.dataset.a, k=+el.dataset.k;
   switch(a){
+    case 'cond-log': condScreen='log'; render(); window.scrollTo(0,0); break;
+    case 'cond-resume': condScreen='timer'; render(); window.scrollTo(0,0); break;
+    case 'cond-done': condScreen='log-active'; render(); break;
+    case 'cond-back': condScreen=null; render(); break;
+    case 'goal-new': goalForm={kind:'max',m:'str'}; render(); window.scrollTo(0,0); break;
+    case 'goal-cancel': goalForm=null; render(); break;
+    case 'goal-remove': {const A=H.api(el.dataset.m);if(A?.outcomes)A.setOutcomes(A.outcomes().filter(g=>g.id!==el.dataset.id));render();break;}
+    case 'summary-dismiss': tg.summarySeen=weekStart(); save(); render(); break;
     // first run: what you train, days a week, units, then build
-    case 'f-sec': { first.auto=false; const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'f-sec': { first.auto=false; const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : CHOICES.filter(x=>s.includes(x)||x===m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 'f-days': first.auto=false; first.days=+el.dataset.v; render(); { const b=$(`[data-a="f-days"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
     case 'f-unit': first.auto=false; first.unit=el.dataset.v==='lb'? 'lb' : 'kg'; render(); { const b=$(`[data-a="f-unit"][data-v="${first.unit}"]`); if(b) b.focus({preventScroll:true}); } break;
     case 'f-backup': if(window.__openSettings) window.__openSettings('restore'); break;
     case 'f-go': { const f=first; if(!f||!f.secs.length) break;
       if(tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
-      tg.secs=f.secs.slice(); tg.days=f.days; tg.mins=60; tg.prio=autoOrder(ALL, skillGoal()).slice(); tg.on=true; tg.type=null;
+      tg.secs=f.secs.slice(); Object.assign(tg.conditioning,f.conditioning); tg.days=f.days; tg.mins=60; tg.prio=autoOrder(tg.secs.includes('cond')?CHOICES:ALL, skillGoal()).slice(); tg.on=true; tg.type=null;
       tg.kit=null; tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
       Prefs.set({unit:f.unit, kit:KIT.map(k=>k[0])});
       first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Your week is built. Day 1 is ready.'); break; }
@@ -14765,7 +14946,7 @@ __root.addEventListener('click', e=>{
     case 'lib-ev': { const m=el.dataset.m, api=H.api(m); if(!api||!api.evidence) break; H.away(m,'rec'); api.evidence(); break; }
     case 'lib-tools': { const api=H.api('str'); if(api){ H.go('str'); api.go('tools'); } break; }
     case 'lib-more': if(H.filter) H.filter('library', el.dataset.m); break;
-    case 'd-sec': { const m=el.dataset.m, s=draft.secs; draft.secs= s.includes(m)? s.filter(x=>x!==m) : ALL.filter(x=>s.includes(x)||x===m); render(); break; }
+    case 'd-sec': { const m=el.dataset.m, s=draft.secs; draft.secs= s.includes(m)? s.filter(x=>x!==m) : CHOICES.filter(x=>s.includes(x)||x===m); render(); break; }
     case 'd-days': draft.days=+el.dataset.v; draft.wd=null; render(); break;
     // your weekdays: tap to train on one or not; the number of days follows, two at least
     case 'd-wd': { const v=+el.dataset.v, cur=dWd(draft).slice(), i=cur.indexOf(v);
@@ -14849,7 +15030,7 @@ __root.addEventListener('click', e=>{
       break; }
     case 'd-up': case 'd-down': {
       // moves past the next picked section; one not picked keeps its place for when it is
-      const m=el.dataset.m, base=(draft.prio||autoOrder(ALL, skillGoal())).slice(), vis=base.filter(x=>draft.secs.includes(x));
+      const m=el.dataset.m, base=[...(draft.prio||autoOrder(CHOICES, skillGoal()))]; if(!base.includes('cond'))base.push('cond'); const vis=base.filter(x=>draft.secs.includes(x));
       const i=vis.indexOf(m), j= a==='d-up'? i-1 : i+1; if(i<0||j<0||j>=vis.length) break;
       const bi=base.indexOf(m), bj=base.indexOf(vis[j]); base[bi]=vis[j]; base[bj]=m;
       draft.prio=base; render();
@@ -14863,7 +15044,7 @@ __root.addEventListener('click', e=>{
       if(tg.on) remember('changes to the set-up');
       // a first set-up starts the count of blocks at none, so later changes can't make the first one look finished
       if(!tg.on && tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
-      tg.secs=draft.secs.slice(); tg.days=draft.days; tg.mins=draft.mins; tg.prio=(draft.prio||autoOrder(ALL, skillGoal())).slice(); tg.on=true;
+      tg.secs=draft.secs.slice(); Object.assign(tg.conditioning,draft.conditioning); tg.days=draft.days; tg.mins=draft.mins; tg.prio=(draft.prio? [...draft.prio,...(tg.secs.includes('cond')&&!draft.prio.includes('cond')?['cond']:[])]:autoOrder(tg.secs.includes('cond')?CHOICES:ALL, skillGoal())).slice(); tg.on=true;
       tg.kit= draft.kit&&draft.kit.length<KIT.length? draft.kit.slice() : null; tg.exp=draft.exp||'intermediate';
       // weekdays you picked (the suggested ones are kept as none), life stage, and the health check, kept on this phone
       tg.wd= Array.isArray(draft.wd)&&draft.wd.length===tg.days&&draft.wd.join()!==POS[tg.days].join()? draft.wd.slice() : null;
@@ -15357,8 +15538,8 @@ render();
      a program type of one section, that section's own Today), Train the session that's running, Progress and Library
      one page each with a filter for the section. A section's own navigation is hidden: each tells the shell which page
      it shows (__routed), so the navigation stays right however you got there. */
-  const DESTS=['today','train','progress','library'], FILTERS=['all','lift','str','cal'];
-  const NAMES={all:'All', lift:'Muscle', str:'Strength', cal:'Ladder'}, PLAN_ROUTE={lift:'plan', str:'program', cal:'goals'};
+  const DESTS=['today','train','progress','library'], FILTERS=['all','lift','str','cal','cond'];
+  const NAMES={all:'All', lift:'Muscle', str:'Strength', cal:'Ladder',cond:'Conditioning'}, PLAN_ROUTE={lift:'plan', str:'program', cal:'goals'};
   const routes={}, savedRun={};
   let dest='today', routing=false, homeAfter=null, libQ='';
   const filt={progress:'all', library:'all'};
@@ -15393,7 +15574,7 @@ render();
   const sub=document.getElementById('subnav'), chipsEl=document.getElementById('subchips'), qWrap=document.getElementById('libq-wrap'), qIn=document.getElementById('libq');
   function paintSub(){
     const type=progType(); let chips=null, cur=null;
-    if(dest==='progress'||dest==='library'){ chips=FILTERS.map(f=>[f, NAMES[f]]); cur=filt[dest]; }
+    if(dest==='progress'||dest==='library'){ chips=FILTERS.filter(f=>dest==='progress'||f!=='cond').map(f=>[f, NAMES[f]]); cur=filt[dest]; }
     else if(dest==='today' && type!=='mix'){ chips=[['today','Today'],[PLAN_ROUTE[type], type==='cal'? 'Goals' : 'Plan']]; cur= active===type && routes[type]===PLAN_ROUTE[type]? PLAN_ROUTE[type] : 'today'; }
     sub.hidden=!chips; qWrap.hidden=dest!=='library';
     if(!chips) return;
@@ -15419,7 +15600,7 @@ render();
       else { const A=hubApi(m); if(A&&A.open) A.open(); routes[m]='train';
         // a part of a Together day: finishing it leads on to the next part, as when it was started from Today
         try{ const T=hubApi('mix'); if(T&&T.runPart&&T.runPart()===m) back={m, kind:'run', y:null, act0:null}; keepBack(); }catch(e){} } }
-    else if(d==='progress'){ const f=filt.progress; if(f==='all'){ show('mix'); apiGo('mix','progress'); } else { show(f); apiGo(f,'progress'); } }
+    else if(d==='progress'){ const f=filt.progress; if(f==='all'||f==='cond'){ show('mix'); apiGo('mix','progress'); } else { show(f); apiGo(f,'progress'); } }
     else { const f=filt.library;
       if(f==='lift'){ if(!(o.typing&&active==='lift')){ show('lift'); apiGo('lift','library'); } const A=apis.lift; if(A&&A.search) A.search(libQ); }
       else if(f==='cal'&&!libQ){ show('cal'); apiGo('cal','library'); }
@@ -15588,7 +15769,7 @@ render();
     changed:hubChanged,
     on(f){ listeners.push(f); },
     go(m){ if(m==='mix'){ show('mix'); apiGo('mix','today'); } else show(m); },
-    dest:goDest, type:progType, libq:()=>({q:libQ, f:filt.library}), filter(d, f){ if(FILTERS.includes(f)&&filt[d]){ filt[d]=f; goDest(d); } },
+    dest:goDest, type:progType, progressFilter:()=>filt.progress, libq:()=>({q:libQ, f:filt.library}), filter(d, f){ if(FILTERS.includes(f)&&filt[d]){ filt[d]=f; goDest(d); } },
     away, stay, closed(m){ checkBack(m,'closed'); }, left(m){ checkBack(m,'left'); },
     // the finish screen's Next button: on to the next part of today's day, or back to Today
     next(m){ back=null; keepBack(); if(!(window.__hub.advance && window.__hub.advance(m))) goDest('today'); },
