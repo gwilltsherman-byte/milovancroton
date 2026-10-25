@@ -178,15 +178,25 @@ test('stale successful sessions cannot satisfy the two-session advancement rule'
   assert.equal(api.evaluate('currentProof("dip",0).ready'), false);
 });
 
-test('setup is not measured: sets count toward readiness without it, and assisted work still cannot prove an unassisted entry', () => {
+// Item 50 changed this: assisted steps now ask one number, a help level, and only sets with it are proof.
+test('assisted steps ask one help level: sets without it are practice, and assisted work still cannot prove an unassisted entry', () => {
   const api = ladder(), state = api.getState();
-  assert.deepEqual(plain(api.evaluate('setupFields(stepsOf("pull")[3])')), [], 'no setup fields are asked for');
+  assert.deepEqual(plain(api.evaluate('setupFields(stepsOf("pull")[3])')).map(f => f.key), ['assist'], 'one help level is asked for');
+  assert.deepEqual(plain(api.evaluate('setupFields(stepsOf("pull")[4])')), [], 'an unassisted step asks for nothing');
   state.history.push(record('pull', 3, [8, 8, 8], {setup: {}, date: Date.now() - 2 * day}));
+  assert.equal(api.evaluate('verifiedBestFor("pull",3)'), 0, 'a set without its help level is not proof');
+  assert.equal(api.evaluate('bestFor("pull",3)'), 8, 'it still shows in the logged best');
+  state.history.push(record('pull', 3, [8, 8, 8], {setup: {assist: 3}, date: Date.now() - 2 * day}));
+  state.history.push(record('pull', 3, [8, 8, 8], {setup: {assist: 2}, date: Date.now() - day}));
   assert.equal(api.evaluate('verifiedBestFor("pull",3)'), 8);
-  assert.equal(api.evaluate('currentProof("pull",3).ready'), false);
-  state.history.push(record('pull', 3, [8, 8, 8], {setup: {band: 'Light red'}, date: Date.now() - day}));
-  assert.equal(api.evaluate('currentProof("pull",3).ready'), true, 'old logs with a recorded setup count alongside new ones');
+  assert.equal(api.evaluate('currentProof("pull",3).ready'), true, 'less help on the second day counts for the first day\'s level');
+  assert.equal(api.evaluate('currentProof("pull",3).setup.assist'), 3);
   assert.equal(api.evaluate('entryReady("pull",4)'), false, 'assisted performance cannot prove an unassisted entry');
+  state.history.splice(1, 2, record('pull', 3, [8, 8, 8], {setup: {assist: 4}, date: Date.now() - 2 * day}),
+    record('pull', 3, [8, 8, 8], {setup: {assist: 1}, date: Date.now() - day}));
+  assert.equal(api.evaluate('currentProof("pull",3).setup.assist'), 4, 'two days at 4 and 1 prove level 4, not level 1');
+  state.history.splice(1, 1);
+  assert.equal(api.evaluate('currentProof("pull",3).ready'), false, 'one day at a level is not yet repeatable');
 });
 
 test('logging a blank set records its target as clean form, and practice attempts stay separate', () => {

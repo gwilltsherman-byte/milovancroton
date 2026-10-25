@@ -1082,6 +1082,12 @@ svg{width:18px; height:18px; flex:none}
 .donebtn:active{transform:scale(.92)}
 .donebtn svg{width:19px; height:19px}
 .setrow.done .donebtn{background:var(--good); border-color:transparent; color:#fff}
+/* left and right on per-side exercises, and the hold timer */
+.lr{display:grid; grid-template-columns:1fr 1fr; gap:4px; min-width:0}
+.lr .sinput{font-size:15px}
+.holdbtn{color:var(--ink-2)}
+.holdbtn svg{width:17px; height:17px}
+.holdbtn.on{background:var(--grad-brass); border-color:transparent; color:#241A05}
 .setopt{width:100%; height:42px; display:grid; place-items:center; color:var(--faint); border-radius:8px}
 .setopt:active{background:var(--well)}
 .setopt svg{width:16px; height:16px}

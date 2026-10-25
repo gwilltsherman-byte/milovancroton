@@ -5791,6 +5791,7 @@ const I={
   info: sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
   trophy: sv('<path d="M8 4h8v5a4 4 0 0 1-8 0Z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3"/><path d="M12 13v4M9 20h6"/>'),
   timer: sv('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/>'),
+  stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
   flame: sv('<path d="M12 3c3 4 6 5.5 6 9a6 6 0 0 1-12 0c0-2 1-3.2 2-4.5.5 1.5 1.4 2 2.2 2C10.8 7.6 10.5 5.3 12 3Z"/>'),
   trash: sv('<path d="M4 7h16M10 7V5h4v2M6 7l1 13h10l1-13"/>'),
   sliders: sv('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h10M18 18h2"/><circle cx="16" cy="6" r="1.6"/><circle cx="10" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/>'),
@@ -5817,13 +5818,16 @@ const LADDERS={
     {id:'dead-hang', n:'Dead hang', k:'hold', sets:3, v:30, cue:'Hands just outside shoulder width, arms straight, shoulders drawn a couple of centimetres down from the ears. Builds the grip and shoulders everything else needs.'},
     {id:'scap-pullup', n:'Scapular pull-up', k:'reps', sets:3, v:10, cue:'Elbows stay locked. Pull the shoulder blades down toward your back pockets until the body rises 3 to 5 cm, pause, lower slowly.'},
     {id:'negative-pullup', n:'Negative pull-up', k:'reps', sets:3, v:5, cue:'Start with the chin over the bar and the elbows tucked by the ribs, then take 4 to 5 seconds to reach fully straight arms.'},
-    {id:'band-pullup', n:'Band-assisted pull-up', k:'reps', sets:3, v:8, cue:'Knee in the band, start from straight arms, chin clears the bar. The lightest band that still lets you finish the set.'},
+    {id:'band-pullup', n:'Band-assisted pull-up', k:'reps', sets:3, v:8, cue:'Knee in the band, start from straight arms, chin clears the bar. Log the help, 0 none to 5 most, and use less as sets reach the top.'},
     {id:'pullup', n:'Pull-up', k:'reps', sets:3, v:8, cue:'Hands a little wider than the shoulders. Shoulder blades down first, elbows to the hips, chin over the bar, then all the way to straight arms.'},
     {id:'archer-pullup', n:'Archer pull-up', k:'reps', sets:3, v:5, cue:'Hands twice shoulder width. Chin goes over one hand while the other arm stays straight along the bar. The target counts each side.'},
     {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Keep the same strict range as your pull-up. Start with a small added load you can control and record it; increase in small increments as sets become repeatable.'},
     {id:'assisted-oap', n:'Assisted one-arm pull-up', k:'reps', sets:3, v:3, cue:'Working hand directly over the shoulder; the other hand on a towel, held as low as you can manage. Help only as much as you need.'},
     {id:'oap', n:'One-arm pull-up', k:'reps', sets:3, v:1, cue:'Hand directly over the shoulder, palm toward you. Straight arm to chin over the bar, the body turning slightly toward the working arm. Each side counts.'},
     {id:'assisted-archer-pullup', n:'Assisted archer pull-up', k:'reps', sets:3, v:5, cue:'Use a band or light foot support while pulling toward one hand. Keep the other elbow nearly straight, and reduce assistance gradually. Per side.'},
+    {id:'oa-lockoff-top', n:'One-arm lock-off, top', k:'hold', sets:3, v:10, cue:'Pull up on both hands, let go with one and hold the chin over the bar on the other. Per side.'},
+    {id:'oa-lockoff-90', n:'One-arm lock-off at 90°', k:'hold', sets:3, v:8, cue:'The same hold with the working elbow at 90 degrees, upper arm level with the bar. Per side.'},
+    {id:'oa-negative', n:'One-arm negative', k:'reps', sets:3, v:3, cue:'From a one-arm lock-off at the top, take 3 to 5 seconds to reach a straight arm. Per side.'},
   ]},
   row:{n:'Horizontal pull', p:'Pull', ic:'row', m:'Upper back, lats, biceps', steps:[
     {id:'incline-row', n:'Incline row', k:'reps', sets:3, v:12, cue:'Bar at chest height, body straight from heels to head. Lower chest to the bar, elbows back at 45 degrees until they pass the ribs.'},
@@ -5839,9 +5843,9 @@ const LADDERS={
   dip:{n:'Dip', p:'Push', ic:'dip', m:'Chest, triceps, front delts', steps:[
     {id:'support-hold', n:'Support hold', k:'hold', sets:3, v:30, cue:'Bars beside the hips, hands under the shoulders, elbows locked, a clear gap between shoulders and ears. The base every dip is built on.'},
     {id:'negative-dip', n:'Negative dip', k:'reps', sets:3, v:5, cue:'From locked arms, lean 20 to 30 degrees forward and take 4 to 5 seconds to reach shoulders just below the elbows.'},
-    {id:'band-dip', n:'Band-assisted dip', k:'reps', sets:3, v:8, cue:'Kneel on a band stretched across the bars. Shoulders just below the elbows at the bottom; the lightest band that lets you finish.'},
+    {id:'band-dip', n:'Band-assisted dip', k:'reps', sets:3, v:8, cue:'Kneel on a band stretched across the bars. Shoulders just below the elbows at the bottom. Log the help, 0 none to 5 most, and use less as sets reach the top.'},
     {id:'dip', n:'Bar dip', k:'reps', sets:3, v:10, cue:'Lean 20 to 30 degrees forward, elbows pointing back. Shoulders just below the elbows at the bottom, full lockout at the top.'},
-    {id:'weighted-dip', n:'Weighted dip', k:'reps', sets:3, v:5, cue:'Belt or vest, once sets of fifteen at bodyweight are solid. Same depth: shoulders just below the elbows.'},
+    {id:'weighted-dip', n:'Weighted dip', k:'reps', sets:3, v:5, cue:'Belt or vest, once 3 sets of 10 at bodyweight are solid. Log the weight added. Same depth: shoulders just below the elbows.'},
   ]},
   pushh:{n:'Horizontal push', p:'Push', ic:'push', m:'Chest, triceps, front delts', steps:[
     {id:'wall-pushup', n:'Wall push-up', k:'reps', sets:3, v:15, cue:'Palms on the wall at shoulder height, a little wider than the shoulders. Body straight; chest to the wall, elbows angled 45 degrees down and back.'},
@@ -5873,7 +5877,7 @@ const LADDERS={
     {id:'pistol-squat', n:'Pistol squat', k:'reps', sets:3, v:5, cue:'Free leg straight out in front, heel down, knee over the second toe, thigh to calf at the bottom, up without rocking. Per side.'},
     {id:'box-pistol', n:'Box pistol', k:'reps', sets:3, v:5, cue:'Lower on one leg to a stable box, free leg in front. Touch lightly and stand without rocking. Start high and lower the box gradually. Per side.'},
     {id:'assisted-pistol', n:'Assisted pistol', k:'reps', sets:3, v:5, cue:'Hold a fixed support and squat on one leg through your controlled range, heel down. Record the grip and assistance, then reduce the help. Per side.'},
-    {id:'counterbalance-pistol', n:'Counterbalance pistol', k:'reps', sets:3, v:5, cue:'Hold a small weight in front to help balance while you squat on one leg, heel down. Record the weight and reach; reduce the counterbalance as control improves. Per side.'},
+    {id:'counterbalance-pistol', n:'Counterbalance pistol', k:'reps', sets:3, v:5, cue:'Hold a small weight in front to help balance while you squat on one leg, heel down. Log the weight; hold less as control improves. Per side.'},
     {id:'assisted-shrimp-squat', n:'Assisted shrimp squat', k:'reps', sets:3, v:5, cue:'On one leg with the free foot behind, hold a post and lower the free knee onto a padded raised target. Reduce support and target height gradually. Per side.'},
   ]},
   hinge:{n:'Hinge and posterior', p:'Legs', ic:'legs', m:'Hamstrings, glutes, lower back', steps:[
@@ -5928,6 +5932,8 @@ const LADDERS={
     {id:'strict-muscleup', n:'Strict muscle-up', k:'reps', sets:3, v:3, cue:'No kip. Pull the bar to the lower chest, throw the chest over it as the wrists roll on top, press out to locked arms.'},
     {id:'band-muscleup', n:'Band-assisted muscle-up', k:'reps', sets:3, v:3, cue:'Use a recorded band and anchor setup for the whole movement: high pull, controlled turnover, dip to lockout. Reduce assistance without adding a kip.'},
     {id:'low-bar-transition', n:'Low-bar transition drill', k:'reps', sets:3, v:5, cue:'Low bar, feet on the floor. Pull the lower chest toward it, lean over and press out. Record foot support and reduce leg assistance gradually.'},
+    {id:'hip-to-bar-pull', n:'Hip-to-bar pull', k:'reps', sets:3, v:5, cue:'Swing from an arch to a hollow; on the hollow, press the bar down with straight arms and drive the hips up to it.'},
+    {id:'kipping-muscleup', n:'Muscle-up, small kip', k:'reps', sets:3, v:3, cue:'A small hip drive starts the pull. Bar to the lower chest, chest over it as the wrists turn, press out. Keep the kip small.'},
   ]},
   /* Added later. New ladders only ever go on the end: rungs are stored by position. */
   pullvar:{n:'Pull-up variations', p:'Pull', ic:'pull', m:'Lats, upper back, biceps, core', steps:[
@@ -5955,7 +5961,7 @@ const LADDERS={
     {id:'bw-curl-incline', n:'Bodyweight curl, incline', k:'reps', sets:3, v:12, cue:'Underhand on a chest-high bar, body straight at about 45 degrees. Upper arms point at the bar and stay still; forehead to the hands.'},
     {id:'bw-curl', n:'Bodyweight curl, horizontal', k:'reps', sets:3, v:10, cue:'Bar at hip height, body near level. Upper arms point at the bar and stay still; only the elbows bend.'},
     {id:'chin-up', n:'Chin-up', k:'reps', sets:3, v:10, cue:'Palms facing you, hands shoulder width. Shoulder blades down first, chin over the bar, all the way to straight arms.'},
-    {id:'weighted-chin-up', n:'Weighted chin-up', k:'reps', sets:3, v:6, cue:'Belt, vest or backpack, added 1.25 to 2.5 kg at a time, once ten clean chin-ups are easy.'},
+    {id:'weighted-chin-up', n:'Weighted chin-up', k:'reps', sets:3, v:6, cue:'Belt, vest or backpack, once 3 sets of 10 clean chin-ups are solid. Log the weight added; add 1.25 to 2.5 kg at a time.'},
   ]},
   grip:{n:'Grip', p:'Arms', ic:'hand', m:'Forearms, grip', steps:[
     {id:'dead-hang', n:'Long dead hang', k:'hold', sets:3, v:60, cue:'A full minute, hands just outside shoulder width, thumbs round the bar, shoulders drawn down from the ears.'},
@@ -6041,6 +6047,7 @@ const LADDERS={
     {id:'tuck-flag', n:'Tuck flag', k:'hold', sets:3, v:8, cue:'Knees to the chest, hips level with the bottom hand, chest facing straight ahead, both arms locked.'},
     {id:'straddle-flag', n:'Straddle flag', k:'hold', sets:3, v:6, cue:'Legs straight and wide, hips in line with the shoulders, body close to level, chest facing straight ahead.'},
     {id:'human-flag', n:'Human flag', k:'hold', sets:3, v:5, cue:'Legs together, body level and straight out from the pole, bottom arm locked. Each side counts separately.'},
+    {id:'support-flag', n:'Supported flag', k:'hold', sets:3, v:10, cue:'Hands as for the vertical flag, bottom arm locked and pressing. Feet on the pole or a box; take weight off them bit by bit. Each side.'},
   ]},
   armbalance:{n:'Arm balances', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Wrists, shoulders, core', steps:[
     {id:'frog-stand', n:'Frog stand', k:'hold', sets:3, v:30, cue:'Hands shoulder width a foot’s length in front of the feet, knees on the backs of the upper arms. Lean until the feet float.'},
@@ -6190,7 +6197,7 @@ const LADDERS={
 const LADDER_PATHS={
   pull:[
     {key:'bilateral', name:'Pull-up and added load', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','weighted-pullup']},
-    {key:'unilateral', name:'Toward one arm', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','assisted-archer-pullup','archer-pullup','assisted-oap','oap']},
+    {key:'unilateral', name:'Toward one arm', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','assisted-archer-pullup','archer-pullup','oa-lockoff-top','oa-lockoff-90','oa-negative','assisted-oap','oap']},
   ],
   row:[
     {key:'row', name:'Rows toward one arm', steps:['incline-row','inverted-row','feet-elevated-row','assisted-archer-row','archer-row','incline-one-arm-row','one-arm-row']},
@@ -6227,6 +6234,7 @@ const LADDER_PATHS={
     {key:'whole', name:'Strict muscle-up with decreasing assistance', steps:['chest-to-bar','explosive-pullup','band-muscleup','strict-muscleup']},
     {key:'transition', name:'Transition and whole movement', steps:['low-bar-transition','jumping-muscleup','band-muscleup','strict-muscleup']},
     {key:'dip', name:'Straight-bar dip component', steps:['straight-bar-dip']},
+    {key:'first', name:'First muscle-up with a small kip', steps:['chest-to-bar','explosive-pullup','hip-to-bar-pull','kipping-muscleup']},
   ],
   pullvar:[
     {key:'wide', name:'Wide grip', steps:['wide-pullup']},
@@ -6293,7 +6301,7 @@ const LADDER_PATHS={
     {key:'straight', name:'Straight bridge support', steps:['straight-bridge']},
   ],
   backlever:[{key:'assisted', name:'Back lever with supported entry', steps:['german-hang-feet','german-hang','skin-the-cat','assisted-tuck-bl','tuck-bl','adv-tuck-bl','assisted-straddle-bl','straddle-bl','assisted-full-bl','full-bl']}],
-  flag:[{key:'flag', name:'Human flag', steps:['side-plank','vertical-flag','tuck-flag','straddle-flag','human-flag']}],
+  flag:[{key:'flag', name:'Human flag', steps:['side-plank','vertical-flag','support-flag','tuck-flag','straddle-flag','human-flag']}],
   armbalance:[
     {key:'crow', name:'Crow and crane', steps:['frog-stand','crow-pose','crane-pose']},
     {key:'elbow', name:'Elbow lever', steps:['elbow-lever','one-arm-elbow-lever']},
@@ -6328,7 +6336,8 @@ const LADDER_PATHS={
   bardip:[{key:'dip', name:'Straight-bar dip strength', steps:['feet-assisted-straight-bar-dip','straight-bar-dip']}],
 };
 /* Reproducible difficulty matters as much as the rep count. No band colour or
-   measured distance is a universal readiness threshold. Field values describe this user's setup. */
+   measured distance is a universal readiness threshold. These detailed setups are no longer asked for: a session asks
+   only the one number in setupField (SESSION). They stay as a record of what each step's setup involves. */
 const LADDER_SETUP_FIELDS={
   band:[{key:'band',label:'Band / assistance',type:'text',hint:'Brand, band identity and how much help. Colour alone differs between brands.'},{key:'anchor',label:'Assistance setup',type:'text',hint:'Anchor height, band length and where it supports you. Keep this reproducible.'}],
   incline:[{key:'height',label:'Hand support height',type:'number',unit:'cm',min:0,step:1},{key:'stance',label:'Body and foot position',type:'text',hint:'Record heel position, bar or ring height and any assistance.'}],
@@ -6415,10 +6424,37 @@ const LADDER_STEP_OPTIONS={
   'low-ring-transition':{setup:LADDER_SETUP_FIELDS.support},
   'assisted-ring-muscleup':{setup:LADDER_SETUP_FIELDS.band},
 };
+/* Entry checks: before a step becomes your training step, one clean set of about 40% of its target, rounded, at least 1
+   and at most 3 reps (5 s for a hold). Only steps where one rep is the milestone (the first pull-up, a one-arm pull-up,
+   a first muscle-up) are entered on a single rep. docs/ladder-progression.md gives the same rule. */
+const FIRST_REP=['pullup','oap','strict-muscleup','kipping-muscleup','ring-muscleup'];
+function entryCheck(st){ return FIRST_REP.includes(st.id)? 1 : Math.max(1, Math.min(st.k==='hold'?5:3, Math.round(st.v*0.4))); }
 Object.values(LADDERS).forEach(L=>L.steps.forEach(st=>{
-  Object.assign(st,{entry:st.k==='hold'?5:1,practice:L.practice||(L.q==='balance'?'balance':'strength')},LADDER_STEP_OPTIONS[st.id]||{});
+  Object.assign(st,{entry:entryCheck(st),practice:L.practice||(L.q==='balance'?'balance':'strength')},LADDER_STEP_OPTIONS[st.id]||{});
   if(st.practice==='power') st.cue+=' Reset between reps; count only reps that keep output and a controlled landing. Stop the set when either declines.';
 }));
+/* How to do the steps added later (the shared instructions above hold the rest). */
+Object.assign(window.HOWTO, {
+  'oa-lockoff-top':{set:'Overhand or neutral grip, hands shoulder width, on a bar you can reach from a box.',
+    steps:['Pull up on both hands until the chin is over the bar.','Shift your weight onto one hand and let go with the other; keep the chin over the bar, elbow tucked to the ribs.','Hold, then put the free hand back before you lower. Swap sides.'],
+    avoid:['Dropping straight from the top onto a straight arm.','Shrugging the working shoulder up to the ear.']},
+  'oa-lockoff-90':{set:'As the top lock-off.',
+    steps:['From the top on both hands, lower until the elbows are at 90 degrees.','Let go with one hand and hold there, upper arm level with the bar.','Hold, take the bar again with both hands and step down. Swap sides.'],
+    avoid:['Letting the body spin open; keep the hips square to the bar.','Holding on when the elbow hurts.']},
+  'oa-negative':{set:'A box under the bar so you can start at the top.',
+    steps:['From a box, take the bar with one hand, chin over it and elbow tucked.','Lower as slowly as you can, 3 to 5 seconds to a straight arm.','Step back onto the box, rest, then the other side.'],
+    avoid:['Dropping the last third.','Landing on a straight, relaxed arm: keep the shoulder drawn down at the bottom.'],
+    note:'Expect sore elbows if you add these quickly. Start with one set per side.'},
+  'hip-to-bar-pull':{set:'Dead hang, overhand grip about shoulder width, room in front and behind.',
+    steps:['Swing gently from an arch (chest forward) to a hollow (feet forward).','On the hollow, press the bar down toward the thighs with straight arms and drive the hips up to the bar.','Lower under control back to the hang and reset before the next rep.'],
+    avoid:['Bending the arms early; the arms stay straight until the hips are at the bar.','A big, wild swing.']},
+  'kipping-muscleup':{set:'Dead hang, grip a little narrower than for pull-ups, bar high enough that the feet clear the floor.',
+    steps:['A small swing: arch, then hollow.','As the hips rise, pull the bar to the lower chest.','Throw the chest over the bar as the wrists turn on top, then press out to straight arms.','Lower under control the way you came.'],
+    avoid:['A kip so big that the legs do the work.','Chicken-winging one arm over first.']},
+  'support-flag':{set:'A solid vertical pole. Hands as for the vertical flag; a box or the pole itself under the feet.',
+    steps:['Lock the bottom arm and press it hard into the pole; pull with the top arm.','Rest the feet on the box or pole, body tilted out from it.','Take weight off the feet a little more each time, until they barely touch. Swap sides.'],
+    avoid:['Bending the bottom arm.','Letting the chest turn toward the floor.']},
+});
 const LADDER_ORDER=['pull','row','dip','pushh','pushv','legs','hinge','core','handstand','frontlever','planche','muscleup',
   'pullvar','plyopush','tri','curl','grip','jump','lunge','knee','calf','legraise','dragonflag','sidecore','abwheel','bridge',
   'backlever','flag','armbalance','press','onearmhs','planchepush','rings',
@@ -6443,7 +6479,7 @@ function registerCustom(list){
   (list||[]).forEach(c=>{ if(!c||!c.id||!Array.isArray(c.steps)||!c.steps.length) return;
     const like=LADDERS[c.like]&&!LADDERS[c.like].custom? c.like : 'core', B=LADDERS[like];
     LADDERS[c.id]={n:c.n||'My ladder', p:B.p, ic:B.ic, m:B.m, skill:!!B.skill, prep:!!B.prep, q:B.q, when:B.when, rest:B.rest, ev:B.ev, like, custom:true, gone:!!c.gone,
-      steps:c.steps.map((x,i)=>({id:c.id+'-'+i, n:x.n||'Rung '+(i+1), k:x.k==='hold'?'hold':'reps', sets:x.sets||3, v:x.v||1, cue:x.cue||''}))};
+      steps:c.steps.map((x,i)=>({id:c.id+'-'+i, n:x.n||'Rung '+(i+1), k:x.k==='hold'?'hold':'reps', sets:x.sets||3, v:x.v||1, cue:x.cue||'', since:Number.isFinite(x.since)? x.since : 0}))};
     if(!c.gone) LADDER_ORDER.push(c.id); });
 }
 function supFor(id){ const L=LADDERS[id]; return (SUPPORT[id]||SUPPORT[L&&L.like]||[]).filter(x=>x!==id&&LADDERS[x]); }
@@ -6494,16 +6530,22 @@ const GOALS={
   ringdip10:{n:'10 ring dips', l:'rings', r:3, std:10, sup:['dip'], why:'Dips on moving rings: much more stability than bars.'},
   ringmu:{n:'Ring muscle-up', l:'rings', r:6, std:1, sup:['pull','dip'], why:'False grip, a high pull, a turn and a dip. The gymnast version.'},
   weightedpull:{n:'5 controlled weighted pull-ups', l:'weightedpull', r:1, std:5, sup:['row','core'], why:'Choose and record a manageable added load. Build strict reps, then increase that load gradually.'},
+  muscleup1:{n:'First muscle-up (small kip allowed)', l:'muscleup', r:8, std:1, sup:['pull','dip'], why:'One muscle-up over the bar, with a small hip drive to help the turn.'},
+  nordiclower:{n:'Nordic lowering to the floor in 3–5 s', l:'hinge', r:3, std:3, sup:['legs'], why:'Three slow lowerings all the way to the floor in one set, catching on the hands.'},
 };
 const GOAL_ORDER=Object.keys(GOALS);
 /* How hard each goal is, and roughly how long it takes someone who trains for it regularly. */
 const GOAL_LV={pullup1:1, pullup10:2, oapu:4, pushup20:1, oapush:3, dip10:2, hspu:3, handstand:2, muscleup:3, frontlever:4, tuckplanche:3,
   straddleplanche:4, lsit:2, pistol:2, nordic:3, typewriter:3, lsitpull:2, clappush:1, tigerbend:4, bwcurl:1, oahang:3, boxjump:1, cossack:1,
   skater:2, sissy:2, revnordic:2, calf25:1, t2b:2, dragonflag:3, copenhagen:2, abwheel:3, bridge:3, tuckbl:2, backlever:3, humanflag:4, crow:1,
-  elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3, weightedpull:2};
-const LV_N=['','Beginner','Intermediate','Advanced','Elite'], LV_T=['','a few weeks','a few months','6 to 12 months','a year or more'];
-/* Straight-arm strength skills: they load the elbows and the biceps tendon the same way, so Together recommends one at a time. */
-const STRAIGHT_ARM=['frontlever','backlever','planche','planchepush','flag'];
+  elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3, weightedpull:2, muscleup1:2, nordiclower:2};
+/* How long a goal often takes an adult who trains for it a few times a week, from a typical start. Realistic rather
+   than hopeful: a first pull-up is often a few months, a 30 s freestanding handstand often 6 to 12. */
+const LV_N=['','Beginner','Intermediate','Advanced','Elite'], LV_T=['','a few months','6 to 12 months','1 to 2 years','several years'];
+const GOAL_T={crow:'a few weeks', clappush:'a few weeks', boxjump:'a few weeks', bwcurl:'a few weeks', cossack:'a few weeks', calf25:'a few weeks'};
+/* Straight-arm strength skills: they load the elbows and the biceps tendon the same way, so a session trains one of them
+   hard, hard sessions are spaced (RECOVERY SPACING), and Together recommends one at a time. */
+const STRAIGHT_ARM=['frontlever','backlever','planche','planchepush','flag','press'];
 const CAT_N={Pull:'Pulling', Push:'Pushing', Legs:'Legs', Core:'Core', Arms:'Arms', Skill:'Skills'};
 const STARTERS=['pullup1','pushup20','crow'];
 /* ==================== WHAT A GOAL TAKES ====================
@@ -6517,8 +6559,8 @@ const GOAL_NEEDS={
     takes:'A first pull-up is strength relative to body weight: the lats, biceps and the muscles that pull the shoulder blades down have to lift all of you from a dead hang. Negatives and bands build that strength, and rows add pulling work you can do for more reps. A hollow body stops the legs swinging, which wastes force and turns the rep into a kip. Body mass counts too: the same strength has less to lift.'},
   pullup10:{need:[['core',1,30,'control'],['grip',0,60,'strength']], ev:['qualities','failure'],
     takes:'Ten strict reps needs pulling strength, endurance and a grip that lasts the set. Hollow holds and dead hangs are useful supporting checks, but neither duration guarantees ten pull-ups. Build repeatable pulling volume without exhausting every set, and test the actual strict pull-up.'},
-  oapu:{need:[['grip',3,20,'strength'],['sidecore',0,45,'control'],['pullvar',3,4,'strength']], ev:['qualities','tendon'],
-    takes:'One arm lifts your whole weight while the body tries to spin around it. That takes a one-arm grip you can hang from, a trunk stiff enough to stop the rotation (a long side plank is the simple measure), and one-sided strength at every height of the pull, which typewriter and archer pull-ups build. Expect years: the elbow tendons adapt more slowly than the muscles do.'},
+  oapu:{need:[['weightedpull',0,15,'strength',{alt:[['weightedpull',1,1,0.4]]}],['grip',3,20,'strength'],['sidecore',0,45,'control'],['pullvar',3,4,'strength']], ev:['qualities','tendon'],
+    takes:'A strong two-arm base comes first: about 15 strict pull-ups, or one with about 40% of your bodyweight added. One arm then lifts your whole weight while the body tries to spin around it. That takes a one-arm grip you can hang from, a trunk stiff enough to stop the rotation (a long side plank is the simple measure), and one-sided strength at every height of the pull, which typewriter and archer pull-ups build. Expect years: the elbow tendons adapt more slowly than the muscles do.'},
   pushup20:{need:[['core',1,30,'control'],['scap',0,12]], ev:['qualities','scap'],
     takes:'Twenty strict push-ups needs pressing endurance and a trunk that stays rigid: the abs stop the hips sagging, exactly as in a hollow hold. At the top of each rep the shoulder blades should wrap forward around the ribs. That is serratus anterior at work, and the scapular push-up trains it.'},
   oapush:{need:[['sidecore',0,45,'control'],['core',1,45,'control'],['scap',0,12],['wrist',1,12]], ev:['qualities','wrists'],
@@ -6597,6 +6639,10 @@ const GOAL_NEEDS={
     takes:'Rings move, so the shoulder stabilisers work to keep them close to the body on top of the dip itself. Ten bar dips, shoulder extension range for the bottom and shoulder blades held down make the base; the support and turned-out holds on the ladder add the stability.'},
   ringmu:{need:[['pull',4,12,'strength'],['ringdip',2,8,'strength'],['shoulderext',1,30]], ev:['parts','qualities'],
     takes:'A ring muscle-up combines false-grip pulling, transition and ring-dip strength. Train ring dips independently while practising the false grip and low-ring transition, then join the whole movement with recorded assistance. The listed supporting counts are coaching checks; no one count guarantees the skill. Reduce help without losing false grip or introducing a kip.'},
+  muscleup1:{need:[['pull',4,10,'strength'],['bardip',1,5,'strength'],['mudrill',0,5,'technique']], ev:['qualities','parts'],
+    takes:'A first muscle-up with a small kip still needs a strong high pull and a straight-bar dip; the kip helps the turn over the bar but cannot replace them. Hip-to-bar pulls teach a small, useful swing, and the low-bar drill teaches the transition. The counts are coaching checks, not guarantees.'},
+  nordiclower:{need:[], ev:['qualities','nordic'],
+    takes:'Lowering to the floor over 3 to 5 seconds is the lowering half of the Nordic curl, the version most Nordic programmes use. Sliding curls build the strength first. Kneel on padding, anchor the heels securely, and expect sore hamstrings after the first sessions.'},
   weightedpull:{need:[['core',1,30,'control']], ev:['qualities','overload'],
     takes:'Weighted pull-ups build bilateral pulling strength with a directly measurable load. Start with an added load you can control, preserve strict full-range reps and build repeatable sets before adding a small increment. This is a separate goal from unilateral pulling so both can be trained without treating an archer pull-up as a mandatory bridge.'},
 };
@@ -6609,7 +6655,7 @@ const GOAL_NEEDS={
 const UNLOCKS=[
   {k:'muscleup', l:'muscleup', r:4, goal:'muscleup', req:[[['pull',4,12]], [['bardip',1,8]], [['muscleup',1,3]]]},
   {k:'tuckfl', l:'frontlever', r:0, req:[[['pull',4,8],['pullvar',0,8]], [['core',1,30],['legraise',2,8],['dragonflag',1,6]]]},
-  {k:'handstand', l:'handstand', r:3, goal:'handstand', req:[[['handstand',2,8]], [['handstand',1,45],['pushv',2,60]]]},
+  {k:'handstand', l:'handstand', r:3, goal:'handstand', req:[[['handstand',2,8]], [['handstand',1,45],['pushv',2,60]], [['hsdrill',0,3]]]},
   {k:'tuckplanche', l:'planche', r:1, goal:'tuckplanche', req:[[['planche',0,30],['planchepush',0,8]], [['pushh',6,5],['dip',3,12]]]},
   {k:'lsit', l:'core', r:4, goal:'lsit', req:[[['core',3,15]], [['dip',0,30],['dip',3,5],['rings',0,30]]]},
   {k:'pistol', l:'legs', r:5, goal:'pistol', req:[[['legs',8,5],['pistoldrill',2,5]]]},
@@ -6626,6 +6672,18 @@ const UNLOCKS=[
   {k:'typewriter', l:'pullvar', r:3, goal:'typewriter', req:[[['pull',5,5],['pullvar',2,5]]]},
   {k:'ringmu', l:'rings', r:6, goal:'ringmu', req:[[['rings',5,5]], [['ringdip',2,8],['rings',3,8]]]},
 ];
+/* ==================== GATES ====================
+   Steps that are risky without one particular skill first: the instructions name it, and the app holds you to it. A gated
+   step is not moved onto, tested or planned until one of its options has been done cleanly at least once (or you tick
+   that you can); a goal past it trains the first option as something else it takes. [ladder, rung, at least] */
+const GATES={
+  'freestanding-hspu':[['handstand',3,30]],
+  'partial-wall-hspu':[['handstand',1,30],['pushv',2,30]],
+  'freestanding-handstand':[['hsdrill',0,3]],
+  'clapping-pullup':[['muscleup',1,5]],
+  'depth-jump':[['landing',1,5]],
+  'dragon-squat':[['legs',5,3],['legs',4,3]],
+};
 
 /* ==================== EVIDENCE ==================== */
 const PM='https://pubmed.ncbi.nlm.nih.gov/?term=';
@@ -6768,7 +6826,8 @@ function defaultState(){
   const rung={}; LADDER_ORDER.forEach(k=>rung[k]=0);
   return { v:2, onboarded:false, route:'today',
     settings:{theme:'system', rest:120, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true)},
-    rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, parked:[], repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull' };
+    rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, parked:[], repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull',
+    hold:null, placing:null };
 }
 /* Fill in anything missing and upgrade version 1 data (no goals, no placement). */
 function normalize(p){
@@ -6796,6 +6855,10 @@ function normalize(p){
   if(!Array.isArray(s.parked)) s.parked=[];
   Parked.all(s).forEach(a=>{ a.entries=(a.entries||[]).filter(e=>LADDERS[e.ladderId]&&LADDERS[e.ladderId].steps[e.stepIdx]); });
   if(s.active && s.active.restEndsAt && s.active.restEndsAt<Date.now()) s.active.restEndsAt=null;
+  // a pain hold (HOLDS) and a placement survey part-way through (PLACEMENT); anything malformed is dropped
+  if(!(s.hold&&Number.isFinite(s.hold.until)&&Array.isArray(s.hold.joints))) s.hold=null;
+  const pl=s.placing; if(!(pl&&Array.isArray(pl.survey)&&Array.isArray(pl.tests)&&pl.ans&&typeof pl.ans==='object')) s.placing=null;
+  else pl.survey=pl.survey.filter(id=>LADDERS[id]);
   return s;
 }
 function load(){
@@ -6805,7 +6868,8 @@ function load(){
 }
 let saveTimer=null;
 function payload(){ return {v:state.v,onboarded:state.onboarded,route:state.route,settings:state.settings,rung:state.rung,paths:state.paths,needClaims:state.needClaims,placed:state.placed,said:state.said,
-  advances:state.advances, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab}; }
+  advances:state.advances, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab,
+  hold:state.hold, placing:state.placing}; }
 let ladVer=0;   // moves on every change, so Muscle knows when to read Ladder's sets again
 function save(){ ladVer++; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
@@ -6871,52 +6935,68 @@ function rungRank(id,i,g){ return pathFor(id,g).indexOf(i); }
 function curStep(id){ return stepsOf(id)[curIdx(id)]; }
 function unitS(st){ return st.k==='hold'?'s':''; }
 function goalText(st){ return `${st.sets} x ${st.v}${unitS(st)}`; }
+/* A step's target as a range for rep steps: from its entry check to its target (TODAY'S DOSE). */
+function rungText(id,i){ const st=stepsOf(id)[i], lo=Math.min(entryMinimum(id,i),st.v); return st.k!=='hold'&&lo<st.v? `${st.sets} x ${lo}&ndash;${st.v}` : goalText(st); }
 function isSkill(id){ return !!LADDERS[id].skill; }
 function practiceOf(id,i){const L=LADDERS[id];return stepsOf(id)[i==null?curIdx(id):i].practice||L.practice||(L.like&&LADDERS[L.like]&&LADDERS[L.like].practice)||'strength';}
-function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||Math.min(st.v,st.k==='hold'?5:3); }
-const PROOF_DAYS=90, CLEAR_DAYS=42;
-/* Exercises Muscle has too (pull-ups, dips, push-ups and the like): its ticked sets count here as clean sets of that
-   exercise, so the pull-ups you log in Muscle move your pull-up rung on like ones logged here. Muscle logs reps, so holds
-   are left out. They count toward your best, your targets and your next rung; Ladder's own week of hard sets is unchanged. */
+function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||entryCheck(st); }
+const PROOF_DAYS=90, CLEAR_DAYS=42, APART=20*3600000;
+/* Exercises Muscle has too (pull-ups, dips, push-ups and the like): its ticked sets come in as volume, not proof. They
+   show in your logged best and tell today's dose where you are, but only sets logged here, with the form confirmed, can
+   clear a step or meet a goal. Muscle's Nordic curls are often lowering only, so they count as Nordic lowering.
+   Muscle logs reps, so holds are left out. Ladder's own week of hard sets is unchanged. */
+const FROM_MUSCLE={'nordic-curl':'nordic-negative'};
 let musMemo={k:null, v:[]};
 function fromMuscle(){
   const H=window.__hub; if(!H||!H.has||!H.has('lift')) return [];
   const L=H.api('lift'); if(!L||!L.sharedSets) return [];
   const k=L.stamp(); if(musMemo.k===k) return musMemo.v;
   const where={}; Object.keys(LADDERS).forEach(id=>stepsOf(id).forEach((st,i)=>{ if(st.k!=='hold'&&!where[st.id]) where[st.id]=[id,i]; }));
-  const v=L.sharedSets(Object.keys(where)).map(w=>({id:'muscle-'+w.id, date:w.date, muscle:true, entries:w.entries.map(e=>{ const [l,i]=where[e.exId];
-    return {ladderId:l, stepIdx:i, target:stepsOf(l)[i].v, setup:{}, clean:true, sets:e.sets.map(x=>({v:x.reps, rir:x.rir, done:true, clean:true}))}; })}));
+  const at=x=>where[FROM_MUSCLE[x]||x], ex=[...new Set(Object.keys(where).concat(Object.keys(FROM_MUSCLE)))];
+  const v=L.sharedSets(ex).map(w=>({id:'muscle-'+w.id, date:w.date, muscle:true, entries:w.entries.filter(e=>at(e.exId)).map(e=>{ const [l,i]=at(e.exId);
+    return {ladderId:l, stepIdx:i, target:stepsOf(l)[i].v, setup:{}, clean:false, sets:e.sets.map(x=>({v:x.reps, rir:x.rir, done:true, clean:false}))}; })})).filter(w=>w.entries.length);
   musMemo={k, v}; return v;
 }
 function allHistory(){ const m=fromMuscle(); return m.length? state.history.concat(m) : state.history; }
+/* Sessions at least 20 hours apart: 23:50 and 00:10 are one training day, not two. */
+function apart(times){ let n=0, last=-Infinity; times.slice().sort((a,b)=>a-b).forEach(t=>{ if(t-last>=APART){ n++; last=t; } }); return n; }
+/* A renamed rung of your own is a new exercise: what you logged before the change no longer proves it. */
+function stepSince(st){ return st&&Number.isFinite(st.since)? st.since : 0; }
 function proofSets(id,i,days){
-  const rid=rungId(id,i), st=stepsOf(id)[i], since=Date.now()-days*86400000, out=[];
+  const rid=rungId(id,i), st=stepsOf(id)[i], since=Math.max(Date.now()-days*86400000, stepSince(st)), out=[];
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{};
-      if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,target:e.target||st.v}); });
+      if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,rir:s.rir,target:e.target||st.v}); });
   }));
   return out;
 }
+function cleanTests(id,i,from){ const st=stepsOf(id)[i], rid=rungId(id,i), since=Math.max(from, stepSince(st));
+  return state.tests.filter(t=>t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupValid(st,t.setup||{})); }
 function verifiedBestFor(id,i){
-  const st=stepsOf(id)[i], since=Date.now()-PROOF_DAYS*86400000;
-  let best=proofSets(id,i,PROOF_DAYS).reduce((m,s)=>Math.max(m,s.v),0), rid=rungId(id,i);
-  state.tests.forEach(t=>{if(t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupValid(st,t.setup||{}))best=Math.max(best,t.v||0);});
+  let best=proofSets(id,i,PROOF_DAYS).reduce((m,s)=>Math.max(m,s.v),0);
+  cleanTests(id,i,Date.now()-PROOF_DAYS*86400000).forEach(t=>{ best=Math.max(best,t.v||0); });
   return best;
 }
+/* Your best clean set on a step, however long ago: what goal progress reads, so it never decays. */
+function bestClean(id,i){ let best=proofSets(id,i,1e5).reduce((m,s)=>Math.max(m,s.v),0);
+  cleanTests(id,i,0).forEach(t=>{ best=Math.max(best,t.v||0); }); return best; }
+/* Ready for the next step: every planned set at the step's target, none called at 0 in reserve, on two days at least
+   20 hours apart in the last 42, at the same setting or a harder one (less help, or more added weight). */
+function rirOk(s){ return s.rir==null||s.rir>=1; }
 function currentProof(id,i){
-  const st=stepsOf(id)[i], groups=new Map(), since=Date.now()-CLEAR_DAYS*86400000, rid=rungId(id,i);
+  const st=stepsOf(id)[i], since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st)), rid=rungId(id,i), runs=[];
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
-    const setsBySetup=new Map();
-    (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{}, key=setupKey(st,setup);
-      if(!s.done||s.clean!==true||!(s.v>=st.v)||key==null) return;
-      const group=setsBySetup.get(key)||{n:0,setup}; group.n++; setsBySetup.set(key,group); });
-    setsBySetup.forEach((v,key)=>{ if(v.n<st.sets) return;
-      const g=groups.get(key)||{dates:new Set(),setup:v.setup,last:0}; g.dates.add(dayStart(w.date));g.last=Math.max(g.last,w.date);groups.set(key,g); });
+    const ok=(e.sets||[]).filter(s=>s.done&&s.clean===true&&s.v>=st.v&&rirOk(s)&&setupValid(st,s.setup||e.setup||{}))
+      .map(s=>setupVal(st,s.setup||e.setup||{})).sort((a,b)=>harder(st,b,a)? (harder(st,a,b)? 0 : 1) : -1);
+    if(ok.length>=st.sets) runs.push({date:w.date, val:ok[st.sets-1]});   // the setting every planned set reached
   }));
-  const g=[...groups.values()].sort((a,b)=>b.dates.size-a.dates.size||b.last-a.last)[0];
-  return {days:g?g.dates.size:0,ready:!!g&&g.dates.size>=2,setup:g?g.setup:{}};
+  let best=null;
+  runs.forEach(r=>{ const days=apart(runs.filter(x=>harder(st,x.val,r.val)).map(x=>x.date));
+    if(!best||days>best.days||(days===best.days&&harder(st,r.val,best.val))) best={days, val:r.val}; });
+  const f=setupField(st);
+  return {days:best?best.days:0, ready:!!best&&best.days>=2, setup:best&&f&&best.val!=null? {[f.key]:best.val} : {}};
 }
 function entryReady(id,i){ return verifiedBestFor(id,i)>=entryMinimum(id,i); }
 function desiredStandard(id,i){
@@ -6925,27 +7005,67 @@ function desiredStandard(id,i){
     goalNeeds(g).forEach(n=>{if(n.l===id&&n.r===i) v=Math.max(v,n.v);}); });
   return v;
 }
-function rungTarget(id,i,role){
-  const st=stepsOf(id)[i], limit=desiredStandard(id,i), increment=st.k==='hold'?5:1;
-  if(role==='maintenance') return Math.min(st.v,limit);
-  let target=st.v;
-  const rid=rungId(id,i), since=Date.now()-CLEAR_DAYS*86400000, byTarget=new Map();
+/* What a one-set maintenance check asks for: the standard your goals need on this step, not its base target. */
+function needStandard(id,i){ let v=0; activeGoals().forEach(g=>goalNeeds(g).forEach(n=>{ if(n.l===id&&n.r===i) v=Math.max(v,n.v); }));
+  return v||stepsOf(id)[i].v; }
+
+/* ==================== TODAY'S DOSE ====================
+   Rep steps train in a range: from the entry check (about 40% of the target) up to the target, or up to a goal's higher
+   standard. Today's reps start where you are, about one rep short of failure, and go up when every set reached them
+   with a rep or more in reserve; a set called at 0 in reserve says that was all you had, so the reps stay. Reps in
+   reserve left blank count as fine: you did what was asked. A step already trained at its target stays there.
+   Holds keep their time target and grow 5 s once it is met on two days at least 20 hours apart; under the target they
+   are trained as a total time, in as many pieces as it takes.
+   Weighted steps progress by load once the reps reach the top: about 2.5 kg (5 lb) more and two reps fewer. Assisted
+   steps progress by help: one level less once the reps, or the time, reach the top. */
+function repRange(id,i){ const st=stepsOf(id)[i]; return {lo:Math.min(entryMinimum(id,i), st.v), hi:Math.max(st.v, desiredStandard(id,i))}; }
+const clamp=(v,lo,hi)=>Math.max(lo, Math.min(hi, v));
+/* The latest session with this exercise in the last 42 days: its entry and the sets that say where you are (clean ones
+   here, and Muscle's). */
+function lastOn(id,i){
+  const st=stepsOf(id)[i], rid=rungId(id,i), since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st)); let out=null;
+  allHistory().forEach(w=>{ if(w.date<since||w.date>Date.now()||(out&&w.date<=out.date)) return;
+    (w.entries||[]).forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)!==rid) return;
+      const sets=(e.sets||[]).filter(s=>s.done&&Number.isFinite(s.v)&&s.v>0&&(s.clean===true||w.muscle));
+      if(sets.length) out={date:w.date, e, sets}; }); });
+  return out;
+}
+/* {target, setup, why}: today's reps or seconds, the help or added weight to use, and why it changed. */
+function dose(id,i,role){
+  const st=stepsOf(id)[i], f=setupField(st), setup=lastSetupFor(id,i);
+  if(role==='maintenance') return {target:needStandard(id,i), setup, why:''};
+  if(st.k==='hold') return holdDose(id,i,setup);
+  const {lo,hi}=repRange(id,i), last=lastOn(id,i);
+  if(!last){ const b=bestClean(id,i); return {target:clamp(b? b-1 : lo, lo, hi), setup, why:''}; }
+  const t=last.e.target||st.v, ests=last.sets.map(s=>s.v+(s.rir==null? 0 : Math.max(0,s.rir)));
+  const met=last.sets.every(s=>s.v>=t), spent=last.sets.some(s=>s.rir===0);
+  const target= met&&!spent? Math.max(t+1, Math.min(...ests)-1) : last.sets.some(s=>s.v>=t)? t : Math.max(...ests)-1;
+  const val=f? setupVal(st, last.sets[0].setup||last.e.setup||{}) : null;
+  if(f&&met&&!spent&&t>=hi&&val!=null){ const nv=nextVal(st,val);
+    if(nv!=null&&nv!==val) return {target:clamp(hi-2,lo,hi), setup:{[f.key]:nv}, why:moveWhy(st,nv,hi)}; }
+  return {target:clamp(target,lo,hi), setup, why:''};
+}
+function holdDose(id,i,setup){
+  const st=stepsOf(id)[i], f=setupField(st), limit=desiredStandard(id,i), rid=rungId(id,i), since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st));
+  const cur=f? setupVal(st,setup) : null, met=new Map(); let target=st.v;
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
-    const t=Math.max(st.v,e.target||st.v), keys=new Map();
-    (e.sets||[]).forEach(s=>{const key=setupKey(st,s.setup||e.setup||{});if(s.done&&s.clean===true&&s.v>=t&&key!=null) keys.set(key,(keys.get(key)||0)+1);});
-    keys.forEach((n,key)=>{if(n<st.sets)return;const k=t+'|'+key, days=byTarget.get(k)||new Set();days.add(dayStart(w.date));byTarget.set(k,days);});
+    const t=Math.max(st.v,e.target||st.v);
+    // only sets at today's setting or a harder one count: more help proves nothing about less of it
+    const n=(e.sets||[]).filter(s=>{ const su=s.setup||e.setup||{}; return s.done&&s.clean===true&&s.v>=t&&setupValid(st,su)&&harder(st,setupVal(st,su),cur); }).length;
+    if(n>=st.sets) met.set(t,(met.get(t)||[]).concat(w.date));
     target=Math.max(target,Math.min(limit,t));
   }));
-  if([...byTarget.entries()].some(([k,days])=>Number(k.split('|')[0])===target&&days.size>=2)) target+=increment;
-  return Math.min(limit,target);
+  const twice=apart(met.get(target)||[])>=2;
+  if(twice&&target<limit) target+=5;
+  else if(twice&&f&&cur!=null){ const nv=nextVal(st,cur); if(nv!=null&&nv!==cur) return {target:st.v, setup:{[f.key]:nv}, why:moveWhy(st,nv,target)}; }
+  return {target:Math.min(limit,target), setup, why:''};
 }
-/* Does a logged entry clear its rung? All target sets done at or above the target. */
+function rungTarget(id,i,role){ return dose(id,i,role).target; }
+/* Does a logged entry meet today's target? All planned sets at or above it. */
 function clearsRung(entry){
   const st=stepsOf(entry.ladderId)[entry.stepIdx]; if(!st) return false;
-  const groups=new Map();
-  entry.sets.forEach(s=>{const k=setupKey(st,s.setup||entry.setup||{});if(s.done&&s.clean===true&&(s.v||0)>=(entry.target||st.v)&&k!=null)groups.set(k,(groups.get(k)||0)+1);});
-  return [...groups.values()].some(n=>n>=st.sets);
+  return entry.sets.filter(s=>s.done&&s.clean===true&&(s.v||0)>=(entry.target||st.v)&&setupValid(st,s.setup||entry.setup||{})).length>=st.sets;
 }
 function moveTo(id, to){
   const steps=stepsOf(id), from=curIdx(id); to=Math.max(0,Math.min(steps.length-1,to));
@@ -6956,9 +7076,15 @@ function moveTo(id, to){
   save(); return true;
 }
 function isPrep(id){ return !!(LADDERS[id]&&LADDERS[id].prep); }
-/* Hard sets: mobility, balance and other prep work don't count. */
+/* Hard sets: mobility, balance and other prep work don't count, and nor do handstand and other balance attempts. */
+function hardWork(e){ const L=LADDERS[e.ladderId]; return !!(L&&L.steps[e.stepIdx]&&!L.prep&&practiceOf(e.ladderId,e.stepIdx)!=='balance'); }
 function setsIn(days){ const since=daysAgo(days-1); let n=0;
-  state.history.filter(w=>w.date>=since).forEach(w=>w.entries.forEach(e=>{ if(!isPrep(e.ladderId)) n+=e.sets.filter(s=>s.done).length; })); return n; }
+  state.history.filter(w=>w.date>=since).forEach(w=>w.entries.forEach(e=>{ if(hardWork(e)) n+=e.sets.filter(s=>s.done).length; })); return n; }
+/* GATES: [[ladder, rung, at least]] for a step, or null; met by a clean set at that standard, ever, or by your word. */
+function gateOf(id,i){ const st=LADDERS[id]&&stepsOf(id)[i]; return st&&GATES[st.id]? GATES[st.id].filter(([l,r])=>LADDERS[l]&&stepsOf(l)[r]) : null; }
+function gateMet(id,i){ const g=gateOf(id,i); return !g||!g.length||g.some(([l,r,v])=>bestClean(l,r)>=v||!!((state.needClaims||{})[rungId(l,r)+'|'+v])); }
+function gateText(id,i){ const g=gateOf(id,i); if(!g||!g.length) return ''; const [l,r,v]=g[0], st=stepsOf(l)[r];
+  return st.k==='hold'? v+' s '+st.n.toLowerCase() : v+' × '+st.n.toLowerCase(); }
 /* Ladders that share an exercise (side plank, dead hang, chin-up...) share the credit: a set logged on one
    counts as a best on every ladder with that exercise, and can clear its rung there too. */
 function rungId(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; return st? st.id : null; }
@@ -6981,8 +7107,14 @@ function capFor(id){const p=pathFor(id),gs=goalsOn(id).filter(g=>p.includes(g.r)
 function pendingStandard(id){const p=pathFor(id),cur=p.indexOf(curIdx(id));
   return activeGoals().flatMap(goalNeeds).filter(n=>n.l===id&&!needMet(n)&&p.includes(n.r)&&p.indexOf(n.r)<cur).sort((a,b)=>p.indexOf(b.r)-p.indexOf(a.r))[0]||null;}
 function stdText(g){ const st=stepsOf(g.l)[g.r]; return st.k==='hold'? g.std+' s hold' : g.std+' clean rep'+(g.std===1?'':'s'); }
-function goalProgress(g){const p=pathFor(g.l,g),end=p.indexOf(g.r),route=p.slice(0,end+1),part=Math.min(1,verifiedBestFor(g.l,g.r)/g.std);
-  return goalMet(g)?1:Math.min(0.99,(route.filter(i=>i!==g.r&&currentProof(g.l,i).ready).length+part)/Math.max(1,route.length));}
+/* Progress counts the steps you have moved past and, once you are on the goal's own step, your best clean set against
+   the goal. It never goes backwards with time: the 42-day window only decides whether you are ready to move on. */
+function goalProgress(g){ if(goalMet(g)) return 1;
+  const p=pathFor(g.l,g), end=p.indexOf(g.r), at=state.placed[g.l]? p.indexOf(curIdx(g.l)) : -1;
+  const part= at>=end&&end>=0? Math.min(1,bestClean(g.l,g.r)/g.std) : 0;
+  return Math.min(0.99,(Math.max(0,Math.min(end,at))+part)/Math.max(1,end+1)); }
+/* Steps behind you on a path show as passed, whenever you passed them. */
+function passed(id,i){ if(!state.placed[id]) return false; const p=pathFor(id), a=p.indexOf(i), c=p.indexOf(curIdx(id)); return a>=0&&c>=0&&a<c; }
 function goalMet(g){ return verifiedBestFor(g.l,g.r)>=g.std; }
 function checkGoals(){ const done=[]; activeGoals().forEach(g=>{ if(state.placed[g.l] && goalMet(g)){ g.achieved=Date.now(); done.push(g); } }); if(done.length) save(); return done; }
 function makeGoal(key){ const G=GOALS[key]; return {id:uid(), key, n:G.n, l:G.l, r:G.r, std:G.std, sup:(G.sup||[]).slice(), added:Date.now(), achieved:null}; }
@@ -7006,15 +7138,23 @@ function needsSrc(g){
 }
 /* [{l ladder, r rung, v at least, q what it builds}] */
 function goalNeeds(g){
-  const N=needsSrc(g); if(!N) return [];
-  return N.need.filter(([l,r])=>LADDERS[l] && stepsOf(l)[r] && l!==g.l)
-    .map(([l,r,v,q])=>({l, r, v:v||stepsOf(l)[r].v, q:q||LADDERS[l].q||'strength'}));
+  const N=needsSrc(g), out=N? N.need.filter(([l,r])=>LADDERS[l] && stepsOf(l)[r] && l!==g.l)
+    .map(([l,r,v,q,o])=>({l, r, v:v||stepsOf(l)[r].v, q:q||LADDERS[l].q||'strength', alt:o&&o.alt||null})) : [];
+  // GATES on the steps still ahead of you on the way to the goal
+  if(LADDERS[g.l]&&stepsOf(g.l)[g.r]){ const p=pathFor(g.l,g,true), end=p.indexOf(g.r), from=state.placed[g.l]? Math.max(0,p.indexOf(curIdx(g.l))) : 0;
+    p.slice(from,end+1).forEach(i=>{ const G=gateOf(g.l,i); if(!G||!G.length||gateMet(g.l,i)) return; const [l,r,v]=G[0];
+      if(l!==g.l&&!out.some(n=>n.l===l&&n.r===r&&n.v>=v)) out.push({l, r, v, q:LADDERS[l].q||(practiceOf(l,r)==='balance'?'balance':'strength'), gate:stepsOf(g.l)[i].n}); }); }
+  return out;
 }
 /* In place: recent clean performance of this movement at its own standard, or a recent specific user confirmation. */
 function needKey(n){ return rungId(n.l,n.r)+'|'+n.v; }
+/* Another way to meet a need: [ladder, rung, reps, load as a share of bodyweight], e.g. a pull-up with 40% added. */
+function altMet(n){ return (n.alt||[]).some(([l,r,v,bw])=>{ if(!LADDERS[l]||!stepsOf(l)[r]) return false; const st=stepsOf(l)[r];
+  return proofSets(l,r,PROOF_DAYS).some(s=>{ if(s.v<v) return false; if(!bw) return true; const kg=Body.at(s.date), load=setupVal(st,s.setup);
+    return kg!=null&&load!=null&&load>=bw*kg-0.01; }); }); }
 function needMet(n){
   const claim=(state.needClaims||{})[needKey(n)];
-  return verifiedBestFor(n.l,n.r)>=n.v||!!(claim&&claim.v===n.v&&Number.isFinite(claim.date)&&claim.date<=Date.now()&&claim.date>=Date.now()-PROOF_DAYS*86400000);
+  return verifiedBestFor(n.l,n.r)>=n.v||altMet(n)||!!(claim&&claim.v===n.v&&Number.isFinite(claim.date)&&claim.date<=Date.now()&&claim.date>=Date.now()-PROOF_DAYS*86400000);
 }
 function needsText(g){ const ns=goalNeeds(g); return ns.length? ns.filter(needMet).length+' of '+ns.length+' in place' : ''; }
 function planIds(){
@@ -7031,10 +7171,13 @@ function planIds(){
   return {mains, sups, needs, maintenance};
 }
 /* Warm-up first. Then balance, technique and straight-arm skills while you’re fresh, goal work, support and what
-   else your goals need, core, and long stretches last (held 60 seconds or more, they can sap strength for a while). */
-function orderIds(ids){
-  const {mains,sups,needs}=planIds(), nids=needs.map(n=>n.l);
-  const rank=id=>{ const L=LADDERS[id]; if(L&&L.prep) return WHEN_RANK[L.when]!=null? WHEN_RANK[L.when] : 3;
+   else your goals need, core, and long stretches last (held 60 seconds or more, they can sap strength for a while).
+   The warm-up is dynamic: a static stretch from a warm-up ladder (a 45 s calf or lat stretch) moves to the end.
+   P, a plan, says which step of each ladder is coming (the current one otherwise). */
+function whenOf(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; return L&&L.when==='warm'&&L.q==='mobility'&&st&&st.k==='hold'? 'end' : L&&L.when; }
+function orderIds(ids,P){
+  const {mains,sups,needs}=planIds(), nids=needs.map(n=>n.l), at=id=>{ const x=P&&P.find(p=>p.id===id); return x? x.i : curIdx(id); };
+  const rank=id=>{ const L=LADDERS[id]; if(L&&L.prep){ const w=whenOf(id,at(id)); return WHEN_RANK[w]!=null? WHEN_RANK[w] : 3; }
     if(id==='hsdrill'||(L&&L.like==='hsdrill'))return -1.5;
     if(practiceOf(id)==='balance')return -1;
     if(practiceOf(id)==='power')return -0.5;
@@ -7061,7 +7204,9 @@ function defaultPicks(){ return todayPlan().map(x=>x.id); }
      volume matched, frequency changes little), and a long session costs the quality of its later sets; balance is
      practised little and often, so it has its own room. Then up to two of what else your goals take, then support work,
      then the rest of what else your goals take and the extra, while there is room.
-   The rotation moves on once per day you train, so a plan holds for the whole day. */
+   The rotation moves on once per day you train, so a plan holds for the whole day.
+   Then RECOVERY SPACING, GATES and pain HOLDS can swap an exercise for an easier or assisted step, or leave it out;
+   the plan's notes say why, for Today. */
 const FAM={pull:'vpull', pullvar:'vpull', muscleup:'vpull', row:'hpull', dip:'dip', rings:'dip', pushh:'hpush', plyopush:'hpush',
   planche:'planche', planchepush:'planche', pushv:'vpush', press:'vpush', handstand:'balance', onearmhs:'balance', armbalance:'balance',
   legs:'squat', lunge:'squat', knee:'squat', jump:'squat', hinge:'hinge', bridge:'bridge', calf:'calf', core:'core', legraise:'core',
@@ -7091,18 +7236,81 @@ function turns(ids, cap, r){
   return Array.from({length:cap},(_,j)=>{ const c=r*cap+j; return [ids[c%n], Math.floor(c/n)]; });
 }
 const WRIST_LOAD=['handstand','planche','planchepush','armbalance','press','onearmhs','hsdrill','pushv','plyopush'];
+
+/* ==================== RECOVERY SPACING ====================
+   Hard straight-arm skill work (planche, front and back lever, flag, press) loads the elbows and the biceps tendon, and
+   Nordics load the hamstrings hard while they lengthen; tendons, and that kind of soreness, take longer to settle than
+   a muscle feels. So a hard session of each family waits about 48 hours for the next one (about 72 hours in your first
+   4 weeks of Nordics), and a session trains at most one straight-arm skill hard. Otherwise the plan gives that goal its
+   easier step for the day, or leaves it to its support work. Sets on an easier step (role easy) aren't hard sessions. */
+const NOT_STRAIGHT=['side-plank','pike-compression','pseudo-planche-pushup'];
+const NORDIC_IDS=['nordic-negative','nordic-curl','assisted-nordic-curl','partial-nordic-curl'];
+const SPACE_H=48, NORDIC_NEW_H=72, NORDIC_NEW_DAYS=28;
+function hardFam(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; if(!st) return null;
+  if(NORDIC_IDS.includes(st.id)) return 'nordic';
+  return (STRAIGHT_ARM.includes(id)||STRAIGHT_ARM.includes(L.like))&&!NOT_STRAIGHT.includes(st.id)? 'straight' : null; }
+/* When each family was trained hard, Muscle's Nordic sets included. */
+function hardTimes(){ const t={straight:[], nordic:[]};
+  allHistory().forEach(w=>(w.entries||[]).forEach(e=>{ const f=hardFam(e.ladderId,e.stepIdx);
+    if(f&&e.role!=='easy'&&(e.sets||[]).some(s=>s.done!==false)) t[f].push(w.date); })); return t; }
+function gapH(f,t){ return f==='nordic'&&t.nordic.length&&Math.min(...t.nordic)>Date.now()-NORDIC_NEW_DAYS*86400000? NORDIC_NEW_H : SPACE_H; }
+function restUntil(t,at){ const u={}; ['straight','nordic'].forEach(f=>{ const ts=t[f].filter(x=>x<=at); u[f]= ts.length? Math.max(...ts)+gapH(f,t)*3600000 : 0; }); return u; }
+
+/* ==================== HOLDS ====================
+   When Together's check-in reports elbow, wrist or shoulder pain, the work that loads that joint is held for a week:
+   straight-arm skills for the elbow and the shoulder, hand balancing and other wrist-loaded work for the wrist. A held
+   ladder trains its assisted step, where its path has one, and is left out otherwise. */
+const HOLD_JOINTS={elbow:STRAIGHT_ARM, shoulder:STRAIGHT_ARM, wrist:WRIST_LOAD}, HOLD_DAYS=7;
+function heldBy(id,at){ const h=state.hold; if(!h||!(h.until>(at||Date.now()))) return null; const L=LADDERS[id], k=L&&L.like;
+  return h.joints.find(j=>(HOLD_JOINTS[j]||[]).some(x=>x===id||x===k))||null; }
+function assistedStep(id,i){ const p=pathFor(id), a=p.indexOf(i);
+  for(let j=a; j>=0; j--){ const f=setupField(stepsOf(id)[p[j]]); if(f&&f.key==='assist') return p[j]; }
+  const f=setupField(stepsOf(id)[i]); return f&&f.key==='assist'? i : null; }
+function holdJoint(joint, days){ if(!HOLD_JOINTS[joint]) return null;
+  const until=Day.add(Day.start(), (days||HOLD_DAYS)+1), h=state.hold&&state.hold.until>Date.now()? state.hold : null;
+  state.hold={until:Math.max(until, h? h.until : 0), joints:[...new Set((h? h.joints : []).concat(joint))], at:Date.now()};
+  save(); return state.hold; }
+
+/* Does spacing touch any ladder the plan uses? If not, a look ahead needn't plan the sessions before it. */
+function spacingMatters(){ const {mains,sups,needs}=planIds(); return mains.concat(sups, needs.map(n=>n.l)).some(id=>{ const L=LADDERS[id];
+  return [id, L&&L.like].some(x=>STRAIGHT_ARM.includes(x)||x==='hinge'); }); }
+/* Looking ahead, each session before the one asked for is taken to be a day before it, the closest they can be, so a
+   hard session planned there pushes the next one's back just as one you log would. */
 function todayPlan(ahead){
-  const {mains,sups,needs,maintenance}=planIds(), r=rotation()+(ahead||0), out=[], seen=new Set(), fams=new Set();
-  const add=(id,i,sets,role)=>{ const st=stepsOf(id)[i]; if(!st||seen.has(st.id)||out.some(x=>x.id===id)) return false;
-    seen.add(st.id); fams.add(famOf(id)); out.push({id,i,sets,role,target:rungTarget(id,i,role)}); return true; };
-  // each goal alternates by its own turns, so one that skips sessions still gets both its target and volume days
+  ahead=ahead||0; const t=hardTimes(), now=Date.now(), from= ahead&&spacingMatters()? 0 : ahead; let P=null;
+  for(let k=from;k<=ahead;k++){ const at=now+k*86400000; P=planCore(rotation()+k, at, t, k<ahead);
+    if(k<ahead) P.forEach(x=>{ const f=x.role==='easy'||x.role==='maintenance'? null : hardFam(x.id,x.i); if(f) t[f].push(at); }); }
+  return P;
+}
+/* light: the plan is only looked at for what it trains hard, so targets are left out. */
+function planCore(r, at, t, light){
+  const {mains,sups,needs,maintenance}=planIds(), out=[], seen=new Set(), fams=new Set(), notes=[], until=restUntil(t,at);
+  const note=(id,why,o)=>{ if(!notes.some(n=>n.id===id)) notes.push(Object.assign({id,why},o)); };
   const bal=id=>practiceOf(id)==='balance';
-  turns(spread(mains.filter(id=>!bal(id))), GOAL_CAP, r).concat(turns(spread(mains.filter(bal)), BALANCE_CAP, r))
-    .sort((a,b)=>mains.indexOf(a[0])-mains.indexOf(b[0])).forEach(([id,t])=>{ const k=mains.indexOf(id);
+  const goalTurns=turns(spread(mains.filter(id=>!bal(id))), GOAL_CAP, r).concat(turns(spread(mains.filter(bal)), BALANCE_CAP, r))
+    .sort((a,b)=>mains.indexOf(a[0])-mains.indexOf(b[0]));
+  // the one straight-arm skill trained hard this session: goals take turns at it
+  const sa=goalTurns.map(x=>x[0]).filter(id=>hardFam(id,curIdx(id))==='straight'&&!heldBy(id,at));
+  const chosen= sa.length&&!(until.straight>at)? sa[r%sa.length] : null; let straightHard=false;
+  // → [step, role], or null to leave it out
+  const tame=(id,i,role)=>{
+    const held=heldBy(id,at);
+    if(held){ const k=assistedStep(id,i); note(id,'pain',{joint:held, i:k, until:state.hold.until}); return k==null? null : [k,'easy']; }
+    if(!gateMet(id,i)){ const k=previousRung(id,i); note(id,'gate',{i:k, gate:gateText(id,i)}); if(k==null) return null; i=k; }
+    const f=hardFam(id,i); if(!f||role==='easy') return [i,role];
+    const why= until[f]>at? 'rest' : f==='straight'&&(chosen? id!==chosen : straightHard)? 'one' : '';
+    if(!why){ if(f==='straight') straightHard=true; return [i,role]; }
+    const k=previousRung(id,i); note(id,why,{f, i:k, until:until[f]}); return k==null? null : [k,'easy'];
+  };
+  const add=(id,i,sets,role)=>{ const tm=tame(id,i,role); if(!tm) return false; [i,role]=tm;
+    const st=stepsOf(id)[i]; if(!st||seen.has(st.id)||out.some(x=>x.id===id)) return false;
+    seen.add(st.id); fams.add(famOf(id)); out.push({id,i,sets,role,target:light? null : rungTarget(id,i,role)}); return true; };
+  // each goal alternates by its own turns, so one that skips sessions still gets both its target and volume days
+  goalTurns.forEach(([id,tn])=>{ const k=mains.indexOf(id);
     const cur=curIdx(id), st=stepsOf(id)[cur], vi=st.volume?stepsOf(id).findIndex(x=>x.id===st.volume):-1;
     const need=pendingStandard(id);
-    if(need&&(t+k)%2===1)add(id,need.r,stepsOf(id)[need.r].sets,'need');
-    else if(practiceOf(id,cur)==='strength'&&state.placed[id]&&vi>=0&&(t+k)%2===1) add(id,vi,stepsOf(id)[vi].sets+1,'volume');
+    if(need&&(tn+k)%2===1)add(id,need.r,stepsOf(id)[need.r].sets,'need');
+    else if(practiceOf(id,cur)==='strength'&&state.placed[id]&&vi>=0&&(tn+k)%2===1) add(id,vi,stepsOf(id)[vi].sets+1,'volume');
     else add(id,cur,st.sets,'goal'); });
   const byFam={}, order=[];
   sups.forEach(id=>{ if(mains.includes(id)) return; const f=famOf(id); if(!byFam[f]){ byFam[f]=[]; order.push(f); } byFam[f].push(id); });
@@ -7119,19 +7327,29 @@ function todayPlan(ahead){
       add(id, i, stepsOf(id)[i].sets, placed?'extra':'new'); }
   }
   const plan=out.slice(), more=[], taken=new Set(plan.map(x=>stepsOf(x.id)[x.i].id));
-  const put=(id,i,role)=>{ const st=stepsOf(id)[i]; if(!st||taken.has(st.id)||plan.some(x=>x.id===id)||more.some(x=>x.id===id)) return;
-    taken.add(st.id); more.push({id,i,sets:role==='maintenance'?1:st.sets,role,target:rungTarget(id,i,role)}); };
-  const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), at= ns.length>k&&k? (r*k)%ns.length : 0;
-  for(let j=0;j<k;j++){ const n=ns[(at+j)%ns.length], p=pathFor(n.l), cur=curIdx(n.l), target=p.indexOf(n.r);
+  const put=(id,i,role)=>{ const tm=tame(id,i,role); if(!tm) return; [i,role]=tm;
+    const st=stepsOf(id)[i]; if(!st||taken.has(st.id)||plan.some(x=>x.id===id)||more.some(x=>x.id===id)) return;
+    taken.add(st.id); more.push({id,i,sets:role==='maintenance'?1:st.sets,role,target:light? null : rungTarget(id,i,role)}); };
+  const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), first= ns.length>k&&k? (r*k)%ns.length : 0;
+  for(let j=0;j<k;j++){ const n=ns[(first+j)%ns.length], p=pathFor(n.l), cur=curIdx(n.l), target=p.indexOf(n.r);
     put(n.l,state.placed[n.l]&&target>=0?p[Math.min(p.indexOf(cur),target)]:p[0],isPrep(n.l)?'prep':'need'); }
   if(maintenance.length){const n=maintenance[r%maintenance.length];put(n.l,n.r,'maintenance');}
   if(LADDERS.wrist && plan.concat(more).some(x=>WRIST_LOAD.includes(LADDERS[x.id].like||x.id))) put('wrist', state.placed.wrist?curIdx('wrist'):pathFor('wrist')[0], 'prep');
-  return plan.concat(more);
+  const res=plan.concat(more); res.notes=notes; return res;
 }
-const ROLE_N={goal:'goal', volume:'goal &middot; volume day', support:'support', extra:'extra', new:'new to you', need:'what your goal needs',maintenance:'maintain and recheck'};
+/* Why a goal trains easier today, or not at all, in one short line for Today. */
+function noteText(n){ const g=goalsOn(n.id)[0], who=esc(g? g.n : LADDERS[n.id].n), step=n.i!=null? ' '+esc(stepsOf(n.id)[n.i].n)+' today.' : ' Support work today.';
+  if(n.why==='pain') return `${who}: held for your ${esc(n.joint)} until ${whenText(n.until)}.${n.i!=null? ' Assisted: '+esc(stepsOf(n.id)[n.i].n)+'.' : ''}`;
+  if(n.why==='gate') return `${who}: first ${esc(n.gate)}.${n.i!=null? step : ''}`;
+  if(n.why==='one') return `${who}: one straight-arm skill a session.${step}`;
+  return `${who}: rest until ${whenText(n.until)} (${n.f==='nordic'?'Nordic':'straight-arm'} work).${step}`; }
+const cap=t=>t? t[0].toUpperCase()+t.slice(1) : t;
+function whenText(ts){ const d=Day.diff(ts, Date.now()), t=new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  return d<=0? t : d===1? 'tomorrow '+t : new Date(ts).toLocaleDateString(undefined,{weekday:'short'})+' '+t; }
+const ROLE_N={goal:'goal', volume:'goal &middot; volume day', easy:'goal &middot; easier today', support:'support', extra:'extra', new:'new to you', need:'what your goal needs',maintenance:'maintain and recheck'};
 const WHEN_S={warm:'warm-up', early:'while fresh', mid:'with the main work', end:'at the end'};
-function roleText(x){ const L=LADDERS[x.id]; return x.role==='prep'? (WHEN_S[L.when]||'prep') : ROLE_N[x.role]||''; }
-function planEntry(x){ const st=stepsOf(x.id)[x.i]; return {ladderId:x.id,stepIdx:x.i,kind:st.k,target:x.target||rungTarget(x.id,x.i,x.role),setup:lastSetupFor(x.id,x.i),clean:true,sets:Array.from({length:x.sets},makeSet),role:x.role}; }
+function roleText(x){ return x.role==='prep'? (WHEN_S[whenOf(x.id,x.i)]||'prep') : ROLE_N[x.role]||''; }
+function planEntry(x){ const d=dose(x.id,x.i,x.role); return newEntry(x.id, x.i, x.sets, x.target||d.target, d, x.role); }
 function planText(x){ const st=stepsOf(x.id)[x.i]; return `${x.sets} x ${x.target||rungTarget(x.id,x.i,x.role)}${unitS(st)}`; }
 
 function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
@@ -7194,7 +7412,7 @@ function goalHint(k){
   const G=GOALS[k], d=goalDist(k);
   if(readyMoves().some(u=>u.goal===k)) return '<b>Ready to try</b>';
   if(goalMetNow(k)) return 'You can already do this';
-  if(d==null) return 'Usually '+LV_T[GOAL_LV[k]||2];
+  if(d==null) return 'Often '+(GOAL_T[k]||LV_T[GOAL_LV[k]||2]);
   return d<0?'Earlier on this path: check your current ability':d===0? 'You are on this rung now' : d===1? 'One rung away' : d+' rungs away';
 }
 
@@ -7214,7 +7432,7 @@ function openRungHow(id,i){
     <div class="sheet-head"><button class="iconbtn" data-act="ladder" data-id="${id}" data-back aria-label="Back">${I.back}</button><h3>${esc(st.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="chip">${esc(L.n)}</span><span class="chip">${at>=0?'Step '+(at+1)+' of '+path.length:'Alternative movement'}</span>
-        <span class="chip brass mono">${goalText(st)}</span>${i===cur&&state.placed[id]?'<span class="chip good">Your rung</span>':''}${gs.length?`<span class="chip brass">${I.target} Goal</span>`:''}</div>
+        <span class="chip brass mono">${rungText(id,i)}</span>${i===cur&&state.placed[id]?'<span class="chip good">Your rung</span>':''}${gs.length?`<span class="chip brass">${I.target} Goal</span>`:''}</div>
       ${st.cue?`<div class="tip" style="margin-bottom:16px"><div class="lbl">${I.info}<span>Key point</span></div><p>${esc(st.cue)}</p></div>`:''}
       ${howtoHtml(st.id, id, st.n)}
       <div class="grid2" style="margin-top:16px">
@@ -7228,17 +7446,21 @@ function openRungHow(id,i){
    of the rung you said you can do. The goal's own ladder is always asked about, even if you were placed on it
    before; support ladders only if they haven’t been placed yet. */
 let place=null, surveyAns={};
+/* The survey so far is saved, so a reload keeps your answers and Today offers to carry on where you stopped. */
+function keepPlace(){ state.placing= place? {survey:place.survey.slice(), total:place.total, tests:place.tests.slice(), gids:(place.gids||[]).slice(), ans:Object.assign({},surveyAns)} : null; save(); }
+function resumePlacement(){ const p=state.placing; if(!p||!p.survey.length){ state.placing=null; save(); render(); return; }
+  place={survey:p.survey.slice(), total:p.total, tests:p.tests.slice(), gids:(p.gids||[]).slice()}; surveyAns=Object.assign({},p.ans); nextPlacement(); }
 function startPlacement(goals){
   surveyAns={};
   const need=[], mains=[...new Set(goals.map(g=>g.l))];
   goals.forEach(g=>[g.l].concat(g.sup||[]).forEach(id=>{ if((mains.includes(id)||!state.placed[id])&&!need.includes(id)) need.push(id); }));
-  mains.forEach(id=>{ if(state.placed[id]) surveyAns[id]=curIdx(id)-1; });   // start from where you are now
+  mains.forEach(id=>{ if(state.placed[id]) surveyAns[id]=curIdx(id); });   // start from where you are now: your step is picked
   place={survey:need, total:need.length, tests:mains, gids:goals.map(g=>g.id)};
   nextPlacement();
 }
 function nextPlacement(){
-  if(place.survey.length){ openSurvey(place.survey[0]); return; }
-  const tests=place.tests, gids=place.gids||[]; place=null;
+  if(place.survey.length){ keepPlace(); openSurvey(place.survey[0]); return; }
+  const tests=place.tests, gids=place.gids||[]; place=null; keepPlace();
   const done=checkGoals();
   // test the rung you said you can do, on each goal ladder where you picked one
   const toTests=()=>openTestOffer(tests.filter(id=>goalsOn(id).length && surveyAns[id]!=null && surveyAns[id]>=0));
@@ -7265,7 +7487,7 @@ function renderNeedCheck(){
       <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 4px">Your ${gs.length>1?'goals rest':'goal rests'} on more than ${gs.length>1?'their own ladders':'its own ladder'}. Tick the ones you <b style="color:var(--ink)">can already do, at the target shown, with clean form</b>. The rest join your sessions until they are in place.</p>
       ${gs.map(g=>`${gs.length>1?`<div class="grouphdr">${esc(g.n)}</div>`:''}${c.rows.filter(x=>x.g===g).map(({n,k})=>{ const st=stepsOf(n.l)[n.r];
         return `<button class="pick ${c.sel.has(k)?'on':''}" data-act="nchk" data-k="${k}"><span class="ck">${I.check}</span>
-          <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`; }).join('')}`).join('')}
+          <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${n.gate?'Before '+esc(n.gate.toLowerCase()):esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`; }).join('')}`).join('')}
       <div class="stickyfoot"><button class="btn primary block" data-act="nchk-done">${I.arrow} Continue</button></div>
     </div>`);
 }
@@ -7287,7 +7509,7 @@ function openSurvey(id){
     <div class="sheet-head"><h3>Where are you now?</h3><span class="chip">${n} of ${place.total}</span><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="lc-head" style="margin-bottom:6px"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
-        <div class="lc-t"><div class="a">${gs.length?'For your goal':nd?esc(QN[nd.n.q]||'Support')+' for '+esc(nd.g.n):'Support work'}</div><div class="b">${L.n}</div></div></div>
+        <div class="lc-t"><div class="a">${gs.length?'For your goal':nd?esc(QN[nd.n.q]||'Support')+' for '+esc(nd.g.n):'Support work'}</div><div class="b">${esc(L.n)}</div></div></div>
       <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Pick a movement you can practise with clean form and a manageable setup. You start on that movement. A check confirms what you can do; it does not assume the next step is ready.</p>
       ${pathFor(id).map((i,k)=>{const st=steps[i];return `<button class="pick ${was===i?'on':''}" data-act="survey-pick" data-id="${id}" data-i="${i}"><span class="rn">${k+1}</span>
         <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${goalText(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`;}).join('')}
@@ -7303,7 +7525,7 @@ function openTestOffer(ids){
       <h2 class="disp" style="font-size:25px;margin:0 0 8px;text-transform:uppercase">Show what you can do</h2>
       <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:320px">Check ${ids.map((id,k)=>`<b style="color:var(--ink)">${esc(stepsOf(id)[picks[k]].n)}</b>`).join(' and ')}. Warm up, stop before form changes, and record the clean result. Your plan starts on the movement you demonstrated.</p></div>
     <button class="btn primary block" data-act="test-verify" data-ids="${ids.join(',')}" data-is="${picks.join(',')}">${I.test} Test now</button>
-    <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}" style="margin-top:8px">Skip the test, start training</button>
+    <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}" style="margin-top:8px">${I.play} Skip the test, start training</button>
   </div>`);
 }
 let testCtx=null, tseq=0;
@@ -7321,7 +7543,7 @@ function openTestStep(note){
   const c=JSON.stringify(testCtx);
   nav.reg('test:'+(++tseq), ()=>{ testCtx=JSON.parse(c); openTestStep(note); }, true);
   openModal(`<div class="sheet-grab"></div>
-    <div class="sheet-head"><h3>Test: ${L.n}</h3><button class="iconbtn" data-act="test-quit" aria-label="Stop testing">${I.x}</button></div>
+    <div class="sheet-head"><h3>Test: ${esc(L.n)}</h3><button class="iconbtn" data-act="test-quit" aria-label="Stop testing">${I.x}</button></div>
     <div class="sheet-body">
       ${note?`<div class="banner info">${I.info}<span>${note}</span></div>`:''}
       <div class="eyebrow">${at>=0?'Step '+(at+1)+' of '+path.length:'Alternative movement'}</div>
@@ -7338,15 +7560,15 @@ function openTestStep(note){
 /* Outgrew it: move up. Nowhere near: move down. In between: this is the rung. */
 function recordTest(v){
   const id=testCtx.id,i=testCtx.i,st=stepsOf(id)[i],setup={},clean=!!($('#testclean')||{}).checked;
-  __root.querySelectorAll('[data-test-setup][data-key]').forEach(el=>{const f=setupFields(st).find(x=>x.key===el.dataset.key);setup[el.dataset.key]=f&&f.type==='number'?Num.parse(el.value):el.value.trim();});
-  if(v>0&&!setupValid(st,setup)){toast('Record the setup first');return;}
+  __root.querySelectorAll('[data-test-setup][data-key]').forEach(el=>{const f=setupField(st);if(f&&f.key===el.dataset.key)setup[f.key]=fieldStore(f,el.value);});
+  if(v>0&&!setupValid(st,setup)){toast(setupField(st).key==='load'?'Enter the weight you added':'Enter how much help you used');return;}
   if(v>0&&!clean){toast('Confirm clean form, or record zero and try an easier setup');return;}
   state.tests.push({date:Date.now(),ladderId:id,stepIdx:i,v,setup,clean:v>0&&clean});
   let at=curIdx(id);
   if(testCtx.advance){
-    if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&clean&&setupValid(st,setup)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
+    if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&clean&&setupValid(st,setup)&&gateMet(id,i)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
     else toast('Keep building the current movement or use a more manageable assisted setup');
-  }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
+  }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)&&gateMet(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
   save();testCtx.results.push({id,at,v,i});
   nextTestLadder();
 }
@@ -7362,7 +7584,7 @@ function finishTests(){
         <h2 class="disp" style="font-size:26px;margin:6px 0 4px;text-transform:uppercase">You start here</h2></div>
       ${res.map(r=>{ const st=stepsOf(r.id)[r.at], t=stepsOf(r.id)[r.i];
         return `<div class="lrow"><div class="li">${I[LADDERS[r.id].ic]||I.ladder}</div><div class="lb"><div class="a">${esc(st.n)}</div>
-          <div class="b">${LADDERS[r.id].n} &middot; target ${goalText(st)}</div></div><div class="lv">${r.v}${unitS(t)}</div></div>`; }).join('')}
+          <div class="b">${esc(LADDERS[r.id].n)} &middot; target ${goalText(st)}</div></div><div class="lv">${r.v}${unitS(t)}</div></div>`; }).join('')}
       <p class="muted" style="font-size:12.5px;line-height:1.55;margin:12px 2px 0">Test again in about four weeks. The app will remind you on the Today screen.</p>
       <button class="btn primary block" data-act="go-goals" style="margin-top:14px">${I.target} See my plan</button></div>`);
   };
@@ -7459,29 +7681,45 @@ function addGoals(list){
 }
 
 /* ==================== SESSION ==================== */
-/* Difficulty belongs to the set: changing today's setup never changes an earlier attempt. */
-/* Measured setup (band, lean, box height...) is no longer asked for: it was too much to measure every set. With no
-   fields, every setup is valid and all sets of a movement compare as one setup, old logs included. */
-function setupFields(st){ return []; }
-function setupValid(st,setup){
-  return setupFields(st).every(f=>{
-    const v=setup&&setup[f.key];
-    if(v==null||String(v).trim()==='') return false;
-    if(f.type==='text') return typeof v==='string'&&v.trim().length>0;
-    if(typeof v!=='number'&&typeof v!=='string') return false;
-    const n=Num.parse(v); return n!=null&&n>=(f.min==null?0:Number(f.min));
-  });
-}
-function setupSummary(st,setup){
-  return setupFields(st).map(f=>{
-    const v=setup&&setup[f.key]; if(v==null||String(v).trim()==='') return '';
-    return f.label+': '+String(v).trim()+(f.unit?' '+f.unit:'');
-  }).filter(Boolean).join(' · ');
-}
-function setupKey(st,setup){
-  if(!setupValid(st,setup)) return null;
-  return JSON.stringify(setupFields(st).map(f=>[f.key,f.type==='number'?Num.parse(setup[f.key]):String(setup[f.key]).trim().toLowerCase().replace(/\s+/g,' ')]));
-}
+/* Difficulty belongs to the set: changing today's setting never changes an earlier attempt.
+   One number per step, and only where it changes what a set proves: the weight added on weighted steps, and a help level
+   from 0 (none) to 5 (most) on assisted ones, for your band or how much the feet or the other hand help. It is filled in
+   from last time. A set logged without it still counts as practice; only sets with it count as proof, compared with sets
+   at the same setting or a harder one, so a band of 4 and a band of 2 no longer pool. Every other step asks for nothing,
+   and all its sets compare as one, old logs included. */
+const WEIGHTED_IDS=['weighted-pullup','weighted-dip','weighted-chin-up','weighted-calf-raise'];
+const ASSIST_IDS=['low-bar-transition','low-ring-transition','fingertip-oahs','german-hang-feet','support-flag'];
+const LB=0.45359237;
+function setupField(st){ if(!st||!st.id) return null;
+  if(WEIGHTED_IDS.includes(st.id)) return {key:'load', label:'Added', type:'number', unit:'kg', min:0, step:0.5};
+  if(st.id==='counterbalance-pistol') return {key:'counter', label:'Counterweight', type:'number', unit:'kg', min:0, step:0.5};
+  if(/^(assisted|band|feet-assisted)-/.test(st.id)||ASSIST_IDS.includes(st.id)) return {key:'assist', label:'Help', type:'number', min:0, max:5, step:1};
+  return null; }
+function setupFields(st){ const f=setupField(st); return f? [f] : []; }
+function setupVal(st,setup){ const f=setupField(st); if(!f||!setup) return null; return Num.parse(setup[f.key]); }
+function setupValid(st,setup){ const f=setupField(st); if(!f) return true; const v=setupVal(st,setup);
+  return v!=null&&(f.key==='load'? v>0 : v>=0)&&(f.max==null||v<=f.max); }
+/* Is setting a at least as hard as b? More added weight, or less help. Anything compares on a step with no number. */
+function harder(st,a,b){ const f=setupField(st); if(!f||b==null) return true; if(a==null) return false; return f.key==='load'? a>=b-1e-9 : a<=b+1e-9; }
+/* The weight unit you chose (Prefs), for showing and typing; weights are kept in kg. */
+function wUnit(){ return Prefs.get('unit','kg')==='lb'? 'lb' : 'kg'; }
+function showW(kg){ if(kg==null||kg==='') return ''; const v=wUnit()==='lb'? kg/LB : kg; return String(Math.round(v*100)/100); }
+function storeW(text){ const v=Num.parse(text); return v==null? null : wUnit()==='lb'? Math.round(v*LB*1000)/1000 : v; }
+const fieldShow=(f,v)=>f.unit==='kg'? showW(v) : (v==null? '' : String(v)), fieldStore=(f,text)=>f.unit==='kg'? storeW(text) : Num.parse(text);
+function fmtW(kg){ return showW(kg)+' '+wUnit(); }
+/* The next setting once the top of the range is reached: about 2.5 kg (5 lb) more, as your plates allow; a level less
+   help; or 1 kg less counterweight. null when there is nowhere to go. */
+function nextVal(st,val){ const f=setupField(st); if(!f||val==null) return null;
+  if(f.key==='assist') return val>0? val-1 : null;
+  if(f.key==='counter') return val>0? Math.max(0, val-1) : null;
+  const u=wUnit(), inc=u==='lb'? 5*LB : 2.5;
+  try{ const n=Kit.next(val, inc, 'added', u); return n&&n.kg>val+1e-9? n.kg : null; }catch(e){ return val+inc; } }
+function moveWhy(st,nv,top){ const f=setupField(st), u=st.k==='hold'?' s':'';
+  return f.key==='assist'? `Help ${nv} today: every set reached ${top}${u} at ${nv+1}.` : f.key==='counter'? `${fmtW(nv)} counterweight today: every set reached ${top}${u}.`
+    : `${fmtW(nv)} added today: every set reached ${top}${u}.`; }
+function missText(st){ const f=setupField(st); return f? 'No '+(f.key==='assist'?'help level':'weight')+': counts as practice' : ''; }
+function setupSummary(st,setup){ const f=setupField(st), v=setupVal(st,setup); if(!f||v==null) return '';
+  return f.unit==='kg'? f.label+' '+fmtW(v) : f.label+' '+v; }
 function lastSetupFor(id,i){
   const st=LADDERS[id]&&stepsOf(id)[i]; if(!st) return {};
   const history=state.history||[];
@@ -7499,33 +7737,36 @@ function lastSetupFor(id,i){
   }
   return {};
 }
-function setupProgressionText(st){
-  const fields=setupFields(st), has=key=>fields.some(f=>f.key===key), numeric=key=>fields.some(f=>f.key===key&&f.type==='number');
-  let change='Adjust one setup detail to make the movement a little more demanding.';
-  if(st.practice==='power') change=has('target')?'Improve measured reach or distance while keeping landing quality. A taller box alone does not show more jump power.':'Keep the movement explosive as you modestly increase its demand; stop when output or control falls.';
-  else if(numeric('lean')) change='Add a little shoulder lean while keeping the same hand and foot positions.';
-  else if(numeric('load')) change=has('reach')?'Reduce the counterweight a little while keeping the same reach.':'Add a small amount of load while keeping the same range.';
-  else if(numeric('supportHeight')) change='Move the assisting hand a little farther below the bar, using less help.';
-  else if(numeric('range')) change='Increase the controlled range or target distance a little, keeping the same starting position.';
-  else if(has('band')) change='Use slightly less band assistance with the same anchor and body position.';
-  else if(numeric('height')){
-    if(['feet-elevated-row','elevated-pike-pushup'].includes(st.id)) change='Raise the foot support a little while keeping the same body line.';
-    else if(st.id==='jumping-muscleup') change='Reduce leg help while keeping the bar and starting position reproducible.';
-    else change='Lower the hand support, starting surface or padded target a little, as appropriate to this exercise.';
-  }else if(has('support')) change='Reduce one source of hand or foot assistance while keeping the same range and position.';
-  return 'Repeat the target cleanly on two training days with the same setup, then make one small change. '+change+' Keep form and log the new setup; this also applies at the final step.';
-}
 function setupInputs(st,setup,attrs,disabled){
   return setupFields(st).map(f=>{
-    const value=setup&&setup[f.key]!=null?setup[f.key]:'';
-    return `<label style="display:block;min-width:0;font-size:12px;color:var(--muted)">${esc(f.label)}${f.unit?' ('+esc(f.unit)+')':''}
-      <input class="edtext" style="margin-top:4px;padding:8px 10px;font-size:13px" type="${f.type==='number'?'number':'text'}" ${f.type==='number'?`inputmode="decimal" min="${f.min==null?0:esc(f.min)}" step="${f.step==null?'any':esc(f.step)}"`:'maxlength="120"'} ${attrs} data-key="${esc(f.key)}" value="${esc(value)}"${disabled?' disabled':''}>
-      ${f.hint?`<span style="display:block;font-size:11px;line-height:1.4;margin-top:3px">${esc(f.hint)}</span>`:''}</label>`;
+    const value=fieldShow(f, setup&&setup[f.key]!=null? setupVal(st,setup) : null), unit=f.unit==='kg'? wUnit() : '';
+    return `<label style="display:block;min-width:0;font-size:12px;color:var(--muted)">${esc(f.label)}${unit?' ('+unit+')':f.key==='assist'?' (0 none, 5 most)':''}
+      <input class="edtext" style="margin-top:4px;padding:8px 10px;font-size:13px" type="text" inputmode="decimal" ${attrs} data-key="${esc(f.key)}" value="${esc(value)}"${disabled?' disabled':''}></label>`;
   }).join('');
 }
 function makeSet(){ return {v:null, rir:null, done:false}; }
-function entryFor(id,idx){ const i= idx==null? curIdx(id) : idx, st=stepsOf(id)[i];
-  return {ladderId:id,stepIdx:i,kind:st.k,target:rungTarget(id,i),setup:lastSetupFor(id,i),clean:true,sets:Array.from({length:st.sets},makeSet)}; }
+function entryFor(id,idx){ const i= idx==null? curIdx(id) : idx, st=stepsOf(id)[i], d=dose(id,i); return newEntry(id,i,st.sets,d.target,d); }
+/* Left and right on per-side exercises: each set keeps both (lr), and its value is the weaker side, so both must reach
+   the target. */
+function perSide(st){ return /per side|each side/i.test(st&&st.cue||''); }
+/* Balance skills train as a time-boxed block of attempts: 8 minutes, logging every hold, and the target met by as many
+   holds as the step has sets. Other holds train their total time (target × sets) in pieces as long as you can manage. */
+const BLOCK_IDS=['freestanding-handstand','straddle-handstand','weight-shift-hs','fingertip-oahs','oahs','frog-stand','crow-pose','crane-pose','elbow-lever','one-arm-elbow-lever'];
+const BLOCK_MIN=8;
+function isBlock(st){ return !!st&&BLOCK_IDS.includes(st.id); }
+function newEntry(id,i,n,target,d,role){ const st=stepsOf(id)[i], blk=isBlock(st);
+  const e={ladderId:id,stepIdx:i,kind:st.k,target,setup:Object.assign({},d&&d.setup||{}),clean:true,sets:Array.from({length:blk?1:n},makeSet)};
+  if(role) e.role=role; if(d&&d.why) e.why=d.why;
+  if(blk) e.block={min:BLOCK_MIN, start:null};
+  else if(st.k==='hold'&&!isPrep(id)) e.total=target*n;
+  return e; }
+/* After a set: a block keeps a fresh row open until its time is up, and holds in pieces until their total is reached. */
+function grow(e){ const st=stepsOf(e.ladderId)[e.stepIdx]; if(e.sets.some(s=>!s.done)) return;
+  if(e.block){ if(Date.now()<blockEnd(e)) e.sets.push(Object.assign(makeSet(),{extra:true})); return; }
+  if(e.total&&e.sets.filter(s=>s.done).reduce((t,s)=>t+(s.v||0),0)<e.total) e.sets.push(Object.assign(makeSet(),{extra:true})); }
+function blockEnd(e){ return e.block&&e.block.start? e.block.start+e.block.min*60000 : Infinity; }
+/* The rows a block or pieces opened and you never used aren't sets left undone. */
+function trimExtra(entries){ return entries.map(e=>Object.assign({},e,{sets:e.sets.filter(s=>s.done||!s.extra)})); }
 let pick=null;
 function openBuilder(){ pick=new Set(defaultPicks()); renderBuilder(); }
 function builderRow(id){
@@ -7556,7 +7797,7 @@ function beginSession(ids, sets){
   const goals=activeGoals();
   const name= goals.length===1? goals[0].n : goals.length? 'Goal session' : 'Session';
   const P=todayPlan();
-  state.active={id:uid(), name, startedAt:Date.now(), entries:orderIds(ids).map(id=>{ const x=P.find(p=>p.id===id), n=sets&&sets[id];
+  state.active={id:uid(), name, startedAt:Date.now(), entries:orderIds(ids,P).map(id=>{ const x=P.find(p=>p.id===id), n=sets&&sets[id];
     return x? planEntry(n? Object.assign({}, x, {sets:n}) : x) : entryFor(id); }), restEndsAt:null, restDur:0};
   save(); closeModal(); state.route='train'; render(); window.scrollTo(0,0); toast('Session started');
   if(window.__hub) window.__hub.changed('cal');
@@ -7615,10 +7856,9 @@ function endSession(){
     if(window.__hub) window.__hub.changed('cal'); return; }
   tb.keep('end', a.id, a.name);
   const o=endOpt||{keep:true, repeat:true}; endOpt=null;
-  const entries=a.entries.filter(e=>e.sets.some(s=>s.done))
-    .map(e=>({ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)}));
+  const entries=a.entries.filter(e=>e.sets.some(s=>s.done)).map(keepEntry);
   if(o.keep && entries.length){ const r={id:a.id, name:a.name, date:Date.now(), durationSec:Math.floor((Date.now()-a.startedAt)/1000), entries, cleared:[], partial:true};
-    const open=OpenSets.left(a.entries, ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) r.open=open;
+    const open=OpenSets.left(trimExtra(a.entries), ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) r.open=open;
     state.history.push(r); }
   state.repeat= o.repeat? {name:a.name, ids:a.entries.map(e=>e.ladderId)} : null;
   state.active=null; stopRest(); save(); tb.seal(); closeModal();
@@ -7632,6 +7872,8 @@ function startRepeat(){
   beginSession(ids); if(state.active&&r.name) state.active.name=r.name; save(); render();
 }
 function addToSession(id,idx){
+  const i= idx==null? curIdx(id) : idx;
+  if(!gateMet(id,i)){ toast('First: '+esc(gateText(id,i))); return; }
   if(!state.active) state.active={id:uid(), name:'Session', startedAt:Date.now(), entries:[], restEndsAt:null, restDur:0};
   if(state.active.entries.some(e=>e.ladderId===id)){ toast('Already in this session'); closeModal(); return; }
   state.active.entries.push(entryFor(id,idx));
@@ -7639,29 +7881,37 @@ function addToSession(id,idx){
 }
 function toggleDone(ei,si){
   const e=state.active.entries[ei], s=e.sets[si]; if(!s) return;
-  const st=stepsOf(e.ladderId)[e.stepIdx];
+  const st=stepsOf(e.ladderId)[e.stepIdx], tgt=e.target==null?st.v:e.target;
+  if(holdT&&holdT.ei===ei&&holdT.si===si){ holdGo(ei,si); return; }   // the tick stops the timer and logs its time
   if(!s.done){
-    const v=s.v==null? (e.target==null?st.v:e.target) : s.v;   // an empty box logs the grey target it shows
+    // an empty box logs the grey target it shows; on a per-side exercise each empty side does, and the weaker side counts
+    let v=s.v==null? tgt : s.v;
+    if(perSide(st)){ const lr=[0,1].map(k=>s.lr&&s.lr[k]!=null? s.lr[k] : s.v!=null? s.v : tgt); s.lr=lr; v=Math.min(lr[0],lr[1]); }
     if(!Number.isFinite(v)||v<0){toast('Enter the reps or seconds you actually completed');return;}
-    if(!setupValid(st,e.setup||{})){toast('Record the setup so this effort can be compared');return;}
     s.v=v; s.setup=Object.assign({},e.setup||{});s.clean=e.clean===true;
+    if(!setupValid(st,s.setup)) toast(setupField(st).key==='load'? 'Logged. Add the weight so sets like it count' : 'Logged. Add the help level so sets like it count');
+    if(e.block&&!e.block.start) e.block.start=Date.now();
   }
   s.done=!s.done;
+  if(s.done) grow(e);
   save(); render();
-  const L=LADDERS[e.ladderId];   // prep has its own short rest
-  if(s.done) startRest(L.rest?Math.min(L.rest,state.settings.rest):practiceOf(e.ladderId,e.stepIdx)==='balance'?60:Math.max(120,state.settings.rest));
+  const L=LADDERS[e.ladderId];   // prep has its own short rest, and balance attempts a shorter one
+  if(s.done) startRest(L.rest?Math.min(L.rest,state.settings.rest):e.block?30:practiceOf(e.ladderId,e.stepIdx)==='balance'?60:Math.max(120,state.settings.rest));
 }
+/* What a finished or ended session keeps of an exercise: the sets done, and the role it had (an easier day's sets
+   aren't a hard session: RECOVERY SPACING). */
+function keepEntry(e){ const k={ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)};
+  if(e.role) k.role=e.role; return k; }
 function finishWorkout(){
   const a=state.active; if(!a) return;
-  const entries=a.entries.filter(e=>e.sets.some(s=>s.done))
-    .map(e=>({ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)}));
+  const entries=a.entries.filter(e=>e.sets.some(s=>s.done)).map(keepEntry);
   if(!entries.length){ toast('Tick off at least one set first'); return; }
   tb.keep('finish', a.id, a.name);   // so finishing can be taken back
   // a ladder you had not placed yet is placed where you trained it
   entries.forEach(e=>{ if(!state.placed[e.ladderId]){ state.placed[e.ladderId]=true; state.rung[e.ladderId]=e.stepIdx; } });
   const earned=[];
   const rec={id:a.id,name:a.name,date:a.cont?a.cont.rec.date:Date.now(),durationSec:Math.floor((Date.now()-a.startedAt)/1000),entries,cleared:[]};
-  const open=OpenSets.left(a.entries, ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) rec.open=open;   // the sets you didn't tick off, kept apart
+  const open=OpenSets.left(trimExtra(a.entries), ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) rec.open=open;   // the sets you didn't tick off, kept apart
   insertRec(rec); state.repeat=null;
   LADDER_ORDER.filter(id=>state.placed[id]).forEach(id=>{
     const i=curIdx(id),to=nextRung(id,i),cap=capFor(id);
@@ -7678,6 +7928,11 @@ function offerAdvance(list,i,rec){
   if(!nxt||curIdx(id)===to){offerAdvance(list,i+1,rec);return;}
   window._advQ={list,i,rec};
   nav.reg('adv:'+rec.id+':'+i, ()=>offerAdvance(list,i,rec), true);
+  if(!gateMet(id,to)){ openModal(`<div class="sheet-grab"></div><div class="sheet-body"><div style="text-align:center;padding:6px 0 2px">
+      <div class="celebico">${I.up}</div><div class="eyebrow">Rung cleared</div>
+      <h2 class="disp" style="font-size:24px;margin:8px 0 6px;text-transform:uppercase">${esc(from.n)}</h2>
+      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 auto 16px;max-width:300px">Next is <b style="color:var(--ink)">${esc(nxt.n)}</b>, once you can do ${esc(gateText(id,to))}. Train that first.</p></div>
+      <button class="btn primary block" data-act="adv-no">${I.check} Got it</button></div>`); return; }
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-body">
       <div style="text-align:center;padding:6px 0 2px">
@@ -7735,6 +7990,37 @@ function tickRest(){
   el.classList.add('on');
   const v=$('#restv'); if(v) v.textContent=fmtDur(left);
   restT=setTimeout(tickRest,250);
+}
+
+/* ==================== HOLD TIMER ====================
+   Tap to start, tap to stop: the seconds go into the set and it is logged. On a per-side hold the first stop is the
+   left side and the second the right. A beep and a buzz mark the target, per your sound and vibration settings. */
+let holdT=null, holdTick=null, audioCtx=null;
+function primeAudio(){ try{ if(!audioCtx){ const AC=window.AudioContext||window.webkitAudioContext; if(AC) audioCtx=new AC(); } if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} }
+function beep(){ if(!state.settings.sound) return;
+  try{ primeAudio(); if(!audioCtx) return; const now=audioCtx.currentTime;
+    [[880,0],[1318.5,0.16]].forEach(([f,t])=>{ const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,now+t); g.gain.exponentialRampToValueAtTime(0.3,now+t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.28); o.connect(g); g.connect(audioCtx.destination); o.start(now+t); o.stop(now+t+0.3); }); }catch(e){} }
+function buzz(){ if(state.settings.vibrate&&navigator.vibrate) try{ navigator.vibrate([90,60,90]); }catch(e){} }
+function holdSecs(){ return holdT? Math.max(0,Math.floor((Date.now()-holdT.start)/1000)) : 0; }
+function stopHold(){ holdT=null; clearInterval(holdTick); holdTick=null; }
+function holdGo(ei,si){
+  const a=state.active, e=a&&a.entries[ei], s=e&&e.sets[si]; if(!s||s.done) return;
+  const st=stepsOf(e.ladderId)[e.stepIdx];
+  if(holdT&&holdT.ei===ei&&holdT.si===si){   // stop: the seconds go in
+    const secs=holdSecs(), side=holdT.side; stopHold();
+    if(side==='l'){ s.lr=[secs, s.lr&&s.lr[1]!=null? s.lr[1] : null]; save(); render(); toast('Left '+secs+' s. Now the right'); return; }
+    if(side==='r'){ s.lr=[s.lr&&s.lr[0]!=null? s.lr[0] : secs, secs]; s.v=null; } else s.v=secs;
+    toggleDone(ei,si); return; }
+  stopHold(); primeAudio(); stopRest(); save();
+  holdT={ei, si, side: perSide(st)? (s.lr&&s.lr[0]!=null? 'r' : 'l') : null, start:Date.now(), target:e.target==null?st.v:e.target, rang:false};
+  render(); holdTick=setInterval(tickHold,200);
+}
+function tickHold(){
+  const a=state.active; if(!holdT||!a||!a.entries[holdT.ei]){ stopHold(); return; }
+  const secs=holdSecs(), el=__root.querySelector('[data-hold-live]'); if(el) el.value=secs;
+  if(!holdT.rang&&secs>=holdT.target){ holdT.rang=true; beep(); buzz(); }
 }
 
 /* Stopping a session you picked back up: keep it with what you added, or put it back exactly as it was. */
@@ -7803,14 +8089,17 @@ function viewToday(){
   let hero;
   // a session in progress is on the Train tab
   if(goals.length){
-    const P=todayPlan(), xs=orderIds(P.map(x=>x.id)).map(id=>P.find(x=>x.id===id));
+    const P=todayPlan(), xs=orderIds(P.map(x=>x.id),P).map(id=>P.find(x=>x.id===id));
     // goals that wait their turn today: name the ones the next session brings
     const {mains}=planIds(), waiting=mains.filter(id=>!P.some(x=>x.id===id)), next=todayPlan(1).filter(x=>waiting.includes(x.id)).map(x=>x.id);
     const turnNote= waiting.length? `<p class="sub" style="margin:10px 0 0;font-size:12.5px">Your ${goals.length} goals take turns so each session stays short.${next.length? ' Next session: '+next.flatMap(id=>goalsOn(id).map(g=>esc(g.n))).join(' &middot; ')+'.' : ''} ${evChip('session','Why')}</p>` : '';
+    // a goal resting, held for pain or waiting on a gate says why, in a line each
+    const ns=(P.notes||[]).filter(n=>mains.includes(n.id)), spaced=ns.some(n=>n.why==='rest'||n.why==='one');
+    const restNote= ns.length? `<div style="margin:10px 0 0">${ns.map(n=>`<p class="sub" style="margin:0 0 4px;font-size:12.5px">${noteText(n)}</p>`).join('')}${spaced?evChip(ns.some(n=>n.f==='nordic')?'nordic':'tendon','Why rest'):''}</div>` : '';
     hero=`<div class="hero"><h2>Today&rsquo;s session</h2>
       <div class="nxlist">${xs.map(x=>{ const st=stepsOf(x.id)[x.i]; return `<button class="nx" data-act="how" data-id="${esc(x.id)}" data-i="${x.i}"><span>${esc(st.n)}</span><b class="mono">${planText(x)}</b>
         <i>${esc(LADDERS[x.id].n)} &middot; ${roleText(x)}</i></button>`; }).join('')}</div>
-      ${turnNote}
+      ${restNote}${turnNote}
       <p class="sub" style="margin:10px 0 0;font-size:12.5px">Train the movement and setup you can control. Related easier work supports strength days; balance and power stay fresh. Targets grow toward your goals, and supporting mobility and technique stay in a small maintenance rotation.</p>
       <div class="grid2" style="margin-top:14px"><button class="btn primary block" data-act="start-plan">${I.play} Start</button>
         <button class="btn ghost block" data-act="builder">${I.sliders} Choose</button></div></div>`;
@@ -7830,7 +8119,11 @@ function viewToday(){
   const sets7=setsIn(7), sessions7=new Set(state.history.filter(w=>w.date>=daysAgo(6)).map(w=>dayStart(w.date))).size;
   const achieved=state.goals.filter(g=>g.achieved).length;
   const recentAdv=state.advances.slice().reverse().slice(0,3);
-  return `<div class="stack">${again}${hero}${a? '' : unlockCard()}
+  const H=state.hold&&state.hold.until>Date.now()? state.hold : null, pl=!a&&state.placing&&state.placing.survey.length? state.placing : null;
+  const held= H? `<div class="banner warn" style="margin:0">${I.info}<span style="flex:1"><b>${esc(cap(listText(H.joints)))} pain:</b> ${listText([H.joints.some(j=>j!=='wrist')?'straight-arm skills':'', H.joints.includes('wrist')?'wrist-loaded work':''].filter(Boolean))} held until ${esc(fmtDate(H.until))}. Assisted versions where there are any.</span>
+      <button class="tinybtn" data-act="hold-off" style="flex:none">Lift it</button></div>` : '';
+  const placing= pl? `<button class="banner brass" data-act="place-resume" style="width:100%;text-align:left;margin:0">${I.target}<span><b>Where are you now?</b> ${pl.survey.length} of ${pl.total} left to answer.</span><span style="margin-left:auto">${I.arrow}</span></button>` : '';
+  return `<div class="stack">${again}${placing}${held}${hero}${a? '' : unlockCard()}
     ${due.length?`<button class="banner brass" data-act="test-go" data-ids="${due.join(',')}" style="width:100%;text-align:left;margin:0">${I.test}
       <span><b>${due.some(id=>lastTestFor(id))?'Time for a progress check.':'Test where you are.'}</b> One all-out set on ${due.map(id=>esc(curStep(id).n)).join(' and ')} keeps your plan honest.</span><span style="margin-left:auto">${I.arrow}</span></button>`:''}
     ${goals.length?`<div><div class="section-label">${I.target}<span>Your goals</span><span class="ln"></span><button class="tinybtn" data-act="goal-add" style="padding:5px 9px">${I.plus} Add</button></div>${goals.map(goalCard).join('')}</div>`:''}
@@ -7842,7 +8135,7 @@ function viewToday(){
     ${recentAdv.length?`<div class="card pad">
       <div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Recently earned</span></div>
       ${recentAdv.map(v=>`<div class="lrow"><div class="li" style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)">${I.up}</div>
-        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?LADDERS[v.id].n:''} &middot; ${relDay(v.date)}</div></div></div>`).join('')}
+        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?esc(LADDERS[v.id].n):''} &middot; ${relDay(v.date)}</div></div></div>`).join('')}
     </div>`:''}
   </div>`;
 }
@@ -7866,16 +8159,16 @@ function viewGoals(){
 }
 function goalFull(g, open){
   const L=LADDERS[g.l], cur=curIdx(g.l), placed=state.placed[g.l], pct=Math.round(goalProgress(g)*100), lt=lastTestFor(g.l);
-  const route=pathFor(g.l,g),path=route.slice(0,route.indexOf(g.r)+1).map((i,k)=>{const st=stepsOf(g.l)[i],proven=currentProof(g.l,i).ready;
+  const route=pathFor(g.l,g),path=route.slice(0,route.indexOf(g.r)+1).map((i,k)=>{const st=stepsOf(g.l)[i],proven=passed(g.l,i);
     const cls=!placed?'locked':i===cur?'current':proven?'cleared':'locked',isGoal=i===g.r,best=verifiedBestFor(g.l,i);
     return `<button class="rung ${cls} ${isGoal?'goal':''}" data-act="how" data-id="${g.l}" data-i="${i}">
       <div class="mark"><div class="dot">${proven?I.check:isGoal?I.target:(placed&&i===cur?'':k+1)}</div></div>
       <div class="body"><div class="n">${esc(st.n)}</div>
-        <div class="g">${isGoal?'Goal: '+stdText(g)+' in one set':goalText(st)+(st.k==='hold'?' hold':' reps')}${best?'  &middot;  best '+best+unitS(st):''}</div>
+        <div class="g">${isGoal?'Goal: '+stdText(g)+' in one set':rungText(g.l,i)+(st.k==='hold'?' hold':' reps')}${best?'  &middot;  best '+best+unitS(st):''}</div>
         ${placed&&i===cur?`<div class="cue">${esc(st.cue)}</div>`:''}</div>
       <div class="side">${placed&&i===cur?'<span class="chip brass">Now</span>':''}</div></button>`; }).join('');
   const sup=(g.sup||[]).filter(id=>LADDERS[id]).map(id=>`<button class="lrow" data-act="how" data-id="${id}" data-i="${curIdx(id)}" style="width:100%;text-align:left">
-    <div class="li">${I[LADDERS[id].ic]||I.ladder}</div><div class="lb"><div class="a">${esc(curStep(id).n)}</div><div class="b">${LADDERS[id].n} &middot; ${goalText(curStep(id))}</div></div></button>`).join('');
+    <div class="li">${I[LADDERS[id].ic]||I.ladder}</div><div class="lb"><div class="a">${esc(curStep(id).n)}</div><div class="b">${esc(LADDERS[id].n)} &middot; ${goalText(curStep(id))}</div></div></button>`).join('');
   const N=needsSrc(g), ns=goalNeeds(g), ok=ns.filter(needMet).length;
   const takes= N&&(ns.length||N.takes)? `<div class="section-label" style="margin:16px 3px 2px">What else it takes <span class="ln"></span>${ns.length?`<span class="chip ${ok===ns.length?'good':''}">${ok} of ${ns.length} in place</span>`:''}</div>
     <p class="muted" style="font-size:12.5px;line-height:1.55;margin:6px 2px 6px">${esc(N.takes)}</p>
@@ -7885,7 +8178,7 @@ function goalFull(g, open){
   return `<div class="card pad goal-full ${open?'open':''}" data-id="${esc(g.id)}" style="margin-bottom:14px">
     <div class="spread" style="align-items:flex-start">
       <button class="goal-head" data-act="goal-toggle" data-id="${esc(g.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gd-${esc(g.id)}">
-        <div class="eyebrow">${L.n}</div><div class="gt" style="margin-top:3px">${esc(g.n)}<span class="gchev">${I.chev}</span></div>
+        <div class="eyebrow">${esc(L.n)}</div><div class="gt" style="margin-top:3px">${esc(g.n)}<span class="gchev">${I.chev}</span></div>
         <div class="gbar"><i style="width:${Math.max(3,pct)}%"></i></div>
         <div class="gs">${pct}% of the way &middot; ${lt?'last tested '+relDay(lt.date):'not tested yet'}</div>
         <div class="gs">${goalNow(g)}${needsText(g)?' &middot; what else it takes: '+needsText(g):''}</div></button>
@@ -7907,7 +8200,7 @@ function needRow(n){
   const claim=(state.needClaims||{})[needKey(n)],where=ok?(b>=n.v?'recent performance verified':'confirmed by you; recheck after a layoff'):b?'verified best '+b+unitS(st):placed?'now on '+esc(stepsOf(n.l)[i].n.toLowerCase()):'not placed yet';
   return `<button class="lrow" data-act="how" data-id="${n.l}" data-i="${n.r}" style="width:100%;text-align:left">
     <div class="li" ${ok?'style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)"':''}>${ok?I.check:(I[L.ic]||I.ladder)}</div>
-    <div class="lb"><div class="a">${esc(st.n)}</div><div class="b">${esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'} &middot; ${where}</div></div></button>`;
+    <div class="lb"><div class="a">${esc(st.n)}</div><div class="b">${n.gate?'Before '+esc(n.gate.toLowerCase()):esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'} &middot; ${where}</div></div></button>`;
 }
 
 /* ==================== VIEWS: LIBRARY ==================== */
@@ -7925,7 +8218,7 @@ function viewLibrary(){
   const groups= tab==='Prep'? Object.keys(WHEN_N).map(w=>({h:WHEN_N[w], ids:ids.filter(id=>LADDERS[id].when===w)})).filter(x=>x.ids.length) : [{h:'', ids}];
   return `<div class="seg-tabs">${segs}</div>${intro}
     ${groups.map(G=>(G.h?`<div class="grouphdr" style="margin-top:4px">${G.h}</div>`:'')+G.ids.map(id=>{ const L=LADDERS[id], i=curIdx(id), st=L.steps[i], best=bestFor(id,i), placed=state.placed[id];
-      const route=pathFor(id),track=route.map(k=>`<i class="${placed&&k===i?'cur':currentProof(id,k).ready?'on':''}"></i>`).join('');
+      const route=pathFor(id),track=route.map(k=>`<i class="${placed&&k===i?'cur':passed(id,k)?'on':''}"></i>`).join('');
       return `<button class="ladder-card" data-act="ladder" data-id="${id}">
         <div class="lc-head"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
           <div class="lc-t"><div class="a">${esc(L.n)}${L.custom?' &middot; yours':''}${goalsOn(id).length?' &middot; goal':''}</div><div class="b">${placed?esc(st.n):L.steps.length+' rungs'}</div></div>
@@ -7938,12 +8231,12 @@ function viewLibrary(){
 }
 function openLadder(id){
   const L=LADDERS[id], cur=curIdx(id), placed=state.placed[id], gs=goalsOn(id), ready=new Set(readyMoves().filter(u=>u.l===id).map(u=>u.r));
-  const route=pathFor(id),routes=LADDER_PATHS[id]||[],rungs=route.map((i,k)=>{const st=L.steps[i],proven=currentProof(id,i).ready;
+  const route=pathFor(id),routes=LADDER_PATHS[id]||[],rungs=route.map((i,k)=>{const st=L.steps[i],proven=passed(id,i);
     const cls=!placed?'locked':i===cur?'current':proven?'cleared':'locked',best=verifiedBestFor(id,i),isGoal=gs.some(g=>g.r===i);
     return `<button class="rung ${cls} ${isGoal?'goal':''}" data-act="how" data-id="${id}" data-i="${i}">
       <div class="mark"><div class="dot">${proven?I.check:isGoal?I.target:(placed&&i===cur?'':k+1)}</div></div>
       <div class="body"><div class="n">${esc(st.n)}</div>
-        <div class="g">${goalText(st)}${st.k==='hold'?' hold':' reps'}${best?`  &middot;  best ${best}${unitS(st)}`:''}${ready.has(i)?'  &middot;  <b style="color:var(--brass-ink)">ready to try</b>':''}</div></div>
+        <div class="g">${rungText(id,i)}${st.k==='hold'?' hold':' reps'}${best?`  &middot;  best ${best}${unitS(st)}`:''}${ready.has(i)?'  &middot;  <b style="color:var(--brass-ink)">ready to try</b>':''}</div></div>
       <div class="side">${placed&&i===cur?'<span class="chip brass">Here</span>':`<span class="faint">${I.info}</span>`}</div></button>`; }).join('');
   nav.reg('ladder:'+id, ()=>openLadder(id));
   openModal(`<div class="sheet-grab"></div>
@@ -8021,7 +8314,11 @@ function saveCustomLadder(){
   const steps=cl.steps.map(x=>({n:(x.n||'').trim(), k:x.k==='hold'?'hold':'reps', sets:Math.min(10,Math.max(1,parseInt(x.sets)||3)), v:Math.min(3600,Math.max(1,parseInt(x.v)||0)), cue:(x.cue||'').trim()}));
   const bad=steps.findIndex(x=>!x.n||!x.v); if(bad>=0){ toast('Rung '+(bad+1)+' needs a name and a target'); return; }
   let id=cl.id;
-  if(id){ const c=state.custom.find(x=>x.id===id); Object.assign(c,{n, like:cl.like, steps}); }
+  // a rung renamed, or turned from reps into a hold, is a different exercise: its old logs stop counting as proof
+  if(id){ const c=state.custom.find(x=>x.id===id);
+    steps.forEach((x,i)=>{ const o=c.steps[i]; if(!o) return; const same=String(o.n||'').trim().toLowerCase()===x.n.toLowerCase()&&(o.k==='hold'?'hold':'reps')===x.k;
+      if(same){ if(Number.isFinite(o.since)) x.since=o.since; } else x.since=Date.now(); });
+    Object.assign(c,{n, like:cl.like, steps}); }
   else { id='c-'+uid(); state.custom.push({id, n, like:cl.like, steps}); state.rung[id]=0; }
   registerCustom(state.custom);
   state.rung[id]=Math.min(state.rung[id]||0, steps.length-1);
@@ -8069,40 +8366,45 @@ function viewTrain(){
 function exCard(e,ei){
   const st=stepsOf(e.ladderId)[e.stepIdx], L=LADDERS[e.ladderId], cur=curIdx(e.ladderId);
   const path=pathFor(e.ladderId), rank=path.indexOf(e.stepIdx), currentRank=path.indexOf(cur);
-  const unitTxt=e.kind==='hold'?'Secs':'Reps';
-  const target=e.target==null?st.v:e.target, fields=setupFields(st), practice=st.practice||L.practice, showRir=e.kind!=='hold'&&practice!=='balance'&&practice!=='power';
+  const side=perSide(st), hold=e.kind==='hold', unitTxt=(side?'L / R ':'')+(hold?'Secs':'Reps');
+  const target=e.target==null?st.v:e.target, f=setupField(st), practice=st.practice||L.practice, showRir=!hold&&practice!=='balance'&&practice!=='power';
   const nextIdx=e.sets.findIndex(s=>!s.done);
   const cleared=clearsRung(e), gs=goalsOn(e.ladderId);
+  const box=(s,si,k)=>{ const field=k==null? 'v' : k? 'r' : 'l', run=!!holdT&&holdT.ei===ei&&holdT.si===si&&(k==null? !holdT.side : holdT.side===field);
+    const val=k==null? s.v : s.lr&&s.lr[k]!=null? s.lr[k] : s.done? s.v : null;
+    return `<input class="sinput" inputmode="numeric" data-field="${field}" data-ex="${ei}" data-set="${si}" value="${run? holdSecs() : val!=null?val:''}" placeholder="${target}"${run?' data-hold-live="1" readonly':''} aria-label="Set ${si+1}${k==null?'':k?' right':' left'} ${hold?'seconds':'reps'}">`; };
   const rows=e.sets.map((s,si)=>{
-    const isNext=!s.done&&si===nextIdx;
+    const isNext=!s.done&&si===nextIdx, run=!!holdT&&holdT.ei===ei&&holdT.si===si;
+    const third= showRir? `<input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve, optional">`
+      : hold&&!s.done? `<button class="donebtn holdbtn${run?' on':''}" data-act="hold-go" data-ex="${ei}" data-set="${si}" aria-label="${run?'Stop the timer and log it':'Time set '+(si+1)+(side? s.lr&&s.lr[0]!=null? ', right side' : ', left side' : '')}">${run?I.stop:I.timer}</button>` : '<span aria-hidden="true"></span>';
+    const note=s.done? [s.clean===true?'Clean form confirmed':s.clean===false?'Practice attempt; form standard not met':'Form was not recorded',
+      side&&s.lr? 'left '+s.lr[0]+unitS(st)+', right '+s.lr[1]+unitS(st) : '', setupSummary(st,s.setup)? esc(setupSummary(st,s.setup)) : f? 'counts as practice: no '+(f.key==='assist'?'help level':'weight') : ''].filter(Boolean).join(' · ') : '';
     return `<div class="setrow ${s.done?'done':''} ${isNext?'next':''}">
       <div class="sidx">${si+1}</div>
-      <input class="sinput" inputmode="numeric" data-field="v" data-ex="${ei}" data-set="${si}" value="${s.v!=null?s.v:''}" placeholder="${target}" aria-label="Set ${si+1} ${e.kind==='hold'?'seconds':'reps'}">
-      ${showRir?`<input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve, optional">`:'<span aria-hidden="true"></span>'}
+      ${side? `<div class="lr">${box(s,si,0)}${box(s,si,1)}</div>` : box(s,si,null)}
+      ${third}
       <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="${s.done?'Mark set incomplete':'Log set'}">${I.check}</button>
       <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
-    </div>${s.done?`<div class="muted" style="font-size:11px;line-height:1.4;padding:0 6px 6px 34px">${s.clean===true?'Clean form confirmed':s.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}${setupSummary(st,s.setup)?' · '+esc(setupSummary(st,s.setup)):fields.length?' · Setup was not recorded':''}</div>`:''}`; }).join('');
+    </div>${note?`<div class="muted" style="font-size:11px;line-height:1.4;padding:0 6px 6px 34px">${note}</div>`:''}`; }).join('');
   return `<div class="card excard">
     <div class="exhead">
       <div class="en"><h3 data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}" style="cursor:pointer">${esc(st.n)}<span class="hinfo">${I.info}</span></h3>
         <div class="row" style="gap:5px;flex-wrap:wrap">
-          <span class="chip">${L.n}</span>
-          <span class="chip brass mono">${goalText(Object.assign({},st,{v:target,sets:e.sets.length}))}</span>
+          <span class="chip">${esc(L.n)}</span>
+          <span class="chip brass mono">${e.block? e.block.min+' min' : goalText(Object.assign({},st,{v:target,sets:e.sets.length}))}</span>
           ${gs.length?`<span class="chip">${I.target} ${esc(gs[0].n)}</span>`:''}
-          ${L.prep?`<span class="chip steel">${esc(QN[L.q]||'Prep')} &middot; ${esc(WHEN_S[L.when]||'prep')}</span>`:''}
-          ${e.role==='volume'?'<span class="chip">Lighter strength day</span>':rank<0?'<span class="chip">Alternative movement</span>':!state.placed[e.ladderId]?'<span class="chip">New to you: change it in the menu</span>':rank<currentRank?'<span class="chip">Earlier on this path</span>':rank>currentRank?'<span class="chip">Practising a later step</span>':''}
+          ${L.prep?`<span class="chip steel">${esc(QN[L.q]||'Prep')} &middot; ${esc(WHEN_S[whenOf(e.ladderId,e.stepIdx)]||'prep')}</span>`:''}
+          ${e.role==='volume'?'<span class="chip">Lighter strength day</span>':e.role==='easy'?'<span class="chip">Easier today</span>':rank<0?'<span class="chip">Alternative movement</span>':!state.placed[e.ladderId]?'<span class="chip">New to you: change it in the menu</span>':rank<currentRank?'<span class="chip">Earlier on this path</span>':rank>currentRank?'<span class="chip">Practising a later step</span>':''}
           ${cleared?`<span class="chip good">${I.check} Target met today</span>`:''}
         </div>
+        ${doseLine(e,ei,st,target)}
       </div>
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
     </div>
-    ${fields.length?`<div style="padding:0 14px 12px"><div class="grouphdr" style="margin:2px 0 7px">Setup for upcoming sets</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">${setupInputs(st,e.setup,`data-field="setup" data-ex="${ei}"`,false)}</div>
-      <p class="muted" data-setup-status="${ei}" style="font-size:11.5px;line-height:1.45;margin:7px 0 0">${setupValid(st,e.setup)?'Setup is saved with each set. Change one detail at a time as you progress.':'Fill in every setup detail before logging a set. Earlier sets keep their own setup.'}</p>
-      <p class="muted" style="font-size:11.5px;line-height:1.45;margin:7px 0 0">${esc(setupProgressionText(st))}</p></div>`:''}
+    ${f?doseInput(e,ei,st,f):''}
     <label style="display:flex;gap:8px;align-items:flex-start;padding:0 14px 12px;font-size:12px;line-height:1.45;color:var(--muted)"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''} style="margin-top:3px"><span>Clean form on upcoming sets<br><span style="font-size:11px">Controlled movement, prescribed range or position, no pain. Clear this if form breaks; practice attempts still count in your log.</span></span></label>
     <div class="setgrid">
-      <div class="setrow-head"><span>Set</span><span>${unitTxt}</span><span>${showRir?'RIR':''}</span><span></span><span></span></div>
+      <div class="setrow-head"><span>Set</span><span>${unitTxt}</span><span>${showRir?'RIR':hold?'Timer':''}</span><span></span><span></span></div>
       ${rows}
       ${showRir?`<p class="muted" style="font-size:11px;line-height:1.4;margin:5px 4px 0">RIR is optional: how many more clean reps you could do. Finish strength sets with a little in reserve.</p>`:''}
     </div>
@@ -8113,6 +8415,25 @@ function exCard(e,ei){
       ${e.sets.length>1?`<button class="tinybtn danger" data-act="del-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
     </div>
   </div>`;
+}
+/* One line under the chips: the rep range, a hold's total so far, or a balance block's best and time left. */
+function doseLine(e,ei,st,target){
+  const done=e.sets.filter(s=>s.done), u=unitS(st), line=t=>`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:6px 0 0">${t}</p>`;
+  if(e.block){ const hits=done.filter(s=>s.v>=target).length, best=done.reduce((m,s)=>Math.max(m,s.v||0),0);
+    return line(`Attempts for ${e.block.min} min. ${done.length? `Best ${best} s &middot; ${hits} of ${st.sets} at ${target} s` : `Aim for ${st.sets} holds of ${target} s`} &middot; <span data-block-left="${ei}">${blockLeft(e)}</span>`); }
+  if(e.total) return line(`${done.reduce((t,s)=>t+(s.v||0),0)} of ${e.total} s total. As many holds as it takes.`);
+  if(e.kind!=='hold'&&!isPrep(e.ladderId)){ const {lo,hi}=repRange(e.ladderId,e.stepIdx); if(lo<hi) return line(`Range ${lo}&ndash;${hi}. A rep more next time when every set has 1 or more in reserve.`); }
+  return '';
+}
+function blockLeft(e){ const end=blockEnd(e); if(end===Infinity) return 'starts with your first attempt'; const s=Math.round((end-Date.now())/1000);
+  return s>0? fmtDur(s)+' left' : 'time is up'; }
+/* The one number a weighted or assisted step asks for, filled in from last time, and why it moved. */
+function doseInput(e,ei,st,f){
+  const v=setupVal(st,e.setup), why=e.why? esc(e.why) : f.key==='assist'? '0 none, 5 most. One level less once every set reaches the top.' : f.key==='counter'? 'Less weight once every set reaches the top.' : 'A little more once every set reaches the top.';
+  const ctl= f.key==='assist'? `<div class="pillpick" role="group" aria-label="Help, 0 none to 5 most" style="margin:0">${[0,1,2,3,4,5].map(n=>`<button class="${v===n?'on':''}" data-act="assist-set" data-ex="${ei}" data-v="${n}" aria-pressed="${v===n?'true':'false'}">${n}</button>`).join('')}</div>`
+    : `<input class="sinput" style="max-width:110px" inputmode="decimal" data-field="setup" data-key="${f.key}" data-ex="${ei}" value="${esc(fieldShow(f,v))}" placeholder="${f.key==='load'?'0':''}" aria-label="${esc(f.label)} in ${wUnit()}">`;
+  return `<div style="padding:0 14px 12px"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:12.5px">${esc(f.label)}${f.unit?' ('+wUnit()+')':''}</b>${ctl}</div>
+    <p class="muted" style="font-size:11.5px;line-height:1.45;margin:6px 0 0">${why}</p></div>`;
 }
 function openPicker(){
   nav.reg('picker', openPicker);
@@ -8144,8 +8465,8 @@ function openExMenu(ei){
     <div class="sheet-head"><h3>${esc(st.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body tight">
       <button class="actitem" data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}">${I.info}<span>How to do it</span></button>
-      ${up!=null?`<button class="actitem" data-act="ex-stepup" data-ex="${ei}">${I.up}<span>Move up a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[up].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
-      ${back!=null?`<button class="actitem" data-act="ex-stepback" data-ex="${ei}">${I.down}<span>Step back a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[back].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
+      ${up!=null?`<button class="actitem" data-act="ex-stepup" data-ex="${ei}">${I.up}<span>Move up a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[up].n)} becomes your rung on ${esc(LADDERS[e.ladderId].n)}, here and in every plan</div></span></button>`:''}
+      ${back!=null?`<button class="actitem" data-act="ex-stepback" data-ex="${ei}">${I.down}<span>Step back a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[back].n)} becomes your rung on ${esc(LADDERS[e.ladderId].n)}, here and in every plan</div></span></button>`:''}
       ${easier?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="-1">${I.down}<span>Easier, just today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(easier.n)}; your rung stays where it is</div></span></button>`:''}
       ${harder?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="1">${I.up}<span>Try the next rung today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(harder.n)}; check a controlled version while fresh</div></span></button>`:''}
       <button class="actitem" data-act="ladder" data-id="${esc(e.ladderId)}">${I.ladder}<span>See the whole ladder</span></button>
@@ -8183,12 +8504,12 @@ function progOverview(){
       <div class="spread mono" style="margin-top:8px;font-size:10.5px;color:var(--faint)"><span>7 days ago</span><span>Today</span></div>
     </div>
     ${tests.length?`<div class="card pad" style="margin-top:12px"><div class="section-label" style="margin:0 0 4px">${I.test}<span>Tests</span></div>
-      ${tests.map(t=>{ const st=stepsOf(t.ladderId)[t.stepIdx]; return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div><div class="b">${LADDERS[t.ladderId].n} &middot; ${relDay(t.date)}</div></div><div class="lv">${t.v}${st?unitS(st):''}</div></div>`; }).join('')}</div>`:''}
+      ${tests.map(t=>{ const st=stepsOf(t.ladderId)[t.stepIdx]; return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div><div class="b">${LADDERS[t.ladderId]?esc(LADDERS[t.ladderId].n):''} &middot; ${relDay(t.date)}</div></div><div class="lv">${t.v}${st?unitS(st):''}</div></div>`; }).join('')}</div>`:''}
     ${state.advances.length?`<div class="card pad" style="margin-top:12px">
       <div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Rungs earned</span></div>
       ${state.advances.slice().reverse().slice(0,10).map(v=>`<div class="lrow">
         <div class="li" style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)">${I.up}</div>
-        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?LADDERS[v.id].n:''}</div></div>
+        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?esc(LADDERS[v.id].n):''}</div></div>
         <div class="lv">${relDay(v.date)}</div></div>`).join('')}
     </div>`:''}`;
 }
@@ -8196,13 +8517,13 @@ function progRungs(){
   const ids=LADDER_ORDER.filter(id=>state.placed[id]), rest=LADDER_ORDER.length-ids.length;
   return (ids.length? ids : LADDER_ORDER).map(id=>{
     const L=LADDERS[id], i=curIdx(id), st=L.steps[i], best=bestFor(id,i), placed=state.placed[id], path=pathFor(id);
-    const proven=new Set(path.filter(k=>currentProof(id,k).ready));
+    const proven=new Set(path.filter(k=>passed(id,k)));
     return `<button class="ladder-card" data-act="ladder" data-id="${id}">
       <div class="lc-head"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
-        <div class="lc-t"><div class="a">${L.n}${L.skill?' &middot; skill':''}</div><div class="b">${placed?esc(st.n):'Not placed yet'}</div></div>
+        <div class="lc-t"><div class="a">${esc(L.n)}${L.skill?' &middot; skill':''}</div><div class="b">${placed?esc(st.n):'Not placed yet'}</div></div>
         <span style="color:var(--faint)">${I.arrow}</span></div>
       <div class="track">${path.map(k=>`<i class="${placed&&k===i?'cur':proven.has(k)?'on':''}"></i>`).join('')}</div>
-      <div class="lc-foot"><span>${placed?'Step '+(path.indexOf(i)+1)+' of '+path.length+' &middot; '+proven.size+' repeatable':'&ndash;'}</span><span>${best?`logged best ${best}${unitS(st)}`:'no logs yet'}</span></div>
+      <div class="lc-foot"><span>${placed?'Step '+(path.indexOf(i)+1)+' of '+path.length+(currentProof(id,i).ready?' &middot; ready for the next':''):'&ndash;'}</span><span>${best?`logged best ${best}${unitS(st)}`:'no logs yet'}</span></div>
     </button>`; }).join('')+(ids.length&&rest? `<button class="btn ghost block" data-act="nav" data-route="library">${I.book} ${rest} more ladders you haven’t placed yet</button>` : '');
 }
 function progHistory(){
@@ -8217,10 +8538,10 @@ function progHistory(){
         ${w.cleared&&w.cleared.length?`<span class="chip good">${I.up} ${w.cleared.length}</span>`:''}
       </div>
       ${w.entries.map(e=>{ const st=LADDERS[e.ladderId]&&stepsOf(e.ladderId)[e.stepIdx];
-        const done=e.sets.filter(s=>s.done!==false), vals=done.map(s=>s.v+(e.kind==='hold'?'s':'')).join(', ');
+        const done=e.sets.filter(s=>s.done!==false), vals=done.map(s=>(s.lr&&s.lr.length===2? s.lr[0]+'/'+s.lr[1] : s.v)+(e.kind==='hold'?'s':'')).join(', ');
         const setups=[...new Set(done.map(s=>setupSummary(st,s.setup||e.setup)).filter(Boolean))];
         return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div>
-          <div class="b">${vals||'no sets completed'}${setups.length?'<br>'+setups.map(esc).join('<br>'):setupFields(st).length?'<br>Setup was not recorded':''}</div></div></div>`; }).join('')}
+          <div class="b">${vals||'no sets completed'}${setups.length?'<br>'+setups.map(esc).join('<br>'):setupFields(st).length?'<br>'+missText(st):''}</div></div></div>`; }).join('')}
       <div style="margin-top:6px;text-align:right"><button class="tinybtn" data-act="ed-open" data-id="${esc(w.id)}" style="padding:5px 9px">${I.pen} Edit</button></div>
     </div>`; }).join('');
 }
@@ -8271,8 +8592,10 @@ function openSettings(){
         <div class="pillpick">${[['system','Auto'],['light','Light'],['dark','Dark']].map(t=>`<button class="${s.theme===t[0]?'on':''}" data-act="set-theme" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
       <div class="field"><label>Rest between sets</label>
         <div class="pillpick">${[60,90,120,180].map(n=>`<button class="${s.rest===n?'on':''}" data-act="set-rest" data-v="${n}">${n}s</button>`).join('')}</div></div>
-      <div class="field"><label>Buzz when rest ends</label>
+      <div class="field"><label>Buzz when rest ends or a hold reaches its target</label>
         <div class="pillpick">${[['1','On'],['0','Off']].map(t=>`<button class="${(s.vibrate?'1':'0')===t[0]?'on':''}" data-act="set-vib" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
+      <div class="field"><label>Beep when a hold reaches its target</label>
+        <div class="pillpick">${[['1','On'],['0','Off']].map(t=>`<button class="${(s.sound?'1':'0')===t[0]?'on':''}" data-act="set-sound" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
       <div class="section-label" style="margin:18px 3px 8px">Your data <span class="ln"></span></div>
       <button class="actitem" data-act="export">${I.copy}<span>Copy a backup</span></button>
       <button class="actitem" data-act="import-open">${I.grid}<span>Restore from a backup</span></button>
@@ -8404,8 +8727,9 @@ __root.addEventListener('click', e=>{
     case 'sheet-back': nav.back(); break;
     case 'goal-rm': state.goals=state.goals.filter(x=>x.id!==el.dataset.id); save(); closeModal(); render(); toast('Goal removed'); break;
     case 'place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) startPlacement([g]); break; }
-    case 'survey-pick': { const id=el.dataset.id,i=+el.dataset.i;surveyAns[id]=i;
-      moveTo(id,i>=0?i:pathFor(id)[0]);
+    case 'survey-pick': { const id=el.dataset.id; let i=+el.dataset.i;
+      if(i>=0&&!gateMet(id,i)){ const was=i; i=previousRung(id,i)??pathFor(id)[0]; toast('First: '+esc(gateText(id,was))+'. You start on '+esc(stepsOf(id)[i].n)); }
+      surveyAns[id]=i; moveTo(id,i>=0?i:pathFor(id)[0]);
       if(place){ place.survey.shift(); nextPlacement(); } break; }
     case 'need-place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) openNeedCheck([g], ()=>{ closeModal(); render(); toast('Saved. Your sessions follow it from now on'); }); break; }
     case 'nchk': { const k=el.dataset.k; if(ncheck.sel.has(k)) ncheck.sel.delete(k); else ncheck.sel.add(k); el.classList.toggle('on', ncheck.sel.has(k)); break; }
@@ -8415,8 +8739,11 @@ __root.addEventListener('click', e=>{
     case 'test-verify': { const ids=(el.dataset.ids||'').split(','), is=(el.dataset.is||'').split(',').map(Number), pk={};
       ids.forEach((id,k)=>{ if(LADDERS[id]) pk[id]=is[k]; }); beginTests(Object.keys(pk), null, pk); break; }
     case 'test-go': { const ids=(el.dataset.ids||'').split(',').filter(x=>LADDERS[x]); if(!ids.length) break;
+      if(el.dataset.i!=null&&!gateMet(ids[0],+el.dataset.i)){ toast('First: '+esc(gateText(ids[0],+el.dataset.i))); break; }
       beginTests(ids, el.dataset.i!=null? +el.dataset.i : null); break; }
-    case 'test-later': (el.dataset.ids||'').split(',').forEach((id,k)=>{const i=+(el.dataset.is||'').split(',')[k];if(LADDERS[id]&&i>=0)moveTo(id,i);});closeModal();state.route='goals';save();render();toast('Your plan is ready');break;
+    case 'test-later': { (el.dataset.ids||'').split(',').forEach((id,k)=>{const i=+(el.dataset.is||'').split(',')[k];if(LADDERS[id]&&i>=0)moveTo(id,i);});
+      closeModal(); const ids=defaultPicks();   // straight into today's session
+      if(ids.length) confirmStart(()=>beginSession(ids)); else { state.route='goals'; save(); render(); toast('Your plan is ready'); } break; }
     case 'test-record': { const v=Num.int(($('#testv')||{}).value); if(v==null||v<0){ toast('Enter your reps or seconds'); break; } recordTest(v); break; }
     case 'test-zero': recordTest(0); break;
     case 'ed-open': openEditSession(el.dataset.id); break;
@@ -8447,21 +8774,25 @@ __root.addEventListener('click', e=>{
     case 'add-to-session': addToSession(el.dataset.id, el.dataset.i!=null? +el.dataset.i : null); break;
     case 'toggle-done': toggleDone(ei,si); break;
     case 'add-set': A.entries[ei].sets.push(makeSet()); save(); render(); break;
+    case 'hold-go': holdGo(ei,si); break;
+    case 'assist-set': { const en=A&&A.entries[ei]; if(!en) break; en.setup=Object.assign({},en.setup||{},{assist:+el.dataset.v}); delete en.why; save(); render(); break; }
     case 'del-set': { const s=A.entries[ei].sets; if(s.length>1) s.pop(); save(); render(); break; }
     case 'rm-set': { const s=A.entries[ei].sets; if(s.length>1) s.splice(si,1); save(); closeModal(); render(); break; }
     case 'rm-ex': A.entries.splice(ei,1); save(); closeModal(); render(); toast('Removed'); break;
     case 'ex-stepup': case 'ex-stepback': { const en=A.entries[ei],id=en.ladderId,to=act==='ex-stepup'?stepUpTo(id):previousRung(id,curIdx(id));if(to==null)break;
+      if(!gateMet(id,to)){ toast('First: '+esc(gateText(id,to))); closeModal(); break; }
       moveTo(id, to);
       const ne=entryFor(id, to);
       if(en.sets.some(s=>s.done)) A.entries.splice(ei+1,0,ne); else A.entries[ei]=ne;   // sets already logged stay as they were
-      save(); closeModal(); render(); toast('Your rung on '+LADDERS[id].n+' is now '+esc(stepsOf(id)[to].n));
+      save(); closeModal(); render(); toast('Your rung on '+esc(LADDERS[id].n)+' is now '+esc(stepsOf(id)[to].n));
       if(window.__hub) window.__hub.changed('cal'); break; }
     case 'ex-shift': { const en=A.entries[ei],to=+el.dataset.d<0?previousRung(en.ladderId,en.stepIdx):nextRung(en.ladderId,en.stepIdx);
       if(to==null)break;
+      if(!gateMet(en.ladderId,to)){ toast('First: '+esc(gateText(en.ladderId,to))); closeModal(); break; }
       if(en.sets.some(s=>s.done)){ toast('Already logging this one; add the other version instead'); closeModal(); break; }
       A.entries[ei]=entryFor(en.ladderId,to); save(); closeModal(); render(); toast((+el.dataset.d<0?'Easier':'Harder')+' version for today'); break; }
-    case 'fill-target': { const en=A.entries[ei], st=stepsOf(en.ladderId)[en.stepIdx];
-      en.sets.forEach(s=>{if(s.v==null)s.v=en.target||st.v;});save();render();toast('Filled with the target; change it to your actual result');break; }
+    case 'fill-target': { const en=A.entries[ei], st=stepsOf(en.ladderId)[en.stepIdx], t=en.target||st.v;
+      en.sets.forEach(s=>{ if(s.done) return; if(perSide(st)) s.lr=[0,1].map(k=>s.lr&&s.lr[k]!=null? s.lr[k] : t); else if(s.v==null) s.v=t; });save();render();toast('Filled with the target; change it to your actual result');break; }
     case 'ex-menu': openExMenu(ei); break;
     case 'set-menu': openSetMenu(ei,si); break;
     case 'session-menu': openModal(`<div class="sheet-grab"></div><div class="sheet-head"><h3>Session</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
@@ -8495,11 +8826,13 @@ __root.addEventListener('click', e=>{
 
     /* rungs */
     case 'advance': {const id=el.dataset.id,from=curIdx(id),to=nextRung(id,from);if(to==null)break;
+      if(!gateMet(id,to)){toast('First: '+esc(gateText(id,to)));break;}
       if(rungRank(id,to)>rungRank(id,capFor(id))){toast('Reach the exact goal standard on this movement first');break;}
       if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days first');break;}
       if(entryReady(id,to)){moveTo(id,to);closeModal();render();toast('Next movement checked; rung updated');}else beginTests([id],to,null,{from,manual:true});break;}
     case 'demote': {const id=el.dataset.id,to=previousRung(id,curIdx(id));if(to!=null&&moveTo(id,to)){closeModal();render();toast('Stepped back');}break;}
     case 'adv-yes': {const q=window._advQ,id=el.dataset.id,to=+el.dataset.to,from=curIdx(id);
+      if(!gateMet(id,to)){toast('First: '+esc(gateText(id,to)));break;}
       if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days first');break;}
       if(entryReady(id,to)){moveTo(id,to);if(q&&!q.rec.cleared.includes(id))q.rec.cleared.push(id);tb.seal();render();if(q)offerAdvance(q.list,q.i+1,q.rec);else closeModal();}
       else beginTests([id],to,null,q?{from,list:q.list,index:q.i,rec:q.rec}:null);break;}
@@ -8509,13 +8842,16 @@ __root.addEventListener('click', e=>{
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
     case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
     case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; Prefs.set({vibrate:state.settings.vibrate}); save(); openSettings(); break;
+    case 'set-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); save(); openSettings(); break;
+    case 'hold-off': state.hold=null; save(); render(); toast('Hold lifted'); if(window.__hub) window.__hub.changed('cal'); break;
+    case 'place-resume': resumePlacement(); break;
     case 'export': exportData(); break;
     case 'copy-export': { const t=__root.getElementById('exp'); if(t){ t.select();
       if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(()=>toast('Copied')).catch(()=>toast('Couldn’t copy it. Select the text and copy it yourself'));
       else toast('Couldn’t copy it. Select the text and copy it yourself'); } break; }
     case 'import-open': openImport(); break;
     case 'do-import': doImport(); break;
-    case 'redo-place': state.placed={}; state.said={}; save(); closeModal(); render(); toast('Done. Your goals will ask where you are again.'); break;
+    case 'redo-place': state.placed={}; state.said={}; state.placing=null; save(); closeModal(); render(); toast('Done. Your goals will ask where you are again.'); break;
     case 'reset-rungs': { LADDER_ORDER.forEach(k=>state.rung[k]=0); state.placed={}; state.said={}; state.advances=[]; save(); closeModal(); render(); toast('Rungs reset'); break; }
     case 'reset': openModal(`<div class="sheet-grab"></div>
       <div class="sheet-body"><div style="text-align:center;padding:8px 0">
@@ -8535,16 +8871,15 @@ __root.addEventListener('input', e=>{
   const en=state.active.entries[ei]; if(!en) return;
   if(f==='clean'){ en.clean=el.checked; save(); return; }
   if(f==='setup'){
-    const st=stepsOf(en.ladderId)[en.stepIdx], field=setupFields(st).find(x=>x.key===el.dataset.key); if(!field) return;
-    en.setup=en.setup||{};
-    en.setup[field.key]=field.type==='number'?Num.parse(el.value):el.value;
-    const status=__root.querySelector(`[data-setup-status="${ei}"]`);
-    if(status) status.textContent=setupValid(st,en.setup)?'Setup is saved with each set. Change one detail at a time as you progress.':'Fill in every setup detail before logging a set. Earlier sets keep their own setup.';
+    const st=stepsOf(en.ladderId)[en.stepIdx], field=setupField(st); if(!field||field.key!==el.dataset.key) return;
+    en.setup=Object.assign({},en.setup||{}); en.setup[field.key]=fieldStore(field,el.value);
     save(); return;
   }
   const s=en.sets[si]; if(!s) return;
   const n=Num.int(el.value);
-  if(f==='v') s.v=n; else if(f==='rir') s.rir=n; else return;
+  if(f==='v') s.v=n; else if(f==='rir') s.rir=n;
+  else if(f==='l'||f==='r'){ s.lr=s.lr||[null,null]; s.lr[f==='l'?0:1]=n; }
+  else return;
   save();
 });
 __root.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='testv'){ e.preventDefault(); const b=__root.querySelector('[data-act="test-record"]'); if(b) b.click(); } });
@@ -8552,6 +8887,7 @@ setInterval(()=>{ const a=state.active, el=__root.getElementById('elapsed');
   if(a&&el&&state.route==='train'){
     const done=a.entries.reduce((n,x)=>n+x.sets.filter(s=>s.done).length,0);
     el.textContent=fmtDur(Math.floor((Date.now()-a.startedAt)/1000))+' elapsed · '+done+' sets';
+    __root.querySelectorAll('[data-block-left]').forEach(b=>{ const en=a.entries[+b.dataset.blockLeft]; if(en&&en.block) b.textContent=blockLeft(en); });
   } }, 1000);
 
 /* ==================== EDIT A FINISHED SESSION ==================== */
@@ -8572,7 +8908,7 @@ function renderEdit(){
         <button class="edx" data-act="ed-rm-set" data-e="${ei}" data-s="${si}" aria-label="Remove set">${I.x}</button></div>
       <div style="margin:0 0 12px 28px">
         ${edit.view?`<p class="muted" style="font-size:11.5px;margin:0 0 6px">${x.clean===true?'Clean form confirmed':x.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}</p>`:`<label style="display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px"><input type="checkbox" data-ed="clean" data-e="${ei}" data-s="${si}"${x.clean===true?' checked':''}>Clean form on set ${si+1}</label>`}
-        ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||'Setup was not recorded')}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
+        ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||missText(st))}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
       </div>`).join('');
     return `<div class="edex"><div class="edh"><div><b>${esc(st.n)}</b><small>${esc(LADDERS[e.ladderId].n)} &middot; target ${goalText(Object.assign({},st,{v:e.target==null?st.v:e.target}))}</small></div><button class="tinybtn" data-act="ed-rm-ex" data-e="${ei}">Remove</button></div>
       ${e.sets.length? `<div class="edrow two head"><span></span><span>${e.kind==='hold'?'Secs':'Reps'}</span><span>${showRir?'RIR':''}</span><span></span></div>${rows}` : '<p class="edwhy" style="margin:0 0 8px">'+(e.left&&e.left.length?'Not started.':'No sets left.')+'</p>'}
@@ -8616,13 +8952,14 @@ function edInput(el){
   const en=r.entries[+el.dataset.e], x=en&&en.sets[+el.dataset.s]; if(!x) return;
   if(f==='clean'){ x.clean=el.checked; return; }
   if(f==='setup'){
-    const st=LADDERS[en.ladderId]&&stepsOf(en.ladderId)[en.stepIdx], field=setupFields(st).find(z=>z.key===el.dataset.key); if(!field) return;
+    const st=LADDERS[en.ladderId]&&stepsOf(en.ladderId)[en.stepIdx], field=setupField(st); if(!field||field.key!==el.dataset.key) return;
     x.setup=Object.assign({},x.setup||en.setup||{});
-    x.setup[field.key]=field.type==='number'?Num.parse(v):v;
+    x.setup[field.key]=fieldStore(field,v);
     return;
   }
   if(f!=='v'&&f!=='rir') return;
   const n=Num.int(v); x[f]=n==null? null : Math.max(0,n);
+  if(f==='v') delete x.lr;   // a corrected value replaces both sides
 }
 function edAddSet(ei){
   const e=edit.rec.entries[ei]; if(!e) return;
@@ -8653,23 +8990,26 @@ __root.addEventListener('input', e=>{ const el=e.target.closest&&e.target.closes
 /* ==================== TOGETHER ==================== */
 /* What the Together tab reads from this section and how it starts a day here. The hub lives in the shell.
    Holds only count toward muscles on the core, lever and planche progressions; a dead hang isn’t a hard set,
-   and nor is prep (mobility, balance, wrist and shoulder blade work, landings). */
+   and nor is prep (mobility, balance, wrist and shoulder blade work, landings) or a handstand or other balance attempt. */
 const COUNTED_HOLDS=['core','frontlever','planche','backlever','flag','sidecore','grip'];
 /* n: the hard sets (Lift.hard); f: what they leave to recover from (Lift.tiring). */
 function hubWork(since, until){
   const out=[], novel=Lift.novelty(state.history, w=>(w.entries||[]).map(e=>e.ladderId+'|'+e.stepIdx));
   state.history.forEach(w=>{ if(w.date<since||w.date>=until) return;
-    w.entries.forEach(e=>{ const L=LADDERS[e.ladderId], st=L&&L.steps[e.stepIdx]; if(!st||L.prep) return;
+    w.entries.forEach(e=>{ const L=LADDERS[e.ladderId], st=L&&L.steps[e.stepIdx]; if(!st||!hardWork(e)) return;
       const group=L.like||e.ladderId; if(st.k==='hold' && !COUNTED_HOLDS.includes(group)) return;
       const ss=e.sets.filter(x=>x.done!==false); if(!ss.length) return; const nv=novel(w, e.ladderId+'|'+e.stepIdx);
       out.push({key:st.id, group, n:ss.reduce((x,s)=>x+Lift.hard(s.rir,s.v),0), f:ss.reduce((x,s)=>x+Lift.tiring(Lift.trueRir(s.rir,s.v),nv),0)}); }); });
   return out;
 }
+/* easy: a goal's easier step for the day; why: what made it so ('rest' recovery spacing, 'one' straight-arm skill a
+   session, 'pain' a hold, 'gate' a skill it needs first). */
 function hubPicks(ahead){
-  const P=todayPlan(ahead);
-  return orderIds(P.map(x=>x.id)).map(id=>{ const x=P.find(p=>p.id===id), st=stepsOf(id)[x.i];
-    return {id, grp:LADDERS[id].like||id, ladder:LADDERS[id].n, step:st.n+(x.role==='volume'?' (volume day)':''), key:st.id, kind:st.k, sets:x.sets,
-      target:planText(x), skill:isSkill(id), goal:x.role==='goal'||x.role==='volume', role:x.role, placed:!!state.placed[id], prep:isPrep(id)}; });
+  const P=todayPlan(ahead), N=P.notes||[];
+  return orderIds(P.map(x=>x.id),P).map(id=>{ const x=P.find(p=>p.id===id), st=stepsOf(id)[x.i], n=N.find(z=>z.id===id);
+    return {id, grp:LADDERS[id].like||id, ladder:LADDERS[id].n, step:st.n+(x.role==='volume'?' (volume day)':x.role==='easy'?' (easier today)':''), key:st.id, kind:st.k, sets:x.sets,
+      target:planText(x), skill:isSkill(id), goal:x.role==='goal'||x.role==='volume'||x.role==='easy', easy:x.role==='easy', why:n? n.why : null,
+      role:x.role, placed:!!state.placed[id], prep:isPrep(id)}; });
 }
 /* Goals removed from Together this visit, so Undo can put them back as they were. */
 const gone={};
@@ -8737,6 +9077,13 @@ if(window.__hub) window.__hub.reg('cal', {
         const top=done.reduce((a,x)=>x.v>a.v? x : a); return {date:h.date, reps:top.v, rir:top.rir!=null? top.rir : null}; } }
     return null; },
   stamp:()=>ladVer,
+  // Together's check-in, on elbow, wrist or shoulder pain: hold the work that loads that joint for a week (HOLDS).
+  // Held ladders train their assisted step where there is one and are left out otherwise. Returns the held ladders'
+  // names, or null for a joint Ladder doesn't hold for.
+  hold(joint, days){ const h=holdJoint(joint, days); if(!h) return null; render(); if(window.__hub) window.__hub.changed('cal');
+    return LADDER_ORDER.filter(id=>heldBy(id)).map(id=>LADDERS[id].n); },
+  held(){ const h=state.hold; return h&&h.until>Date.now()? {until:h.until, joints:h.joints.slice()} : null; },
+  release(){ if(!state.hold) return false; state.hold=null; save(); render(); return true; },
 });
 
 /* ==================== BOOT ==================== */
