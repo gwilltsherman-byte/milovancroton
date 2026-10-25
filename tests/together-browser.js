@@ -42,6 +42,12 @@
     const ex={}; P.days.forEach(d=>d.str.forEach(x=>{ (ex[x.id]||(ex[x.id]=[])).push(x.heavy); }));
     check(Object.values(ex).every(h=>h.filter(Boolean).length===1), 'each lift has exactly one heavy exposure a week');
     check(P.days.every(d=>!(d.str.some(x=>x.a==='legs'&&x.heavy)&&d.str.some(x=>x.a==='hips'))), 'heavy squats and deadlifts are on different days');
+    root.querySelector('[data-a="start-day"]').click(); await pause(150);
+    const without=root.querySelector('[data-a="o-skip"]');
+    check(!!without && without.getBoundingClientRect().bottom<=800, 'the optional health check can be skipped without scrolling past its questions');
+    without.click(); await pause(250);
+    check(saved().offered && !!saved().run && win.__hub.current()==='str', 'skipping the health check starts the workout and saves that it was offered');
+    frame.remove(); frame=null;
 
     // all three, ranked by the suggestion: Strength builds, Ladder moderate, Muscle maintains
     reset({'milo.persist':'1', 'proladder.v1':JSON.stringify(ladder), 'trainer.together':JSON.stringify({v:1, on:true, secs:['lift','str','cal'], days:4, mins:0})});
@@ -207,6 +213,7 @@
       root.querySelector(`[data-a="setnext"][data-d="${d3}"]`).click(); await pause(150);
       { const c=root.querySelector('[data-a="ci-skip"]'); if(c){ c.click(); await pause(150); } }
       await startDay(root); await pause(500);
+      sessionStorage.removeItem('milo.back');
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot; await pause(250);
       check(win.__hub.current()==='str' && place(doc)==='train', 'reloading mid-part returns to its session');
       const sr=doc.getElementById('m-str').shadowRoot;

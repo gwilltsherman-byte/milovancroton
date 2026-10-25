@@ -14372,10 +14372,10 @@ function viewFirst(){
 function offerHtml(d){
   const y=offer.yes;
   return `<div class="offer" id="offer"><p class="lead" style="margin-top:10px"><b>A 30-second health check first?</b> Seven yes-or-no questions. It’s optional, and a yes never stops you. Tap any that apply.</p>
+    <button class="btn ghost block" data-a="o-skip" data-d="${d}" style="margin:8px 0">Start without the check</button>
     <div class="tlist">${PARQ.map((q,i)=>`<button class="tpick topt${y.includes(i)?' on':''}" data-a="o-q" data-v="${i}" aria-pressed="${y.includes(i)}"><span class="tn"><b>${q}</b></span>${y.includes(i)? IC.check : ''}</button>`).join('')}</div>
     ${y.length? `<p class="tnote">${IC.info}<span>Check with a doctor or physio before you train hard. You can start now: your first block stays gentle, at RPE 7 at most with nothing to failure.</span></p>` : ''}
-    <button class="btn pri block" data-a="o-start" data-d="${d}" style="margin-top:12px">${IC.play} Start Day ${d+1}</button>
-    <button class="btn ghost block" data-a="o-skip" data-d="${d}" style="margin-top:8px">Skip the check</button></div>`;
+    <button class="btn pri block" data-a="o-start" data-d="${d}" style="margin-top:12px">${IC.play} Start Day ${d+1}</button></div>`;
 }
 /* Today leads with the way back to every running session, including a part of its own day. */
 function sessionCard(){
