@@ -170,3 +170,6 @@ button,a,input,textarea{touch-action:manipulation}
 .set-h:focus{outline:none}
 /* Cards the shell adds to Today: installing the app. */
 .shtoast.top{bottom:auto;top:calc(12px + var(--shell-safe-top,0px))}
+/* The focus card folds day parts and rest into its own single top line. */
+html.session-focus-active #tgstrip {display:none!important}
+.tgs-p.done {opacity:1;color:var(--sh-muted)}

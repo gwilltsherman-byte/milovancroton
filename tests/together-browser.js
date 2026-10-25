@@ -20,7 +20,7 @@
   const saved=()=>JSON.parse(localStorage.getItem('trainer.together'));
   // Start Day: before the first workout the health check is offered once, and skipping it starts the day
   async function startDay(root){ root.querySelector('[data-a="start-day"]').click(); await pause(150); const sk=root.querySelector('[data-a="o-skip"]'); if(sk) sk.click(); }
-  const ladder={v:2, onboarded:true, route:'today', settings:{sound:false, vibrate:false, rest:0}, rung:{pull:2, pushh:3, core:1, row:1}, placed:{pull:true, pushh:true, core:true, row:true, scap:true},
+  const ladder={v:2, onboarded:true, route:'today', settings:{sessionView:'list',sound:false, vibrate:false, rest:0}, rung:{pull:2, pushh:3, core:1, row:1}, placed:{pull:true, pushh:true, core:true, row:true, scap:true},
     history:[], tests:[], active:null, goals:[{id:'goal-a', key:'pullup1', n:'First strict pull-up', l:'pull', r:4, std:1, sup:['row','core'], added:1, achieved:null}]};
   try {
     // a new person opens on Today, at a first run of two taps
@@ -217,6 +217,7 @@
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot; await pause(250);
       check(win.__hub.current()==='str' && place(doc)==='train', 'reloading mid-part returns to its session');
       const sr=doc.getElementById('m-str').shadowRoot;
+      { const list=sr.querySelector('[data-session="list"]'); if(list){ list.click(); await pause(150); } }
       sr.querySelectorAll('input[data-field="w"]').forEach(i=>{ if(!i.value){ i.value='40'; i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new Event('change',{bubbles:true})); } }); await pause(150);
       { const n=sr.querySelectorAll('[data-act="toggle-done"]').length; for(let i=0;i<n;i++){ const t=sr.querySelectorAll('[data-act="toggle-done"]')[i]; if(t){ t.click(); await pause(60); } } }
       await pause(200);
