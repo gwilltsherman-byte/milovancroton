@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=' 'sha256-bayUD3mPXnW7C2+SF5UqFEBb+JOGY23r2BCWK1YVoQM='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=' 'sha256-6C7baeCrsNgInlCMu92ukGRYsOlIsOw/a5LlKSLlQpo='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -157,13 +157,17 @@ body{background:#0A0D12; overflow-x:hidden;
   <div class="guide-step"><b>2</b><div><h3>Train. Log. Repeat.</h3><p>Record the sets you actually complete. Your session saves as you go, so you can come back to it.</p></div></div>
   <div class="guide-step"><b>3</b><div><h3>Go deeper in each trainer</h3><p>Each trainer keeps your history, records, exercise instructions and progress for its kind of training, and can run a plan of its own if you want to train just that.</p></div></div>
   <p>Works offline after the first load. Your data stays in this browser; use Backup before moving devices or clearing browser data. Units and training preferences are in each trainer’s Settings.</p>
+  <button class="b" data-open-privacy style="width:100%; margin-bottom:8px">Privacy</button>
   <button class="b pri" id="guide-done" style="width:100%">Got it</button>
 </dialog>
 
 <dialog class="bk" id="bk" aria-labelledby="bk-title">
-  <h2 id="bk-title">Back up your data</h2>
-  <p>One backup holds everything from Muscle, Strength and Ladder. Make one before you delete the app, then restore it after you add the app again.</p>
+  <h2 id="bk-title" tabindex="-1" autofocus>Back up your data</h2>
+  <p>One backup holds everything from Together, Muscle, Strength and Ladder, including Together’s check-in answers. Make one before you delete the app, then restore it after you add the app again.</p>
   <div class="last" id="bk-last"></div>
+  <label class="fld" for="bk-pass">Passphrase <span>(optional)</span></label>
+  <input class="txt" type="password" id="bk-pass" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="Leave empty for a plain backup">
+  <p class="small">With a passphrase the backup is encrypted and opens only with it; Milo can’t recover a forgotten one. Use one for a backup kept in a notes app or cloud drive, which may sync it.</p>
   <div class="row">
     <button class="b pri" id="bk-copy">Copy backup</button>
     <button class="b" id="bk-save">Save as a file</button>
@@ -173,6 +177,10 @@ body{background:#0A0D12; overflow-x:hidden;
   <h3>Restore</h3>
   <p>Paste a backup, or pick a saved backup file. Whatever the backup holds replaces what the app has now; you can undo it afterwards.</p>
   <textarea aria-label="Backup to restore" id="bk-in" placeholder="Paste your backup here" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+  <div id="bk-lock" hidden>
+    <label class="fld" for="bk-rpass">This backup has a passphrase</label>
+    <input class="txt" type="password" id="bk-rpass" autocomplete="current-password" autocapitalize="off" spellcheck="false">
+  </div>
   <div class="row">
     <button class="b" id="bk-file">Choose a file</button>
     <button class="b pri" id="bk-restore">Restore</button>
@@ -180,7 +188,72 @@ body{background:#0A0D12; overflow-x:hidden;
   <input type="file" id="bk-fin" accept=".json,application/json,text/plain" hidden>
   <div class="msg" id="bk-msg2" role="status"></div>
   <button class="b" id="bk-undo" hidden style="margin-top:12px; width:100%"></button>
+  <hr>
+  <h3 id="yd-title">Your data</h3>
+  <div class="stack" role="group" aria-labelledby="yd-title">
+    <button class="b" id="yd-csv">Export your sets (CSV)</button>
+    <button class="b" id="yd-import">Import from Strong or Hevy</button>
+    <button class="b" id="yd-sum">Share a summary</button>
+    <div class="calrow">
+      <button class="b" id="yd-cal">Add training days to your calendar</button>
+      <label class="tm" for="yd-time">Training time <input class="txt" type="time" id="yd-time" value="18:00"></label>
+    </div>
+    <button class="b" data-open-privacy>Privacy and erasing your data</button>
+  </div>
+  <input type="file" id="yd-fin" accept=".csv,text/csv,text/plain" hidden>
+  <div class="msg" id="yd-msg" role="status"></div>
+  <button class="b" id="yd-undo" hidden style="margin-top:8px; width:100%">Undo the import</button>
   <button class="done" id="bk-done">Done</button>
+</dialog>
+
+<dialog class="bk" id="bk-ask" aria-labelledby="bk-ask-title">
+  <h2 id="bk-ask-title">Replace your data?</h2>
+  <p id="bk-ask-text"></p>
+  <div class="row">
+    <button class="b" id="bk-ask-no">Cancel</button>
+    <button class="b pri" id="bk-ask-yes">Replace</button>
+  </div>
+</dialog>
+
+<dialog class="bk" id="imp" aria-labelledby="imp-title">
+  <h2 id="imp-title" tabindex="-1" autofocus>Import workouts</h2>
+  <div id="imp-body"></div>
+  <div class="msg" id="imp-msg" role="status"></div>
+  <div class="row imp-foot">
+    <button class="b" id="imp-cancel">Cancel</button>
+    <button class="b pri" id="imp-go">Import</button>
+  </div>
+</dialog>
+
+<dialog class="bk sum" id="sum" aria-labelledby="sum-title">
+  <h2 id="sum-title" tabindex="-1" autofocus>Training summary</h2>
+  <p class="last" id="sum-range"></p>
+  <div id="sum-body"></div>
+  <div class="row noprint">
+    <button class="b pri" id="sum-print">Print or save as PDF</button>
+    <button class="b" id="sum-share">Share as text</button>
+  </div>
+  <div class="msg noprint" id="sum-msg" role="status"></div>
+  <button class="done noprint" id="sum-done">Done</button>
+</dialog>
+
+<dialog class="bk" id="privacy" aria-labelledby="privacy-title">
+  <h2 id="privacy-title" tabindex="-1" autofocus>Privacy</h2>
+  <h3>What Milo keeps</h3>
+  <p>Your workouts (sets, weights, reps and notes), plans, settings and bodyweight, and Together’s check-in answers: sleep, energy, stress, mood, soreness, joint pain and whether you feel unwell, with any health questions you answer.</p>
+  <h3>Where it stays</h3>
+  <p>In this browser, on this device. Milo has no account, no server and no tracking, and sends your data nowhere.</p>
+  <h3>Who sees anything</h3>
+  <p>GitHub Pages hosts Milo. Like any website’s host, it sees ordinary page requests (your IP address and browser) when the app loads or updates. It never sees your training data.</p>
+  <h3>Backups and files</h3>
+  <p>Backups, spreadsheets, summaries and calendar files are yours to keep or share. A backup holds your check-in answers too. Notes apps and cloud drives may sync what you put in them, so give a backup kept there a passphrase.</p>
+  <h3>Deleting it</h3>
+  <p>Erase everything removes all of Milo’s data from this browser and starts Milo fresh. It can’t be undone, so make a backup first if you may want it back. Clearing this site’s data in your browser settings does the same.</p>
+  <label class="fld" for="er-in">Type erase to confirm</label>
+  <input class="txt" id="er-in" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <button class="b danger" id="er-go" disabled style="width:100%">Erase everything</button>
+  <div class="msg" id="er-msg" role="status"></div>
+  <button class="done" id="privacy-done">Done</button>
 </dialog>
 
 <main id="main" tabindex="-1">
@@ -1082,6 +1155,12 @@ svg{width:18px; height:18px; flex:none}
 .donebtn:active{transform:scale(.92)}
 .donebtn svg{width:19px; height:19px}
 .setrow.done .donebtn{background:var(--good); border-color:transparent; color:#fff}
+/* left and right on per-side exercises, and the hold timer */
+.lr{display:grid; grid-template-columns:1fr 1fr; gap:4px; min-width:0}
+.lr .sinput{font-size:15px}
+.holdbtn{color:var(--ink-2)}
+.holdbtn svg{width:17px; height:17px}
+.holdbtn.on{background:var(--grad-brass); border-color:transparent; color:#241A05}
 .setopt{width:100%; height:42px; display:grid; place-items:center; color:var(--faint); border-radius:8px}
 .setopt:active{background:var(--well)}
 .setopt svg{width:16px; height:16px}
@@ -2173,8 +2252,8 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 
-<script defer src="security.js?v=bdcf75ff0dbd294308b0" integrity="sha256-vc91/w29KUMIsOxQBXf8Oyw2XDtiJn8L63n4RuPzG0A=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=6dac940f798f5e75bb0b" integrity="sha256-bayUD3mPXnW7C2+SF5UqFEBb+JOGY23r2BCWK1YVoQM=" crossorigin="anonymous"></script>
+<script defer src="security.js?v=87c787b298661d4f7501" integrity="sha256-h8eHsphmHU91AQyRfVUsfpnS1Zv20nUpahHckdpzvNU=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=e82edb69e0abb0d8089e" integrity="sha256-6C7baeCrsNgInlCMu92ukGRYsOlIsOw/a5LlKSLlQpo=" crossorigin="anonymous"></script>
 </body>
 </html>
 

@@ -5791,6 +5791,29 @@ if(window.__hub) window.__hub.reg('lift', {
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
+  // Workouts from Strong or Hevy (the shell's import): added as past sessions beside yours, leaving out one imported before (dup)
+  // and an exercise you had logged that day before the import (skipped); drop takes ids added before out again (Undo). Only as
+  // many as still load, and still fit a backup, go in, newest first (MiloSecurity.room; over: how many didn't fit; bytes: what
+  // they add to a backup). dry: only count, with extra: bytes another section's import would add. add: [{id, date, name,
+  // note, durationSec, from, entries:[{id, note, sets:[{warm, kind, kg, reps, secs, rpe}]}]}]
+  past(add, drop, dry, extra){ const out={added:[], sets:0, skipped:0, dup:[], over:0, bytes:0}, dk=t=>Day.key(t), prev=state.history, had={}, recs=[];
+    if(drop&&drop.length) state.history=state.history.filter(h=>!drop.includes(h.id));
+    const ids=new Set(state.history.map(h=>h.id)); state.history.forEach(h=>{ const k=dk(h.date); h.entries.forEach(e=>(had[k]||(had[k]=new Set())).add(e.exId)); });
+    (add||[]).forEach(s=>{ if(ids.has(s.id)){ out.dup.push(s.id); return; } const have=had[dk(s.date)]||new Set();
+      const entries=s.entries.map(x=>{ const e=exById(x.id); if(!e) return null; if(have.has(e.id)){ out.skipped++; return null; }
+        const sets=x.sets.map(t=>({type:t.warm?'warmup':'work', weight:t.kg>0? t.kg : null, reps:isHold(e.id)? t.secs||t.reps : t.reps, rir:t.rpe!=null? Math.max(0,10-t.rpe) : null,
+          done:true, tag:t.kind==='drop'?'Drop set':t.kind==='failure'?'Failure':null, segments:[]})).filter(t=>t.reps>0);
+        return sets.some(isWork)? {exId:e.id, name:e.name, primary:e.primary.slice(), secondary:e.secondary.slice(), equipment:e.equipment,
+          target:{repLow:e.def.repLow, repHigh:e.def.repHigh, rir:e.def.rir, rest:e.def.rest}, note:x.note||null, sets} : null; }).filter(Boolean);
+      if(entries.length) recs.push({id:s.id, name:s.name, date:s.date, durationSec:s.durationSec||0, entries, prs:[], note:s.note||null, from:s.from}); });
+    recs.sort((a,b)=>b.date-a.date); const fit=MiloSecurity.room(storePayload(), recs, {storage:localStorage, key:LS_KEY, extra}), k=fit.n; out.over=recs.length-k; out.bytes=fit.bytes;
+    recs.slice(0,k).forEach(r=>{ out.added.push(r.id); r.entries.forEach(e=>{ out.sets+=e.sets.length; }); });
+    if(dry){ state.history=prev; return out; }
+    if(k){ const was=state.history.slice(); recs.slice(0,k).forEach(insertRec);
+      // never save what wouldn't load again
+      try{ MiloSecurity.section(JSON.parse(JSON.stringify(storePayload())), LS_KEY); }catch(e){ state.history=was; out.added=[]; out.sets=0; out.over=recs.length; } }
+    // written now, not after save's short wait, so the app sees the sessions as soon as it hears of them
+    if(out.added.length||state.history!==prev){ save(); flush(); render(); if(window.__hub) window.__hub.changed('lift'); } return out; },
 });
 
 /* ==================== BOOT ==================== */
@@ -5830,6 +5853,7 @@ const I={
   info: sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
   trophy: sv('<path d="M8 4h8v5a4 4 0 0 1-8 0Z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3"/><path d="M12 13v4M9 20h6"/>'),
   timer: sv('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/>'),
+  stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
   flame: sv('<path d="M12 3c3 4 6 5.5 6 9a6 6 0 0 1-12 0c0-2 1-3.2 2-4.5.5 1.5 1.4 2 2.2 2C10.8 7.6 10.5 5.3 12 3Z"/>'),
   trash: sv('<path d="M4 7h16M10 7V5h4v2M6 7l1 13h10l1-13"/>'),
   sliders: sv('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h10M18 18h2"/><circle cx="16" cy="6" r="1.6"/><circle cx="10" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/>'),
@@ -5856,13 +5880,16 @@ const LADDERS={
     {id:'dead-hang', n:'Dead hang', k:'hold', sets:3, v:30, cue:'Hands just outside shoulder width, arms straight, shoulders drawn a couple of centimetres down from the ears. Builds the grip and shoulders everything else needs.'},
     {id:'scap-pullup', n:'Scapular pull-up', k:'reps', sets:3, v:10, cue:'Elbows stay locked. Pull the shoulder blades down toward your back pockets until the body rises 3 to 5 cm, pause, lower slowly.'},
     {id:'negative-pullup', n:'Negative pull-up', k:'reps', sets:3, v:5, cue:'Start with the chin over the bar and the elbows tucked by the ribs, then take 4 to 5 seconds to reach fully straight arms.'},
-    {id:'band-pullup', n:'Band-assisted pull-up', k:'reps', sets:3, v:8, cue:'Knee in the band, start from straight arms, chin clears the bar. The lightest band that still lets you finish the set.'},
+    {id:'band-pullup', n:'Band-assisted pull-up', k:'reps', sets:3, v:8, cue:'Knee in the band, start from straight arms, chin clears the bar. Log the help, 0 none to 5 most, and use less as sets reach the top.'},
     {id:'pullup', n:'Pull-up', k:'reps', sets:3, v:8, cue:'Hands a little wider than the shoulders. Shoulder blades down first, elbows to the hips, chin over the bar, then all the way to straight arms.'},
     {id:'archer-pullup', n:'Archer pull-up', k:'reps', sets:3, v:5, cue:'Hands twice shoulder width. Chin goes over one hand while the other arm stays straight along the bar. The target counts each side.'},
-    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Keep the same strict range as your pull-up. Start with a small added load you can control and record it; increase in small increments as sets become repeatable.'},
+    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Keep the same strict range as your pull-up. Log the weight added: start small, and add a little once every set reaches the top.'},
     {id:'assisted-oap', n:'Assisted one-arm pull-up', k:'reps', sets:3, v:3, cue:'Working hand directly over the shoulder; the other hand on a towel, held as low as you can manage. Help only as much as you need.'},
     {id:'oap', n:'One-arm pull-up', k:'reps', sets:3, v:1, cue:'Hand directly over the shoulder, palm toward you. Straight arm to chin over the bar, the body turning slightly toward the working arm. Each side counts.'},
     {id:'assisted-archer-pullup', n:'Assisted archer pull-up', k:'reps', sets:3, v:5, cue:'Use a band or light foot support while pulling toward one hand. Keep the other elbow nearly straight, and reduce assistance gradually. Per side.'},
+    {id:'oa-lockoff-top', n:'One-arm lock-off, top', k:'hold', sets:3, v:10, cue:'Pull up on both hands, let go with one and hold the chin over the bar on the other. Per side.'},
+    {id:'oa-lockoff-90', n:'One-arm lock-off at 90°', k:'hold', sets:3, v:8, cue:'The same hold with the working elbow at 90 degrees, upper arm level with the bar. Per side.'},
+    {id:'oa-negative', n:'One-arm negative', k:'reps', sets:3, v:3, cue:'From a one-arm lock-off at the top, take 3 to 5 seconds to reach a straight arm. Per side.'},
   ]},
   row:{n:'Horizontal pull', p:'Pull', ic:'row', m:'Upper back, lats, biceps', steps:[
     {id:'incline-row', n:'Incline row', k:'reps', sets:3, v:12, cue:'Bar at chest height, body straight from heels to head. Lower chest to the bar, elbows back at 45 degrees until they pass the ribs.'},
@@ -5878,9 +5905,9 @@ const LADDERS={
   dip:{n:'Dip', p:'Push', ic:'dip', m:'Chest, triceps, front delts', steps:[
     {id:'support-hold', n:'Support hold', k:'hold', sets:3, v:30, cue:'Bars beside the hips, hands under the shoulders, elbows locked, a clear gap between shoulders and ears. The base every dip is built on.'},
     {id:'negative-dip', n:'Negative dip', k:'reps', sets:3, v:5, cue:'From locked arms, lean 20 to 30 degrees forward and take 4 to 5 seconds to reach shoulders just below the elbows.'},
-    {id:'band-dip', n:'Band-assisted dip', k:'reps', sets:3, v:8, cue:'Kneel on a band stretched across the bars. Shoulders just below the elbows at the bottom; the lightest band that lets you finish.'},
+    {id:'band-dip', n:'Band-assisted dip', k:'reps', sets:3, v:8, cue:'Kneel on a band stretched across the bars. Shoulders just below the elbows at the bottom. Log the help, 0 none to 5 most, and use less as sets reach the top.'},
     {id:'dip', n:'Bar dip', k:'reps', sets:3, v:10, cue:'Lean 20 to 30 degrees forward, elbows pointing back. Shoulders just below the elbows at the bottom, full lockout at the top.'},
-    {id:'weighted-dip', n:'Weighted dip', k:'reps', sets:3, v:5, cue:'Belt or vest, once you can do about 3 sets of 10 strict dips. Same depth: shoulders just below the elbows.'},
+    {id:'weighted-dip', n:'Weighted dip', k:'reps', sets:3, v:5, cue:'Belt or vest, once you can do about 3 sets of 10 strict dips. Log the weight added. Same depth: shoulders just below the elbows.'},
   ]},
   pushh:{n:'Horizontal push', p:'Push', ic:'push', m:'Chest, triceps, front delts', steps:[
     {id:'wall-pushup', n:'Wall push-up', k:'reps', sets:3, v:15, cue:'Palms on the wall at shoulder height, a little wider than the shoulders. Body straight; chest to the wall, elbows angled 45 degrees down and back.'},
@@ -5911,8 +5938,8 @@ const LADDERS={
     {id:'shrimp-squat', n:'Shrimp squat', k:'reps', sets:3, v:6, cue:'Hold the rear foot behind you with the same-side hand; lower until the back knee touches a mat directly under you. Per side.'},
     {id:'pistol-squat', n:'Pistol squat', k:'reps', sets:3, v:5, cue:'Free leg straight out in front, heel down, knee over the second toe, thigh to calf at the bottom, up without rocking. Per side.'},
     {id:'box-pistol', n:'Box pistol', k:'reps', sets:3, v:5, cue:'Lower on one leg to a stable box, free leg in front. Touch lightly and stand without rocking. Start high and lower the box gradually. Per side.'},
-    {id:'assisted-pistol', n:'Assisted pistol', k:'reps', sets:3, v:5, cue:'Hold a fixed support and squat on one leg through your controlled range, heel down. Record the grip and assistance, then reduce the help. Per side.'},
-    {id:'counterbalance-pistol', n:'Counterbalance pistol', k:'reps', sets:3, v:5, cue:'Hold a small weight in front to help balance while you squat on one leg, heel down. Record the weight and reach; reduce the counterbalance as control improves. Per side.'},
+    {id:'assisted-pistol', n:'Assisted pistol', k:'reps', sets:3, v:5, cue:'Hold a fixed support and squat on one leg through your controlled range, heel down. Log the help, 0 none to 5 most, and use less as you can. Per side.'},
+    {id:'counterbalance-pistol', n:'Counterbalance pistol', k:'reps', sets:3, v:5, cue:'Hold a small weight in front to help balance while you squat on one leg, heel down. Log the weight; hold less as control improves. Per side.'},
     {id:'assisted-shrimp-squat', n:'Assisted shrimp squat', k:'reps', sets:3, v:5, cue:'On one leg with the free foot behind, hold a post and lower the free knee onto a padded raised target. Reduce support and target height gradually. Per side.'},
   ]},
   hinge:{n:'Hinge and posterior', p:'Legs', ic:'legs', m:'Hamstrings, glutes, lower back', steps:[
@@ -5945,18 +5972,18 @@ const LADDERS={
     {id:'straddle-fl', n:'Straddle front lever', k:'hold', sets:3, v:10, cue:'Legs straight and as wide as the hips allow, glutes squeezed, body level from shoulders to feet. Wider is easier.'},
     {id:'half-lay-fl', n:'Half-lay front lever', k:'hold', sets:3, v:8, cue:'Hips straight with the knees bent to 90 degrees, or one leg out and one tucked. Everything level, arms locked.'},
     {id:'full-fl', n:'Full front lever', k:'hold', sets:3, v:8, cue:'One level line from shoulders to toes, slightly hollow, arms locked and pressing toward the hips. Years of work for most people.'},
-    {id:'assisted-tuck-fl', n:'Assisted tuck front lever', k:'hold', sets:3, v:10, cue:'Band supporting the hips, knees tucked, arms straight and back level. Record the band and anchor so assistance can be reduced gradually.'},
+    {id:'assisted-tuck-fl', n:'Assisted tuck front lever', k:'hold', sets:3, v:10, cue:'Band supporting the hips, knees tucked, arms straight and back level. Log the help, 0 none to 5 most, and reduce it gradually.'},
     {id:'assisted-straddle-fl', n:'Assisted straddle front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body level. Keep the same straddle width and reduce assistance in small steps.'},
     {id:'assisted-full-fl', n:'Assisted full front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together and body level. Use enough help for a controlled hold, then reduce it without losing the shape.'},
   ]},
   planche:{n:'Planche', p:'Skill', ic:'push', skill:true, practice:'strength', m:'Shoulders, chest, core', steps:[
-    {id:'planche-lean', n:'Planche lean', k:'hold', sets:3, v:20, cue:'Elbows straight, shoulder blades pushed apart. Measure how far the shoulders pass the wrists with the same hand and foot setup; add a little lean while keeping the body rigid.'},
+    {id:'planche-lean', n:'Planche lean', k:'hold', sets:3, v:20, cue:'Elbows straight, shoulder blades pushed apart. Keep the same hand and foot setup each time, and add a little lean only while the body stays rigid.'},
     {id:'tuck-planche', n:'Tuck planche', k:'hold', sets:3, v:15, cue:'Shoulders well in front of the hands, upper back rounded, knees tight to the chest, hips at shoulder height or above.'},
     {id:'adv-tuck-planche', n:'Advanced tuck planche', k:'hold', sets:3, v:12, cue:'Back flat and level, thighs at about 90 degrees to the torso, leaning further forward than in the tuck. A big jump.'},
     {id:'straddle-planche', n:'Straddle planche', k:'hold', sets:3, v:8, cue:'Legs straight and wide, hips at shoulder height, body level, elbows straight. This is demanding strength work; build exposure gradually and recover between hard sessions.'},
     {id:'full-planche', n:'Full planche', k:'hold', sets:3, v:5, cue:'Legs together, body straight and level, shoulders well in front of the hands. One of the hardest holds in the sport.'},
     {id:'assisted-tuck-planche', n:'Assisted tuck planche', k:'hold', sets:3, v:10, cue:'Band supporting the hips or toes lightly on a fixed support. Knees tucked, elbows straight and shoulders forward. Reduce the help while keeping the hips level.'},
-    {id:'assisted-straddle-planche', n:'Assisted straddle planche', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, elbows straight. Record the support and straddle width; reduce assistance gradually.'},
+    {id:'assisted-straddle-planche', n:'Assisted straddle planche', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, elbows straight. Keep the same straddle width; log the help and reduce it gradually.'},
     {id:'assisted-full-planche', n:'Assisted full planche', k:'hold', sets:3, v:5, cue:'Band supporting the hips, legs together, body level. Use enough assistance to keep straight elbows and a consistent shoulder lean.'},
   ]},
   muscleup:{n:'Muscle-up', p:'Skill', ic:'bar', skill:true, m:'Lats, chest, triceps', steps:[
@@ -5965,8 +5992,10 @@ const LADDERS={
     {id:'straight-bar-dip', n:'Straight-bar dip', k:'reps', sets:3, v:8, cue:'Chest leaning over the bar, elbows pointing back; lower until the bar touches the lower chest. The top half of the muscle-up.'},
     {id:'jumping-muscleup', n:'Jumping muscle-up', k:'reps', sets:3, v:5, cue:'Bar at chin height. Jump and pull together to bring the bar to the lower chest, then roll the wrists over and press out.'},
     {id:'strict-muscleup', n:'Strict muscle-up', k:'reps', sets:3, v:3, cue:'No kip. Pull the bar to the lower chest, throw the chest over it as the wrists roll on top, press out to locked arms.'},
-    {id:'band-muscleup', n:'Band-assisted muscle-up', k:'reps', sets:3, v:3, cue:'Use a recorded band and anchor setup for the whole movement: high pull, controlled turnover, dip to lockout. Reduce assistance without adding a kip.'},
-    {id:'low-bar-transition', n:'Low-bar transition drill', k:'reps', sets:3, v:5, cue:'Low bar, feet on the floor. Pull the lower chest toward it, lean over and press out. Record foot support and reduce leg assistance gradually.'},
+    {id:'band-muscleup', n:'Band-assisted muscle-up', k:'reps', sets:3, v:3, cue:'The same band and anchor each time, for the whole movement: high pull, controlled turnover, dip to lockout. Log the help; reduce it without adding a kip.'},
+    {id:'low-bar-transition', n:'Low-bar transition drill', k:'reps', sets:3, v:5, cue:'Low bar, feet on the floor. Pull the lower chest toward it, lean over and press out. Log how much the legs help, 0 none to 5 most, and reduce it gradually.'},
+    {id:'hip-to-bar-pull', n:'Hip-to-bar pull', k:'reps', sets:3, v:5, cue:'Swing from an arch to a hollow; on the hollow, press the bar down with straight arms and drive the hips up to it.'},
+    {id:'kipping-muscleup', n:'Muscle-up, small kip', k:'reps', sets:3, v:3, cue:'A small hip drive starts the pull. Bar to the lower chest, chest over it as the wrists turn, press out. Keep the kip small.'},
   ]},
   /* Added later. New ladders only ever go on the end: rungs are stored by position. */
   pullvar:{n:'Pull-up variations', p:'Pull', ic:'pull', m:'Lats, upper back, biceps, core', steps:[
@@ -5994,7 +6023,7 @@ const LADDERS={
     {id:'bw-curl-incline', n:'Bodyweight curl, incline', k:'reps', sets:3, v:12, cue:'Underhand on a chest-high bar, body straight at about 45 degrees. Upper arms point at the bar and stay still; forehead to the hands.'},
     {id:'bw-curl', n:'Bodyweight curl, horizontal', k:'reps', sets:3, v:10, cue:'Bar at hip height, body near level. Upper arms point at the bar and stay still; only the elbows bend.'},
     {id:'chin-up', n:'Chin-up', k:'reps', sets:3, v:10, cue:'Palms facing you, hands shoulder width. Shoulder blades down first, chin over the bar, all the way to straight arms.'},
-    {id:'weighted-chin-up', n:'Weighted chin-up', k:'reps', sets:3, v:6, cue:'Belt, vest or backpack, once you can do about 3 sets of 10 strict chin-ups. Add 1.25 to 2.5 kg at a time.'},
+    {id:'weighted-chin-up', n:'Weighted chin-up', k:'reps', sets:3, v:6, cue:'Belt, vest or backpack, once you can do about 3 sets of 10 strict chin-ups. Log the weight added; add 1.25 to 2.5 kg at a time.'},
   ]},
   grip:{n:'Grip', p:'Arms', ic:'hand', m:'Forearms, grip', steps:[
     {id:'dead-hang', n:'Long dead hang', k:'hold', sets:3, v:60, cue:'A full minute, hands just outside shoulder width, thumbs round the bar, shoulders drawn down from the ears.'},
@@ -6027,7 +6056,7 @@ const LADDERS={
     {id:'bw-calf-raise', n:'Calf raise', k:'reps', sets:3, v:20, cue:'Balls of both feet on the step edge, heels hanging off. Full stretch at the bottom, rise through the big toes, pause at the top.'},
     {id:'single-leg-calf-raise', n:'Single-leg calf raise', k:'reps', sets:3, v:15, cue:'Ball of one foot on the step, other foot hooked behind the ankle, fingertips on the wall. Full stretch to full height.'},
     {id:'deficit-calf-raise', n:'Single-leg deficit calf raise', k:'reps', sets:3, v:12, cue:'Use a step with enough heel clearance for your controlled ankle range. A taller step adds no range once the heel clears. Lower steadily, knee straight.'},
-    {id:'weighted-calf-raise', n:'Weighted single-leg calf raise', k:'reps', sets:3, v:10, cue:'A dumbbell in the same-side hand, the other hand on the wall. Full stretch to full height, knee straight.'},
+    {id:'weighted-calf-raise', n:'Weighted single-leg calf raise', k:'reps', sets:3, v:10, cue:'A dumbbell in the same-side hand, the other hand on the wall. Full stretch to full height, knee straight. Log the dumbbell weight.'},
   ]},
   legraise:{n:'Leg raise', p:'Core', ic:'core', m:'Abs, hip flexors, grip', steps:[
     {id:'lying-leg-raise', n:'Lying leg raise', k:'reps', sets:3, v:12, cue:'Lower back pressed down, hands under the hips. Straight legs up to vertical, down until just before the back lifts.'},
@@ -6071,7 +6100,7 @@ const LADDERS={
     {id:'full-bl', n:'Full back lever', k:'hold', sets:3, v:8, cue:'Legs together, one level line from head to toes, face down, bar or rings beside the hips, arms locked.'},
     {id:'german-hang-feet', n:'Supported German hang', k:'hold', sets:2, v:20, cue:'Feet stay on the floor with hands behind you on low rings or a bar. Ease into a comfortable shoulder range and use the feet to control the load.'},
     {id:'assisted-tuck-bl', n:'Assisted tuck back lever', k:'hold', sets:3, v:10, cue:'A band supports the hips in a tucked back lever. Keep elbows straight and back level; use enough help to hold the position comfortably.'},
-    {id:'assisted-straddle-bl', n:'Assisted straddle back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body face down and level. Record and gradually reduce assistance.'},
+    {id:'assisted-straddle-bl', n:'Assisted straddle back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body face down and level. Log the help and reduce it gradually.'},
     {id:'assisted-full-bl', n:'Assisted full back lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together, body level and elbows straight. Reduce support only while the whole shape stays controlled.'},
   ]},
   flag:{n:'Human flag', p:'Skill', ic:'flag', skill:true, m:'Obliques, lats, shoulders', steps:[
@@ -6080,6 +6109,7 @@ const LADDERS={
     {id:'tuck-flag', n:'Tuck flag', k:'hold', sets:3, v:8, cue:'Knees to the chest, hips level with the bottom hand, chest facing straight ahead, both arms locked.'},
     {id:'straddle-flag', n:'Straddle flag', k:'hold', sets:3, v:6, cue:'Legs straight and wide, hips in line with the shoulders, body close to level, chest facing straight ahead.'},
     {id:'human-flag', n:'Human flag', k:'hold', sets:3, v:5, cue:'Legs together, body level and straight out from the pole, bottom arm locked. Each side counts separately.'},
+    {id:'support-flag', n:'Supported flag', k:'hold', sets:3, v:10, cue:'Hands as for the vertical flag, bottom arm locked and pressing. Feet on the pole or a box; take weight off them bit by bit. Each side.'},
   ]},
   armbalance:{n:'Arm balances', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Wrists, shoulders, core', steps:[
     {id:'frog-stand', n:'Frog stand', k:'hold', sets:3, v:30, cue:'Hands shoulder width a foot’s length in front of the feet, knees on the backs of the upper arms. Lean until the feet float.'},
@@ -6091,10 +6121,10 @@ const LADDERS={
   press:{n:'Press to handstand', p:'Skill', ic:'hand', skill:true, m:'Shoulders, hip flexors, compression', steps:[
     {id:'pike-compression', n:'Pike compression lift', k:'reps', sets:3, v:10, cue:'Legs straight and together, palms flat beside the knees. Lift both heels without leaning back.'},
     {id:'press-negative', n:'Straddle press negative', k:'reps', sets:3, v:3, cue:'From a handstand, open to a wide straddle and lower the feet slowly, hips high over the hands, shoulders leaning past the fingers.'},
-    {id:'elevated-straddle-press', n:'Elevated straddle press', k:'reps', sets:3, v:3, cue:'Feet on a stable raised surface, hands in front. Lean and lift without jumping. Record the surface height and lower it gradually as the press becomes controlled.'},
+    {id:'elevated-straddle-press', n:'Elevated straddle press', k:'reps', sets:3, v:3, cue:'Feet on a stable raised surface, hands in front. Lean and lift without jumping. Lower the surface gradually as the press becomes controlled.'},
     {id:'straddle-press', n:'Straddle press to handstand', k:'reps', sets:3, v:3, cue:'Feet twice shoulder width, hands between them in line with the toes. Shoulders past the fingertips, hips over the hands, no jump.'},
     {id:'pike-press', n:'Pike press to handstand', k:'reps', sets:3, v:3, cue:'Hands 20 to 30 cm in front of the feet, legs together and straight the whole way up. The hardest press.'},
-    {id:'assisted-straddle-press', n:'Assisted floor straddle press', k:'reps', sets:3, v:3, cue:'A securely anchored overhead band supports the hips as you press from a floor straddle without jumping. Record its setup; reduce assistance gradually.'},
+    {id:'assisted-straddle-press', n:'Assisted floor straddle press', k:'reps', sets:3, v:3, cue:'A securely anchored overhead band supports the hips as you press from a floor straddle without jumping. Log the help; reduce it gradually.'},
   ]},
   onearmhs:{n:'One-arm handstand', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Shoulders, wrists, balance', steps:[
     {id:'hs-shoulder-tap', n:'Wall handstand shoulder tap', k:'reps', sets:3, v:10, cue:'Chest to the wall, hands a hand’s length from it. Shift over one hand, arm vertical, and tap that shoulder with the other hand.'},
@@ -6110,7 +6140,7 @@ const LADDERS={
     {id:'straddle-planche-pushup', n:'Straddle planche push-up', k:'reps', sets:3, v:3, cue:'From a straddle planche, body level, elbows close to the ribs down to 90 degrees and back up.'},
     {id:'full-planche-pushup', n:'Full planche push-up', k:'reps', sets:3, v:2, cue:'From a full planche, the body stays straight and level as the elbows bend to 90 degrees and press back. Elite.'},
     {id:'assisted-tuck-planche-pushup', n:'Assisted tuck planche push-up', k:'reps', sets:3, v:5, cue:'Band supporting the hips in a tuck. Bend and straighten the arms through a controlled range with hips level; reduce support gradually.'},
-    {id:'assisted-straddle-planche-pushup', n:'Assisted straddle planche push-up', k:'reps', sets:3, v:3, cue:'Band supporting the hips, legs straight and wide. Keep the body level during the press and record assistance and depth.'},
+    {id:'assisted-straddle-planche-pushup', n:'Assisted straddle planche push-up', k:'reps', sets:3, v:3, cue:'Band supporting the hips, legs straight and wide. Keep the body level and the depth the same; log the help and reduce it gradually.'},
     {id:'assisted-full-planche-pushup', n:'Assisted full planche push-up', k:'reps', sets:3, v:2, cue:'Band supporting the hips, legs together. Use sufficient help for controlled lowering and pressing with a straight body.'},
   ]},
   rings:{n:'Rings', p:'Skill', ic:'dip', skill:true, m:'Chest, shoulders, arms, stability', steps:[
@@ -6205,7 +6235,7 @@ const LADDERS={
   ]},
   weightedpull:{n:'Weighted pull-up', p:'Pull', ic:'pull', like:'pull', m:'Lats, biceps, upper back', steps:[
     {id:'pullup', n:'Pull-up base', k:'reps', sets:3, v:5, cue:'Start from straight arms and pull the chin over the bar with no swing. Keep this range as you introduce a small external load.'},
-    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Record added load and keep strict full-range reps. Start with a manageable small weight and increase it gradually when sets are repeatable.'},
+    {id:'weighted-pullup', n:'Weighted pull-up', k:'reps', sets:3, v:5, cue:'Log the weight added and keep strict full-range reps. Start small; add a little once every set reaches the top.'},
   ]},
   leverrow:{n:'Front lever row strength', p:'Pull', ic:'row', like:'row', m:'Lats, upper back, biceps', steps:[
     {id:'incline-row', n:'Incline row', k:'reps', sets:3, v:12, cue:'High bar or rings, body straight. Lower the support gradually as full-range rows become controlled.'},
@@ -6229,7 +6259,7 @@ const LADDERS={
 const LADDER_PATHS={
   pull:[
     {key:'bilateral', name:'Pull-up and added load', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','weighted-pullup']},
-    {key:'unilateral', name:'Toward one arm', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','assisted-archer-pullup','archer-pullup','assisted-oap','oap']},
+    {key:'unilateral', name:'Toward one arm', steps:['dead-hang','scap-pullup','negative-pullup','band-pullup','pullup','assisted-archer-pullup','archer-pullup','oa-lockoff-top','oa-lockoff-90','oa-negative','assisted-oap','oap']},
   ],
   row:[
     {key:'row', name:'Rows toward one arm', steps:['incline-row','inverted-row','feet-elevated-row','assisted-archer-row','archer-row','incline-one-arm-row','one-arm-row']},
@@ -6266,6 +6296,7 @@ const LADDER_PATHS={
     {key:'whole', name:'Strict muscle-up with decreasing assistance', steps:['chest-to-bar','explosive-pullup','band-muscleup','strict-muscleup']},
     {key:'transition', name:'Transition and whole movement', steps:['low-bar-transition','jumping-muscleup','band-muscleup','strict-muscleup']},
     {key:'dip', name:'Straight-bar dip component', steps:['straight-bar-dip']},
+    {key:'first', name:'First muscle-up with a small kip', steps:['chest-to-bar','explosive-pullup','hip-to-bar-pull','kipping-muscleup']},
   ],
   pullvar:[
     {key:'wide', name:'Wide grip', steps:['wide-pullup']},
@@ -6332,7 +6363,7 @@ const LADDER_PATHS={
     {key:'straight', name:'Straight bridge support', steps:['straight-bridge']},
   ],
   backlever:[{key:'assisted', name:'Back lever with supported entry', steps:['german-hang-feet','german-hang','skin-the-cat','assisted-tuck-bl','tuck-bl','adv-tuck-bl','assisted-straddle-bl','straddle-bl','assisted-full-bl','full-bl']}],
-  flag:[{key:'flag', name:'Human flag', steps:['side-plank','vertical-flag','tuck-flag','straddle-flag','human-flag']}],
+  flag:[{key:'flag', name:'Human flag', steps:['side-plank','vertical-flag','support-flag','tuck-flag','straddle-flag','human-flag']}],
   armbalance:[
     {key:'crow', name:'Crow and crane', steps:['frog-stand','crow-pose','crane-pose']},
     {key:'elbow', name:'Elbow lever', steps:['elbow-lever','one-arm-elbow-lever']},
@@ -6367,7 +6398,8 @@ const LADDER_PATHS={
   bardip:[{key:'dip', name:'Straight-bar dip strength', steps:['feet-assisted-straight-bar-dip','straight-bar-dip']}],
 };
 /* Reproducible difficulty matters as much as the rep count. No band colour or
-   measured distance is a universal readiness threshold. Field values describe this user's setup. */
+   measured distance is a universal readiness threshold. These detailed setups are no longer asked for: a session asks
+   only the one number in setupField (SESSION). They stay as a record of what each step's setup involves. */
 const LADDER_SETUP_FIELDS={
   band:[{key:'band',label:'Band / assistance',type:'text',hint:'Brand, band identity and how much help. Colour alone differs between brands.'},{key:'anchor',label:'Assistance setup',type:'text',hint:'Anchor height, band length and where it supports you. Keep this reproducible.'}],
   incline:[{key:'height',label:'Hand support height',type:'number',unit:'cm',min:0,step:1},{key:'stance',label:'Body and foot position',type:'text',hint:'Record heel position, bar or ring height and any assistance.'}],
@@ -6454,10 +6486,37 @@ const LADDER_STEP_OPTIONS={
   'low-ring-transition':{setup:LADDER_SETUP_FIELDS.support},
   'assisted-ring-muscleup':{setup:LADDER_SETUP_FIELDS.band},
 };
+/* Entry checks: before a step becomes your training step, one clean set of about 40% of its target, rounded, at least 1
+   and at most 3 reps (5 s for a hold). Only steps where one rep is the milestone (the first pull-up, a one-arm pull-up,
+   a first muscle-up) are entered on a single rep. docs/ladder-progression.md gives the same rule. */
+const FIRST_REP=['pullup','oap','strict-muscleup','kipping-muscleup','ring-muscleup'];
+function entryCheck(st){ return FIRST_REP.includes(st.id)? 1 : Math.max(1, Math.min(st.k==='hold'?5:3, Math.round(st.v*0.4))); }
 Object.values(LADDERS).forEach(L=>L.steps.forEach(st=>{
-  Object.assign(st,{entry:st.k==='hold'?5:1,practice:L.practice||(L.q==='balance'?'balance':'strength')},LADDER_STEP_OPTIONS[st.id]||{});
+  Object.assign(st,{entry:entryCheck(st),practice:L.practice||(L.q==='balance'?'balance':'strength')},LADDER_STEP_OPTIONS[st.id]||{});
   if(st.practice==='power') st.cue+=' Reset between reps; count only reps that keep output and a controlled landing. Stop the set when either declines.';
 }));
+/* How to do the steps added later (the shared instructions above hold the rest). */
+Object.assign(window.HOWTO, {
+  'oa-lockoff-top':{set:'Overhand or neutral grip, hands shoulder width, on a bar you can reach from a box.',
+    steps:['Pull up on both hands until the chin is over the bar.','Shift your weight onto one hand and let go with the other; keep the chin over the bar, elbow tucked to the ribs.','Hold, then put the free hand back before you lower. Swap sides.'],
+    avoid:['Dropping straight from the top onto a straight arm.','Shrugging the working shoulder up to the ear.']},
+  'oa-lockoff-90':{set:'As the top lock-off.',
+    steps:['From the top on both hands, lower until the elbows are at 90 degrees.','Let go with one hand and hold there, upper arm level with the bar.','Hold, take the bar again with both hands and step down. Swap sides.'],
+    avoid:['Letting the body spin open; keep the hips square to the bar.','Holding on when the elbow hurts.']},
+  'oa-negative':{set:'A box under the bar so you can start at the top.',
+    steps:['From a box, take the bar with one hand, chin over it and elbow tucked.','Lower as slowly as you can, 3 to 5 seconds to a straight arm.','Step back onto the box, rest, then the other side.'],
+    avoid:['Dropping the last third.','Landing on a straight, relaxed arm: keep the shoulder drawn down at the bottom.'],
+    note:'Expect sore elbows if you add these quickly. Start with one set per side.'},
+  'hip-to-bar-pull':{set:'Dead hang, overhand grip about shoulder width, room in front and behind.',
+    steps:['Swing gently from an arch (chest forward) to a hollow (feet forward).','On the hollow, press the bar down toward the thighs with straight arms and drive the hips up to the bar.','Lower under control back to the hang and reset before the next rep.'],
+    avoid:['Bending the arms early; the arms stay straight until the hips are at the bar.','A big, wild swing.']},
+  'kipping-muscleup':{set:'Dead hang, grip a little narrower than for pull-ups, bar high enough that the feet clear the floor.',
+    steps:['A small swing: arch, then hollow.','As the hips rise, pull the bar to the lower chest.','Throw the chest over the bar as the wrists turn on top, then press out to straight arms.','Lower under control the way you came.'],
+    avoid:['A kip so big that the legs do the work.','Chicken-winging one arm over first.']},
+  'support-flag':{set:'A solid vertical pole. Hands as for the vertical flag; a box or the pole itself under the feet.',
+    steps:['Lock the bottom arm and press it hard into the pole; pull with the top arm.','Rest the feet on the box or pole, body tilted out from it.','Take weight off the feet a little more each time, until they barely touch. Swap sides.'],
+    avoid:['Bending the bottom arm.','Letting the chest turn toward the floor.']},
+});
 const LADDER_ORDER=['pull','row','dip','pushh','pushv','legs','hinge','core','handstand','frontlever','planche','muscleup',
   'pullvar','plyopush','tri','curl','grip','jump','lunge','knee','calf','legraise','dragonflag','sidecore','abwheel','bridge',
   'backlever','flag','armbalance','press','onearmhs','planchepush','rings',
@@ -6482,7 +6541,7 @@ function registerCustom(list){
   (list||[]).forEach(c=>{ if(!c||!c.id||!Array.isArray(c.steps)||!c.steps.length) return;
     const like=LADDERS[c.like]&&!LADDERS[c.like].custom? c.like : 'core', B=LADDERS[like];
     LADDERS[c.id]={n:c.n||'My ladder', p:B.p, ic:B.ic, m:B.m, skill:!!B.skill, prep:!!B.prep, q:B.q, when:B.when, rest:B.rest, ev:B.ev, like, custom:true, gone:!!c.gone,
-      steps:c.steps.map((x,i)=>({id:c.id+'-'+i, n:x.n||'Rung '+(i+1), k:x.k==='hold'?'hold':'reps', sets:x.sets||3, v:x.v||1, cue:x.cue||''}))};
+      steps:c.steps.map((x,i)=>({id:c.id+'-'+i, n:x.n||'Rung '+(i+1), k:x.k==='hold'?'hold':'reps', sets:x.sets||3, v:x.v||1, cue:x.cue||'', since:Number.isFinite(x.since)? x.since : 0}))};
     if(!c.gone) LADDER_ORDER.push(c.id); });
 }
 function supFor(id){ const L=LADDERS[id]; return (SUPPORT[id]||SUPPORT[L&&L.like]||[]).filter(x=>x!==id&&LADDERS[x]); }
@@ -6533,16 +6592,22 @@ const GOALS={
   ringdip10:{n:'10 ring dips', l:'rings', r:3, std:10, sup:['dip'], why:'Dips on moving rings: much more stability than bars.'},
   ringmu:{n:'Ring muscle-up', l:'rings', r:6, std:1, sup:['pull','dip'], why:'False grip, a high pull, a turn and a dip. The gymnast version.'},
   weightedpull:{n:'5 controlled weighted pull-ups', l:'weightedpull', r:1, std:5, sup:['row','core'], why:'Choose and record a manageable added load. Build strict reps, then increase that load gradually.'},
+  muscleup1:{n:'First muscle-up (small kip allowed)', l:'muscleup', r:8, std:1, sup:['pull','dip'], why:'One muscle-up over the bar, with a small hip drive to help the turn.'},
+  nordiclower:{n:'Nordic lowering to the floor in 3–5 s', l:'hinge', r:3, std:3, sup:['legs'], why:'Three slow lowerings all the way to the floor in one set, catching on the hands.'},
 };
 const GOAL_ORDER=Object.keys(GOALS);
 /* How hard each goal is, and roughly how long it takes someone who trains for it regularly. */
 const GOAL_LV={pullup1:1, pullup10:2, oapu:4, pushup20:1, oapush:3, dip10:2, hspu:3, handstand:2, muscleup:3, frontlever:4, tuckplanche:3,
   straddleplanche:4, lsit:2, pistol:2, nordic:3, typewriter:3, lsitpull:2, clappush:1, tigerbend:4, bwcurl:1, oahang:3, boxjump:1, cossack:1,
   skater:2, sissy:2, revnordic:2, calf25:1, t2b:2, dragonflag:3, copenhagen:2, abwheel:3, bridge:3, tuckbl:2, backlever:3, humanflag:4, crow:1,
-  elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3, weightedpull:2};
-const LV_N=['','Beginner','Intermediate','Advanced','Elite'], LV_T=['','a few weeks','a few months','6 to 12 months','a year or more'];
-/* Straight-arm strength skills: they load the elbows and the biceps tendon the same way, so Together recommends one at a time. */
-const STRAIGHT_ARM=['frontlever','backlever','planche','planchepush','flag'];
+  elbowlever:2, press:4, oahs:4, planchepu:4, ringdip10:2, ringmu:3, weightedpull:2, muscleup1:2, nordiclower:2};
+/* How long a goal often takes an adult who trains for it a few times a week, from a typical start. Realistic rather
+   than hopeful: a first pull-up is often a few months, a 30 s freestanding handstand often 6 to 12. */
+const LV_N=['','Beginner','Intermediate','Advanced','Elite'], LV_T=['','a few months','6 to 12 months','1 to 2 years','several years'];
+const GOAL_T={crow:'a few weeks', clappush:'a few weeks', boxjump:'a few weeks', bwcurl:'a few weeks', cossack:'a few weeks', calf25:'a few weeks'};
+/* Straight-arm strength skills: they load the elbows and the biceps tendon the same way, so a session trains one of them
+   hard, hard sessions are spaced (RECOVERY SPACING), and Together recommends one at a time. */
+const STRAIGHT_ARM=['frontlever','backlever','planche','planchepush','flag','press'];
 const CAT_N={Pull:'Pulling', Push:'Pushing', Legs:'Legs', Core:'Core', Arms:'Arms', Skill:'Skills'};
 const STARTERS=['pullup1','pushup20','crow'];
 /* ==================== WHAT A GOAL TAKES ====================
@@ -6556,8 +6621,8 @@ const GOAL_NEEDS={
     takes:'A first pull-up is strength relative to body weight: the lats, biceps and the muscles that pull the shoulder blades down have to lift all of you from a dead hang. Negatives and bands build that strength, and rows add pulling work you can do for more reps. A hollow body stops the legs swinging, which wastes force and turns the rep into a kip. Body mass counts too: the same strength has less to lift.'},
   pullup10:{need:[['core',1,30,'control'],['grip',0,60,'strength']], ev:['qualities','failure'],
     takes:'Ten strict reps needs pulling strength, endurance and a grip that lasts the set. Hollow holds and dead hangs are useful supporting checks, but neither duration guarantees ten pull-ups. Build repeatable pulling volume without exhausting every set, and test the actual strict pull-up.'},
-  oapu:{need:[['grip',3,20,'strength'],['sidecore',0,45,'control'],['pullvar',3,4,'strength']], ev:['qualities','tendon'],
-    takes:'One arm lifts your whole weight while the body tries to spin around it. That takes a one-arm grip you can hang from, a trunk stiff enough to stop the rotation (a long side plank is the simple measure), and one-sided strength at every height of the pull, which typewriter and archer pull-ups build. Expect years: the elbow tendons adapt more slowly than the muscles do.'},
+  oapu:{need:[['weightedpull',0,15,'strength',{alt:[['weightedpull',1,1,0.4]]}],['grip',3,20,'strength'],['sidecore',0,45,'control'],['pullvar',3,4,'strength']], ev:['qualities','tendon'],
+    takes:'A strong two-arm base comes first: about 15 strict pull-ups, or one with about 40% of your bodyweight added. One arm then lifts your whole weight while the body tries to spin around it. That takes a one-arm grip you can hang from, a trunk stiff enough to stop the rotation (a long side plank is the simple measure), and one-sided strength at every height of the pull, which typewriter and archer pull-ups build. Expect years: the elbow tendons adapt more slowly than the muscles do.'},
   pushup20:{need:[['core',1,30,'control'],['scap',0,12]], ev:['qualities','scap'],
     takes:'Twenty strict push-ups needs pressing endurance and a trunk that stays rigid: the abs stop the hips sagging, exactly as in a hollow hold. At the top of each rep the shoulder blades should wrap forward around the ribs. That is serratus anterior at work, and the scapular push-up trains it.'},
   oapush:{need:[['sidecore',0,45,'control'],['core',1,45,'control'],['scap',0,12],['wrist',1,12]], ev:['qualities','wrists'],
@@ -6636,6 +6701,10 @@ const GOAL_NEEDS={
     takes:'Rings move, so the shoulder stabilisers work to keep them close to the body on top of the dip itself. Ten bar dips, shoulder extension range for the bottom and shoulder blades held down make the base; the support and turned-out holds on the ladder add the stability.'},
   ringmu:{need:[['pull',4,12,'strength'],['ringdip',2,8,'strength'],['shoulderext',1,30]], ev:['parts','qualities'],
     takes:'A ring muscle-up combines false-grip pulling, transition and ring-dip strength. Train ring dips independently while practising the false grip and low-ring transition, then join the whole movement with recorded assistance. The listed supporting counts are coaching checks; no one count guarantees the skill. Reduce help without losing false grip or introducing a kip.'},
+  muscleup1:{need:[['pull',4,10,'strength'],['bardip',1,5,'strength'],['mudrill',0,5,'technique']], ev:['qualities','parts'],
+    takes:'A first muscle-up with a small kip still needs a strong high pull and a straight-bar dip; the kip helps the turn over the bar but cannot replace them. Hip-to-bar pulls teach a small, useful swing, and the low-bar drill teaches the transition. The counts are coaching checks, not guarantees.'},
+  nordiclower:{need:[], ev:['qualities','nordic'],
+    takes:'Lowering to the floor over 3 to 5 seconds is the lowering half of the Nordic curl, the version most Nordic programmes use. Sliding curls build the strength first. Kneel on padding, anchor the heels securely, and expect sore hamstrings after the first sessions.'},
   weightedpull:{need:[['core',1,30,'control']], ev:['qualities','overload'],
     takes:'Weighted pull-ups build bilateral pulling strength with a directly measurable load. Start with an added load you can control, preserve strict full-range reps and build repeatable sets before adding a small increment. This is a separate goal from unilateral pulling so both can be trained without treating an archer pull-up as a mandatory bridge.'},
 };
@@ -6648,7 +6717,7 @@ const GOAL_NEEDS={
 const UNLOCKS=[
   {k:'muscleup', l:'muscleup', r:4, goal:'muscleup', req:[[['pull',4,12]], [['bardip',1,8]], [['muscleup',1,3]]]},
   {k:'tuckfl', l:'frontlever', r:0, req:[[['pull',4,8],['pullvar',0,8]], [['core',1,30],['legraise',2,8],['dragonflag',1,6]]]},
-  {k:'handstand', l:'handstand', r:3, goal:'handstand', req:[[['handstand',2,8]], [['handstand',1,45],['pushv',2,60]]]},
+  {k:'handstand', l:'handstand', r:3, goal:'handstand', req:[[['handstand',2,8]], [['handstand',1,45],['pushv',2,60]], [['hsdrill',0,3]]]},
   {k:'tuckplanche', l:'planche', r:1, goal:'tuckplanche', req:[[['planche',0,30],['planchepush',0,8]], [['pushh',6,5],['dip',3,12]]]},
   {k:'lsit', l:'core', r:4, goal:'lsit', req:[[['core',3,15]], [['dip',0,30],['dip',3,5],['rings',0,30]]]},
   {k:'pistol', l:'legs', r:5, goal:'pistol', req:[[['legs',8,5],['pistoldrill',2,5]]]},
@@ -6665,6 +6734,18 @@ const UNLOCKS=[
   {k:'typewriter', l:'pullvar', r:3, goal:'typewriter', req:[[['pull',5,5],['pullvar',2,5]]]},
   {k:'ringmu', l:'rings', r:6, goal:'ringmu', req:[[['rings',5,5]], [['ringdip',2,8],['rings',3,8]]]},
 ];
+/* ==================== GATES ====================
+   Steps that are risky without one particular skill first: the instructions name it, and the app holds you to it. A gated
+   step is not moved onto, tested or planned until one of its options has been done cleanly at least once (or you tick
+   that you can); a goal past it trains the first option as something else it takes. [ladder, rung, at least] */
+const GATES={
+  'freestanding-hspu':[['handstand',3,30]],
+  'partial-wall-hspu':[['handstand',1,30],['pushv',2,30]],
+  'freestanding-handstand':[['hsdrill',0,3]],
+  'clapping-pullup':[['muscleup',1,5]],
+  'depth-jump':[['landing',1,5]],
+  'dragon-squat':[['legs',5,3]],
+};
 
 /* ==================== EVIDENCE ==================== */
 const PM='https://pubmed.ncbi.nlm.nih.gov/?term=';
@@ -6830,7 +6911,8 @@ function defaultState(){
   const rung={}; LADDER_ORDER.forEach(k=>rung[k]=0);
   return { v:2, onboarded:false, route:'today',
     settings:{theme:'system', rest:120, sound:Prefs.get('sound',true), vibrate:Prefs.get('vibrate',true)},
-    rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, parked:[], repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull' };
+    rung, paths:{}, needClaims:{}, placed:{}, said:{}, advances:[], history:[], active:null, parked:[], repeat:null, goals:[], tests:[], custom:[], progTab:'week', libTab:'Pull',
+    hold:null, placing:null, setupFrom:0 };
 }
 /* Fill in anything missing and upgrade version 1 data (no goals, no placement). */
 function normalize(p){
@@ -6852,12 +6934,22 @@ function normalize(p){
   s.goals=s.goals.filter(g=>g&&LADDERS[g.l]&&LADDERS[g.l].steps[g.r]);
   Object.keys(s.rung).forEach(id=>{if(s.paths[id]||!LADDER_PATHS[id]||!LADDERS[id])return;
     const rid=rungId(id,s.rung[id]),route=LADDER_PATHS[id].find(p=>p.steps.includes(rid));if(route)s.paths[id]=route.key;});
+  // when sets began to need their help level or added weight (SESSION): data from before then is kept as it was
+  s.setupFrom= Number.isFinite(p.setupFrom)? p.setupFrom : Date.now();
   if(s.route==='ladders') s.route='library';
   if(!['today','train','goals','progress','library'].includes(s.route)) s.route='today';
   if(!PATTERNS.includes(s.libTab)) s.libTab='Pull';
   if(!Array.isArray(s.parked)) s.parked=[];
   Parked.all(s).forEach(a=>{ a.entries=(a.entries||[]).filter(e=>LADDERS[e.ladderId]&&LADDERS[e.ladderId].steps[e.stepIdx]); });
   if(s.active && s.active.restEndsAt && s.active.restEndsAt<Date.now()) s.active.restEndsAt=null;
+  // a pain hold (HOLDS) and a placement survey part-way through (PLACEMENT); anything malformed is dropped
+  const own=(o,k)=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);
+  const H=s.hold; s.hold=null;
+  if(H&&Number.isFinite(H.until)&&Array.isArray(H.joints)){ const j=H.joints.filter(x=>['elbow','wrist','shoulder'].includes(x)); if(j.length) s.hold={until:H.until, at:H.at, joints:j}; }
+  const pl=s.placing; if(!(pl&&Array.isArray(pl.survey)&&Array.isArray(pl.tests)&&pl.ans&&typeof pl.ans==='object')) s.placing=null;
+  else { const ans={}; Object.keys(pl.ans).forEach(id=>{ if(own(LADDERS,id)&&Number.isInteger(pl.ans[id])) ans[id]=pl.ans[id]; });
+    s.placing={survey:pl.survey.filter(id=>own(LADDERS,id)), tests:pl.tests.filter(id=>own(LADDERS,id)), total:Number.isInteger(pl.total)? pl.total : pl.survey.length,
+      gids:Array.isArray(pl.gids)? pl.gids.filter(x=>typeof x==='string') : [], ans}; }
   return s;
 }
 function load(){
@@ -6867,7 +6959,8 @@ function load(){
 }
 let saveTimer=null;
 function payload(){ return {v:state.v,onboarded:state.onboarded,route:state.route,settings:state.settings,rung:state.rung,paths:state.paths,needClaims:state.needClaims,placed:state.placed,said:state.said,
-  advances:state.advances, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab}; }
+  advances:state.advances, history:state.history, active:state.active, parked:state.parked, repeat:state.repeat, goals:state.goals, tests:state.tests, custom:state.custom, unlocked:state.unlocked||{}, progTab:state.progTab, libTab:state.libTab,
+  hold:state.hold, placing:state.placing, setupFrom:state.setupFrom}; }
 let ladVer=0;   // moves on every change, so Muscle knows when to read Ladder's sets again
 function save(){ ladVer++; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ Safe.put(LS_KEY,JSON.stringify(payload())); },120); }
 /* Once this section has saved anything, whatever is waiting for the 120 ms delay (or was never saved) goes in
@@ -6933,52 +7026,68 @@ function rungRank(id,i,g){ return pathFor(id,g).indexOf(i); }
 function curStep(id){ return stepsOf(id)[curIdx(id)]; }
 function unitS(st){ return st.k==='hold'?'s':''; }
 function goalText(st){ return `${st.sets} x ${st.v}${unitS(st)}`; }
+/* A step's target as a range for strength rep steps: from its entry check to its target (TODAY'S DOSE). */
+function rungText(id,i){ const st=stepsOf(id)[i], lo=Math.min(entryMinimum(id,i),st.v); return ranged(id,i)&&lo<st.v? `${st.sets} x ${lo}&ndash;${st.v}` : goalText(st); }
 function isSkill(id){ return !!LADDERS[id].skill; }
 function practiceOf(id,i){const L=LADDERS[id];return stepsOf(id)[i==null?curIdx(id):i].practice||L.practice||(L.like&&LADDERS[L.like]&&LADDERS[L.like].practice)||'strength';}
-function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||Math.min(st.v,st.k==='hold'?5:3); }
-const PROOF_DAYS=90, CLEAR_DAYS=42;
-/* Exercises Muscle has too (pull-ups, dips, push-ups and the like): its ticked sets count here as clean sets of that
-   exercise, so the pull-ups you log in Muscle move your pull-up rung on like ones logged here. Muscle logs reps, so holds
-   are left out. They count toward your best, your targets and your next rung; Ladder's own week of hard sets is unchanged. */
+function entryMinimum(id,i){ const st=stepsOf(id)[i]; return st.entry||entryCheck(st); }
+const PROOF_DAYS=90, CLEAR_DAYS=42, APART=20*3600000;
+/* Exercises Muscle has too (pull-ups, dips, push-ups and the like): its ticked sets come in as volume, not proof. They
+   show in your logged best and tell today's dose where you are, but only sets logged here, with the form confirmed, can
+   clear a step or meet a goal. Muscle's Nordic curls are often lowering only, so they count as Nordic lowering.
+   Muscle logs reps, so holds are left out. Ladder's own week of hard sets is unchanged. */
+const FROM_MUSCLE={'nordic-curl':'nordic-negative'};
 let musMemo={k:null, v:[]};
 function fromMuscle(){
   const H=window.__hub; if(!H||!H.has||!H.has('lift')) return [];
   const L=H.api('lift'); if(!L||!L.sharedSets) return [];
   const k=L.stamp(); if(musMemo.k===k) return musMemo.v;
   const where={}; Object.keys(LADDERS).forEach(id=>stepsOf(id).forEach((st,i)=>{ if(st.k!=='hold'&&!where[st.id]) where[st.id]=[id,i]; }));
-  const v=L.sharedSets(Object.keys(where)).map(w=>({id:'muscle-'+w.id, date:w.date, muscle:true, entries:w.entries.map(e=>{ const [l,i]=where[e.exId];
-    return {ladderId:l, stepIdx:i, target:stepsOf(l)[i].v, setup:{}, clean:true, sets:e.sets.map(x=>({v:x.reps, rir:x.rir, done:true, clean:true}))}; })}));
+  const at=x=>where[FROM_MUSCLE[x]||x], ex=[...new Set(Object.keys(where).concat(Object.keys(FROM_MUSCLE)))];
+  const v=L.sharedSets(ex).map(w=>({id:'muscle-'+w.id, date:w.date, muscle:true, entries:w.entries.filter(e=>at(e.exId)).map(e=>{ const [l,i]=at(e.exId);
+    return {ladderId:l, stepIdx:i, target:stepsOf(l)[i].v, setup:{}, clean:false, sets:e.sets.map(x=>({v:x.reps, rir:x.rir, done:true, clean:false}))}; })})).filter(w=>w.entries.length);
   musMemo={k, v}; return v;
 }
 function allHistory(){ const m=fromMuscle(); return m.length? state.history.concat(m) : state.history; }
+/* Sessions at least 20 hours apart: 23:50 and 00:10 are one training day, not two. */
+function apart(times){ let n=0, last=-Infinity; times.slice().sort((a,b)=>a-b).forEach(t=>{ if(t-last>=APART){ n++; last=t; } }); return n; }
+/* A renamed rung of your own is a new exercise: what you logged before the change no longer proves it. */
+function stepSince(st){ return st&&Number.isFinite(st.since)? st.since : 0; }
 function proofSets(id,i,days){
-  const rid=rungId(id,i), st=stepsOf(id)[i], since=Date.now()-days*86400000, out=[];
+  const rid=rungId(id,i), st=stepsOf(id)[i], since=Math.max(Date.now()-days*86400000, stepSince(st)), out=[];
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
     (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{};
-      if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupValid(st,setup)) out.push({date:w.date,v:s.v,setup,target:e.target||st.v}); });
+      if(s.done&&s.clean===true&&Number.isFinite(s.v)&&setupOk(st,setup,w.date)) out.push({date:w.date,v:s.v,setup,rir:s.rir,target:e.target||st.v}); });
   }));
   return out;
 }
+function cleanTests(id,i,from){ const st=stepsOf(id)[i], rid=rungId(id,i), since=Math.max(from, stepSince(st));
+  return state.tests.filter(t=>t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupOk(st,t.setup||{},t.date)); }
 function verifiedBestFor(id,i){
-  const st=stepsOf(id)[i], since=Date.now()-PROOF_DAYS*86400000;
-  let best=proofSets(id,i,PROOF_DAYS).reduce((m,s)=>Math.max(m,s.v),0), rid=rungId(id,i);
-  state.tests.forEach(t=>{if(t.date>=since&&t.date<=Date.now()&&rungId(t.ladderId,t.stepIdx)===rid&&t.clean===true&&setupValid(st,t.setup||{}))best=Math.max(best,t.v||0);});
+  let best=proofSets(id,i,PROOF_DAYS).reduce((m,s)=>Math.max(m,s.v),0);
+  cleanTests(id,i,Date.now()-PROOF_DAYS*86400000).forEach(t=>{ best=Math.max(best,t.v||0); });
   return best;
 }
+/* Your best clean set on a step, however long ago: what goal progress reads, so it never decays. */
+function bestClean(id,i){ let best=proofSets(id,i,1e5).reduce((m,s)=>Math.max(m,s.v),0);
+  cleanTests(id,i,0).forEach(t=>{ best=Math.max(best,t.v||0); }); return best; }
+/* Ready for the next step: every planned set at the step's target, none called at 0 in reserve, on two days at least
+   20 hours apart in the last 42, at the same setting or a harder one (less help, or more added weight). */
+function rirOk(s){ return s.rir==null||s.rir>=1; }
 function currentProof(id,i){
-  const st=stepsOf(id)[i], groups=new Map(), since=Date.now()-CLEAR_DAYS*86400000, rid=rungId(id,i);
+  const st=stepsOf(id)[i], since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st)), rid=rungId(id,i), runs=[];
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
-    const setsBySetup=new Map();
-    (e.sets||[]).forEach(s=>{ const setup=s.setup||e.setup||{}, key=setupKey(st,setup);
-      if(!s.done||s.clean!==true||!(s.v>=st.v)||key==null) return;
-      const group=setsBySetup.get(key)||{n:0,setup}; group.n++; setsBySetup.set(key,group); });
-    setsBySetup.forEach((v,key)=>{ if(v.n<st.sets) return;
-      const g=groups.get(key)||{dates:new Set(),setup:v.setup,last:0}; g.dates.add(dayStart(w.date));g.last=Math.max(g.last,w.date);groups.set(key,g); });
+    const ok=(e.sets||[]).filter(s=>s.done&&s.clean===true&&s.v>=st.v&&rirOk(s)&&setupOk(st,s.setup||e.setup||{},w.date))
+      .map(s=>setupVal(st,s.setup||e.setup||{})).sort((a,b)=>harder(st,b,a)? (harder(st,a,b)? 0 : 1) : -1);
+    if(ok.length>=st.sets) runs.push({date:w.date, val:ok[st.sets-1]});   // the setting every planned set reached
   }));
-  const g=[...groups.values()].sort((a,b)=>b.dates.size-a.dates.size||b.last-a.last)[0];
-  return {days:g?g.dates.size:0,ready:!!g&&g.dates.size>=2,setup:g?g.setup:{}};
+  let best=null;
+  runs.forEach(r=>{ const days=apart(runs.filter(x=>harder(st,x.val,r.val)).map(x=>x.date));
+    if(!best||days>best.days||(days===best.days&&harder(st,r.val,best.val))) best={days, val:r.val}; });
+  const f=setupField(st);
+  return {days:best?best.days:0, ready:!!best&&best.days>=2, setup:best&&f&&best.val!=null? {[f.key]:best.val} : {}};
 }
 function entryReady(id,i){ return verifiedBestFor(id,i)>=entryMinimum(id,i); }
 function desiredStandard(id,i){
@@ -6987,27 +7096,75 @@ function desiredStandard(id,i){
     goalNeeds(g).forEach(n=>{if(n.l===id&&n.r===i) v=Math.max(v,n.v);}); });
   return v;
 }
-function rungTarget(id,i,role){
-  const st=stepsOf(id)[i], limit=desiredStandard(id,i), increment=st.k==='hold'?5:1;
-  if(role==='maintenance') return Math.min(st.v,limit);
-  let target=st.v;
-  const rid=rungId(id,i), since=Date.now()-CLEAR_DAYS*86400000, byTarget=new Map();
+/* What a one-set maintenance check asks for: the standard your goals need on this step, not its base target. */
+function needStandard(id,i){ let v=0; activeGoals().forEach(g=>goalNeeds(g).forEach(n=>{ if(n.l===id&&n.r===i) v=Math.max(v,n.v); }));
+  return v||stepsOf(id)[i].v; }
+
+/* ==================== TODAY'S DOSE ====================
+   Strength rep steps train in a range: from the entry check (about 40% of the target) up to the target, or up to a goal's
+   higher standard. Today's reps start where you are, about one rep short of failure, and go up when every set reached
+   them with a rep or more in reserve; a set called at 0 in reserve says that was all you had, so the reps stay. Reps in
+   reserve left blank count as fine: you did what was asked. With nothing logged yet, the first session asks for the
+   step's own target, or what you can do with a rep or two left if that is too many, so the next one starts there.
+   Holds, and the reps of prep, balance and power work (no reps in reserve there: quality is the measure), keep their
+   target and grow 5 s or a rep once it is met on two days at least 20 hours apart; holds under the target are trained
+   as a total time, in as many pieces as it takes.
+   Weighted steps progress by load once the reps reach the top: about 2.5 kg (5 lb) more and two reps fewer. Assisted
+   steps progress by help: one level less once the reps, or the time, reach the top. */
+function ranged(id,i){ const st=stepsOf(id)[i]; return !!st&&st.k!=='hold'&&!isPrep(id)&&practiceOf(id,i)==='strength'; }
+function repRange(id,i){ const st=stepsOf(id)[i]; return {lo:Math.min(entryMinimum(id,i), st.v), hi:Math.max(st.v, desiredStandard(id,i))}; }
+const clamp=(v,lo,hi)=>Math.max(lo, Math.min(hi, v));
+/* The latest session with this exercise in the last 42 days: its entry and the sets that say where you are (clean ones
+   here, and Muscle's). */
+function lastOn(id,i){
+  const st=stepsOf(id)[i], rid=rungId(id,i), since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st)); let out=null;
+  allHistory().forEach(w=>{ if(w.date<since||w.date>Date.now()||(out&&w.date<=out.date)) return;
+    (w.entries||[]).forEach(e=>{ if(rungId(e.ladderId,e.stepIdx)!==rid||e.lite) return;   // a light day says nothing of where you are
+      const sets=(e.sets||[]).filter(s=>s.done&&Number.isFinite(s.v)&&s.v>0&&(s.clean===true||w.muscle));
+      if(sets.length) out={date:w.date, e, sets}; }); });
+  return out;
+}
+/* {target, setup, why, first}: today's reps or seconds, the help or added weight to use, why it changed, and whether
+   nothing is logged yet to start from. */
+function dose(id,i,role){
+  const st=stepsOf(id)[i], f=setupField(st), setup=lastSetupFor(id,i);
+  if(role==='maintenance') return {target:needStandard(id,i), setup, why:''};
+  if(!ranged(id,i)) return fixedDose(id,i,setup);
+  const {lo,hi}=repRange(id,i), last=lastOn(id,i);
+  // nothing logged lately: a rep short of your best clean set, or with none, the step's own target, as before ranges
+  if(!last){ const b=bestClean(id,i); return {target:clamp(b? b-1 : st.v, lo, hi), setup, why:'', first:!b}; }
+  const t=last.e.target||st.v, ests=last.sets.map(s=>s.v+(s.rir==null? 0 : Math.max(0,s.rir)));
+  const met=last.sets.every(s=>s.v>=t), spent=last.sets.some(s=>s.rir===0);
+  const target= met&&!spent? Math.max(t+1, Math.min(...ests)-1) : last.sets.some(s=>s.v>=t)? t : Math.max(...ests)-1;
+  const val=f? setupVal(st, last.sets[0].setup||last.e.setup||{}) : null;
+  if(f&&met&&!spent&&t>=hi&&val!=null){ const nv=nextVal(st,val);
+    if(nv!=null&&nv!==val) return {target:clamp(hi-2,lo,hi), setup:{[f.key]:nv}, why:moveWhy(st,nv,hi)}; }
+  return {target:clamp(target,lo,hi), setup, why:''};
+}
+function fixedDose(id,i,setup){
+  const st=stepsOf(id)[i], f=setupField(st), limit=desiredStandard(id,i), rid=rungId(id,i), since=Math.max(Date.now()-CLEAR_DAYS*86400000, stepSince(st));
+  const cur=f? setupVal(st,setup) : null, met=new Map(); let target=st.v;
   allHistory().filter(w=>w.date>=since&&w.date<=Date.now()).forEach(w=>(w.entries||[]).forEach(e=>{
     if(rungId(e.ladderId,e.stepIdx)!==rid) return;
-    const t=Math.max(st.v,e.target||st.v), keys=new Map();
-    (e.sets||[]).forEach(s=>{const key=setupKey(st,s.setup||e.setup||{});if(s.done&&s.clean===true&&s.v>=t&&key!=null) keys.set(key,(keys.get(key)||0)+1);});
-    keys.forEach((n,key)=>{if(n<st.sets)return;const k=t+'|'+key, days=byTarget.get(k)||new Set();days.add(dayStart(w.date));byTarget.set(k,days);});
+    const t=Math.max(st.v,e.target||st.v);
+    // only sets at today's setting or a harder one count: more help proves nothing about less of it
+    const n=(e.sets||[]).filter(s=>{ const su=s.setup||e.setup||{}, old=!setupValid(st,su)&&setupOk(st,su,w.date);   // an old set counts as today's setting
+      return s.done&&s.clean===true&&s.v>=t&&setupOk(st,su,w.date)&&(old||harder(st,setupVal(st,su),cur)); }).length;
+    if(n>=st.sets) met.set(t,(met.get(t)||[]).concat(w.date));
     target=Math.max(target,Math.min(limit,t));
   }));
-  if([...byTarget.entries()].some(([k,days])=>Number(k.split('|')[0])===target&&days.size>=2)) target+=increment;
-  return Math.min(limit,target);
+  const twice=apart(met.get(target)||[])>=2;
+  if(twice&&target<limit) target+=st.k==='hold'? 5 : 1;
+  else if(twice&&f&&cur!=null){ const nv=nextVal(st,cur); if(nv!=null&&nv!==cur) return {target:st.v, setup:{[f.key]:nv}, why:moveWhy(st,nv,target)}; }
+  return {target:Math.min(limit,target), setup, why:''};
 }
-/* Does a logged entry clear its rung? All target sets done at or above the target. */
+function rungTarget(id,i,role){ return dose(id,i,role).target; }
+/* A light day on a resting goal's easier step: about 70% of that step's dose, so the tendons it rests get a break. */
+function liteTarget(id,i){ const st=stepsOf(id)[i]; return Math.max(st.k==='hold'? 5 : 1, Math.round(rungTarget(id,i)*0.7)); }
+/* Does a logged entry meet today's target? All planned sets at or above it. */
 function clearsRung(entry){
   const st=stepsOf(entry.ladderId)[entry.stepIdx]; if(!st) return false;
-  const groups=new Map();
-  entry.sets.forEach(s=>{const k=setupKey(st,s.setup||entry.setup||{});if(s.done&&s.clean===true&&(s.v||0)>=(entry.target||st.v)&&k!=null)groups.set(k,(groups.get(k)||0)+1);});
-  return [...groups.values()].some(n=>n>=st.sets);
+  return entry.sets.filter(s=>s.done&&s.clean===true&&(s.v||0)>=(entry.target||st.v)&&setupValid(st,s.setup||entry.setup||{})).length>=st.sets;
 }
 function moveTo(id, to){
   const steps=stepsOf(id), from=curIdx(id); to=Math.max(0,Math.min(steps.length-1,to));
@@ -7018,9 +7175,19 @@ function moveTo(id, to){
   save(); return true;
 }
 function isPrep(id){ return !!(LADDERS[id]&&LADDERS[id].prep); }
-/* Hard sets: mobility, balance and other prep work don't count. */
+/* Hard sets: mobility, balance and other prep work don't count, and nor do handstand and other balance attempts. */
+function hardWork(e){ const L=LADDERS[e.ladderId]; return !!(L&&L.steps[e.stepIdx]&&!L.prep&&practiceOf(e.ladderId,e.stepIdx)!=='balance'); }
 function setsIn(days){ const since=daysAgo(days-1); let n=0;
-  state.history.filter(w=>w.date>=since).forEach(w=>w.entries.forEach(e=>{ if(!isPrep(e.ladderId)) n+=e.sets.filter(s=>s.done).length; })); return n; }
+  state.history.filter(w=>w.date>=since).forEach(w=>w.entries.forEach(e=>{ if(hardWork(e)) n+=e.sets.filter(s=>s.done).length; })); return n; }
+/* GATES: [[ladder, rung, at least]] for a step, or null; met by a clean set at that standard, ever, or by your word. */
+function gateOf(id,i){ const st=LADDERS[id]&&stepsOf(id)[i]; return st&&GATES[st.id]? GATES[st.id].filter(([l,r])=>LADDERS[l]&&stepsOf(l)[r]) : null; }
+function gateMet(id,i){ const g=gateOf(id,i); return !g||!g.length||g.some(([l,r,v])=>bestClean(l,r)>=v||!!((state.needClaims||{})[rungId(l,r)+'|'+v])); }
+/* A gate holds the move onto a step, not a step you already train: if it is your rung and you have logged it, it stays
+   (and the plan adds the gate's skill to the session). */
+function trainedOn(id,i){ const rid=rungId(id,i); return state.history.some(w=>(w.entries||[]).some(e=>rungId(e.ladderId,e.stepIdx)===rid&&(e.sets||[]).some(s=>s.done))); }
+function gateOk(id,i){ return gateMet(id,i)||(!!state.placed[id]&&curIdx(id)===i&&trainedOn(id,i)); }
+function gateText(id,i){ const g=gateOf(id,i); if(!g||!g.length) return ''; const [l,r,v]=g[0], st=stepsOf(l)[r];
+  return st.k==='hold'? v+' s '+st.n.toLowerCase() : v+' × '+st.n.toLowerCase(); }
 /* Ladders that share an exercise (side plank, dead hang, chin-up...) share the credit: a set logged on one
    counts as a best on every ladder with that exercise, and can clear its rung there too. */
 function rungId(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; return st? st.id : null; }
@@ -7043,8 +7210,14 @@ function capFor(id){const p=pathFor(id),gs=goalsOn(id).filter(g=>p.includes(g.r)
 function pendingStandard(id){const p=pathFor(id),cur=p.indexOf(curIdx(id));
   return activeGoals().flatMap(goalNeeds).filter(n=>n.l===id&&!needMet(n)&&p.includes(n.r)&&p.indexOf(n.r)<cur).sort((a,b)=>p.indexOf(b.r)-p.indexOf(a.r))[0]||null;}
 function stdText(g){ const st=stepsOf(g.l)[g.r]; return st.k==='hold'? g.std+' s hold' : g.std+' clean rep'+(g.std===1?'':'s'); }
-function goalProgress(g){const p=pathFor(g.l,g),end=p.indexOf(g.r),route=p.slice(0,end+1),part=Math.min(1,verifiedBestFor(g.l,g.r)/g.std);
-  return goalMet(g)?1:Math.min(0.99,(route.filter(i=>i!==g.r&&currentProof(g.l,i).ready).length+part)/Math.max(1,route.length));}
+/* Progress counts the steps you have moved past and, once you are on the goal's own step, your best clean set against
+   the goal. It never goes backwards with time: the 42-day window only decides whether you are ready to move on. */
+function goalProgress(g){ if(goalMet(g)) return 1;
+  const p=pathFor(g.l,g), end=p.indexOf(g.r), at=state.placed[g.l]? p.indexOf(curIdx(g.l)) : -1;
+  const part= at>=end&&end>=0? Math.min(1,bestClean(g.l,g.r)/g.std) : 0;
+  return Math.min(0.99,(Math.max(0,Math.min(end,at))+part)/Math.max(1,end+1)); }
+/* Steps behind you on a path show as passed, whenever you passed them. */
+function passed(id,i){ if(!state.placed[id]) return false; const p=pathFor(id), a=p.indexOf(i), c=p.indexOf(curIdx(id)); return a>=0&&c>=0&&a<c; }
 function goalMet(g){ return verifiedBestFor(g.l,g.r)>=g.std; }
 function checkGoals(){ const done=[]; activeGoals().forEach(g=>{ if(state.placed[g.l] && goalMet(g)){ g.achieved=Date.now(); done.push(g); } }); if(done.length) save(); return done; }
 function makeGoal(key){ const G=GOALS[key]; return {id:uid(), key, n:G.n, l:G.l, r:G.r, std:G.std, sup:(G.sup||[]).slice(), added:Date.now(), achieved:null}; }
@@ -7068,15 +7241,23 @@ function needsSrc(g){
 }
 /* [{l ladder, r rung, v at least, q what it builds}] */
 function goalNeeds(g){
-  const N=needsSrc(g); if(!N) return [];
-  return N.need.filter(([l,r])=>LADDERS[l] && stepsOf(l)[r] && l!==g.l)
-    .map(([l,r,v,q])=>({l, r, v:v||stepsOf(l)[r].v, q:q||LADDERS[l].q||'strength'}));
+  const N=needsSrc(g), out=N? N.need.filter(([l,r])=>LADDERS[l] && stepsOf(l)[r] && l!==g.l)
+    .map(([l,r,v,q,o])=>({l, r, v:v||stepsOf(l)[r].v, q:q||LADDERS[l].q||'strength', alt:o&&o.alt||null})) : [];
+  // GATES on the steps still ahead of you on the way to the goal
+  if(LADDERS[g.l]&&stepsOf(g.l)[g.r]){ const p=pathFor(g.l,g,true), end=p.indexOf(g.r), from=state.placed[g.l]? Math.max(0,p.indexOf(curIdx(g.l))) : 0;
+    p.slice(from,end+1).forEach(i=>{ const G=gateOf(g.l,i); if(!G||!G.length||gateMet(g.l,i)) return; const [l,r,v]=G[0];
+      if(l!==g.l&&!out.some(n=>n.l===l&&n.r===r&&n.v>=v)) out.push({l, r, v, q:LADDERS[l].q||(practiceOf(l,r)==='balance'?'balance':'strength'), gate:stepsOf(g.l)[i].n}); }); }
+  return out;
 }
 /* In place: recent clean performance of this movement at its own standard, or a recent specific user confirmation. */
 function needKey(n){ return rungId(n.l,n.r)+'|'+n.v; }
+/* Another way to meet a need: [ladder, rung, reps, load as a share of bodyweight], e.g. a pull-up with 40% added. */
+function altMet(n){ return (n.alt||[]).some(([l,r,v,bw])=>{ if(!LADDERS[l]||!stepsOf(l)[r]) return false; const st=stepsOf(l)[r];
+  return proofSets(l,r,PROOF_DAYS).some(s=>{ if(s.v<v) return false; if(!bw) return true; const kg=Body.at(s.date), load=setupVal(st,s.setup);
+    return kg!=null&&load!=null&&load>=bw*kg-0.01; }); }); }
 function needMet(n){
   const claim=(state.needClaims||{})[needKey(n)];
-  return verifiedBestFor(n.l,n.r)>=n.v||!!(claim&&claim.v===n.v&&Number.isFinite(claim.date)&&claim.date<=Date.now()&&claim.date>=Date.now()-PROOF_DAYS*86400000);
+  return verifiedBestFor(n.l,n.r)>=n.v||altMet(n)||!!(claim&&claim.v===n.v&&Number.isFinite(claim.date)&&claim.date<=Date.now()&&claim.date>=Date.now()-PROOF_DAYS*86400000);
 }
 function needsText(g){ const ns=goalNeeds(g); return ns.length? ns.filter(needMet).length+' of '+ns.length+' in place' : ''; }
 function planIds(){
@@ -7093,10 +7274,13 @@ function planIds(){
   return {mains, sups, needs, maintenance};
 }
 /* Warm-up first. Then balance, technique and straight-arm skills while you’re fresh, goal work, support and what
-   else your goals need, core, and long stretches last (held 60 seconds or more, they can sap strength for a while). */
-function orderIds(ids){
-  const {mains,sups,needs}=planIds(), nids=needs.map(n=>n.l);
-  const rank=id=>{ const L=LADDERS[id]; if(L&&L.prep) return WHEN_RANK[L.when]!=null? WHEN_RANK[L.when] : 3;
+   else your goals need, core, and long stretches last (held 60 seconds or more, they can sap strength for a while).
+   The warm-up is dynamic: a static stretch from a warm-up ladder (a 45 s calf or lat stretch) moves to the end.
+   P, a plan, says which step of each ladder is coming (the current one otherwise). */
+function whenOf(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; return L&&L.when==='warm'&&L.q==='mobility'&&st&&st.k==='hold'? 'end' : L&&L.when; }
+function orderIds(ids,P){
+  const {mains,sups,needs}=planIds(), nids=needs.map(n=>n.l), at=id=>{ const x=P&&P.find(p=>p.id===id); return x? x.i : curIdx(id); };
+  const rank=id=>{ const L=LADDERS[id]; if(L&&L.prep){ const w=whenOf(id,at(id)); return WHEN_RANK[w]!=null? WHEN_RANK[w] : 3; }
     if(id==='hsdrill'||(L&&L.like==='hsdrill'))return -1.5;
     if(practiceOf(id)==='balance')return -1;
     if(practiceOf(id)==='power')return -0.5;
@@ -7123,7 +7307,9 @@ function defaultPicks(){ return todayPlan().map(x=>x.id); }
      volume matched, frequency changes little), and a long session costs the quality of its later sets; balance is
      practised little and often, so it has its own room. Then up to two of what else your goals take, then support work,
      then the rest of what else your goals take and the extra, while there is room.
-   The rotation moves on once per day you train, so a plan holds for the whole day. */
+   The rotation moves on once per day you train, so a plan holds for the whole day.
+   Then RECOVERY SPACING, GATES and pain HOLDS can swap an exercise for an easier or assisted step, or leave it out;
+   the plan's notes say why, for Today. */
 const FAM={pull:'vpull', pullvar:'vpull', muscleup:'vpull', row:'hpull', dip:'dip', rings:'dip', pushh:'hpush', plyopush:'hpush',
   planche:'planche', planchepush:'planche', pushv:'vpush', press:'vpush', handstand:'balance', onearmhs:'balance', armbalance:'balance',
   legs:'squat', lunge:'squat', knee:'squat', jump:'squat', hinge:'hinge', bridge:'bridge', calf:'calf', core:'core', legraise:'core',
@@ -7153,18 +7339,90 @@ function turns(ids, cap, r){
   return Array.from({length:cap},(_,j)=>{ const c=r*cap+j; return [ids[c%n], Math.floor(c/n)]; });
 }
 const WRIST_LOAD=['handstand','planche','planchepush','armbalance','press','onearmhs','hsdrill','pushv','plyopush'];
+
+/* ==================== RECOVERY SPACING ====================
+   Hard straight-arm skill work (planche, front and back lever, flag, press) loads the elbows and the biceps tendon, and
+   Nordics load the hamstrings hard while they lengthen; tendons, and that kind of soreness, take longer to settle than
+   a muscle feels. So a hard session of each family waits about 48 hours for the next one (about 72 hours in your first
+   4 weeks of Nordics), and a session trains at most one straight-arm skill hard. Otherwise the plan gives that goal its
+   easier step for the day, or leaves it to its support work. Sets on an easier step (role easy) aren't hard sessions.
+   The wait counts from when the hard session started, and it is 44 hours (68 for new Nordics): the same time two days
+   later, or a little earlier, is a hard day again, as "about 48 hours" means. With two or more straight-arm goals, the
+   one whose last hard session is oldest gets the hard slot, so each takes its turn. */
+const NOT_STRAIGHT=['side-plank','pike-compression','pseudo-planche-pushup'];
+const NORDIC_IDS=['nordic-negative','nordic-curl','assisted-nordic-curl','partial-nordic-curl'];
+const SPACE_H=44, NORDIC_NEW_H=68, NORDIC_NEW_DAYS=28;
+function hardFam(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; if(!st) return null;
+  if(NORDIC_IDS.includes(st.id)) return 'nordic';
+  return (STRAIGHT_ARM.includes(id)||STRAIGHT_ARM.includes(L.like))&&!NOT_STRAIGHT.includes(st.id)? 'straight' : null; }
+/* When each family was trained hard (the session's start), Muscle's Nordic sets included; by: the same per ladder. */
+function startOf(w){ const d=Number(w.durationSec); return w.date-(Number.isFinite(d)&&d>0? Math.min(d, 6*3600) : 0)*1000; }
+function hardTimes(){ const t={straight:[], nordic:[], by:{}};
+  allHistory().forEach(w=>(w.entries||[]).forEach(e=>{ const f=hardFam(e.ladderId,e.stepIdx);
+    if(f&&e.role!=='easy'&&(e.sets||[]).some(s=>s.done!==false)){ const at=startOf(w); t[f].push(at); (t.by[e.ladderId]=t.by[e.ladderId]||[]).push(at); } })); return t; }
+function gapH(f,t){ return f==='nordic'&&t.nordic.length&&Math.min(...t.nordic)>Date.now()-NORDIC_NEW_DAYS*86400000? NORDIC_NEW_H : SPACE_H; }
+function restUntil(t,at){ const u={}; ['straight','nordic'].forEach(f=>{ const ts=t[f].filter(x=>x<=at); u[f]= ts.length? Math.max(...ts)+gapH(f,t)*3600000 : 0; }); return u; }
+
+/* ==================== HOLDS ====================
+   When Together's check-in reports elbow, wrist or shoulder pain, the work that loads that joint is held for a week:
+   straight-arm skills for the elbow and the shoulder, hand balancing and other wrist-loaded work for the wrist. A held
+   ladder trains its assisted step, where its path has one, and is left out otherwise. */
+const HOLD_JOINTS={elbow:STRAIGHT_ARM, shoulder:STRAIGHT_ARM, wrist:WRIST_LOAD}, HOLD_DAYS=7;
+function heldBy(id,at){ const h=state.hold; if(!h||!(h.until>(at||Date.now()))) return null; const L=LADDERS[id], k=L&&L.like;
+  return h.joints.find(j=>(HOLD_JOINTS[j]||[]).some(x=>x===id||x===k))||null; }
+function assistedStep(id,i){ const p=pathFor(id), a=p.indexOf(i);
+  for(let j=a; j>=0; j--){ const f=setupField(stepsOf(id)[p[j]]); if(f&&f.key==='assist') return p[j]; }
+  const f=setupField(stepsOf(id)[i]); return f&&f.key==='assist'? i : null; }
+function holdJoint(joint, days){ if(!['elbow','wrist','shoulder'].includes(joint)) return null;
+  const until=Day.add(Day.start(), (days||HOLD_DAYS)+1), h=state.hold&&state.hold.until>Date.now()? state.hold : null;
+  state.hold={until:Math.max(until, h? h.until : 0), joints:[...new Set((h? h.joints : []).concat(joint))], at:Date.now()};
+  save(); return state.hold; }
+
+/* Does spacing touch any ladder the plan uses? If not, a look ahead needn't plan the sessions before it. */
+function spacingMatters(){ const {mains,sups,needs}=planIds(); return mains.concat(sups, needs.map(n=>n.l)).some(id=>{ const L=LADDERS[id];
+  return [id, L&&L.like].some(x=>STRAIGHT_ARM.includes(x)||x==='hinge'); }); }
+/* Looking ahead, each session before the one asked for is taken to be a day before it, the closest they can be, so a
+   hard session planned there pushes the next one's back just as one you log would. */
 function todayPlan(ahead){
-  const {mains,sups,needs,maintenance}=planIds(), r=rotation()+(ahead||0), out=[], seen=new Set(), fams=new Set();
-  const add=(id,i,sets,role)=>{ const st=stepsOf(id)[i]; if(!st||seen.has(st.id)||out.some(x=>x.id===id)) return false;
-    seen.add(st.id); fams.add(famOf(id)); out.push({id,i,sets,role,target:rungTarget(id,i,role)}); return true; };
-  // each goal alternates by its own turns, so one that skips sessions still gets both its target and volume days
+  ahead=ahead||0; const t=hardTimes(), now=Date.now(), from= ahead&&spacingMatters()? 0 : ahead; let P=null;
+  for(let k=from;k<=ahead;k++){ const at=now+k*86400000; P=planCore(rotation()+k, at, t, k<ahead);
+    if(k<ahead) P.forEach(x=>{ const f=x.role==='easy'||x.role==='maintenance'? null : hardFam(x.id,x.i); if(f){ t[f].push(at); (t.by[x.id]=t.by[x.id]||[]).push(at); } }); }
+  return P;
+}
+/* light: the plan is only looked at for what it trains hard, so targets are left out. */
+function planCore(r, at, t, light){
+  const {mains,sups,needs,maintenance}=planIds(), out=[], seen=new Set(), fams=new Set(), notes=[], gates=[], until=restUntil(t,at);
+  const note=(id,why,o)=>{ if(!notes.some(n=>n.id===id)) notes.push(Object.assign({id,why},o)); };
   const bal=id=>practiceOf(id)==='balance';
-  turns(spread(mains.filter(id=>!bal(id))), GOAL_CAP, r).concat(turns(spread(mains.filter(bal)), BALANCE_CAP, r))
-    .sort((a,b)=>mains.indexOf(a[0])-mains.indexOf(b[0])).forEach(([id,t])=>{ const k=mains.indexOf(id);
+  const goalTurns=turns(spread(mains.filter(id=>!bal(id))), GOAL_CAP, r).concat(turns(spread(mains.filter(bal)), BALANCE_CAP, r))
+    .sort((a,b)=>mains.indexOf(a[0])-mains.indexOf(b[0]));
+  // the one straight-arm skill trained hard this session: the goal that waited longest since its last hard session,
+  // in turn order when that is a tie (none trained yet)
+  const sa=goalTurns.map(x=>x[0]).filter(id=>hardFam(id,curIdx(id))==='straight'&&!heldBy(id,at));
+  const lastHard=id=>(t.by&&t.by[id]||[]).filter(x=>x<=at).reduce((m,x)=>Math.max(m,x),0), turn=j=>(j-r%sa.length+sa.length)%sa.length;
+  const chosen= sa.length&&!(until.straight>at)? sa.map((id,j)=>[id,lastHard(id),turn(j)]).sort((a,b)=>a[1]-b[1]||a[2]-b[2])[0][0] : null; let straightHard=false;
+  // → [step, role], or null to leave it out
+  const tame=(id,i,role)=>{
+    const held=heldBy(id,at);
+    if(held){ const k=assistedStep(id,i); note(id,'pain',{joint:held, i:k, until:state.hold.until}); return k==null? null : [k,'easy']; }
+    if(!gateMet(id,i)){ const g=gateOf(id,i)[0]; if(!gates.some(x=>x[0]===g[0]&&x[1]===g[1])) gates.push(g);   // its skill joins the session
+      if(!gateOk(id,i)){ const k=previousRung(id,i); note(id,'gate',{i:k, gate:gateText(id,i)}); if(k==null) return null; i=k; } }
+    const f=hardFam(id,i); if(!f||role==='easy') return [i,role];
+    const why= until[f]>at? 'rest' : f==='straight'&&(chosen? id!==chosen : straightHard)? 'one' : '';
+    if(!why){ if(f==='straight') straightHard=true; return [i,role]; }
+    const k=previousRung(id,i); note(id,why,{f, i:k, until:until[f]}); return k==null? null : [k,'easy',true];
+  };
+  // a resting goal's easier step is a light day (lite): two sets at about 70% of that step's own dose
+  const item=(id,i,sets,role,lite)=>Object.assign({id,i,sets:lite? Math.min(2,sets) : sets,role,target:light? null : lite? liteTarget(id,i) : rungTarget(id,i,role)}, lite? {lite:true} : {});
+  const add=(id,i,sets,role)=>{ const tm=tame(id,i,role); if(!tm) return false; [i,role]=tm;
+    const st=stepsOf(id)[i]; if(!st||seen.has(st.id)||out.some(x=>x.id===id)) return false;
+    seen.add(st.id); fams.add(famOf(id)); out.push(item(id,i,sets,role,tm[2])); return true; };
+  // each goal alternates by its own turns, so one that skips sessions still gets both its target and volume days
+  goalTurns.forEach(([id,tn])=>{ const k=mains.indexOf(id);
     const cur=curIdx(id), st=stepsOf(id)[cur], vi=st.volume?stepsOf(id).findIndex(x=>x.id===st.volume):-1;
     const need=pendingStandard(id);
-    if(need&&(t+k)%2===1)add(id,need.r,stepsOf(id)[need.r].sets,'need');
-    else if(practiceOf(id,cur)==='strength'&&state.placed[id]&&vi>=0&&(t+k)%2===1) add(id,vi,stepsOf(id)[vi].sets+1,'volume');
+    if(need&&(tn+k)%2===1)add(id,need.r,stepsOf(id)[need.r].sets,'need');
+    else if(practiceOf(id,cur)==='strength'&&state.placed[id]&&vi>=0&&(tn+k)%2===1) add(id,vi,stepsOf(id)[vi].sets+1,'volume');
     else add(id,cur,st.sets,'goal'); });
   const byFam={}, order=[];
   sups.forEach(id=>{ if(mains.includes(id)) return; const f=famOf(id); if(!byFam[f]){ byFam[f]=[]; order.push(f); } byFam[f].push(id); });
@@ -7181,26 +7439,38 @@ function todayPlan(ahead){
       add(id, i, stepsOf(id)[i].sets, placed?'extra':'new'); }
   }
   const plan=out.slice(), more=[], taken=new Set(plan.map(x=>stepsOf(x.id)[x.i].id));
-  const put=(id,i,role)=>{ const st=stepsOf(id)[i]; if(!st||taken.has(st.id)||plan.some(x=>x.id===id)||more.some(x=>x.id===id)) return;
-    taken.add(st.id); more.push({id,i,sets:role==='maintenance'?1:st.sets,role,target:rungTarget(id,i,role)}); };
-  const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), at= ns.length>k&&k? (r*k)%ns.length : 0;
-  for(let j=0;j<k;j++){ const n=ns[(at+j)%ns.length], p=pathFor(n.l), cur=curIdx(n.l), target=p.indexOf(n.r);
+  const put=(id,i,role)=>{ const tm=tame(id,i,role); if(!tm) return; [i,role]=tm;
+    const st=stepsOf(id)[i]; if(!st||taken.has(st.id)||plan.some(x=>x.id===id)||more.some(x=>x.id===id)) return;
+    taken.add(st.id); more.push(item(id,i,role==='maintenance'?1:st.sets,role,tm[2])); };
+  const ns=needs.slice().sort((a,b)=>LADDER_ORDER.indexOf(a.l)-LADDER_ORDER.indexOf(b.l)), first= ns.length>k&&k? (r*k)%ns.length : 0;
+  for(let j=0;j<k;j++){ const n=ns[(first+j)%ns.length], p=pathFor(n.l), cur=curIdx(n.l), target=p.indexOf(n.r);
     put(n.l,state.placed[n.l]&&target>=0?p[Math.min(p.indexOf(cur),target)]:p[0],isPrep(n.l)?'prep':'need'); }
+  // a gate's skill, from where you are on its ladder (unless that ladder is already in the session)
+  gates.forEach(([l,r])=>{ const p=pathFor(l), at=p.indexOf(r); put(l, state.placed[l]&&at>=0? p[Math.min(p.indexOf(curIdx(l)),at)] : at>=0? p[0] : r, isPrep(l)?'prep':'need'); });
   if(maintenance.length){const n=maintenance[r%maintenance.length];put(n.l,n.r,'maintenance');}
   if(LADDERS.wrist && plan.concat(more).some(x=>WRIST_LOAD.includes(LADDERS[x.id].like||x.id))) put('wrist', state.placed.wrist?curIdx('wrist'):pathFor('wrist')[0], 'prep');
-  return plan.concat(more);
+  const res=plan.concat(more); res.notes=notes; return res;
 }
-const ROLE_N={goal:'goal', volume:'goal &middot; volume day', support:'support', extra:'extra', new:'new to you', need:'what your goal needs',maintenance:'maintain and recheck'};
+/* Why a goal trains easier today, or not at all, in one short line for Today. */
+function noteText(n){ const g=goalsOn(n.id)[0], who=esc(g? g.n : LADDERS[n.id].n), step=n.i!=null? ' '+esc(stepsOf(n.id)[n.i].n)+(n.why==='rest'||n.why==='one'? ', two light sets' : '')+' today.' : ' Support work today.';
+  if(n.why==='pain') return `${who}: held for your ${esc(n.joint)} until ${esc(fmtDate(n.until))}.${n.i!=null? ' Assisted: '+esc(stepsOf(n.id)[n.i].n)+'.' : ''}`;
+  if(n.why==='gate') return `${who}: first ${esc(n.gate)}.${n.i!=null? step : ''}`;
+  if(n.why==='one') return `${who}: one straight-arm skill a session.${step}`;
+  return `${who}: rest until ${whenText(n.until)} (${n.f==='nordic'?'Nordic':'straight-arm'} work).${step}`; }
+const cap=t=>t? t[0].toUpperCase()+t.slice(1) : t;
+function whenText(ts){ const d=Day.diff(ts, Date.now()), t=new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  return d<=0? t : d===1? 'tomorrow '+t : new Date(ts).toLocaleDateString(undefined,{weekday:'short'})+' '+t; }
+const ROLE_N={goal:'goal', volume:'goal &middot; volume day', easy:'goal &middot; easier today', support:'support', extra:'extra', new:'new to you', need:'what your goal needs',maintenance:'maintain and recheck'};
 const WHEN_S={warm:'warm-up', early:'while fresh', mid:'with the main work', end:'at the end'};
-function roleText(x){ const L=LADDERS[x.id]; return x.role==='prep'? (WHEN_S[L.when]||'prep') : ROLE_N[x.role]||''; }
-function planEntry(x){ const st=stepsOf(x.id)[x.i]; return {ladderId:x.id,stepIdx:x.i,kind:st.k,target:x.target||rungTarget(x.id,x.i,x.role),setup:lastSetupFor(x.id,x.i),clean:true,sets:Array.from({length:x.sets},makeSet),role:x.role}; }
+function roleText(x){ return x.role==='prep'? (WHEN_S[whenOf(x.id,x.i)]||'prep') : ROLE_N[x.role]||''; }
+function planEntry(x){ const d=dose(x.id,x.i,x.role), e=newEntry(x.id, x.i, x.sets, x.target||(x.lite? liteTarget(x.id,x.i) : d.target), d, x.role); if(x.lite) e.lite=true; return e; }
 function planText(x){ const st=stepsOf(x.id)[x.i]; return `${x.sets} x ${x.target||rungTarget(x.id,x.i,x.role)}${unitS(st)}`; }
 
 function listText(a){ return a.length<2? (a[0]||'') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
 /* ---- unlocks */
 function meets(l,r,v){ return !!LADDERS[l]&&verifiedBestFor(l,r)>=v; }
 function readyMoves(){
-  return UNLOCKS.filter(u=>LADDERS[u.l] && stepsOf(u.l)[u.r] && curIdx(u.l)!==u.r && verifiedBestFor(u.l,u.r)===0
+  return UNLOCKS.filter(u=>LADDERS[u.l] && stepsOf(u.l)[u.r] && curIdx(u.l)!==u.r && verifiedBestFor(u.l,u.r)===0 && gateMet(u.l,u.r)
     && u.req.every(line=>line.some(([l,r,v])=>meets(l,r,v))));
 }
 function newUnlocks(){ state.unlocked=state.unlocked||{}; return readyMoves().filter(u=>!state.unlocked[u.k]); }
@@ -7256,7 +7526,7 @@ function goalHint(k){
   const G=GOALS[k], d=goalDist(k);
   if(readyMoves().some(u=>u.goal===k)) return '<b>Ready to try</b>';
   if(goalMetNow(k)) return 'You can already do this';
-  if(d==null) return 'Usually '+LV_T[GOAL_LV[k]||2];
+  if(d==null) return 'Often '+(GOAL_T[k]||LV_T[GOAL_LV[k]||2]);
   return d<0?'Earlier on this path: check your current ability':d===0? 'You are on this rung now' : d===1? 'One rung away' : d+' rungs away';
 }
 
@@ -7276,7 +7546,7 @@ function openRungHow(id,i){
     <div class="sheet-head"><button class="iconbtn" data-act="ladder" data-id="${id}" data-back aria-label="Back">${I.back}</button><h3>${esc(st.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="chip">${esc(L.n)}</span><span class="chip">${at>=0?'Step '+(at+1)+' of '+path.length:'Alternative movement'}</span>
-        <span class="chip brass mono">${goalText(st)}</span>${i===cur&&state.placed[id]?'<span class="chip good">Your rung</span>':''}${gs.length?`<span class="chip brass">${I.target} Goal</span>`:''}</div>
+        <span class="chip brass mono">${rungText(id,i)}</span>${i===cur&&state.placed[id]?'<span class="chip good">Your rung</span>':''}${gs.length?`<span class="chip brass">${I.target} Goal</span>`:''}</div>
       ${st.cue?`<div class="tip" style="margin-bottom:16px"><div class="lbl">${I.info}<span>Key point</span></div><p>${esc(st.cue)}</p></div>`:''}
       ${howtoHtml(st.id, id, st.n)}
       <div class="grid2" style="margin-top:16px">
@@ -7290,20 +7560,26 @@ function openRungHow(id,i){
    of the rung you said you can do. The goal's own ladder is always asked about, even if you were placed on it
    before; support ladders only if they haven’t been placed yet. */
 let place=null, surveyAns={};
-function startPlacement(goals){
+/* The survey so far is saved, so a reload keeps your answers and Today offers to carry on where you stopped. */
+function keepPlace(){ state.placing= place? {survey:place.survey.slice(), total:place.total, tests:place.tests.slice(), gids:(place.gids||[]).slice(), ans:Object.assign({},surveyAns)} : null; save(); }
+function resumePlacement(){ const p=state.placing; if(!p||!p.survey.length){ state.placing=null; save(); render(); return; }
+  place={survey:p.survey.slice(), total:p.total, tests:p.tests.slice(), gids:(p.gids||[]).slice()}; surveyAns=Object.assign({},p.ans); nextPlacement(); }
+/* hub: the goals came from Together, which takes you back when this is done; "Skip the test" then goes back to your plan
+   rather than starting a Ladder session of its own. */
+function startPlacement(goals, hub){
   surveyAns={};
   const need=[], mains=[...new Set(goals.map(g=>g.l))];
   goals.forEach(g=>[g.l].concat(g.sup||[]).forEach(id=>{ if((mains.includes(id)||!state.placed[id])&&!need.includes(id)) need.push(id); }));
-  mains.forEach(id=>{ if(state.placed[id]) surveyAns[id]=curIdx(id)-1; });   // start from where you are now
-  place={survey:need, total:need.length, tests:mains, gids:goals.map(g=>g.id)};
+  mains.forEach(id=>{ if(state.placed[id]) surveyAns[id]=curIdx(id); });   // start from where you are now: your step is picked
+  place={survey:need, total:need.length, tests:mains, gids:goals.map(g=>g.id), hub:!!hub};
   nextPlacement();
 }
 function nextPlacement(){
-  if(place.survey.length){ openSurvey(place.survey[0]); return; }
-  const tests=place.tests, gids=place.gids||[]; place=null;
+  if(place.survey.length){ keepPlace(); openSurvey(place.survey[0]); return; }
+  const tests=place.tests, gids=place.gids||[], hub=!!place.hub; place=null; keepPlace();
   const done=checkGoals();
   // test the rung you said you can do, on each goal ladder where you picked one
-  const toTests=()=>openTestOffer(tests.filter(id=>goalsOn(id).length && surveyAns[id]!=null && surveyAns[id]>=0));
+  const toTests=()=>openTestOffer(tests.filter(id=>goalsOn(id).length && surveyAns[id]!=null && surveyAns[id]>=0), hub);
   const then=()=>openNeedCheck(activeGoals().filter(g=>gids.includes(g.id)), toTests);
   if(done.length) celebrate(done,0,then); else then();
 }
@@ -7327,7 +7603,7 @@ function renderNeedCheck(){
       <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 4px">Your ${gs.length>1?'goals rest':'goal rests'} on more than ${gs.length>1?'their own ladders':'its own ladder'}. Tick the ones you <b style="color:var(--ink)">can already do, at the target shown, with clean form</b>. The rest join your sessions until they are in place.</p>
       ${gs.map(g=>`${gs.length>1?`<div class="grouphdr">${esc(g.n)}</div>`:''}${c.rows.filter(x=>x.g===g).map(({n,k})=>{ const st=stepsOf(n.l)[n.r];
         return `<button class="pick ${c.sel.has(k)?'on':''}" data-act="nchk" data-k="${k}"><span class="ck">${I.check}</span>
-          <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`; }).join('')}`).join('')}
+          <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${n.gate?'Before '+esc(n.gate.toLowerCase()):esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`; }).join('')}`).join('')}
       <div class="stickyfoot"><button class="btn primary block" data-act="nchk-done">${I.arrow} Continue</button></div>
     </div>`);
 }
@@ -7343,29 +7619,29 @@ function needOf(id){ for(const g of activeGoals()){ const n=goalNeeds(g).find(x=
 function openSurvey(id){
   const L=LADDERS[id], steps=stepsOf(id), n=place.total-place.survey.length+1;
   const gs=goalsOn(id), was=surveyAns[id], nd=!gs.length&&needOf(id);
-  const p={survey:place.survey.slice(), total:place.total, tests:place.tests.slice(), gids:(place.gids||[]).slice()};
-  nav.reg('survey:'+id+':'+n, ()=>{ place={survey:p.survey.slice(), total:p.total, tests:p.tests.slice(), gids:p.gids.slice()}; openSurvey(id); }, true);
+  const p={survey:place.survey.slice(), total:place.total, tests:place.tests.slice(), gids:(place.gids||[]).slice(), hub:!!place.hub};
+  nav.reg('survey:'+id+':'+n, ()=>{ place={survey:p.survey.slice(), total:p.total, tests:p.tests.slice(), gids:p.gids.slice(), hub:p.hub}; openSurvey(id); }, true);
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Where are you now?</h3><span class="chip">${n} of ${place.total}</span><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
       <div class="lc-head" style="margin-bottom:6px"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
-        <div class="lc-t"><div class="a">${gs.length?'For your goal':nd?esc(QN[nd.n.q]||'Support')+' for '+esc(nd.g.n):'Support work'}</div><div class="b">${L.n}</div></div></div>
+        <div class="lc-t"><div class="a">${gs.length?'For your goal':nd?esc(QN[nd.n.q]||'Support')+' for '+esc(nd.g.n):'Support work'}</div><div class="b">${esc(L.n)}</div></div></div>
       <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Pick a movement you can practise with clean form and a manageable setup. You start on that movement. A check confirms what you can do; it does not assume the next step is ready.</p>
       ${pathFor(id).map((i,k)=>{const st=steps[i];return `<button class="pick ${was===i?'on':''}" data-act="survey-pick" data-id="${id}" data-i="${i}"><span class="rn">${k+1}</span>
         <span class="pt"><span class="a">${esc(st.n)}</span><span class="b">${goalText(st)}${st.k==='hold'?' hold':' reps'}</span></span></button>`;}).join('')}
       <button class="btn ${was===-1?'primary':'ghost'} block" data-act="survey-pick" data-id="${id}" data-i="-1" style="margin-top:4px">None of these yet</button>
     </div>`);
 }
-function openTestOffer(ids){
+function openTestOffer(ids, hub){
   if(!ids.length){ closeModal(); state.route='goals'; render(); toast('Your plan is ready'); return; }
-  nav.reg('offer:'+ids.join(','), ()=>openTestOffer(ids), true);
+  nav.reg('offer:'+ids.join(','), ()=>openTestOffer(ids, hub), true);
   const picks=ids.map(id=>surveyAns[id]);
   openModal(`<div class="sheet-grab"></div><div class="sheet-body">
     <div style="text-align:center;padding:4px 0 6px"><div class="celebico">${I.test}</div>
       <h2 class="disp" style="font-size:25px;margin:0 0 8px;text-transform:uppercase">Show what you can do</h2>
       <p class="muted" style="font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:320px">Check ${ids.map((id,k)=>`<b style="color:var(--ink)">${esc(stepsOf(id)[picks[k]].n)}</b>`).join(' and ')}. Warm up, stop before form changes, and record the clean result. Your plan starts on the movement you demonstrated.</p></div>
     <button class="btn primary block" data-act="test-verify" data-ids="${ids.join(',')}" data-is="${picks.join(',')}">${I.test} Test now</button>
-    <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}" style="margin-top:8px">Skip the test, start training</button>
+    <button class="btn ghost block" data-act="test-later" data-ids="${ids.join(',')}" data-is="${picks.join(',')}"${hub?' data-hub="1"':''} style="margin-top:8px">${hub? I.arrow+' Skip the test' : I.play+' Skip the test, start training'}</button>
   </div>`);
 }
 let testCtx=null, tseq=0;
@@ -7383,7 +7659,7 @@ function openTestStep(note){
   const c=JSON.stringify(testCtx);
   nav.reg('test:'+(++tseq), ()=>{ testCtx=JSON.parse(c); openTestStep(note); }, true);
   openModal(`<div class="sheet-grab"></div>
-    <div class="sheet-head"><h3>Test: ${L.n}</h3><button class="iconbtn" data-act="test-quit" aria-label="Stop testing">${I.x}</button></div>
+    <div class="sheet-head"><h3>Test: ${esc(L.n)}</h3><button class="iconbtn" data-act="test-quit" aria-label="Stop testing">${I.x}</button></div>
     <div class="sheet-body">
       ${note?`<div class="banner info">${I.info}<span>${note}</span></div>`:''}
       <div class="eyebrow">${at>=0?'Step '+(at+1)+' of '+path.length:'Alternative movement'}</div>
@@ -7400,15 +7676,15 @@ function openTestStep(note){
 /* Outgrew it: move up. Nowhere near: move down. In between: this is the rung. */
 function recordTest(v){
   const id=testCtx.id,i=testCtx.i,st=stepsOf(id)[i],setup={},clean=!!($('#testclean')||{}).checked;
-  __root.querySelectorAll('[data-test-setup][data-key]').forEach(el=>{const f=setupFields(st).find(x=>x.key===el.dataset.key);setup[el.dataset.key]=f&&f.type==='number'?Num.parse(el.value):el.value.trim();});
-  if(v>0&&!setupValid(st,setup)){toast('Record the setup first');return;}
+  __root.querySelectorAll('[data-test-setup][data-key]').forEach(el=>{const f=setupField(st);if(f&&f.key===el.dataset.key)setup[f.key]=fieldStore(f,el.value);});
+  if(v>0&&!setupValid(st,setup)){toast(setupField(st).key==='load'?'Enter the weight you added':'Enter how much help you used');return;}
   if(v>0&&!clean){toast('Confirm clean form, or record zero and try an easier setup');return;}
   state.tests.push({date:Date.now(),ladderId:id,stepIdx:i,v,setup,clean:v>0&&clean});
   let at=curIdx(id);
   if(testCtx.advance){
-    if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&clean&&setupValid(st,setup)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
+    if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&clean&&setupValid(st,setup)&&gateMet(id,i)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
     else toast('Keep building the current movement or use a more manageable assisted setup');
-  }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
+  }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)&&gateOk(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
   save();testCtx.results.push({id,at,v,i});
   nextTestLadder();
 }
@@ -7424,7 +7700,7 @@ function finishTests(){
         <h2 class="disp" style="font-size:26px;margin:6px 0 4px;text-transform:uppercase">You start here</h2></div>
       ${res.map(r=>{ const st=stepsOf(r.id)[r.at], t=stepsOf(r.id)[r.i];
         return `<div class="lrow"><div class="li">${I[LADDERS[r.id].ic]||I.ladder}</div><div class="lb"><div class="a">${esc(st.n)}</div>
-          <div class="b">${LADDERS[r.id].n} &middot; target ${goalText(st)}</div></div><div class="lv">${r.v}${unitS(t)}</div></div>`; }).join('')}
+          <div class="b">${esc(LADDERS[r.id].n)} &middot; target ${goalText(st)}</div></div><div class="lv">${r.v}${unitS(t)}</div></div>`; }).join('')}
       <p class="muted" style="font-size:12.5px;line-height:1.55;margin:12px 2px 0">Test again in about four weeks. The app will remind you on the Today screen.</p>
       <button class="btn primary block" data-act="go-goals" style="margin-top:14px">${I.target} See my plan</button></div>`);
   };
@@ -7458,7 +7734,8 @@ function celebrate(list,i,then){
 /* ==================== GOAL PICKER ==================== */
 let gsel=null, cg=null;
 let gcat=null;
-function openGoalPicker(){ gsel=new Set(); gcat=null; renderGoalPicker(); }
+let gHub=false;   // the picker was opened from Together (see startPlacement)
+function openGoalPicker(hub){ gsel=new Set(); gcat=null; gHub=!!hub; renderGoalPicker(); }
 function goalRow(k, have){
   const G=GOALS[k], act=have.has(k), on=gsel.has(k), lv=GOAL_LV[k]||2;
   return `<button class="pick ${on||act?'on':''}" data-act="gpick" data-k="${k}" ${act?'disabled':''}><span class="ck">${I.check}</span>
@@ -7515,35 +7792,56 @@ function openGoalMenu(gid){
       <button class="actitem danger" data-act="goal-rm" data-id="${esc(g.id)}">${I.trash}<span>Remove this goal<div class="muted" style="font-size:11.5px;font-weight:500">Your rungs and history stay</div></span></button>
     </div>`);
 }
-function addGoals(list){
+function addGoals(list, hub){
   state.goals.push(...list); state.onboarded=true; save();
-  startPlacement(list);
+  startPlacement(list, hub);
 }
 
 /* ==================== SESSION ==================== */
-/* Difficulty belongs to the set: changing today's setup never changes an earlier attempt. */
-/* Measured setup (band, lean, box height...) is no longer asked for: it was too much to measure every set. With no
-   fields, every setup is valid and all sets of a movement compare as one setup, old logs included. */
-function setupFields(st){ return []; }
-function setupValid(st,setup){
-  return setupFields(st).every(f=>{
-    const v=setup&&setup[f.key];
-    if(v==null||String(v).trim()==='') return false;
-    if(f.type==='text') return typeof v==='string'&&v.trim().length>0;
-    if(typeof v!=='number'&&typeof v!=='string') return false;
-    const n=Num.parse(v); return n!=null&&n>=(f.min==null?0:Number(f.min));
-  });
-}
-function setupSummary(st,setup){
-  return setupFields(st).map(f=>{
-    const v=setup&&setup[f.key]; if(v==null||String(v).trim()==='') return '';
-    return f.label+': '+String(v).trim()+(f.unit?' '+f.unit:'');
-  }).filter(Boolean).join(' · ');
-}
-function setupKey(st,setup){
-  if(!setupValid(st,setup)) return null;
-  return JSON.stringify(setupFields(st).map(f=>[f.key,f.type==='number'?Num.parse(setup[f.key]):String(setup[f.key]).trim().toLowerCase().replace(/\s+/g,' ')]));
-}
+/* Difficulty belongs to the set: changing today's setting never changes an earlier attempt.
+   One number per step, and only where it changes what a set proves: the weight added on weighted steps, and a help level
+   from 0 (none) to 5 (most) on assisted ones, for your band or how much the feet or the other hand help. It is filled in
+   from last time. A set logged without it still counts as practice; only sets with it count as proof, compared with sets
+   at the same setting or a harder one, so a band of 4 and a band of 2 no longer pool. Every other step asks for nothing,
+   and all its sets compare as one, old logs included. */
+const WEIGHTED_IDS=['weighted-pullup','weighted-dip','weighted-chin-up','weighted-calf-raise'];
+const ASSIST_IDS=['low-bar-transition','low-ring-transition','fingertip-oahs','german-hang-feet','support-flag'];
+const LB=0.45359237;
+function setupField(st){ if(!st||!st.id) return null;
+  if(WEIGHTED_IDS.includes(st.id)) return {key:'load', label:st.id==='weighted-calf-raise'? 'Dumbbell' : 'Added', type:'number', unit:'kg', min:0, step:0.5};
+  if(st.id==='counterbalance-pistol') return {key:'counter', label:'Counterweight', type:'number', unit:'kg', min:0, step:0.5};
+  if(/^(assisted|band|feet-assisted)-/.test(st.id)||ASSIST_IDS.includes(st.id)) return {key:'assist', label:'Help', type:'number', min:0, max:5, step:1};
+  return null; }
+function setupFields(st){ const f=setupField(st); return f? [f] : []; }
+function setupVal(st,setup){ const f=setupField(st); if(!f||!setup) return null; return Num.parse(setup[f.key]); }
+function setupValid(st,setup){ const f=setupField(st); if(!f) return true; const v=setupVal(st,setup);
+  return v!=null&&(f.key==='load'? v>0 : v>=0)&&(f.max==null||v<=f.max); }
+/* Sets logged before the app asked for the number (state.setupFrom) had nowhere to put it: they still count, as they
+   did then, compared as one with the rest. Only sets logged since without it are practice. */
+function legacySet(date){ return Number.isFinite(date)&&date<(state.setupFrom||0); }
+function setupOk(st,setup,date){ return setupValid(st,setup)||(legacySet(date)&&setupVal(st,setup)==null); }
+/* Is setting a at least as hard as b? More added weight, or less help. Anything compares on a step with no number. */
+function harder(st,a,b){ const f=setupField(st); if(!f||b==null) return true; if(a==null) return false; return f.key==='load'? a>=b-1e-9 : a<=b+1e-9; }
+/* The weight unit you chose (Prefs), for showing and typing; weights are kept in kg. */
+function wUnit(){ return Prefs.get('unit','kg')==='lb'? 'lb' : 'kg'; }
+function showW(kg){ if(kg==null||kg==='') return ''; const v=wUnit()==='lb'? kg/LB : kg; return String(Math.round(v*100)/100); }
+function storeW(text){ const v=Num.parse(text); return v==null? null : wUnit()==='lb'? Math.round(v*LB*1000)/1000 : v; }
+const fieldShow=(f,v)=>f.unit==='kg'? showW(v) : (v==null? '' : String(v)), fieldStore=(f,text)=>f.unit==='kg'? storeW(text) : Num.parse(text);
+function fmtW(kg){ return showW(kg)+' '+wUnit(); }
+/* The next setting once the top of the range is reached: about 2.5 kg (5 lb) more, as your plates allow; a level less
+   help; or 1 kg less counterweight. null when there is nowhere to go. */
+function nextVal(st,val){ const f=setupField(st); if(!f||val==null) return null;
+  if(f.key==='assist') return val>0? val-1 : null;
+  if(f.key==='counter') return val>0? Math.max(0, val-1) : null;
+  const u=wUnit(), inc=u==='lb'? 5*LB : 2.5;
+  // the calf raise holds a dumbbell, so it moves along your dumbbell rack; the rest add plates on a belt
+  try{ const n=Kit.next(val, inc, st.id==='weighted-calf-raise'? 'db' : 'added', u); return n&&n.kg>val+1e-9? n.kg : null; }catch(e){ return val+inc; } }
+function moveWhy(st,nv,top){ const f=setupField(st), u=st.k==='hold'?' s':'';
+  return f.key==='assist'? `Help ${nv} today: every set reached ${top}${u} at ${nv+1}.` : f.key==='counter'? `${fmtW(nv)} counterweight today: every set reached ${top}${u}.`
+    : `${fmtW(nv)} ${f.label==='Dumbbell'? 'dumbbell' : 'added'} today: every set reached ${top}${u}.`; }
+function missText(st){ const f=setupField(st); return f? 'No '+(f.key==='assist'?'help level':'weight')+': counts as practice' : ''; }
+function setupSummary(st,setup){ const f=setupField(st), v=setupVal(st,setup); if(!f||v==null) return '';
+  return f.unit==='kg'? f.label+' '+fmtW(v) : f.label+' '+v; }
 function lastSetupFor(id,i){
   const st=LADDERS[id]&&stepsOf(id)[i]; if(!st) return {};
   const history=state.history||[];
@@ -7561,33 +7859,45 @@ function lastSetupFor(id,i){
   }
   return {};
 }
-function setupProgressionText(st){
-  const fields=setupFields(st), has=key=>fields.some(f=>f.key===key), numeric=key=>fields.some(f=>f.key===key&&f.type==='number');
-  let change='Adjust one setup detail to make the movement a little more demanding.';
-  if(st.practice==='power') change=has('target')?'Improve measured reach or distance while keeping landing quality. A taller box alone does not show more jump power.':'Keep the movement explosive as you modestly increase its demand; stop when output or control falls.';
-  else if(numeric('lean')) change='Add a little shoulder lean while keeping the same hand and foot positions.';
-  else if(numeric('load')) change=has('reach')?'Reduce the counterweight a little while keeping the same reach.':'Add a small amount of load while keeping the same range.';
-  else if(numeric('supportHeight')) change='Move the assisting hand a little farther below the bar, using less help.';
-  else if(numeric('range')) change='Increase the controlled range or target distance a little, keeping the same starting position.';
-  else if(has('band')) change='Use slightly less band assistance with the same anchor and body position.';
-  else if(numeric('height')){
-    if(['feet-elevated-row','elevated-pike-pushup'].includes(st.id)) change='Raise the foot support a little while keeping the same body line.';
-    else if(st.id==='jumping-muscleup') change='Reduce leg help while keeping the bar and starting position reproducible.';
-    else change='Lower the hand support, starting surface or padded target a little, as appropriate to this exercise.';
-  }else if(has('support')) change='Reduce one source of hand or foot assistance while keeping the same range and position.';
-  return 'Repeat the target cleanly on two training days with the same setup, then make one small change. '+change+' Keep form and log the new setup; this also applies at the final step.';
-}
 function setupInputs(st,setup,attrs,disabled){
   return setupFields(st).map(f=>{
-    const value=setup&&setup[f.key]!=null?setup[f.key]:'';
-    return `<label style="display:block;min-width:0;font-size:12px;color:var(--muted)">${esc(f.label)}${f.unit?' ('+esc(f.unit)+')':''}
-      <input class="edtext" style="margin-top:4px;padding:8px 10px;font-size:13px" type="${f.type==='number'?'number':'text'}" ${f.type==='number'?`inputmode="decimal" min="${f.min==null?0:esc(f.min)}" step="${f.step==null?'any':esc(f.step)}"`:'maxlength="120"'} ${attrs} data-key="${esc(f.key)}" value="${esc(value)}"${disabled?' disabled':''}>
-      ${f.hint?`<span style="display:block;font-size:11px;line-height:1.4;margin-top:3px">${esc(f.hint)}</span>`:''}</label>`;
+    const value=fieldShow(f, setup&&setup[f.key]!=null? setupVal(st,setup) : null), unit=f.unit==='kg'? wUnit() : '';
+    return `<label style="display:block;min-width:0;font-size:12px;color:var(--muted)">${esc(f.label)}${unit?' ('+unit+')':f.key==='assist'?' (0 none, 5 most)':''}
+      <input class="edtext" style="margin-top:4px;padding:8px 10px;font-size:13px" type="text" inputmode="decimal" ${attrs} data-key="${esc(f.key)}" value="${esc(value)}"${disabled?' disabled':''}></label>`;
   }).join('');
 }
 function makeSet(){ return {v:null, rir:null, done:false}; }
-function entryFor(id,idx){ const i= idx==null? curIdx(id) : idx, st=stepsOf(id)[i];
-  return {ladderId:id,stepIdx:i,kind:st.k,target:rungTarget(id,i),setup:lastSetupFor(id,i),clean:true,sets:Array.from({length:st.sets},makeSet)}; }
+function entryFor(id,idx){ const i= idx==null? curIdx(id) : idx, st=stepsOf(id)[i], d=dose(id,i); return newEntry(id,i,st.sets,d.target,d); }
+/* Left and right on per-side exercises: each set keeps both (lr), and its value is the weaker side, so both must reach
+   the target. Marked here by exercise, not read from the cue: every step done on one arm or one leg, and the one-sided
+   stretches, drills and planks. Walking lunges and one-leg L-sits swap sides within or between sets, so they log one number. */
+const PER_SIDE=['archer-pullup','assisted-archer-pullup','assisted-oap','oap','oa-lockoff-top','oa-lockoff-90','oa-negative',
+  'archer-row','assisted-archer-row','one-arm-row','incline-one-arm-row','archer-pushup','one-arm-pushup','incline-one-arm-pushup','assisted-one-arm-pushup',
+  'split-squat','bulgarian-split-squat','shrimp-squat','assisted-shrimp-squat','pistol-squat','box-pistol','assisted-pistol','counterbalance-pistol',
+  'single-leg-glute-bridge','dead-bug','assisted-one-arm-hang','one-arm-hang','reverse-lunge','lateral-lunge','cossack-squat','skater-squat',
+  'single-leg-calf-raise','deficit-calf-raise','weighted-calf-raise','side-plank','star-side-plank','short-copenhagen','copenhagen-plank',
+  'vertical-flag','tuck-flag','straddle-flag','human-flag','support-flag','one-arm-elbow-lever','fingertip-oahs','oahs',
+  'calf-wall-stretch','ankle-rock-8','ankle-rock-10','ankle-rock-12','sl-stand','sl-stand-soft','sl-stand-eyes-closed','sl-reach',
+  'seated-leg-lift','half-kneel-hip-flexor','couch-stretch','couch-stretch-upright','hop-stick'];
+function perSide(st){ return !!st&&PER_SIDE.includes(st.id); }
+/* Balance skills train as a time-boxed block of attempts: 8 minutes, logging every hold, and the target met by as many
+   holds as the step has sets. Other holds train their total time (target × sets) in pieces as long as you can manage. */
+const BLOCK_IDS=['freestanding-handstand','straddle-handstand','weight-shift-hs','fingertip-oahs','oahs','frog-stand','crow-pose','crane-pose','elbow-lever','one-arm-elbow-lever'];
+const BLOCK_MIN=8;
+function isBlock(st){ return !!st&&BLOCK_IDS.includes(st.id); }
+function newEntry(id,i,n,target,d,role){ const st=stepsOf(id)[i], blk=isBlock(st);
+  const e={ladderId:id,stepIdx:i,kind:st.k,target,setup:Object.assign({},d&&d.setup||{}),clean:true,sets:Array.from({length:blk?1:n},makeSet)};
+  if(role) e.role=role; if(d&&d.why) e.why=d.why; if(d&&d.first) e.first=true;
+  if(blk) e.block={min:BLOCK_MIN, start:null};
+  else if(st.k==='hold'&&!isPrep(id)) e.total=target*n;
+  return e; }
+/* After a set: a block keeps a fresh row open until its time is up, and holds in pieces until their total is reached. */
+function grow(e){ const st=stepsOf(e.ladderId)[e.stepIdx]; if(e.sets.some(s=>!s.done)) return;
+  if(e.block){ if(Date.now()<blockEnd(e)) e.sets.push(Object.assign(makeSet(),{extra:true})); return; }
+  if(e.total&&e.sets.filter(s=>s.done).reduce((t,s)=>t+(s.v||0),0)<e.total) e.sets.push(Object.assign(makeSet(),{extra:true})); }
+function blockEnd(e){ return e.block&&e.block.start? e.block.start+e.block.min*60000 : Infinity; }
+/* The rows a block or pieces opened and you never used aren't sets left undone. */
+function trimExtra(entries){ return entries.map(e=>Object.assign({},e,{sets:e.sets.filter(s=>s.done||!s.extra)})); }
 let pick=null;
 function openBuilder(){ pick=new Set(defaultPicks()); renderBuilder(); }
 function builderRow(id){
@@ -7618,7 +7928,7 @@ function beginSession(ids, sets){
   const goals=activeGoals();
   const name= goals.length===1? goals[0].n : goals.length? 'Goal session' : 'Session';
   const P=todayPlan();
-  state.active={id:uid(), name, startedAt:Date.now(), entries:orderIds(ids).map(id=>{ const x=P.find(p=>p.id===id), n=sets&&sets[id];
+  state.active={id:uid(), name, startedAt:Date.now(), entries:orderIds(ids,P).map(id=>{ const x=P.find(p=>p.id===id), n=sets&&sets[id];
     return x? planEntry(n? Object.assign({}, x, {sets:n}) : x) : entryFor(id); }), restEndsAt:null, restDur:0};
   save(); closeModal(); state.route='train'; render(); window.scrollTo(0,0); toast('Session started');
   if(window.__hub) window.__hub.changed('cal');
@@ -7677,10 +7987,9 @@ function endSession(){
     if(window.__hub) window.__hub.changed('cal'); return; }
   tb.keep('end', a.id, a.name);
   const o=endOpt||{keep:true, repeat:true}; endOpt=null;
-  const entries=a.entries.filter(e=>e.sets.some(s=>s.done))
-    .map(e=>({ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)}));
+  const entries=a.entries.filter(e=>e.sets.some(s=>s.done)).map(keepEntry);
   if(o.keep && entries.length){ const r={id:a.id, name:a.name, date:Date.now(), durationSec:Math.floor((Date.now()-a.startedAt)/1000), entries, cleared:[], partial:true};
-    const open=OpenSets.left(a.entries, ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) r.open=open;
+    const open=OpenSets.left(trimExtra(a.entries), ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) r.open=open;
     state.history.push(r); }
   state.repeat= o.repeat? {name:a.name, ids:a.entries.map(e=>e.ladderId)} : null;
   state.active=null; stopRest(); save(); tb.seal(); closeModal();
@@ -7694,6 +8003,8 @@ function startRepeat(){
   beginSession(ids); if(state.active&&r.name) state.active.name=r.name; save(); render();
 }
 function addToSession(id,idx){
+  const i= idx==null? curIdx(id) : idx;
+  if(!gateOk(id,i)){ toast('First: '+esc(gateText(id,i))); return; }
   if(!state.active) state.active={id:uid(), name:'Session', startedAt:Date.now(), entries:[], restEndsAt:null, restDur:0};
   if(state.active.entries.some(e=>e.ladderId===id)){ toast('Already in this session'); closeModal(); return; }
   state.active.entries.push(entryFor(id,idx));
@@ -7701,29 +8012,39 @@ function addToSession(id,idx){
 }
 function toggleDone(ei,si){
   const e=state.active.entries[ei], s=e.sets[si]; if(!s) return;
-  const st=stepsOf(e.ladderId)[e.stepIdx];
+  const st=stepsOf(e.ladderId)[e.stepIdx], tgt=e.target==null?st.v:e.target;
+  if(holdOn(ei,si)){ holdGo(ei,si); return; }   // the tick stops the timer and logs its time
   if(!s.done){
-    const v=s.v==null? (e.target==null?st.v:e.target) : s.v;   // an empty box logs the grey target it shows
+    // an empty box logs the grey target it shows; on a per-side exercise each empty side does, and the weaker side counts
+    let v=s.v==null? tgt : s.v;
+    if(perSide(st)){ const lr=[0,1].map(k=>s.lr&&s.lr[k]!=null? s.lr[k] : s.v!=null? s.v : tgt); s.lr=lr; v=Math.min(lr[0],lr[1]); }
     if(!Number.isFinite(v)||v<0){toast('Enter the reps or seconds you actually completed');return;}
-    if(!setupValid(st,e.setup||{})){toast('Record the setup so this effort can be compared');return;}
     s.v=v; s.setup=Object.assign({},e.setup||{});s.clean=e.clean===true;
+    if(!setupValid(st,s.setup)) toast(setupField(st).key==='load'? 'Logged. Add the weight so sets like it count' : 'Logged. Add the help level so sets like it count');
+    if(e.block&&!e.block.start) e.block.start=Date.now();
   }
   s.done=!s.done;
+  if(s.done) grow(e);
   save(); render();
-  const L=LADDERS[e.ladderId];   // prep has its own short rest
-  if(s.done) startRest(L.rest?Math.min(L.rest,state.settings.rest):practiceOf(e.ladderId,e.stepIdx)==='balance'?60:Math.max(120,state.settings.rest));
+  const L=LADDERS[e.ladderId];   // prep has its own short rest, and balance attempts a shorter one
+  if(s.done) startRest(L.rest?Math.min(L.rest,state.settings.rest):e.block?30:practiceOf(e.ladderId,e.stepIdx)==='balance'?60:Math.max(120,state.settings.rest));
 }
+/* What a finished or ended session keeps of an exercise: the sets done, and the role it had (an easier day's sets
+   aren't a hard session: RECOVERY SPACING). */
+function keepEntry(e){ const k={ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)};
+  // a per-side set counts its weaker side, however the boxes were changed after the tick
+  k.sets.forEach(s=>{ if(s.lr&&s.lr.length===2&&s.lr.every(Number.isFinite)) s.v=Math.min(s.lr[0],s.lr[1]); });
+  if(e.role) k.role=e.role; if(e.lite) k.lite=true; return k; }
 function finishWorkout(){
   const a=state.active; if(!a) return;
-  const entries=a.entries.filter(e=>e.sets.some(s=>s.done))
-    .map(e=>({ladderId:e.ladderId,stepIdx:e.stepIdx,kind:e.kind,target:e.target,setup:e.setup,sets:e.sets.filter(s=>s.done)}));
+  const entries=a.entries.filter(e=>e.sets.some(s=>s.done)).map(keepEntry);
   if(!entries.length){ toast('Tick off at least one set first'); return; }
   tb.keep('finish', a.id, a.name);   // so finishing can be taken back
   // a ladder you had not placed yet is placed where you trained it
   entries.forEach(e=>{ if(!state.placed[e.ladderId]){ state.placed[e.ladderId]=true; state.rung[e.ladderId]=e.stepIdx; } });
   const earned=[];
   const rec={id:a.id,name:a.name,date:a.cont?a.cont.rec.date:Date.now(),durationSec:Math.floor((Date.now()-a.startedAt)/1000),entries,cleared:[]};
-  const open=OpenSets.left(a.entries, ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) rec.open=open;   // the sets you didn't tick off, kept apart
+  const open=OpenSets.left(trimExtra(a.entries), ladderOf, x=>({v:x.v, rir:x.rir})); if(open.length) rec.open=open;   // the sets you didn't tick off, kept apart
   insertRec(rec); state.repeat=null;
   LADDER_ORDER.filter(id=>state.placed[id]).forEach(id=>{
     const i=curIdx(id),to=nextRung(id,i),cap=capFor(id);
@@ -7740,6 +8061,11 @@ function offerAdvance(list,i,rec){
   if(!nxt||curIdx(id)===to){offerAdvance(list,i+1,rec);return;}
   window._advQ={list,i,rec};
   nav.reg('adv:'+rec.id+':'+i, ()=>offerAdvance(list,i,rec), true);
+  if(!gateMet(id,to)){ openModal(`<div class="sheet-grab"></div><div class="sheet-body"><div style="text-align:center;padding:6px 0 2px">
+      <div class="celebico">${I.up}</div><div class="eyebrow">Rung cleared</div>
+      <h2 class="disp" style="font-size:24px;margin:8px 0 6px;text-transform:uppercase">${esc(from.n)}</h2>
+      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 auto 16px;max-width:300px">Next is <b style="color:var(--ink)">${esc(nxt.n)}</b>, once you can do ${esc(gateText(id,to))}. Train that first.</p></div>
+      <button class="btn primary block" data-act="adv-no">${I.check} Got it</button></div>`); return; }
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-body">
       <div style="text-align:center;padding:6px 0 2px">
@@ -7797,6 +8123,40 @@ function tickRest(){
   el.classList.add('on');
   const v=$('#restv'); if(v) v.textContent=fmtDur(left);
   restT=setTimeout(tickRest,250);
+}
+
+/* ==================== HOLD TIMER ====================
+   Tap to start, tap to stop: the seconds go into the set and it is logged. On a per-side hold the first stop is the
+   left side and the second the right. A beep and a buzz mark the target, per your sound and vibration settings.
+   The timer belongs to its exercise and set, not their places: removing or moving another exercise leaves it on its own
+   set, and removing or replacing its own set stops it. */
+let holdT=null, holdTick=null, audioCtx=null;
+function holdOn(ei,si){ const a=state.active, e=a&&a.entries[ei]; return !!holdT&&!!e&&holdT.e===e&&holdT.s===e.sets[si]; }
+function primeAudio(){ try{ if(!audioCtx){ const AC=window.AudioContext||window.webkitAudioContext; if(AC) audioCtx=new AC(); } if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} }
+function beep(){ if(!state.settings.sound) return;
+  try{ primeAudio(); if(!audioCtx) return; const now=audioCtx.currentTime;
+    [[880,0],[1318.5,0.16]].forEach(([f,t])=>{ const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,now+t); g.gain.exponentialRampToValueAtTime(0.3,now+t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.28); o.connect(g); g.connect(audioCtx.destination); o.start(now+t); o.stop(now+t+0.3); }); }catch(e){} }
+function buzz(){ if(state.settings.vibrate&&navigator.vibrate) try{ navigator.vibrate([90,60,90]); }catch(e){} }
+function holdSecs(){ return holdT? Math.max(0,Math.floor((Date.now()-holdT.start)/1000)) : 0; }
+function stopHold(){ holdT=null; clearInterval(holdTick); holdTick=null; }
+function holdGo(ei,si){
+  const a=state.active, e=a&&a.entries[ei], s=e&&e.sets[si]; if(!s||s.done) return;
+  const st=stepsOf(e.ladderId)[e.stepIdx];
+  if(holdOn(ei,si)){   // stop: the seconds go in
+    const secs=holdSecs(), side=holdT.side; stopHold();
+    if(side==='l'){ s.lr=[secs, s.lr&&s.lr[1]!=null? s.lr[1] : null]; save(); render(); toast('Left '+secs+' s. Now the right'); return; }
+    if(side==='r'){ s.lr=[s.lr&&s.lr[0]!=null? s.lr[0] : secs, secs]; s.v=null; } else s.v=secs;
+    toggleDone(ei,si); return; }
+  stopHold(); primeAudio(); stopRest(); save();
+  holdT={e, s, side: perSide(st)? (s.lr&&s.lr[0]!=null? 'r' : 'l') : null, start:Date.now(), target:e.target==null?st.v:e.target, rang:false};
+  render(); holdTick=setInterval(tickHold,200);
+}
+function tickHold(){
+  const a=state.active; if(!holdT||!a||!a.entries.includes(holdT.e)||!holdT.e.sets.includes(holdT.s)||holdT.s.done){ stopHold(); return; }
+  const secs=holdSecs(), el=__root.querySelector('[data-hold-live]'); if(el) el.value=secs;
+  if(!holdT.rang&&secs>=holdT.target){ holdT.rang=true; beep(); buzz(); }
 }
 
 /* Stopping a session you picked back up: keep it with what you added, or put it back exactly as it was. */
@@ -7865,14 +8225,17 @@ function viewToday(){
   let hero;
   // a session in progress is on the Train tab
   if(goals.length){
-    const P=todayPlan(), xs=orderIds(P.map(x=>x.id)).map(id=>P.find(x=>x.id===id));
+    const P=todayPlan(), xs=orderIds(P.map(x=>x.id),P).map(id=>P.find(x=>x.id===id));
     // goals that wait their turn today: name the ones the next session brings
     const {mains}=planIds(), waiting=mains.filter(id=>!P.some(x=>x.id===id)), next=todayPlan(1).filter(x=>waiting.includes(x.id)).map(x=>x.id);
     const turnNote= waiting.length? `<p class="sub" style="margin:10px 0 0;font-size:12.5px">Your ${goals.length} goals take turns so each session stays short.${next.length? ' Next session: '+next.flatMap(id=>goalsOn(id).map(g=>esc(g.n))).join(' &middot; ')+'.' : ''} ${evChip('session','Why')}</p>` : '';
+    // a goal resting, held for pain or waiting on a gate says why, in a line each
+    const ns=(P.notes||[]).filter(n=>mains.includes(n.id)), spaced=ns.some(n=>n.why==='rest'||n.why==='one');
+    const restNote= ns.length? `<div style="margin:10px 0 0">${ns.map(n=>`<p class="sub" style="margin:0 0 4px;font-size:12.5px">${noteText(n)}</p>`).join('')}${spaced?evChip(ns.some(n=>n.f==='nordic')?'frequency':'tendon','Why rest'):''}</div>` : '';
     hero=`<div class="hero"><h2>Today&rsquo;s session</h2>
       <div class="nxlist">${xs.map(x=>{ const st=stepsOf(x.id)[x.i]; return `<button class="nx" data-act="how" data-id="${esc(x.id)}" data-i="${x.i}"><span>${esc(st.n)}</span><b class="mono">${planText(x)}</b>
         <i>${esc(LADDERS[x.id].n)} &middot; ${roleText(x)}</i></button>`; }).join('')}</div>
-      ${turnNote}
+      ${restNote}${turnNote}
       <p class="sub" style="margin:10px 0 0;font-size:12.5px">Train the movement and setup you can control. Related easier work supports strength days; balance and power stay fresh. Targets grow toward your goals, and supporting mobility and technique stay in a small maintenance rotation.</p>
       <div class="grid2" style="margin-top:14px"><button class="btn primary block" data-act="start-plan">${I.play} Start</button>
         <button class="btn ghost block" data-act="builder">${I.sliders} Choose</button></div></div>`;
@@ -7892,7 +8255,11 @@ function viewToday(){
   const sets7=setsIn(7), sessions7=new Set(state.history.filter(w=>w.date>=daysAgo(6)).map(w=>dayStart(w.date))).size;
   const achieved=state.goals.filter(g=>g.achieved).length;
   const recentAdv=state.advances.slice().reverse().slice(0,3);
-  return `<div class="stack">${again}${hero}${a? '' : unlockCard()}
+  const H=state.hold&&state.hold.until>Date.now()? state.hold : null, pl=!a&&state.placing&&state.placing.survey.length? state.placing : null;
+  const held= H? `<div class="banner warn" style="margin:0">${I.info}<span style="flex:1"><b>${esc(cap(listText(H.joints)))} pain:</b> ${listText([H.joints.some(j=>j!=='wrist')?'straight-arm skills':'', H.joints.includes('wrist')?'wrist-loaded work':''].filter(Boolean))} held until ${esc(fmtDate(H.until))}. Assisted versions where there are any.</span>
+      <button class="tinybtn" data-act="hold-off" style="flex:none">Lift it</button></div>` : '';
+  const placing= pl? `<button class="banner brass" data-act="place-resume" style="width:100%;text-align:left;margin:0">${I.target}<span><b>Where are you now?</b> ${pl.survey.length} of ${pl.total} left to answer.</span><span style="margin-left:auto">${I.arrow}</span></button>` : '';
+  return `<div class="stack">${again}${placing}${held}${hero}${a? '' : unlockCard()}
     ${due.length?`<button class="banner brass" data-act="test-go" data-ids="${due.join(',')}" style="width:100%;text-align:left;margin:0">${I.test}
       <span><b>${due.some(id=>lastTestFor(id))?'Time for a progress check.':'Test where you are.'}</b> One all-out set on ${due.map(id=>esc(curStep(id).n)).join(' and ')} keeps your plan honest.</span><span style="margin-left:auto">${I.arrow}</span></button>`:''}
     ${goals.length?`<div><div class="section-label">${I.target}<span>Your goals</span><span class="ln"></span><button class="tinybtn" data-act="goal-add" style="padding:5px 9px">${I.plus} Add</button></div>${goals.map(goalCard).join('')}</div>`:''}
@@ -7904,7 +8271,7 @@ function viewToday(){
     ${recentAdv.length?`<div class="card pad">
       <div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Recently earned</span></div>
       ${recentAdv.map(v=>`<div class="lrow"><div class="li" style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)">${I.up}</div>
-        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?LADDERS[v.id].n:''} &middot; ${relDay(v.date)}</div></div></div>`).join('')}
+        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?esc(LADDERS[v.id].n):''} &middot; ${relDay(v.date)}</div></div></div>`).join('')}
     </div>`:''}
   </div>`;
 }
@@ -7928,16 +8295,16 @@ function viewGoals(){
 }
 function goalFull(g, open){
   const L=LADDERS[g.l], cur=curIdx(g.l), placed=state.placed[g.l], pct=Math.round(goalProgress(g)*100), lt=lastTestFor(g.l);
-  const route=pathFor(g.l,g),path=route.slice(0,route.indexOf(g.r)+1).map((i,k)=>{const st=stepsOf(g.l)[i],proven=currentProof(g.l,i).ready;
+  const route=pathFor(g.l,g),path=route.slice(0,route.indexOf(g.r)+1).map((i,k)=>{const st=stepsOf(g.l)[i],proven=passed(g.l,i);
     const cls=!placed?'locked':i===cur?'current':proven?'cleared':'locked',isGoal=i===g.r,best=verifiedBestFor(g.l,i);
     return `<button class="rung ${cls} ${isGoal?'goal':''}" data-act="how" data-id="${g.l}" data-i="${i}">
       <div class="mark"><div class="dot">${proven?I.check:isGoal?I.target:(placed&&i===cur?'':k+1)}</div></div>
       <div class="body"><div class="n">${esc(st.n)}</div>
-        <div class="g">${isGoal?'Goal: '+stdText(g)+' in one set':goalText(st)+(st.k==='hold'?' hold':' reps')}${best?'  &middot;  best '+best+unitS(st):''}</div>
+        <div class="g">${isGoal?'Goal: '+stdText(g)+' in one set':rungText(g.l,i)+(st.k==='hold'?' hold':' reps')}${best?'  &middot;  best '+best+unitS(st):''}</div>
         ${placed&&i===cur?`<div class="cue">${esc(st.cue)}</div>`:''}</div>
       <div class="side">${placed&&i===cur?'<span class="chip brass">Now</span>':''}</div></button>`; }).join('');
   const sup=(g.sup||[]).filter(id=>LADDERS[id]).map(id=>`<button class="lrow" data-act="how" data-id="${id}" data-i="${curIdx(id)}" style="width:100%;text-align:left">
-    <div class="li">${I[LADDERS[id].ic]||I.ladder}</div><div class="lb"><div class="a">${esc(curStep(id).n)}</div><div class="b">${LADDERS[id].n} &middot; ${goalText(curStep(id))}</div></div></button>`).join('');
+    <div class="li">${I[LADDERS[id].ic]||I.ladder}</div><div class="lb"><div class="a">${esc(curStep(id).n)}</div><div class="b">${esc(LADDERS[id].n)} &middot; ${goalText(curStep(id))}</div></div></button>`).join('');
   const N=needsSrc(g), ns=goalNeeds(g), ok=ns.filter(needMet).length;
   const takes= N&&(ns.length||N.takes)? `<div class="section-label" style="margin:16px 3px 2px">What else it takes <span class="ln"></span>${ns.length?`<span class="chip ${ok===ns.length?'good':''}">${ok} of ${ns.length} in place</span>`:''}</div>
     <p class="muted" style="font-size:12.5px;line-height:1.55;margin:6px 2px 6px">${esc(N.takes)}</p>
@@ -7947,7 +8314,7 @@ function goalFull(g, open){
   return `<div class="card pad goal-full ${open?'open':''}" data-id="${esc(g.id)}" style="margin-bottom:14px">
     <div class="spread" style="align-items:flex-start">
       <button class="goal-head" data-act="goal-toggle" data-id="${esc(g.id)}" aria-expanded="${open?'true':'false'}" aria-controls="gd-${esc(g.id)}">
-        <div class="eyebrow">${L.n}</div><div class="gt" style="margin-top:3px">${esc(g.n)}<span class="gchev">${I.chev}</span></div>
+        <div class="eyebrow">${esc(L.n)}</div><div class="gt" style="margin-top:3px">${esc(g.n)}<span class="gchev">${I.chev}</span></div>
         <div class="gbar"><i style="width:${Math.max(3,pct)}%"></i></div>
         <div class="gs">${pct}% of the way &middot; ${lt?'last tested '+relDay(lt.date):'not tested yet'}</div>
         <div class="gs">${goalNow(g)}${needsText(g)?' &middot; what else it takes: '+needsText(g):''}</div></button>
@@ -7969,7 +8336,7 @@ function needRow(n){
   const claim=(state.needClaims||{})[needKey(n)],where=ok?(b>=n.v?'recent performance verified':'confirmed by you; recheck after a layoff'):b?'verified best '+b+unitS(st):placed?'now on '+esc(stepsOf(n.l)[i].n.toLowerCase()):'not placed yet';
   return `<button class="lrow" data-act="how" data-id="${n.l}" data-i="${n.r}" style="width:100%;text-align:left">
     <div class="li" ${ok?'style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)"':''}>${ok?I.check:(I[L.ic]||I.ladder)}</div>
-    <div class="lb"><div class="a">${esc(st.n)}</div><div class="b">${esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'} &middot; ${where}</div></div></button>`;
+    <div class="lb"><div class="a">${esc(st.n)}</div><div class="b">${n.gate?'Before '+esc(n.gate.toLowerCase()):esc(QN[n.q]||'')} &middot; ${n.v}${unitS(st)}${st.k==='hold'?' hold':' reps'} &middot; ${where}</div></div></button>`;
 }
 
 /* ==================== VIEWS: LIBRARY ==================== */
@@ -7987,7 +8354,7 @@ function viewLibrary(){
   const groups= tab==='Prep'? Object.keys(WHEN_N).map(w=>({h:WHEN_N[w], ids:ids.filter(id=>LADDERS[id].when===w)})).filter(x=>x.ids.length) : [{h:'', ids}];
   return `<div class="seg-tabs">${segs}</div>${intro}
     ${groups.map(G=>(G.h?`<div class="grouphdr" style="margin-top:4px">${G.h}</div>`:'')+G.ids.map(id=>{ const L=LADDERS[id], i=curIdx(id), st=L.steps[i], best=bestFor(id,i), placed=state.placed[id];
-      const route=pathFor(id),track=route.map(k=>`<i class="${placed&&k===i?'cur':currentProof(id,k).ready?'on':''}"></i>`).join('');
+      const route=pathFor(id),track=route.map(k=>`<i class="${placed&&k===i?'cur':passed(id,k)?'on':''}"></i>`).join('');
       return `<button class="ladder-card" data-act="ladder" data-id="${id}">
         <div class="lc-head"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
           <div class="lc-t"><div class="a">${esc(L.n)}${L.custom?' &middot; yours':''}${goalsOn(id).length?' &middot; goal':''}</div><div class="b">${placed?esc(st.n):L.steps.length+' rungs'}</div></div>
@@ -8000,12 +8367,12 @@ function viewLibrary(){
 }
 function openLadder(id){
   const L=LADDERS[id], cur=curIdx(id), placed=state.placed[id], gs=goalsOn(id), ready=new Set(readyMoves().filter(u=>u.l===id).map(u=>u.r));
-  const route=pathFor(id),routes=LADDER_PATHS[id]||[],rungs=route.map((i,k)=>{const st=L.steps[i],proven=currentProof(id,i).ready;
+  const route=pathFor(id),routes=LADDER_PATHS[id]||[],rungs=route.map((i,k)=>{const st=L.steps[i],proven=passed(id,i);
     const cls=!placed?'locked':i===cur?'current':proven?'cleared':'locked',best=verifiedBestFor(id,i),isGoal=gs.some(g=>g.r===i);
     return `<button class="rung ${cls} ${isGoal?'goal':''}" data-act="how" data-id="${id}" data-i="${i}">
       <div class="mark"><div class="dot">${proven?I.check:isGoal?I.target:(placed&&i===cur?'':k+1)}</div></div>
       <div class="body"><div class="n">${esc(st.n)}</div>
-        <div class="g">${goalText(st)}${st.k==='hold'?' hold':' reps'}${best?`  &middot;  best ${best}${unitS(st)}`:''}${ready.has(i)?'  &middot;  <b style="color:var(--brass-ink)">ready to try</b>':''}</div></div>
+        <div class="g">${rungText(id,i)}${st.k==='hold'?' hold':' reps'}${best?`  &middot;  best ${best}${unitS(st)}`:''}${ready.has(i)?'  &middot;  <b style="color:var(--brass-ink)">ready to try</b>':''}</div></div>
       <div class="side">${placed&&i===cur?'<span class="chip brass">Here</span>':`<span class="faint">${I.info}</span>`}</div></button>`; }).join('');
   nav.reg('ladder:'+id, ()=>openLadder(id));
   openModal(`<div class="sheet-grab"></div>
@@ -8083,7 +8450,11 @@ function saveCustomLadder(){
   const steps=cl.steps.map(x=>({n:(x.n||'').trim(), k:x.k==='hold'?'hold':'reps', sets:Math.min(10,Math.max(1,parseInt(x.sets)||3)), v:Math.min(3600,Math.max(1,parseInt(x.v)||0)), cue:(x.cue||'').trim()}));
   const bad=steps.findIndex(x=>!x.n||!x.v); if(bad>=0){ toast('Rung '+(bad+1)+' needs a name and a target'); return; }
   let id=cl.id;
-  if(id){ const c=state.custom.find(x=>x.id===id); Object.assign(c,{n, like:cl.like, steps}); }
+  // a rung renamed, or turned from reps into a hold, is a different exercise: its old logs stop counting as proof
+  if(id){ const c=state.custom.find(x=>x.id===id);
+    steps.forEach((x,i)=>{ const o=c.steps[i]; if(!o) return; const same=String(o.n||'').trim().toLowerCase()===x.n.toLowerCase()&&(o.k==='hold'?'hold':'reps')===x.k;
+      if(same){ if(Number.isFinite(o.since)) x.since=o.since; } else x.since=Date.now(); });
+    Object.assign(c,{n, like:cl.like, steps}); }
   else { id='c-'+uid(); state.custom.push({id, n, like:cl.like, steps}); state.rung[id]=0; }
   registerCustom(state.custom);
   state.rung[id]=Math.min(state.rung[id]||0, steps.length-1);
@@ -8124,6 +8495,7 @@ function viewTrain(){
       <button class="btn primary sm" data-act="finish">${I.flag} Finish</button>
     </div>
     ${Parked.panel(state, setsDone, esc, `<button class="btn ghost block" data-act="park-today" style="margin-top:12px">${I.plus} Start another</button>`)}
+    ${done? '' : `<p class="muted" data-warm style="font-size:12.5px;line-height:1.5;margin:0 3px 12px">Warm up: a few easy minutes, then arm circles, leg swings and ankle rocks. Long stretches come last.</p>`}
     ${a.entries.map((e,ei)=>exCard(e,ei)).join('')}
     <button class="btn ghost block" data-act="pick-ex" style="margin-top:4px">${I.plus} Add exercise</button>
     <button class="btn ghost block" data-act="end-open" style="margin-top:8px">${I.flag} End without finishing</button>`;
@@ -8131,40 +8503,45 @@ function viewTrain(){
 function exCard(e,ei){
   const st=stepsOf(e.ladderId)[e.stepIdx], L=LADDERS[e.ladderId], cur=curIdx(e.ladderId);
   const path=pathFor(e.ladderId), rank=path.indexOf(e.stepIdx), currentRank=path.indexOf(cur);
-  const unitTxt=e.kind==='hold'?'Secs':'Reps';
-  const target=e.target==null?st.v:e.target, fields=setupFields(st), practice=st.practice||L.practice, showRir=e.kind!=='hold'&&practice!=='balance'&&practice!=='power';
+  const side=perSide(st), hold=e.kind==='hold', unitTxt=(side?'L / R ':'')+(hold?'Secs':'Reps');
+  const target=e.target==null?st.v:e.target, f=setupField(st), practice=st.practice||L.practice, showRir=!hold&&practice!=='balance'&&practice!=='power';
   const nextIdx=e.sets.findIndex(s=>!s.done);
   const cleared=clearsRung(e), gs=goalsOn(e.ladderId);
+  const box=(s,si,k)=>{ const field=k==null? 'v' : k? 'r' : 'l', run=holdOn(ei,si)&&(k==null? !holdT.side : holdT.side===field);
+    const val=k==null? s.v : s.lr&&s.lr[k]!=null? s.lr[k] : s.done? s.v : null;
+    return `<input class="sinput" inputmode="numeric" data-field="${field}" data-ex="${ei}" data-set="${si}" value="${run? holdSecs() : val!=null?val:''}" placeholder="${target}"${run?' data-hold-live="1" readonly':''} aria-label="Set ${si+1}${k==null?'':k?' right':' left'} ${hold?'seconds':'reps'}">`; };
   const rows=e.sets.map((s,si)=>{
-    const isNext=!s.done&&si===nextIdx;
+    const isNext=!s.done&&si===nextIdx, run=holdOn(ei,si);
+    const third= showRir? `<input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve, optional">`
+      : hold&&!s.done? `<button class="donebtn holdbtn${run?' on':''}" data-act="hold-go" data-ex="${ei}" data-set="${si}" aria-label="${run?'Stop the timer and log it':'Time set '+(si+1)+(side? s.lr&&s.lr[0]!=null? ', right side' : ', left side' : '')}">${run?I.stop:I.timer}</button>` : '<span aria-hidden="true"></span>';
+    const note=s.done? [s.clean===true?'Clean form confirmed':s.clean===false?'Practice attempt; form standard not met':'Form was not recorded',
+      side&&s.lr? 'left '+s.lr[0]+unitS(st)+', right '+s.lr[1]+unitS(st) : '', setupSummary(st,s.setup)? esc(setupSummary(st,s.setup)) : f? 'counts as practice: no '+(f.key==='assist'?'help level':'weight') : ''].filter(Boolean).join(' · ') : '';
     return `<div class="setrow ${s.done?'done':''} ${isNext?'next':''}">
       <div class="sidx">${si+1}</div>
-      <input class="sinput" inputmode="numeric" data-field="v" data-ex="${ei}" data-set="${si}" value="${s.v!=null?s.v:''}" placeholder="${target}" aria-label="Set ${si+1} ${e.kind==='hold'?'seconds':'reps'}">
-      ${showRir?`<input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve, optional">`:'<span aria-hidden="true"></span>'}
+      ${side? `<div class="lr">${box(s,si,0)}${box(s,si,1)}</div>` : box(s,si,null)}
+      ${third}
       <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="${s.done?'Mark set incomplete':'Log set'}">${I.check}</button>
       <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
-    </div>${s.done?`<div class="muted" style="font-size:11px;line-height:1.4;padding:0 6px 6px 34px">${s.clean===true?'Clean form confirmed':s.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}${setupSummary(st,s.setup)?' · '+esc(setupSummary(st,s.setup)):fields.length?' · Setup was not recorded':''}</div>`:''}`; }).join('');
+    </div>${note?`<div class="muted" style="font-size:11px;line-height:1.4;padding:0 6px 6px 34px">${note}</div>`:''}`; }).join('');
   return `<div class="card excard">
     <div class="exhead">
       <div class="en"><h3 data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}" style="cursor:pointer">${esc(st.n)}<span class="hinfo">${I.info}</span></h3>
         <div class="row" style="gap:5px;flex-wrap:wrap">
-          <span class="chip">${L.n}</span>
-          <span class="chip brass mono">${goalText(Object.assign({},st,{v:target,sets:e.sets.length}))}</span>
+          <span class="chip">${esc(L.n)}</span>
+          <span class="chip brass mono">${e.block? e.block.min+' min' : goalText(Object.assign({},st,{v:target,sets:e.sets.length}))}</span>
           ${gs.length?`<span class="chip">${I.target} ${esc(gs[0].n)}</span>`:''}
-          ${L.prep?`<span class="chip steel">${esc(QN[L.q]||'Prep')} &middot; ${esc(WHEN_S[L.when]||'prep')}</span>`:''}
-          ${e.role==='volume'?'<span class="chip">Lighter strength day</span>':rank<0?'<span class="chip">Alternative movement</span>':!state.placed[e.ladderId]?'<span class="chip">New to you: change it in the menu</span>':rank<currentRank?'<span class="chip">Earlier on this path</span>':rank>currentRank?'<span class="chip">Practising a later step</span>':''}
+          ${L.prep?`<span class="chip steel">${esc(QN[L.q]||'Prep')} &middot; ${esc(WHEN_S[whenOf(e.ladderId,e.stepIdx)]||'prep')}</span>`:''}
+          ${e.role==='volume'?'<span class="chip">Lighter strength day</span>':e.role==='easy'?'<span class="chip">Easier today</span>':rank<0?'<span class="chip">Alternative movement</span>':!state.placed[e.ladderId]?'<span class="chip">New to you: change it in the menu</span>':rank<currentRank?'<span class="chip">Earlier on this path</span>':rank>currentRank?'<span class="chip">Practising a later step</span>':''}
           ${cleared?`<span class="chip good">${I.check} Target met today</span>`:''}
         </div>
+        ${doseLine(e,ei,st,target)}
       </div>
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
     </div>
-    ${fields.length?`<div style="padding:0 14px 12px"><div class="grouphdr" style="margin:2px 0 7px">Setup for upcoming sets</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">${setupInputs(st,e.setup,`data-field="setup" data-ex="${ei}"`,false)}</div>
-      <p class="muted" data-setup-status="${ei}" style="font-size:11.5px;line-height:1.45;margin:7px 0 0">${setupValid(st,e.setup)?'Setup is saved with each set. Change one detail at a time as you progress.':'Fill in every setup detail before logging a set. Earlier sets keep their own setup.'}</p>
-      <p class="muted" style="font-size:11.5px;line-height:1.45;margin:7px 0 0">${esc(setupProgressionText(st))}</p></div>`:''}
+    ${f?doseInput(e,ei,st,f):''}
     <label style="display:flex;gap:8px;align-items:flex-start;padding:0 14px 12px;font-size:12px;line-height:1.45;color:var(--muted)"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''} style="margin-top:3px"><span>Clean form on upcoming sets<br><span style="font-size:11px">Controlled movement, prescribed range or position, no pain. Clear this if form breaks; practice attempts still count in your log.</span></span></label>
     <div class="setgrid">
-      <div class="setrow-head"><span>Set</span><span>${unitTxt}</span><span>${showRir?'RIR':''}</span><span></span><span></span></div>
+      <div class="setrow-head"><span>Set</span><span>${unitTxt}</span><span>${showRir?'RIR':hold?'Timer':''}</span><span></span><span></span></div>
       ${rows}
       ${showRir?`<p class="muted" style="font-size:11px;line-height:1.4;margin:5px 4px 0">RIR is optional: how many more clean reps you could do. Finish strength sets with a little in reserve.</p>`:''}
     </div>
@@ -8175,6 +8552,27 @@ function exCard(e,ei){
       ${e.sets.length>1?`<button class="tinybtn danger" data-act="del-set" data-ex="${ei}">${I.trash} Remove last</button>`:''}
     </div>
   </div>`;
+}
+/* One line under the chips: the rep range, a hold's total so far, or a balance block's best and time left. */
+function doseLine(e,ei,st,target){
+  const done=e.sets.filter(s=>s.done), u=unitS(st), line=t=>`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:6px 0 0">${t}</p>`;
+  if(e.block){ const hits=done.filter(s=>s.v>=target).length, best=done.reduce((m,s)=>Math.max(m,s.v||0),0);
+    return line(`Attempts for ${e.block.min} min. ${done.length? `Best ${best} s &middot; ${hits} of ${st.sets} at ${target} s` : `Aim for ${st.sets} holds of ${target} s`} &middot; <span data-block-left="${ei}">${blockLeft(e)}</span>`); }
+  if(e.total) return line(`${done.reduce((t,s)=>t+(s.v||0),0)} of ${e.total} s total. As many holds as it takes.`);
+  if(e.lite) return line('A light day: stop well short of your limit.');
+  if(ranged(e.ladderId,e.stepIdx)){ const {lo,hi}=repRange(e.ladderId,e.stepIdx); if(lo<hi) return line(e.first&&!done.length? `First time: ${target} if you can, or as many as you can with 1 or 2 left.`
+    : `Range ${lo}&ndash;${hi}. Next time: what you could do with 1 left.`); }
+  return '';
+}
+function blockLeft(e){ const end=blockEnd(e); if(end===Infinity) return 'starts with your first attempt'; const s=Math.round((end-Date.now())/1000);
+  return s>0? fmtDur(s)+' left' : 'time is up'; }
+/* The one number a weighted or assisted step asks for, filled in from last time, and why it moved. */
+function doseInput(e,ei,st,f){
+  const v=setupVal(st,e.setup), why=e.why? esc(e.why) : f.key==='assist'? '0 none, 5 most. One level less once every set reaches the top.' : f.key==='counter'? 'Less weight once every set reaches the top.' : 'A little more once every set reaches the top.';
+  const ctl= f.key==='assist'? `<div class="pillpick" role="group" aria-label="Help, 0 none to 5 most" style="margin:0">${[0,1,2,3,4,5].map(n=>`<button class="${v===n?'on':''}" data-act="assist-set" data-ex="${ei}" data-v="${n}" aria-pressed="${v===n?'true':'false'}">${n}</button>`).join('')}</div>`
+    : `<input class="sinput" style="max-width:110px" inputmode="decimal" data-field="setup" data-key="${f.key}" data-ex="${ei}" value="${esc(fieldShow(f,v))}" placeholder="${f.key==='load'?'0':''}" aria-label="${esc(f.label)} in ${wUnit()}">`;
+  return `<div style="padding:0 14px 12px"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:12.5px">${esc(f.label)}${f.unit?' ('+wUnit()+')':''}</b>${ctl}</div>
+    <p class="muted" style="font-size:11.5px;line-height:1.45;margin:6px 0 0">${why}</p></div>`;
 }
 function openPicker(){
   nav.reg('picker', openPicker);
@@ -8206,8 +8604,8 @@ function openExMenu(ei){
     <div class="sheet-head"><h3>${esc(st.n)}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body tight">
       <button class="actitem" data-act="how" data-id="${esc(e.ladderId)}" data-i="${e.stepIdx}">${I.info}<span>How to do it</span></button>
-      ${up!=null?`<button class="actitem" data-act="ex-stepup" data-ex="${ei}">${I.up}<span>Move up a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[up].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
-      ${back!=null?`<button class="actitem" data-act="ex-stepback" data-ex="${ei}">${I.down}<span>Step back a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[back].n)} becomes your rung on ${LADDERS[e.ladderId].n}, here and in every plan</div></span></button>`:''}
+      ${up!=null?`<button class="actitem" data-act="ex-stepup" data-ex="${ei}">${I.up}<span>Move up a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[up].n)} becomes your rung on ${esc(LADDERS[e.ladderId].n)}, here and in every plan</div></span></button>`:''}
+      ${back!=null?`<button class="actitem" data-act="ex-stepback" data-ex="${ei}">${I.down}<span>Step back a rung, from now on<div class="muted" style="font-size:11.5px;font-weight:500">${esc(stepsOf(e.ladderId)[back].n)} becomes your rung on ${esc(LADDERS[e.ladderId].n)}, here and in every plan</div></span></button>`:''}
       ${easier?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="-1">${I.down}<span>Easier, just today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(easier.n)}; your rung stays where it is</div></span></button>`:''}
       ${harder?`<button class="actitem" data-act="ex-shift" data-ex="${ei}" data-d="1">${I.up}<span>Try the next rung today<div class="muted" style="font-size:11.5px;font-weight:500">${esc(harder.n)}; check a controlled version while fresh</div></span></button>`:''}
       <button class="actitem" data-act="ladder" data-id="${esc(e.ladderId)}">${I.ladder}<span>See the whole ladder</span></button>
@@ -8245,12 +8643,12 @@ function progOverview(){
       <div class="spread mono" style="margin-top:8px;font-size:10.5px;color:var(--faint)"><span>7 days ago</span><span>Today</span></div>
     </div>
     ${tests.length?`<div class="card pad" style="margin-top:12px"><div class="section-label" style="margin:0 0 4px">${I.test}<span>Tests</span></div>
-      ${tests.map(t=>{ const st=stepsOf(t.ladderId)[t.stepIdx]; return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div><div class="b">${LADDERS[t.ladderId].n} &middot; ${relDay(t.date)}</div></div><div class="lv">${t.v}${st?unitS(st):''}</div></div>`; }).join('')}</div>`:''}
+      ${tests.map(t=>{ const st=stepsOf(t.ladderId)[t.stepIdx]; return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div><div class="b">${LADDERS[t.ladderId]?esc(LADDERS[t.ladderId].n):''} &middot; ${relDay(t.date)}</div></div><div class="lv">${t.v}${st?unitS(st):''}</div></div>`; }).join('')}</div>`:''}
     ${state.advances.length?`<div class="card pad" style="margin-top:12px">
       <div class="section-label" style="margin:0 0 4px">${I.trophy}<span>Rungs earned</span></div>
       ${state.advances.slice().reverse().slice(0,10).map(v=>`<div class="lrow">
         <div class="li" style="background:var(--good-soft);border-color:transparent;color:var(--good-ink)">${I.up}</div>
-        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?LADDERS[v.id].n:''}</div></div>
+        <div class="lb"><div class="a">${esc(v.name)}</div><div class="b">${LADDERS[v.id]?esc(LADDERS[v.id].n):''}</div></div>
         <div class="lv">${relDay(v.date)}</div></div>`).join('')}
     </div>`:''}`;
 }
@@ -8258,13 +8656,13 @@ function progRungs(){
   const ids=LADDER_ORDER.filter(id=>state.placed[id]), rest=LADDER_ORDER.length-ids.length;
   return (ids.length? ids : LADDER_ORDER).map(id=>{
     const L=LADDERS[id], i=curIdx(id), st=L.steps[i], best=bestFor(id,i), placed=state.placed[id], path=pathFor(id);
-    const proven=new Set(path.filter(k=>currentProof(id,k).ready));
+    const proven=new Set(path.filter(k=>passed(id,k)));
     return `<button class="ladder-card" data-act="ladder" data-id="${id}">
       <div class="lc-head"><div class="lc-ico">${I[L.ic]||I.ladder}</div>
-        <div class="lc-t"><div class="a">${L.n}${L.skill?' &middot; skill':''}</div><div class="b">${placed?esc(st.n):'Not placed yet'}</div></div>
+        <div class="lc-t"><div class="a">${esc(L.n)}${L.skill?' &middot; skill':''}</div><div class="b">${placed?esc(st.n):'Not placed yet'}</div></div>
         <span style="color:var(--faint)">${I.arrow}</span></div>
       <div class="track">${path.map(k=>`<i class="${placed&&k===i?'cur':proven.has(k)?'on':''}"></i>`).join('')}</div>
-      <div class="lc-foot"><span>${placed?'Step '+(path.indexOf(i)+1)+' of '+path.length+' &middot; '+proven.size+' repeatable':'&ndash;'}</span><span>${best?`logged best ${best}${unitS(st)}`:'no logs yet'}</span></div>
+      <div class="lc-foot"><span>${placed?'Step '+(path.indexOf(i)+1)+' of '+path.length+(currentProof(id,i).ready?' &middot; ready for the next':''):'&ndash;'}</span><span>${best?`logged best ${best}${unitS(st)}`:'no logs yet'}</span></div>
     </button>`; }).join('')+(ids.length&&rest? `<button class="btn ghost block" data-act="nav" data-route="library">${I.book} ${rest} more ladders you haven’t placed yet</button>` : '');
 }
 function progHistory(){
@@ -8279,10 +8677,10 @@ function progHistory(){
         ${w.cleared&&w.cleared.length?`<span class="chip good">${I.up} ${w.cleared.length}</span>`:''}
       </div>
       ${w.entries.map(e=>{ const st=LADDERS[e.ladderId]&&stepsOf(e.ladderId)[e.stepIdx];
-        const done=e.sets.filter(s=>s.done!==false), vals=done.map(s=>s.v+(e.kind==='hold'?'s':'')).join(', ');
+        const done=e.sets.filter(s=>s.done!==false), vals=done.map(s=>(s.lr&&s.lr.length===2? s.lr[0]+'/'+s.lr[1] : s.v)+(e.kind==='hold'?'s':'')).join(', ');
         const setups=[...new Set(done.map(s=>setupSummary(st,s.setup||e.setup)).filter(Boolean))];
         return `<div class="lrow"><div class="lb"><div class="a">${esc(st?st.n:'')}</div>
-          <div class="b">${vals||'no sets completed'}${setups.length?'<br>'+setups.map(esc).join('<br>'):setupFields(st).length?'<br>Setup was not recorded':''}</div></div></div>`; }).join('')}
+          <div class="b">${vals||'no sets completed'}${setups.length?'<br>'+setups.map(esc).join('<br>'):setupFields(st).length&&!legacySet(w.date)?'<br>'+missText(st):''}</div></div></div>`; }).join('')}
       <div style="margin-top:6px;text-align:right"><button class="tinybtn" data-act="ed-open" data-id="${esc(w.id)}" style="padding:5px 9px">${I.pen} Edit</button></div>
     </div>`; }).join('');
 }
@@ -8334,8 +8732,10 @@ function openSettings(){
         <div class="pillpick">${[['system','Auto'],['light','Light'],['dark','Dark']].map(t=>`<button class="${s.theme===t[0]?'on':''}" data-act="set-theme" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
       <div class="field"><label>Rest between sets</label>
         <div class="pillpick">${[60,90,120,180].map(n=>`<button class="${s.rest===n?'on':''}" data-act="set-rest" data-v="${n}">${n}s</button>`).join('')}</div></div>
-      <div class="field"><label>Buzz when rest ends</label>
+      <div class="field"><label>Buzz when rest ends or a hold reaches its target</label>
         <div class="pillpick">${[['1','On'],['0','Off']].map(t=>`<button class="${(s.vibrate?'1':'0')===t[0]?'on':''}" data-act="set-vib" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
+      <div class="field"><label>Beep when a hold reaches its target</label>
+        <div class="pillpick">${[['1','On'],['0','Off']].map(t=>`<button class="${(s.sound?'1':'0')===t[0]?'on':''}" data-act="set-sound" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
       <div class="section-label" style="margin:18px 3px 8px">Your data <span class="ln"></span></div>
       <button class="actitem" data-act="export">${I.copy}<span>Copy a backup</span></button>
       <button class="actitem" data-act="import-open">${I.grid}<span>Restore from a backup</span></button>
@@ -8454,21 +8854,22 @@ __root.addEventListener('click', e=>{
       if(window._unl) showUnlocks(window._unl.list, window._unl.then); else closeModal();
       if(window.__hub) window.__hub.changed('cal'); break; }
     case 'gpick': { const k=el.dataset.k; if(gsel.has(k)) gsel.delete(k); else gsel.add(k); el.classList.toggle('on',gsel.has(k)); const b=$('#gsave'); if(b) b.innerHTML=MiloSecurity.html(gsave()); break; }
-    case 'gsave': { if(!gsel||!gsel.size){ toast('Pick at least one goal'); break; } addGoals([...gsel].map(makeGoal)); gsel=null; break; }
-    case 'goal-custom': openCustomGoal(el.dataset.l); break;
+    case 'gsave': { if(!gsel||!gsel.size){ toast('Pick at least one goal'); break; } addGoals([...gsel].map(makeGoal), gHub); gsel=null; break; }
+    case 'goal-custom': if(el.dataset.l) gHub=false; openCustomGoal(el.dataset.l); break;   // from a ladder: Ladder's own
     case 'cg-l': cg.l=el.dataset.id; cg.r=nextRung(cg.l,curIdx(cg.l))??curIdx(cg.l); cg.std=''; renderCustom(); break;
     case 'cg-r': cg.r=+el.dataset.i; cg.std=''; renderCustom(); break;
     case 'cg-save': { const st=stepsOf(cg.l)[cg.r]; const std=Math.max(1,Num.int(($('#cgstd')||{}).value)||st.v);
       const g={id:uid(), key:'custom', n:st.n+', '+(st.k==='hold'? std+' s' : std+' rep'+(std===1?'':'s')), l:cg.l, r:cg.r, std, sup:supFor(cg.l), added:Date.now(), achieved:null};
-      cg=null; addGoals([g]); break; }
+      cg=null; addGoals([g], gHub); break; }
     case 'goal-quickadd': { const k=el.dataset.k; state.goals.push(makeGoal(k)); save(); el.disabled=true; el.classList.add('on'); toast(GOALS[k].n+' added'); break; }
     case 'celeb-next': { const c=window._celeb; window._celeb=null; if(c) celebrate(c.list,c.i+1,c.then); else closeModal(); render(); break; }
     case 'goal-menu': openGoalMenu(el.dataset.id); break;
     case 'sheet-back': nav.back(); break;
     case 'goal-rm': state.goals=state.goals.filter(x=>x.id!==el.dataset.id); save(); closeModal(); render(); toast('Goal removed'); break;
     case 'place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) startPlacement([g]); break; }
-    case 'survey-pick': { const id=el.dataset.id,i=+el.dataset.i;surveyAns[id]=i;
-      moveTo(id,i>=0?i:pathFor(id)[0]);
+    case 'survey-pick': { const id=el.dataset.id; let i=+el.dataset.i;
+      if(i>=0&&!gateOk(id,i)){ const was=i; i=previousRung(id,i)??pathFor(id)[0]; toast('First: '+esc(gateText(id,was))+'. You start on '+esc(stepsOf(id)[i].n)); }
+      surveyAns[id]=i; moveTo(id,i>=0?i:pathFor(id)[0]);
       if(place){ place.survey.shift(); nextPlacement(); } break; }
     case 'need-place': { const g=state.goals.find(x=>x.id===el.dataset.id); if(g) openNeedCheck([g], ()=>{ closeModal(); render(); toast('Saved. Your sessions follow it from now on'); }); break; }
     case 'nchk': { const k=el.dataset.k; if(ncheck.sel.has(k)) ncheck.sel.delete(k); else ncheck.sel.add(k); el.classList.toggle('on', ncheck.sel.has(k)); break; }
@@ -8478,8 +8879,12 @@ __root.addEventListener('click', e=>{
     case 'test-verify': { const ids=(el.dataset.ids||'').split(','), is=(el.dataset.is||'').split(',').map(Number), pk={};
       ids.forEach((id,k)=>{ if(LADDERS[id]) pk[id]=is[k]; }); beginTests(Object.keys(pk), null, pk); break; }
     case 'test-go': { const ids=(el.dataset.ids||'').split(',').filter(x=>LADDERS[x]); if(!ids.length) break;
+      if(el.dataset.i!=null&&!gateOk(ids[0],+el.dataset.i)){ toast('First: '+esc(gateText(ids[0],+el.dataset.i))); break; }
       beginTests(ids, el.dataset.i!=null? +el.dataset.i : null); break; }
-    case 'test-later': (el.dataset.ids||'').split(',').forEach((id,k)=>{const i=+(el.dataset.is||'').split(',')[k];if(LADDERS[id]&&i>=0)moveTo(id,i);});closeModal();state.route='goals';save();render();toast('Your plan is ready');break;
+    case 'test-later': { (el.dataset.ids||'').split(',').forEach((id,k)=>{const i=+(el.dataset.is||'').split(',')[k];if(LADDERS[id]&&i>=0)moveTo(id,i);});
+      // straight into today's session, unless Together sent you here: it plans the day, so you go back to it
+      closeModal(); const ids=el.dataset.hub? [] : defaultPicks();
+      if(ids.length) confirmStart(()=>beginSession(ids)); else { state.route='goals'; save(); render(); toast('Your plan is ready'); } break; }
     case 'test-record': { const v=Num.int(($('#testv')||{}).value); if(v==null||v<0){ toast('Enter your reps or seconds'); break; } recordTest(v); break; }
     case 'test-zero': recordTest(0); break;
     case 'ed-open': openEditSession(el.dataset.id); break;
@@ -8510,21 +8915,25 @@ __root.addEventListener('click', e=>{
     case 'add-to-session': addToSession(el.dataset.id, el.dataset.i!=null? +el.dataset.i : null); break;
     case 'toggle-done': toggleDone(ei,si); break;
     case 'add-set': A.entries[ei].sets.push(makeSet()); save(); render(); break;
+    case 'hold-go': holdGo(ei,si); break;
+    case 'assist-set': { const en=A&&A.entries[ei]; if(!en) break; en.setup=Object.assign({},en.setup||{},{assist:+el.dataset.v}); delete en.why; save(); render(); break; }
     case 'del-set': { const s=A.entries[ei].sets; if(s.length>1) s.pop(); save(); render(); break; }
     case 'rm-set': { const s=A.entries[ei].sets; if(s.length>1) s.splice(si,1); save(); closeModal(); render(); break; }
     case 'rm-ex': A.entries.splice(ei,1); save(); closeModal(); render(); toast('Removed'); break;
     case 'ex-stepup': case 'ex-stepback': { const en=A.entries[ei],id=en.ladderId,to=act==='ex-stepup'?stepUpTo(id):previousRung(id,curIdx(id));if(to==null)break;
+      if(!gateMet(id,to)){ toast('First: '+esc(gateText(id,to))); closeModal(); break; }
       moveTo(id, to);
       const ne=entryFor(id, to);
       if(en.sets.some(s=>s.done)) A.entries.splice(ei+1,0,ne); else A.entries[ei]=ne;   // sets already logged stay as they were
-      save(); closeModal(); render(); toast('Your rung on '+LADDERS[id].n+' is now '+esc(stepsOf(id)[to].n));
+      save(); closeModal(); render(); toast('Your rung on '+esc(LADDERS[id].n)+' is now '+esc(stepsOf(id)[to].n));
       if(window.__hub) window.__hub.changed('cal'); break; }
     case 'ex-shift': { const en=A.entries[ei],to=+el.dataset.d<0?previousRung(en.ladderId,en.stepIdx):nextRung(en.ladderId,en.stepIdx);
       if(to==null)break;
+      if(!gateMet(en.ladderId,to)){ toast('First: '+esc(gateText(en.ladderId,to))); closeModal(); break; }
       if(en.sets.some(s=>s.done)){ toast('Already logging this one; add the other version instead'); closeModal(); break; }
       A.entries[ei]=entryFor(en.ladderId,to); save(); closeModal(); render(); toast((+el.dataset.d<0?'Easier':'Harder')+' version for today'); break; }
-    case 'fill-target': { const en=A.entries[ei], st=stepsOf(en.ladderId)[en.stepIdx];
-      en.sets.forEach(s=>{if(s.v==null)s.v=en.target||st.v;});save();render();toast('Filled with the target; change it to your actual result');break; }
+    case 'fill-target': { const en=A.entries[ei], st=stepsOf(en.ladderId)[en.stepIdx], t=en.target||st.v;
+      en.sets.forEach(s=>{ if(s.done) return; if(perSide(st)) s.lr=[0,1].map(k=>s.lr&&s.lr[k]!=null? s.lr[k] : t); else if(s.v==null) s.v=t; });save();render();toast('Filled with the target; change it to your actual result');break; }
     case 'ex-menu': openExMenu(ei); break;
     case 'set-menu': openSetMenu(ei,si); break;
     case 'session-menu': openModal(`<div class="sheet-grab"></div><div class="sheet-head"><h3>Session</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
@@ -8558,11 +8967,13 @@ __root.addEventListener('click', e=>{
 
     /* rungs */
     case 'advance': {const id=el.dataset.id,from=curIdx(id),to=nextRung(id,from);if(to==null)break;
+      if(!gateMet(id,to)){toast('First: '+esc(gateText(id,to)));break;}
       if(rungRank(id,to)>rungRank(id,capFor(id))){toast('Reach the exact goal standard on this movement first');break;}
       if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days first');break;}
       if(entryReady(id,to)){moveTo(id,to);closeModal();render();toast('Next movement checked; rung updated');}else beginTests([id],to,null,{from,manual:true});break;}
     case 'demote': {const id=el.dataset.id,to=previousRung(id,curIdx(id));if(to!=null&&moveTo(id,to)){closeModal();render();toast('Stepped back');}break;}
     case 'adv-yes': {const q=window._advQ,id=el.dataset.id,to=+el.dataset.to,from=curIdx(id);
+      if(!gateMet(id,to)){toast('First: '+esc(gateText(id,to)));break;}
       if(!currentProof(id,from).ready){toast('Repeat the current target cleanly on two days first');break;}
       if(entryReady(id,to)){moveTo(id,to);if(q&&!q.rec.cleared.includes(id))q.rec.cleared.push(id);tb.seal();render();if(q)offerAdvance(q.list,q.i+1,q.rec);else closeModal();}
       else beginTests([id],to,null,q?{from,list:q.list,index:q.i,rec:q.rec}:null);break;}
@@ -8572,13 +8983,16 @@ __root.addEventListener('click', e=>{
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
     case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
     case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; Prefs.set({vibrate:state.settings.vibrate}); save(); openSettings(); break;
+    case 'set-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); save(); openSettings(); break;
+    case 'hold-off': state.hold=null; save(); render(); toast('Hold lifted'); if(window.__hub) window.__hub.changed('cal'); break;
+    case 'place-resume': resumePlacement(); break;
     case 'export': exportData(); break;
     case 'copy-export': { const t=__root.getElementById('exp'); if(t){ t.select();
       if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(()=>toast('Copied')).catch(()=>toast('Couldn’t copy it. Select the text and copy it yourself'));
       else toast('Couldn’t copy it. Select the text and copy it yourself'); } break; }
     case 'import-open': openImport(); break;
     case 'do-import': doImport(); break;
-    case 'redo-place': state.placed={}; state.said={}; save(); closeModal(); render(); toast('Done. Your goals will ask where you are again.'); break;
+    case 'redo-place': state.placed={}; state.said={}; state.placing=null; save(); closeModal(); render(); toast('Done. Your goals will ask where you are again.'); break;
     case 'reset-rungs': { LADDER_ORDER.forEach(k=>state.rung[k]=0); state.placed={}; state.said={}; state.advances=[]; save(); closeModal(); render(); toast('Rungs reset'); break; }
     case 'reset': openModal(`<div class="sheet-grab"></div>
       <div class="sheet-body"><div style="text-align:center;padding:8px 0">
@@ -8598,16 +9012,16 @@ __root.addEventListener('input', e=>{
   const en=state.active.entries[ei]; if(!en) return;
   if(f==='clean'){ en.clean=el.checked; save(); return; }
   if(f==='setup'){
-    const st=stepsOf(en.ladderId)[en.stepIdx], field=setupFields(st).find(x=>x.key===el.dataset.key); if(!field) return;
-    en.setup=en.setup||{};
-    en.setup[field.key]=field.type==='number'?Num.parse(el.value):el.value;
-    const status=__root.querySelector(`[data-setup-status="${ei}"]`);
-    if(status) status.textContent=setupValid(st,en.setup)?'Setup is saved with each set. Change one detail at a time as you progress.':'Fill in every setup detail before logging a set. Earlier sets keep their own setup.';
+    const st=stepsOf(en.ladderId)[en.stepIdx], field=setupField(st); if(!field||field.key!==el.dataset.key) return;
+    en.setup=Object.assign({},en.setup||{}); en.setup[field.key]=fieldStore(field,el.value);
     save(); return;
   }
   const s=en.sets[si]; if(!s) return;
   const n=Num.int(el.value);
-  if(f==='v') s.v=n; else if(f==='rir') s.rir=n; else return;
+  if(f==='v') s.v=n; else if(f==='rir') s.rir=n;
+  else if(f==='l'||f==='r'){ s.lr=s.lr||[null,null]; s.lr[f==='l'?0:1]=n;
+    if(s.done&&s.lr.every(Number.isFinite)) s.v=Math.min(s.lr[0],s.lr[1]); }   // a ticked set still counts its weaker side
+  else return;
   save();
 });
 __root.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='testv'){ e.preventDefault(); const b=__root.querySelector('[data-act="test-record"]'); if(b) b.click(); } });
@@ -8615,6 +9029,7 @@ setInterval(()=>{ const a=state.active, el=__root.getElementById('elapsed');
   if(a&&el&&state.route==='train'){
     const done=a.entries.reduce((n,x)=>n+x.sets.filter(s=>s.done).length,0);
     el.textContent=fmtDur(Math.floor((Date.now()-a.startedAt)/1000))+' elapsed · '+done+' sets';
+    __root.querySelectorAll('[data-block-left]').forEach(b=>{ const en=a.entries[+b.dataset.blockLeft]; if(en&&en.block) b.textContent=blockLeft(en); });
   } }, 1000);
 
 /* ==================== EDIT A FINISHED SESSION ==================== */
@@ -8635,7 +9050,7 @@ function renderEdit(){
         <button class="edx" data-act="ed-rm-set" data-e="${ei}" data-s="${si}" aria-label="Remove set">${I.x}</button></div>
       <div style="margin:0 0 12px 28px">
         ${edit.view?`<p class="muted" style="font-size:11.5px;margin:0 0 6px">${x.clean===true?'Clean form confirmed':x.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}</p>`:`<label style="display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px"><input type="checkbox" data-ed="clean" data-e="${ei}" data-s="${si}"${x.clean===true?' checked':''}>Clean form on set ${si+1}</label>`}
-        ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||'Setup was not recorded')}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
+        ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||(legacySet(r.date)?'':missText(st)))}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
       </div>`).join('');
     return `<div class="edex"><div class="edh"><div><b>${esc(st.n)}</b><small>${esc(LADDERS[e.ladderId].n)} &middot; target ${goalText(Object.assign({},st,{v:e.target==null?st.v:e.target}))}</small></div><button class="tinybtn" data-act="ed-rm-ex" data-e="${ei}">Remove</button></div>
       ${e.sets.length? `<div class="edrow two head"><span></span><span>${e.kind==='hold'?'Secs':'Reps'}</span><span>${showRir?'RIR':''}</span><span></span></div>${rows}` : '<p class="edwhy" style="margin:0 0 8px">'+(e.left&&e.left.length?'Not started.':'No sets left.')+'</p>'}
@@ -8679,13 +9094,14 @@ function edInput(el){
   const en=r.entries[+el.dataset.e], x=en&&en.sets[+el.dataset.s]; if(!x) return;
   if(f==='clean'){ x.clean=el.checked; return; }
   if(f==='setup'){
-    const st=LADDERS[en.ladderId]&&stepsOf(en.ladderId)[en.stepIdx], field=setupFields(st).find(z=>z.key===el.dataset.key); if(!field) return;
+    const st=LADDERS[en.ladderId]&&stepsOf(en.ladderId)[en.stepIdx], field=setupField(st); if(!field||field.key!==el.dataset.key) return;
     x.setup=Object.assign({},x.setup||en.setup||{});
-    x.setup[field.key]=field.type==='number'?Num.parse(v):v;
+    x.setup[field.key]=fieldStore(field,v);
     return;
   }
   if(f!=='v'&&f!=='rir') return;
   const n=Num.int(v); x[f]=n==null? null : Math.max(0,n);
+  if(f==='v') delete x.lr;   // a corrected value replaces both sides
 }
 function edAddSet(ei){
   const e=edit.rec.entries[ei]; if(!e) return;
@@ -8716,23 +9132,28 @@ __root.addEventListener('input', e=>{ const el=e.target.closest&&e.target.closes
 /* ==================== TOGETHER ==================== */
 /* What the Together tab reads from this section and how it starts a day here. The hub lives in the shell.
    Holds only count toward muscles on the core, lever and planche progressions; a dead hang isn’t a hard set,
-   and nor is prep (mobility, balance, wrist and shoulder blade work, landings). */
+   and nor is prep (mobility, balance, wrist and shoulder blade work, landings) or a handstand or other balance attempt. */
 const COUNTED_HOLDS=['core','frontlever','planche','backlever','flag','sidecore','grip'];
 /* n: the hard sets (Lift.hard); f: what they leave to recover from (Lift.tiring). */
 function hubWork(since, until){
   const out=[], novel=Lift.novelty(state.history, w=>(w.entries||[]).map(e=>e.ladderId+'|'+e.stepIdx));
   state.history.forEach(w=>{ if(w.date<since||w.date>=until) return;
-    w.entries.forEach(e=>{ const L=LADDERS[e.ladderId], st=L&&L.steps[e.stepIdx]; if(!st||L.prep) return;
+    w.entries.forEach(e=>{ const L=LADDERS[e.ladderId], st=L&&L.steps[e.stepIdx]; if(!st||!hardWork(e)) return;
       const group=L.like||e.ladderId; if(st.k==='hold' && !COUNTED_HOLDS.includes(group)) return;
       const ss=e.sets.filter(x=>x.done!==false); if(!ss.length) return; const nv=novel(w, e.ladderId+'|'+e.stepIdx);
       out.push({key:st.id, group, n:ss.reduce((x,s)=>x+Lift.hard(s.rir,s.v),0), f:ss.reduce((x,s)=>x+Lift.tiring(Lift.trueRir(s.rir,s.v),nv),0)}); }); });
   return out;
 }
+/* easy: a goal's easier step for the day; why: what made it so ('rest' recovery spacing, 'one' straight-arm skill a
+   session, 'pain' a hold, 'gate' a skill it needs first). Together also shows these for days ahead, which may be
+   later than the plan's own guess, so a rest says until when rather than "today". */
 function hubPicks(ahead){
-  const P=todayPlan(ahead);
-  return orderIds(P.map(x=>x.id)).map(id=>{ const x=P.find(p=>p.id===id), st=stepsOf(id)[x.i];
-    return {id, grp:LADDERS[id].like||id, ladder:LADDERS[id].n, step:st.n+(x.role==='volume'?' (volume day)':''), key:st.id, kind:st.k, sets:x.sets,
-      target:planText(x), skill:isSkill(id), goal:x.role==='goal'||x.role==='volume', role:x.role, placed:!!state.placed[id], prep:isPrep(id)}; });
+  const P=todayPlan(ahead), N=P.notes||[];
+  return orderIds(P.map(x=>x.id),P).map(id=>{ const x=P.find(p=>p.id===id), st=stepsOf(id)[x.i], n=N.find(z=>z.id===id);
+    const easy= n&&n.why==='rest'? ' (easier until '+whenText(n.until)+')' : ' (easier)';
+    return {id, grp:LADDERS[id].like||id, ladder:LADDERS[id].n, step:st.n+(x.role==='volume'?' (volume day)':x.role==='easy'?easy:''), key:st.id, kind:st.k, sets:x.sets,
+      target:planText(x), skill:isSkill(id), goal:x.role==='goal'||x.role==='volume'||x.role==='easy', easy:x.role==='easy', why:n? n.why : null,
+      role:x.role, placed:!!state.placed[id], prep:isPrep(id)}; });
 }
 /* Goals removed from Together this visit, so Undo can put them back as they were. */
 const gone={};
@@ -8757,7 +9178,7 @@ if(window.__hub) window.__hub.reg('cal', {
   start(o){ if(state.active) return null; const drop=(o&&o.drop)||[];
     const ids=orderIds(o&&o.ids? o.ids.filter(id=>LADDERS[id]) : defaultPicks()).filter(id=>!drop.includes(id)); if(!ids.length) return null;
     beginSession(ids, o&&o.sets); return state.active? state.active.id : null; },
-  setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(); },
+  setup(){ state.route='today'; render(); window.scrollTo(0,0); openGoalPicker(true); },
   open(){ state.route=Parked.all(state).length?'train':'today'; render(); window.scrollTo(0,0); },
   // your goals, for Together to show and change: where you are on each, and removing or putting one back
   goals(){ return activeGoals().map(g=>{ const st=state.placed[g.l]? curStep(g.l) : null, p=pathFor(g.l,g);
@@ -8785,7 +9206,7 @@ if(window.__hub) window.__hub.reg('cal', {
     finally{ state.goals=keep; } },
   // standard goals added from Together, through the same placement as choosing them here
   addGoals(keys){ const list=(keys||[]).filter(k=>GOALS[k]&&!activeGoals().some(g=>g.key===k)).map(makeGoal); if(!list.length) return false;
-    state.route='today'; render(); window.scrollTo(0,0); addGoals(list); return true; },
+    state.route='today'; render(); window.scrollTo(0,0); addGoals(list, true); return true; },
   removeGoal(id){ const g=state.goals.find(x=>x.id===id&&!x.achieved); if(!g) return false;
     gone[id]=g; state.goals=state.goals.filter(x=>x!==g); save(); render(); return true; },
   restoreGoal(id){ const g=gone[id]; if(!g||state.goals.some(x=>x.id===id)) return false; delete gone[id]; state.goals.push(g); save(); render(); return true; },
@@ -8800,6 +9221,15 @@ if(window.__hub) window.__hub.reg('cal', {
         const top=done.reduce((a,x)=>x.v>a.v? x : a); return {date:h.date, reps:top.v, rir:top.rir!=null? top.rir : null}; } }
     return null; },
   stamp:()=>ladVer,
+  // for the shell's spreadsheet export: a rung's name
+  name(id, i){ const st=LADDERS[id]&&stepsOf(id)[i]; return st? st.n : null; },
+  // Together's check-in, on elbow, wrist or shoulder pain: hold the work that loads that joint for a week (HOLDS).
+  // Held ladders train their assisted step where there is one and are left out otherwise. Returns the held ladders'
+  // names, or null for a joint Ladder doesn't hold for.
+  hold(joint, days){ const h=holdJoint(joint, days); if(!h) return null; render(); if(window.__hub) window.__hub.changed('cal');
+    return LADDER_ORDER.filter(id=>heldBy(id)).map(id=>LADDERS[id].n); },
+  held(){ const h=state.hold; return h&&h.until>Date.now()? {until:h.until, joints:h.joints.slice()} : null; },
+  release(){ if(!state.hold) return false; state.hold=null; save(); render(); return true; },
 });
 
 /* ==================== BOOT ==================== */
@@ -11200,6 +11630,23 @@ if(window.__hub) window.__hub.reg('str', {
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
   rec(id){ const r=state.history.find(h=>h.id===id); return r? (r.partial?'ended':'done') : null; },
+  // for the shell's spreadsheet export: a lift's name, in the variation a session did
+  name(id, vi){ return EX[id]? exName(id, vi) : null; },
+  // Workouts from Strong or Hevy (the shell's import): as Muscle's past, with Strength's lift ids
+  past(add, drop, dry, extra){ const out={added:[], sets:0, skipped:0, dup:[], over:0, bytes:0}, dk=t=>Day.key(t), prev=state.history, had={}, recs=[];
+    if(drop&&drop.length) state.history=state.history.filter(h=>!drop.includes(h.id));
+    const ids=new Set(state.history.map(h=>h.id)); state.history.forEach(h=>{ const k=dk(h.date); h.entries.forEach(e=>(had[k]||(had[k]=new Set())).add(e.liftId)); });
+    (add||[]).forEach(s=>{ if(ids.has(s.id)){ out.dup.push(s.id); return; } const have=had[dk(s.date)]||new Set();
+      const entries=s.entries.map(x=>{ const X=EX[x.id]; if(!X) return null; if(have.has(x.id)){ out.skipped++; return null; }
+        const sets=x.sets.filter(t=>t.reps>0).map(t=>({kind:t.warm?'warm':'work', w:X.k==='bw'||!(t.kg>0)? null : t.kg, reps:t.reps, tr:null, trHi:null, trpe:null, rpe:t.rpe, done:true}));
+        return sets.some(t=>t.kind!=='warm')? {liftId:x.id, label:'', sc:null, note:x.note||null, sets} : null; }).filter(Boolean);
+      if(entries.length) recs.push({id:s.id, name:s.name, date:s.date, durationSec:s.durationSec||0, entries, prs:[], plan:null, note:s.note||null, from:s.from}); });
+    recs.sort((a,b)=>b.date-a.date); const fit=MiloSecurity.room(payload(), recs, {storage:localStorage, key:LS_KEY, extra}), k=fit.n; out.over=recs.length-k; out.bytes=fit.bytes;
+    recs.slice(0,k).forEach(r=>{ out.added.push(r.id); r.entries.forEach(e=>{ out.sets+=e.sets.length; }); });
+    if(dry){ state.history=prev; return out; }
+    if(k){ const was=state.history.slice(); recs.slice(0,k).forEach(insertRec);
+      try{ MiloSecurity.section(JSON.parse(JSON.stringify(payload())), LS_KEY); }catch(e){ state.history=was; out.added=[]; out.sets=0; out.over=recs.length; } }
+    if(out.added.length||state.history!==prev){ save(); flush(); render(); if(window.__hub) window.__hub.changed('str'); } return out; },
 });
 
 /* ==================== BOOT ==================== */
@@ -13014,7 +13461,7 @@ render();
   /* ---- Backup and restore for the whole app ----
      A restore is parked in sessionStorage and applied on the next load, before any
      section starts, so a section's pending save can't write old data over it. */
-  const BK_APP='milovancroton', BK_PENDING='milo.restore';
+  const BK_APP='milovancroton', BK_PENDING='milo.restore', BK_ERASE='milo.erase';
   const BK_STAMP='milo.backup', BK_SINCE='milo.since', BK_BEFORE='milo.before', BK_ASKED='milo.persist';
   const DAY=864e5, DUE_AFTER=14*DAY;
   /* Keys that are the shell's own notes, and copies kept for taking a step back, never go into a backup. */
@@ -13023,6 +13470,12 @@ render();
     document.body.appendChild(d); setTimeout(()=>d.remove(), ms||3200); }
   window.__toast=toast;
   function note(k){ try{ const n=+localStorage.getItem(k); return n>0? n : 0; }catch(e){ return 0; } }
+  /* Erase everything (YOUR DATA ON SCREEN) is applied the same way, here on the next load: every Milo key goes
+     (MiloSecurity.erase), with any restore still waiting, and Milo starts as on its first run. */
+  try{
+    if(sessionStorage.getItem(BK_ERASE)){ MiloSecurity.erase(sessionStorage); MiloSecurity.erase(localStorage);
+      setTimeout(()=>toast('Everything erased. Milo is starting fresh.'),400); }
+  }catch(e){ console.error('erase failed',e); }
   try{
     const pend=sessionStorage.getItem(BK_PENDING);
     if(pend){ sessionStorage.removeItem(BK_PENDING);
@@ -13068,7 +13521,34 @@ render();
     try{ if(!booted||!navigator.storage||!navigator.storage.persist||localStorage.getItem(BK_ASKED)||!hasHistory()) return;
       localStorage.setItem(BK_ASKED,'1'); navigator.storage.persist(); }catch(e){}
   }
-  function backupName(){ return 'milo-backup-'+new Date().toISOString().slice(0,10)+'.json'; }
+  function backupName(locked){ return 'milo-backup-'+Day.key(Date.now())+(locked? '-locked' : '')+'.json'; }
+  /* The backup to copy or save: sealed with the passphrase when one is typed (MiloSecurity.seal), else plain. */
+  const passOf=id=>document.getElementById(id).value;
+  function backupOut(){ const p=passOf('bk-pass'); return p? MiloSecurity.seal(backupText(), p) : Promise.resolve(backupText()); }
+  /* A file through the share sheet where the browser has one, otherwise a download (share:false goes straight to the
+     download, which is what opens a calendar file on a phone). 'shared', 'saved', or '' when you cancelled. */
+  async function deliver(txt, name, type, share){
+    try{ const f=new File([txt],name,{type});
+      if(share!==false && navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name}); return 'shared'; }
+    }catch(e){ if(e && e.name==='AbortError') return ''; }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type}));
+    a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    return 'saved';
+  }
+  window.__deliver=deliver;
+  /* Asking before data is replaced: a sheet of the app's own, not the browser's confirm(). Resolves true or false. */
+  const askD=document.getElementById('bk-ask'); let asked=null;
+  function ask(title, text, yes){
+    if(!askD.showModal) return Promise.resolve(confirm(text));
+    document.getElementById('bk-ask-title').textContent=title; document.getElementById('bk-ask-text').textContent=text;
+    document.getElementById('bk-ask-yes').textContent=yes;
+    return new Promise(res=>{ asked=res; askD.showModal(); document.getElementById('bk-ask-no').focus(); });
+  }
+  function answer(v){ const f=asked; asked=null; if(askD.open) askD.close(); if(f) f(v); }
+  document.getElementById('bk-ask-yes').addEventListener('click',()=>answer(true));
+  document.getElementById('bk-ask-no').addEventListener('click',()=>answer(false));
+  askD.addEventListener('close',()=>answer(false));   // Escape
+  const whenText=t=>new Date(t).toLocaleString(undefined,{dateStyle:'medium', timeStyle:'short'});
   function say(id,t,bad){ const el=document.getElementById(id); el.textContent=t; el.classList.toggle('bad',!!bad); }
   let backupError='';
   function readBackup(txt){
@@ -13076,53 +13556,68 @@ render();
     catch(e){ backupError=e.message; return null; }
   }
   const bk=document.getElementById('bk');
+  /* A pasted or loaded backup with a passphrase asks for it. */
+  function paintLock(){ const on=MiloSecurity.sealed(document.getElementById('bk-in').value.trim()); document.getElementById('bk-lock').hidden=!on; return on; }
+  document.getElementById('bk-in').addEventListener('input',paintLock);
   function openBackup(){
-    say('bk-msg1',''); say('bk-msg2',''); document.getElementById('bk-in').value=''; paintLast();
+    say('bk-msg1',''); say('bk-msg2',''); say('yd-msg',''); ['bk-in','bk-pass','bk-rpass'].forEach(id=>{ document.getElementById(id).value=''; }); paintLock(); paintLast();
     if(bk.showModal) bk.showModal(); else bk.setAttribute('open','');
   }
   window.__openBackup=openBackup;
   document.getElementById('bkbtn').addEventListener('click',openBackup);
   document.getElementById('bk-done').addEventListener('click',()=>{ if(bk.close) bk.close(); else bk.removeAttribute('open'); });
   document.getElementById('bk-copy').addEventListener('click',async()=>{
-    const txt=backupText();
-    try{ await navigator.clipboard.writeText(txt); }
-    catch(e){ const ta=document.getElementById('bk-in'); ta.value=txt; ta.select();
-      let ok=false; try{ ok=document.execCommand('copy'); }catch(_){}
-      ta.value=''; if(!ok){ say('bk-msg1','Couldn’t copy. Try "Save as a file" instead.',true); return; } }
-    backedUp(); say('bk-msg1','Backup copied. Paste it into Notes as well, to keep a safe copy.');
+    const locked=!!passOf('bk-pass'); let ok=false, txt='';
+    if(!locked){ txt=backupText(); try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} }
+    else { say('bk-msg1','Encrypting…'); const out=backupOut();
+      // Safari copies only inside the tap, and encrypting takes a moment, so the text goes in as a promise where the browser takes one
+      try{ if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+        await navigator.clipboard.write([new ClipboardItem({'text/plain':out.then(t=>new Blob([t],{type:'text/plain'}))})]); ok=true; } }catch(e){}
+      try{ txt=await out; }catch(e){ say('bk-msg1',e.message,true); return; }
+      if(!ok){ try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} } }
+    if(!ok){ const ta=document.getElementById('bk-in'); ta.value=txt; ta.select();
+      try{ ok=document.execCommand('copy'); }catch(_){}
+      ta.value=''; }
+    if(!ok){ say('bk-msg1','Couldn’t copy. Try "Save as a file" instead.',true); return; }
+    backedUp(); say('bk-msg1', locked? 'Encrypted backup copied. You’ll need the passphrase to restore it.'
+      : 'Backup copied. Notes apps often sync to the cloud: add a passphrase before copying a backup you keep there.');
   });
   document.getElementById('bk-save').addEventListener('click',async()=>{
-    const txt=backupText(), name=backupName();
-    try{
-      const f=new File([txt],name,{type:'application/json'});
-      if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name});
-        backedUp(); say('bk-msg1','Backup saved.'); return; }
-    }catch(e){ if(e && e.name==='AbortError') return; }
-    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));
-    a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-    backedUp(); say('bk-msg1','Backup saved as '+name+'.');
+    const locked=!!passOf('bk-pass'), name=backupName(locked); let txt='';
+    if(locked) say('bk-msg1','Encrypting…');
+    try{ txt=await backupOut(); }catch(e){ say('bk-msg1',e.message,true); return; }
+    const r=await deliver(txt, name, 'application/json'); if(!r){ say('bk-msg1',''); return; }
+    backedUp(); say('bk-msg1',(locked? 'Encrypted backup saved' : 'Backup saved')+(r==='saved'? ' as '+name : '')+'.');
   });
   document.getElementById('bk-file').addEventListener('click',()=>document.getElementById('bk-fin').click());
   document.getElementById('bk-fin').addEventListener('change',e=>{
     const f=e.target.files&&e.target.files[0]; if(!f) return;
-    if(f.size > MiloSecurity.MAX_BYTES){ say('bk-msg2','This backup is too large (maximum 2 MB).',true); e.target.value=''; return; }
-    f.text().then(t=>{ document.getElementById('bk-in').value=t; say('bk-msg2','File loaded. Tap Restore.'); })
+    if(f.size > MiloSecurity.SEALED_BYTES){ say('bk-msg2','This backup is too large (maximum 2 MB).',true); e.target.value=''; return; }
+    f.text().then(t=>{ document.getElementById('bk-in').value=t;
+        say('bk-msg2', paintLock()? 'File loaded. Enter its passphrase, then tap Restore.' : 'File loaded. Tap Restore.'); })
       .catch(()=>say('bk-msg2','Couldn’t read that file.',true));
     e.target.value='';
   });
-  document.getElementById('bk-restore').addEventListener('click',()=>{
-    const o=readBackup(document.getElementById('bk-in').value);
+  document.getElementById('bk-restore').addEventListener('click',async()=>{
+    let txt=document.getElementById('bk-in').value.trim();
+    // a backup with a passphrase opens first (MiloSecurity.unseal), then is checked like any other
+    if(paintLock()){ const p=passOf('bk-rpass');
+      if(!p){ say('bk-msg2','This backup has a passphrase. Enter it above, then tap Restore.',true); document.getElementById('bk-rpass').focus(); return; }
+      say('bk-msg2','Opening…');
+      try{ txt=await MiloSecurity.unseal(txt, p); }catch(e){ say('bk-msg2',e.message,true); return; }
+      say('bk-msg2',''); }
+    const o=readBackup(txt);
     if(!o){ say('bk-msg2',backupError || 'That does not look like a Milo backup.',true); return; }
-    const when=o.created? new Date(o.created).toLocaleString() : 'an unknown date';
-    if(!confirm('Replace the data in this app with the backup from '+when+'?')) return;
+    const when=o.created? whenText(o.created) : 'an unknown date';
+    if(!await ask('Replace your data?', 'Everything Milo holds now is replaced with the backup from '+when+'. You can undo this afterwards.', 'Replace')) return;
     try{ sessionStorage.setItem(BK_PENDING, JSON.stringify(o.data)); }
     catch(e){ say('bk-msg2','Couldn’t restore: '+e.message,true); return; }
     location.reload();
   });
-  document.getElementById('bk-undo').addEventListener('click',()=>{
+  document.getElementById('bk-undo').addEventListener('click',async()=>{
     let b=null; try{ b=JSON.parse(localStorage.getItem(BK_BEFORE)||'null'); }catch(e){}
     if(!(b&&b.data)){ paintLast(); return; }
-    if(!confirm('Put back the data the app held before the restore from '+new Date(b.at).toLocaleString()+'? What it holds now is kept, so this can be undone too.')) return;
+    if(!await ask('Undo the restore?', 'Milo goes back to what it held before the restore on '+whenText(b.at)+'. What it holds now is kept, so this can be undone too.', 'Undo the restore')) return;
     try{ sessionStorage.setItem(BK_PENDING, JSON.stringify(b.data)); }
     catch(e){ say('bk-msg2','Couldn’t undo: '+e.message,true); return; }
     location.reload();
@@ -13386,6 +13881,467 @@ render();
   try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); if(t&&t.on) ensureInit('mix'); }catch(e){}
 })();
 
+
+;
+
+/* ==================== YOUR DATA ====================
+   Your data out and in, as plain functions that read saved data and change nothing: every set as a spreadsheet (CSV),
+   the planned training days and a calendar file of them, the numbers for a coach summary, and best guesses for exercise
+   names from Strong or Hevy. The controls that use them are in YOUR DATA ON SCREEN, below. S is the three sections'
+   saved data {lift, str, cal}; T is Together's. */
+window.MiloData=(function(){
+  const KG_PER_LB=0.45359237, SEC_N={lift:'Muscle', str:'Strength', cal:'Ladder'}, MODS=['lift','str','cal'];
+  const pad=n=>String(n).padStart(2,'0');
+  const local=ts=>{ const d=new Date(ts); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
+  const r2=n=>Math.round(n*100)/100;
+  const num=v=>typeof v==='number'&&Number.isFinite(v);
+  const hist=s=>s&&Array.isArray(s.history)? s.history.filter(h=>h&&Array.isArray(h.entries)&&num(h.date)) : [];
+  // Muscle's timed exercises (HOLDS there): their reps box holds seconds
+  const MUSCLE_HOLDS=['plank','side-plank','dead-hang'];
+  const STR_KIND={warm:'warm-up', work:'work', top:'top set', bo:'back-off', plus:'plus set'};
+  // the sets each section counts as done: Muscle ticks each one, Strength and Ladder keep only ticked sets in a finished session
+  const doneSet=(m,s)=>!!s && (m==='lift'? !!s.done : s.done!==false);
+  const workSet=(m,s)=>doneSet(m,s) && (m==='lift'? s.type!=='warmup' : m==='str'? s.kind!=='warm' : true);
+  /* names: {str(liftId, vi), cal(ladderId, stepIdx)}, the names Strength and Ladder don't keep with a set. */
+  function exOf(m, en, names){ const nm=names||{};
+    return m==='lift'? en.name||en.exId : m==='str'? (nm.str&&nm.str(en.liftId, en.vi))||en.liftId : (nm.cal&&nm.cal(en.ladderId, en.stepIdx))||(en.ladderId+' '+en.stepIdx); }
+
+  /* ---- Every set, one row each ---- */
+  const HEAD=['date','section','session','exercise','set type','weight kg','weight lb','reps or seconds','RIR or RPE','assumed','notes'];
+  const TEXT=new Set([2,3,4,10]);
+  /* Ticked sets of finished sessions, oldest first: a session's note goes with its first row, an exercise's with its first set.
+     Muscle's drop-set steps (and rest-pause, myo-rep and cluster mini-sets) are rows of their own, named by the set's kind.
+     Bodyweight exercises give the weight added; Ladder's set-up is each set's own, as the set was done. */
+  function rows(S, names){
+    const out=[];
+    const push=(m, h, ex, type, kg, v, eff, assumed, note)=>out.push({t:h.date, r:[local(h.date), SEC_N[m], h.name||'', ex, type,
+      num(kg)? r2(kg) : '', num(kg)? r2(kg/KG_PER_LB) : '', num(v)? v : '', eff, assumed? 'yes' : 'no', note]});
+    MODS.forEach(m=>hist(S&&S[m]).forEach(h=>{ let first=true;
+      h.entries.forEach(en=>{ if(!en||!Array.isArray(en.sets)) return; let firstEx=true, said=''; const ex=exOf(m, en, names);
+        // Ladder's set-up for the rung (each set keeps the one it was done with): added load in kg, and what you wrote about
+        // bands, heights and support, noted on the first set and again when it changes
+        const obj=o=>o&&typeof o==='object'? o : null, esu=obj(en.setup)||{};
+        en.sets.filter(s=>doneSet(m,s)).forEach(s=>{
+          const setup= m==='cal'? obj(s.setup)||esu : {};
+          const extra= Object.keys(setup).filter(k=>k!=='load'&&setup[k]!==''&&setup[k]!=null&&typeof setup[k]!=='object').map(k=>k+' '+setup[k]).join(', ');
+          const note=[first? h.note : '', firstEx? en.note : '', firstEx||extra!==said? extra : ''].filter(Boolean).join(' · ');
+          said=extra;
+          if(m==='lift'){ const hold=MUSCLE_HOLDS.includes(en.exId), tag=s.tag? String(s.tag).toLowerCase() : '';
+            push(m, h, ex, s.type==='warmup'? 'warm-up' : hold? 'hold' : tag||'work', s.weight, s.reps, num(s.rir)? 'RIR '+s.rir : '', s.assumed, note);
+            (Array.isArray(s.segments)? s.segments : []).forEach(g=>{ if(g&&(num(g.weight)||num(g.reps))) push(m, h, ex, !tag||tag==='drop set'? 'drop' : tag, g.weight, g.reps, '', false, ''); }); }
+          else if(m==='str') push(m, h, ex, STR_KIND[s.kind]||s.kind||'work', s.w, s.reps, num(s.rpe)? 'RPE '+s.rpe : '', s.ra, note);
+          else push(m, h, ex, en.kind==='hold'? 'hold' : 'work', setup.load, s.v, num(s.rir)? 'RIR '+s.rir : '', false, note);
+          first=firstEx=false; }); }); }));
+    return out.sort((a,b)=>a.t-b.t).map(x=>x.r);
+  }
+  /* One CSV field: quoted when it holds a comma, semicolon, quote, line break or edge spaces; text a spreadsheet would run
+     as a formula gets a leading apostrophe. */
+  function field(v, text){ if(v==null) return ''; let s=String(v); if(text && /^[=+\-@\t\r]/.test(s)) s="'"+s;
+    return /[",;\r\n]/.test(s) || /^\s|\s$/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s; }
+  /* The whole file: a byte-order mark so spreadsheets read it as UTF-8, and CRLF line ends (RFC 4180). */
+  function csv(S, names){ return '\uFEFF'+[HEAD].concat(rows(S, names)).map(r=>r.map((v,i)=>field(v, TEXT.has(i))).join(',')).join('\r\n')+'\r\n'; }
+
+  /* ---- Planned training days ---- */
+  // Together's suggested weekdays for each number of days (POS there), Monday 0
+  const WD_POS={1:[0], 2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,4,5], 6:[0,1,2,3,4,5], 7:[0,1,2,3,4,5,6]};
+  const mon=ts=>(new Date(ts).getDay()+6)%7;
+  /* The weekdays Together trains on, one for each of its n days: the ones you picked (wd), else the suggested ones. */
+  function weekdays(T, n){ n=n>=1&&n<=7? n : T&&T.days>=1&&T.days<=7? T.days : 4;
+    const w=T&&T.wd; return Array.isArray(w)&&w.length===n&&w.every(d=>Number.isInteger(d)&&d>=0&&d<=6)&&new Set(w).size===n? w.slice().sort((a,b)=>a-b) : WD_POS[n]; }
+  /* What each section plans on its own: {m: {per (a week), names:[...]}}. Ladder keeps no days, so its goals get three. */
+  function ownPlans(S){
+    const o={}, L=S&&S.lift, st=S&&S.str, lc=S&&S.cal;
+    const m=L&&Array.isArray(L.mesos)? L.mesos.find(x=>x&&x.status==='active'&&Array.isArray(x.days)&&x.days.length) : null;
+    if(m) o.lift={per:Math.min(7,m.days.length), names:m.days.map(d=>d&&d.name||'')};
+    if(st&&st.program&&st.setup&&st.setup.days>=1) o.str={per:Math.min(7,st.setup.days), names:[]};
+    if(lc&&Array.isArray(lc.goals)&&lc.goals.some(g=>g&&!g.achieved)) o.cal={per:3, names:[]};
+    return o;
+  }
+  /* Training days from the day of `from`, for `days` days: [{date (local midnight), day, secs, title}]. With Together on and
+     planned, its days fall on their weekdays, each with the sections Together gives it (as its weekOf: Strength or Muscle
+     only where the plan found work for them that day); otherwise each section's own plan goes on the suggested weekdays
+     for its number of days a week. */
+  function planned(T, S, from, days){
+    const out=[], start=Day.start(from), list=Day.range(start, Day.add(start, Math.max(1,days)-1));
+    if(T&&T.on&&T.plan&&Array.isArray(T.plan.kinds)&&T.plan.kinds.length){
+      const P=T.plan, secs=Array.isArray(T.secs)? T.secs : MODS, none=(i,m)=>{ const d=Array.isArray(P.days)&&P.days[i]; return !!d&&(m==='str'||m==='lift')&&Array.isArray(d[m])&&!d[m].length; };
+      const kinds=P.kinds.map((k,i)=>(Array.isArray(k)? k : []).filter(m=>SEC_N[m]&&secs.includes(m)&&!none(i,m))), wd=weekdays(T, kinds.length);
+      list.forEach(d=>{ const i=wd.indexOf(mon(d)); if(i<0||!kinds[i].length) return;
+        out.push({date:d, day:i, secs:kinds[i].slice(), title:'Day '+(i+1)+': '+kinds[i].map(m=>SEC_N[m]).join(' + ')}); });
+      return out;
+    }
+    const own=ownPlans(S), seen={};
+    list.forEach(d=>{ const secs=[], parts=[];
+      Object.keys(own).forEach(m=>{ const p=own[m]; if(WD_POS[p.per].indexOf(mon(d))<0) return;
+        const k=seen[m]=(seen[m]||0)+1, nm=p.names.length? p.names[(k-1)%p.names.length] : '';
+        secs.push(m); parts.push(SEC_N[m]+(nm? ' ('+nm+')' : '')); });
+      if(secs.length) out.push({date:d, day:null, secs, title:parts.join(' + ')}); });
+    return out;
+  }
+  /* Whether the day of ts is done: with Together on, it finished or skipped a day that started then (whichever day of its
+     week, and whatever was left out of it); or every section planned for it (secs; any when none) has a session that day. */
+  function doneOn(S, T, ts, secs){
+    const a=Day.start(ts), b=Day.add(a,1), inDay=t=>num(t)&&t>=a&&t<b, did=m=>hist(S&&S[m]).some(h=>inDay(h.date));
+    if(T&&T.on&&Array.isArray(T.log)&&T.log.some(e=>e&&inDay(num(e.start)? e.start : e.date))) return true;
+    return secs&&secs.length? secs.every(did) : MODS.some(did);
+  }
+  /* The app badge: 1 on a planned training day not yet done, else 0. */
+  function badge(T, S, now){ const d=planned(T, S, now, 1)[0]; return d&&!doneOn(S, T, now, d.secs)? 1 : 0; }
+
+  /* ---- A calendar file (RFC 5545) ---- */
+  const icsText=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+  /* Lines longer than 75 bytes go on as continuation lines starting with a space, never splitting a character. */
+  function fold(line){
+    const out=[]; let cur='', n=0;
+    for(const ch of line){ const b=new TextEncoder().encode(ch).length;
+      if(n+b>(out.length? 74 : 75)){ out.push(cur); cur=''; n=0; }
+      cur+=ch; n+=b; }
+    out.push(cur); return out.join('\r\n ');
+  }
+  const ymd=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
+  const floating=d=>ymd(d)+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';
+  const utc=ts=>new Date(ts).toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  /* days from planned(); o: {time:'18:00', mins:60, now}. Each event starts at that time on the phone's clock (floating time,
+     so a trip abroad keeps it at 6 pm) with a reminder 30 minutes before. A UID per day means importing a newer file
+     updates the days already there instead of adding them twice. */
+  function ics(days, o){
+    o=o||{}; const m=/^(\d{1,2}):(\d{2})$/.exec(o.time||'')||[0,18,0], h=Math.min(23,+m[1]), mi=Math.min(59,+m[2]);
+    const mins=o.mins>=10&&o.mins<=600? Math.round(o.mins) : 60, now=o.now||Date.now();
+    const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Milo van Croton//Training days//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Milo training'];
+    days.forEach(x=>{ const d0=new Date(x.date), s=new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), h, mi), e=new Date(s.getFullYear(), s.getMonth(), s.getDate(), h, mi+mins);
+      const what='Milo: '+x.title;
+      L.push('BEGIN:VEVENT','UID:milo-'+ymd(s)+'@milovancroton','DTSTAMP:'+utc(now),'DTSTART:'+floating(s),'DTEND:'+floating(e),
+        'SUMMARY:'+icsText(what),'DESCRIPTION:'+icsText('Training day planned in Milo. Open Milo to start.'),
+        'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsText(what),'TRIGGER:-PT30M','END:VALARM','END:VEVENT'); });
+    L.push('END:VCALENDAR');
+    return L.map(fold).join('\r\n')+'\r\n';
+  }
+
+  /* ---- The coach summary ---- */
+  /* Main lifts with sessions in [from, to): [{key, name, sec, e1 (kg), best:{e1, kg, reps, eff}, n (sessions in the window)}].
+     info.lift(exId): Muscle's {comp, bw, p} for an exercise; info.str(liftId): Strength's {n, k, e1}. Muscle's loaded compounds
+     and Strength's loaded lifts count; the same lift in both (SAME_LIFT) is one, named as Strength names it. The estimated max
+     is Strength's own for its lifts (the one it sets loads from), else Lift.estimate over every session before to. Sets count
+     as each section counts them: Lift.usable, and in Strength a set with no RPE typed is at the RPE it was set for. */
+  function lifts(S, from, to, info){
+    const L={}, same=window.SAME_LIFT||{};
+    const add=(key, name, sec, cls, h, kg, reps, rir, eff, hub)=>{
+      if(!(kg>0&&Lift.usable(reps, rir))) return; const e1=Lift.e1rm(kg, reps, rir, cls); if(!(e1>0)) return;
+      const x=L[key]||(L[key]={key, name, sec, by:{}, best:null, n:new Set()});
+      if(sec==='Strength'){ x.name=name; x.sec=sec; if(hub>0) x.hub=hub; }
+      const p=x.by[h.id]||(x.by[h.id]={date:h.date, e1:0, rated:true}); if(e1>p.e1){ p.e1=e1; p.rated=rir!=null; }
+      if(h.date>=from&&h.date<to){ x.n.add(h.id); if(!x.best||e1>x.best.e1) x.best={e1, kg, reps, eff}; } };
+    hist(S&&S.lift).forEach(h=>{ if(h.date>=to) return; h.entries.forEach(en=>{ const i=info&&info.lift? info.lift(en.exId) : null; if(!i||!i.comp||i.bw) return;
+      const cls=Lift.cls({id:en.exId, name:en.name, comp:true, primary:i.p||en.primary||[]});
+      (en.sets||[]).forEach(s=>{ if(workSet('lift',s)) add(en.exId, en.name||en.exId, 'Muscle', cls, h, s.weight, s.reps, num(s.rir)? s.rir : null, num(s.rir)? 'RIR '+s.rir : ''); }); }); });
+    hist(S&&S.str).forEach(h=>{ if(h.date>=to) return; h.entries.forEach(en=>{ const i=info&&info.str? info.str(en.liftId) : null; if(!i||i.k!=='load') return;
+      const cls=Lift.cls({id:en.liftId, n:i.n, comp:true});
+      (en.sets||[]).forEach(s=>{ const rpe=num(s.rpe)? s.rpe : num(s.trpe)? s.trpe : 10;
+        if(workSet('str',s)) add(same[en.liftId]||'str:'+en.liftId, i.n, 'Strength', cls, h, s.w, s.reps, Math.max(0,10-rpe), num(s.rpe)? 'RPE '+s.rpe : '', i.e1); }); }); });
+    return Object.values(L).filter(x=>x.n.size).map(x=>{ const est=x.hub? null : Lift.estimate(Object.values(x.by));
+      return {key:x.key, name:x.name, sec:x.sec, e1:x.hub||(est? est.value : x.best.e1), best:x.best, n:x.n.size}; })
+      .sort((a,b)=>b.n-a.n||b.e1-a.e1).slice(0,12);
+  }
+  /* The summary's numbers for the four weeks up to the end of the day of now. x: what the sections say through the hub:
+     {unit, muscles:[{n, sets (hard sets in the four weeks)}], goals:[{n, step, pct}], info (as lifts()), names (as rows())}.
+     Sets a week are over the weeks there is training to count: from the first session in any section when that is less
+     than four weeks ago (days says how many), and never less than a week. */
+  function coach(S, now, x){
+    x=x||{}; const to=Day.add(Day.start(now),1), from=Day.add(to,-28), inW=h=>h.date>=from&&h.date<to;
+    const first=Math.min(...MODS.map(m=>hist(S&&S[m]).reduce((t,h)=>Math.min(t,h.date),Infinity))), days=first<from? 28 : first<to? Day.diff(to, Day.start(first)) : 0;
+    const weeks=Math.max(1, days/7), muscles=(x.muscles||[]).map(m=>({n:m.n, perWeek:m.sets/weeks})).sort((a,b)=>b.perWeek-a.perWeek);
+    const sessions=[], notes=[];
+    MODS.forEach(m=>hist(S&&S[m]).filter(inW).forEach(h=>{
+      sessions.push({date:h.date, sec:SEC_N[m], name:h.name||'', sets:h.entries.reduce((n,en)=>n+(en&&Array.isArray(en.sets)? en.sets.filter(s=>workSet(m,s)).length : 0),0)});
+      if(h.note) notes.push({date:h.date, text:String(h.note)});
+      h.entries.forEach(en=>{ if(en&&en.note) notes.push({date:h.date, text:exOf(m, en, x.names)+': '+en.note}); }); }));
+    sessions.sort((a,b)=>a.date-b.date); notes.sort((a,b)=>a.date-b.date);
+    const rungs=(S&&S.cal&&Array.isArray(S.cal.advances)? S.cal.advances : []).filter(v=>v&&num(v.date)&&v.date>=from&&v.date<to).map(v=>({date:v.date, name:String(v.name||'')}));
+    return {from, to, days, unit:x.unit==='lb'? 'lb' : 'kg', sessions, muscles, lifts:lifts(S, from, to, x.info), goals:x.goals||[], rungs, notes};
+  }
+  /* The summary as parts [{h, lines}]: the screen shows them, text() makes a message of them. */
+  function summary(D){
+    const u=D.unit, w=kg=>String(Math.round((u==='lb'? kg/KG_PER_LB : kg)*10)/10)+' '+u;
+    const day=ts=>new Date(ts).toLocaleDateString(undefined,{weekday:'short', day:'numeric', month:'short'});
+    const parts=[], by={};
+    D.sessions.forEach(s=>{ by[s.sec]=(by[s.sec]||0)+1; });
+    parts.push({h:'Sessions: '+D.sessions.length, lines:D.sessions.length?
+      [Object.keys(by).map(k=>k+' '+by[k]).join(', ')].concat(D.sessions.map(s=>day(s.date)+' · '+s.sec+' · '+s.name+' · '+s.sets+' set'+(s.sets===1?'':'s')))
+      : ['No sessions in these four weeks.']});
+    if(D.muscles.length) parts.push({h:'Hard sets a week, per muscle'+(D.days<28? ' (from the '+(D.days===1? 'day' : D.days+' days')+' you have logged)' : ''), lines:D.muscles.map(m=>m.n+': '+(Math.round(m.perWeek*10)/10))});
+    if(D.lifts.length) parts.push({h:'Main lifts', lines:D.lifts.map(x=>x.name+': estimated max '+w(x.e1)+'; best set '+w(x.best.kg)+' × '+x.best.reps+(x.best.eff? ' at '+x.best.eff : '')+' ('+x.n+' session'+(x.n===1?'':'s')+')')});
+    if(D.goals.length||D.rungs.length) parts.push({h:'Ladder', lines:D.goals.map(g=>g.n+': '+(g.step? 'on '+g.step+', ' : '')+g.pct+'% of the way')
+      .concat(D.rungs.map(r=>day(r.date)+': moved up to '+r.name))});
+    if(D.notes.length) parts.push({h:'Notes', lines:D.notes.map(n=>day(n.date)+': '+n.text)});
+    return parts;
+  }
+  function range(D){ return new Date(D.from).toLocaleDateString(undefined,{day:'numeric', month:'short'})+' to '+new Date(D.to-1).toLocaleDateString(undefined,{day:'numeric', month:'short', year:'numeric'}); }
+  function text(D){ return 'Training summary from Milo, '+range(D)+'\n\n'+summary(D).map(p=>p.h+'\n'+p.lines.map(l=>'- '+l).join('\n')).join('\n\n')+'\n'; }
+
+  /* ---- Exercise names from other apps ---- */
+  const EQUIP_W=['barbell','dumbbell','cable','machine','smith','kettlebell','band','ez','plate','bodyweight'];
+  /* Lower case, joined-up pull-ups and push-ups, common short forms written out, plurals made singular. */
+  const norm=s=>' '+String(s).toLowerCase().replace(/[\u2010-\u2015-]/g,' ').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim()+' ';
+  function canon(s){ return norm(s).replace(/ (pull|chin|push|sit|step) ups?(?= )/g,' $1up').replace(/ (pull|push) down(?= )/g,' $1down')
+    .replace(/ db(?= )/g,' dumbbell').replace(/ bb(?= )/g,' barbell').replace(/ kb(?= )/g,' kettlebell').replace(/ ohp(?= )/g,' overhead press').replace(/ rdl(?= )/g,' romanian deadlift')
+    .replace(/ shoulder press(?= )/g,' overhead press').replace(/ (\w{3,}?)s(?= )/g,(a,w)=>/s$/.test(w)? a : ' '+w).trim(); }
+  /* The words that say what a name is. "Bench" says nothing more once a press is incline or decline, nor "bent over" for a row. */
+  function words(s){ const W=new Set(canon(s).split(' ').filter(w=>w&&!['the','with','on','of','and','a','to','bent','over'].includes(w)).map(w=>w==='flye'? 'fly' : w==='calve'? 'calf' : w));
+    if(W.has('incline')||W.has('decline')) W.delete('bench'); return W; }
+  // Strong's and Hevy's names for the barbell and bodyweight basics, as canon() leaves them without the equipment
+  const ALIAS={'squat':'back-squat','back squat':'back-squat','high bar squat':'back-squat','low bar squat':'back-squat','bench press':'barbell-bench',
+    'flat bench press':'barbell-bench','deadlift':'deadlift','conventional deadlift':'deadlift','overhead press':'ohp','strict press':'ohp','military press':'ohp',
+    'bent over row':'barbell-row','barbell row':'barbell-row','pendlay row':'pendlay-row','pullup':'pullup','chinup':'chin-up','pushup':'pushup','dip':'dip',
+    'chest dip':'dip','romanian deadlift':'romanian-deadlift','stiff leg deadlift':'romanian-deadlift','hip thrust':'hip-thrust','front squat':'front-squat',
+    'sumo deadlift':'sumo-deadlift','incline bench press':'incline-bench','close grip bench press':'close-grip-bench','good morning':'good-morning',
+    'shrug':'barbell-shrug','bicep curl':'barbell-curl','skullcrusher':'skullcrusher','lying leg curl':'lying-leg-curl','seated leg curl':'leg-curl'};
+  /* The exercise in list most like the words A: a score from the words both names have, where an equipment word counts half
+     (so "preacher" in common beats "barbell" in common), and at least one word that isn't equipment must be shared. A
+     dumbbell's weight is for each hand and a barbell's for the whole bar, so with eq one of those, the other scores less. On a
+     tie, the one sharing the rarer words in the list wins. */
+  function closest(A, list, eq){
+    const other={dumbbell:'barbell', barbell:'dumbbell'}[eq];
+    const wt=w=>EQUIP_W.includes(w)? 0.5 : 1, sum=S=>[...S].reduce((n,w)=>n+wt(w),0), Bs=list.map(x=>{ const B=words(x.name), e=String(x.equipment||'').toLowerCase();
+      if(EQUIP_W.includes(e)&&e!=='bodyweight') B.add(e); return B; }), df={};
+    Bs.forEach(B=>B.forEach(w=>{ df[w]=(df[w]||0)+1; }));
+    let best=null, top=0, rare=0;
+    list.forEach((x,i)=>{ const B=Bs[i]; let both=0, core=0, r=0; A.forEach(w=>{ if(B.has(w)){ both+=wt(w); if(wt(w)===1){ core++; r+=1/df[w]; } } });
+      const sc=(core? 2*both/(sum(A)+sum(B)) : 0)*(other&&String(x.equipment).toLowerCase()===other? 0.6 : 1);
+      if(sc>top+1e-9||(sc>0&&Math.abs(sc-top)<=1e-9&&r>rare+1e-9)){ top=sc; rare=r; best=x; } });
+    return top>=0.5? best : null;
+  }
+  /* The exercise in list ([{id, name, equipment}], Muscle's catalogue) most like name, or null when nothing is close. Strong
+     and Hevy put the equipment in brackets: "Bench Press (Barbell)". An assisted version (or a band on a bodyweight exercise)
+     is a different exercise, its weight the help and not load: it gets an assisted exercise (a chin-up the assisted pull-up)
+     or none, never the bodyweight one. */
+  function guess(name, list){
+    const raw=String(name), paren=(/\(([^)]*)\)\s*$/.exec(raw)||[])[1]||'', base=raw.replace(/\([^)]*\)\s*$/,'');
+    const eq=canon(paren), ids=new Set(list.map(x=>x.id)), alias=ALIAS[canon(base)], A=words(raw);
+    let assisted=A.has('assisted');
+    if(!assisted && alias && ids.has(alias) && (!eq || eq==='barbell' || eq==='bodyweight' || eq==='weighted')) return alias;
+    const best=assisted? null : closest(A, list, eq);
+    if(!assisted && !(A.has('band') && best && best.equipment==='Bodyweight')) return best? best.id : null;
+    const H=new Set([...A].filter(w=>w!=='band').map(w=>w==='chinup'? 'pullup' : w)); H.add('assisted');
+    const x=closest(H, list.filter(e=>/assist/i.test(e.name)&&e.equipment!=='Bodyweight'));
+    return x? x.id : null;
+  }
+  /* Workouts read by MiloSecurity.workouts, as the sessions Muscle's and Strength's past() add: {lift:[...], str:[...]}, each
+     with w, the workout it came from (one workout can give a session in each). map: {name lower-cased: {sec:'lift'|'str', id}}
+     (a name left out is skipped); unit: what weights are in when the file doesn't say. */
+  function toPast(W, map, unit){
+    const out={lift:[], str:[]};
+    W.sessions.forEach((s,k)=>{ const by={lift:[], str:[]};
+      s.entries.forEach(e=>{ const m=map[e.name.toLowerCase()]; if(!m||!by[m.sec]) return;
+        const sets=e.sets.map(t=>{ const u=t.u||unit, kg=num(t.w)&&t.w>0? Math.round((u==='lb'? t.w*KG_PER_LB : t.w)*1e4)/1e4 : null;
+          return {warm:t.type==='warmup', kind:t.type, kg, reps:t.reps, secs:t.secs, rpe:t.rpe}; }).filter(t=>t.reps>0||t.secs>0);
+        const have=by[m.sec].find(x=>x.id===m.id);   // two names mapped to one exercise: one entry
+        if(have){ have.sets=have.sets.concat(sets); if(e.note) have.note=have.note? have.note+' · '+e.note : e.note; }
+        else if(sets.length) by[m.sec].push({id:m.id, note:e.note||'', sets}); });
+      MODS.slice(0,2).forEach(m=>{ if(by[m].length) out[m].push({id:'imp-'+W.app+'-'+m+'-'+s.start.toString(36)+'-'+k, w:k, date:s.start, name:s.name,
+        note:s.note||'', durationSec:s.durationSec||0, from:W.app, entries:by[m]}); }); });
+    return out;
+  }
+
+  return {HEAD, rows, csv, field, weekdays, planned, doneOn, badge, ics, fold, lifts, coach, summary, range, text, canon, guess, toPast};
+})();
+
+;
+
+/* ==================== YOUR DATA ON SCREEN ====================
+   The "Your data" part of the backup sheet (YOUR DATA has the workings): the spreadsheet of every set, importing from
+   Strong or Hevy with a preview and Undo, the coach summary, the calendar file, the app badge on a training day, and the
+   privacy page with Erase everything. */
+(function(){
+  const H=window.__hub, D=window.MiloData, $=id=>document.getElementById(id);
+  const KEYS={lift:'hyplog.v1', str:'strlog.v2', cal:'proladder.v1'};
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+  const read=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
+  /* What the sections have saved (a section saves a moment after each change) and Together's plan. */
+  function saved(){ const S={}; Object.keys(KEYS).forEach(m=>{ S[m]=read(KEYS[m]); }); return S; }
+  const together=()=>read('trainer.together');
+  // a section with saved data, started if it hasn't been yet; null without any
+  const api=m=>{ try{ return H&&H.has(m)? H.api(m) : null; }catch(e){ return null; } };
+  const names={str:(id,vi)=>{ const a=api('str'); return a&&a.name? a.name(id,vi) : null; }, cal:(id,i)=>{ const a=api('cal'); return a&&a.name? a.name(id,i) : null; }};
+  const say=(id,t,bad)=>{ const el=$(id); el.textContent=t; el.classList.toggle('bad',!!bad); };
+  const open=d=>{ if(d.showModal) d.showModal(); else d.setAttribute('open',''); };
+  const close=d=>{ if(d.close) d.close(); else d.removeAttribute('open'); };
+  const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+  const unit=()=>Prefs.get('unit','kg')==='lb'? 'lb' : 'kg';
+
+  /* ---- Every set as a spreadsheet ---- */
+  $('yd-csv').addEventListener('click',async()=>{
+    const S=saved(), n=D.rows(S, names).length, name='milo-sets-'+Day.key(Date.now())+'.csv';
+    if(!n){ say('yd-msg','No finished sessions to export yet.',true); return; }
+    const r=await window.__deliver(D.csv(S, names), name, 'text/csv');
+    if(r) say('yd-msg', plural(n,'set')+(r==='saved'? ' saved as '+name+'.' : ' exported.'));
+  });
+
+  /* ---- Training days in your calendar ---- */
+  try{ const t=localStorage.getItem('milo.caltime'); if(/^\d{2}:\d{2}$/.test(t||'')) $('yd-time').value=t; }catch(e){}
+  $('yd-cal').addEventListener('click',async()=>{
+    const T=together(), days=D.planned(T, saved(), Date.now(), 28), time=$('yd-time').value||'18:00';
+    if(!days.length){ say('yd-msg','No training days are planned yet. Set up Together, or a plan in Muscle, Strength or Ladder, first.',true); return; }
+    try{ localStorage.setItem('milo.caltime', time); }catch(e){}
+    const r=await window.__deliver(D.ics(days, {time, mins:T&&T.on&&T.mins>=10? T.mins : 60}), 'milo-training.ics', 'text/calendar', false);
+    if(r) say('yd-msg', plural(days.length,'training day')+' in the next four weeks, each with a reminder 30 minutes before. Open milo-training.ics to add them to your calendar.');
+  });
+
+  /* ---- The coach summary ---- */
+  let sumText='';
+  function coachData(){
+    const now=Date.now(), to=Day.add(Day.start(now),1), from=Day.add(to,-28), L=api('lift'), T=L&&L.table? L.table() : null, cat={};
+    let muscles=[], goals=[];
+    try{ const t=H.sets(from, to); muscles=Object.keys(t.direct).filter(k=>t.direct[k]>0)
+      .map(k=>({n:T&&T.muscles[k]? T.muscles[k].n : k, sets:t.direct[k]})); }catch(e){ console.warn('summary: sets not counted', e); }
+    try{ const c=api('cal'); if(c&&c.goals) goals=c.goals(); }catch(e){}
+    try{ if(L) L.catalog().forEach(e=>{ cat[e.id]={comp:e.comp, bw:e.equipment==='Bodyweight', p:e.p}; }); }catch(e){}
+    // (once a lift: Strength works its estimated max out from all its sessions)
+    const lifts={}, info={lift:id=>cat[id]||null, str:id=>{ if(id in lifts) return lifts[id]; const a=api('str'), l=a&&a.lift? a.lift(id) : null; return lifts[id]= l? {n:l.n, k:l.k, e1:l.e1} : null; }};
+    return D.coach(saved(), now, {unit:unit(), muscles, goals, info, names});
+  }
+  $('yd-sum').addEventListener('click',()=>{
+    const C=coachData(); sumText=D.text(C);
+    $('sum-range').textContent='The four weeks from '+D.range(C);
+    $('sum-body').innerHTML=MiloSecurity.html(D.summary(C).map(p=>'<section><h3>'+esc(p.h)+'</h3><ul>'+p.lines.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul></section>').join(''));
+    say('sum-msg',''); open($('sum')); printSum(true);
+  });
+  // while the summary is open, printing prints it alone (shell.css); any other time the page prints as it is
+  const printSum=on=>document.documentElement.classList.toggle('print-sum', on);
+  $('sum').addEventListener('close',()=>printSum(false));
+  $('sum-print').addEventListener('click',()=>window.print());
+  $('sum-share').addEventListener('click',async()=>{
+    try{ if(navigator.share){ await navigator.share({title:'Training summary', text:sumText}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+    try{ await navigator.clipboard.writeText(sumText); say('sum-msg','Summary copied as text, ready to paste into a message.'); }
+    catch(e){ say('sum-msg','Couldn’t share or copy it here. Print it instead.',true); }
+  });
+  $('sum-done').addEventListener('click',()=>{ close($('sum')); printSum(false); });
+
+  /* ---- Importing from Strong or Hevy ----
+     The file is read and checked in MiloSecurity.workouts. Each exercise name gets Milo's closest exercise (MiloData.guess),
+     which you can change or skip; a lift Strength has goes there, the rest to Muscle. Muscle's and Strength's past() add the
+     sessions beside yours and say which, so Undo takes exactly those out again. */
+  let imp=null, lastImport=null;
+  const STR_OF={}; Object.keys(window.SAME_LIFT||{}).forEach(k=>{ STR_OF[SAME_LIFT[k]]=k; });
+  // a Muscle exercise Strength also has, and whether it is one of Strength's loaded lifts (those go to Strength)
+  function strLift(id){ const k=STR_OF[id]; if(!k) return null; const a=H.api('str'), l=a&&a.lift? a.lift(k) : null; return l? {id:k, load:l.k==='load'} : null; }
+  const pick=id=>{ const s=id&&strLift(id); return id? {id, sec:s&&s.load? 'str' : 'lift'} : {id:null, sec:'lift'}; };
+  $('yd-import').addEventListener('click',()=>$('yd-fin').click());
+  $('yd-fin').addEventListener('change',e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+    if(f.size>MiloSecurity.IMPORT_BYTES){ say('yd-msg','That file is too large (maximum 8 MB).',true); return; }
+    f.text().then(startImport).catch(()=>say('yd-msg','Couldn’t read that file.',true));
+  });
+  function startImport(text){
+    let W; try{ W=MiloSecurity.workouts(text); }catch(e){ say('yd-msg',e.message,true); return; }
+    const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], map={};
+    W.exercises.forEach(x=>{ map[x.name.toLowerCase()]=pick(D.guess(x.name, cat)); });
+    imp={W, cat, byId:Object.fromEntries(cat.map(e=>[e.id,e])), map, unit:W.unit||unit(), open:null, q:'', done:null};
+    say('yd-msg',''); say('imp-msg',''); paintImport(); open($('imp'));
+  }
+  // the exercises each section adds, keyed as MiloData.toPast takes them: Strength's lifts by Strength's ids
+  function pastMap(){ const o={}; Object.keys(imp.map).forEach(k=>{ const m=imp.map[k]; if(!m.id) return; const s=m.sec==='str'&&strLift(m.id);
+    o[k]= s? {sec:'str', id:s.id} : {sec:'lift', id:m.id}; }); return o; }
+  function listHtml(k){
+    const q=imp.q.trim().toLowerCase().split(/\s+/).filter(Boolean), cur=imp.map[k].id;
+    const list=imp.cat.filter(e=>q.every(w=>(e.name+' '+e.equipment).toLowerCase().includes(w)))
+      .sort((a,b)=>(b.id===cur)-(a.id===cur)||a.name.localeCompare(b.name)).slice(0,40);
+    return `<button data-imp="choose" data-id="" aria-pressed="${!cur}">Skip this exercise</button>`
+      +list.map(e=>`<button data-imp="choose" data-id="${esc(e.id)}" aria-pressed="${e.id===cur}">${esc(e.name)}<span>${esc(e.equipment)}</span></button>`).join('')
+      +(list.length? '' : '<p class="small">No Milo exercise matches that.</p>');
+  }
+  /* What each section would add (its past() without saving), worked out again only when a choice changes. */
+  function trial(){
+    const P=D.toPast(imp.W, pastMap(), imp.unit), key=JSON.stringify(pastMap())+imp.unit;
+    if(!imp.trial||imp.trial.key!==key){ const r={};
+      // Strength's share of a backup after Muscle's, as the import itself will go
+      ['lift','str'].forEach(m=>{ const a=P[m].length? H.api(m) : null; r[m]= a&&a.past? a.past(P[m], null, true, m==='str'? r.lift.bytes : 0) : {added:[], sets:0, skipped:0, dup:[], over:0, bytes:0}; });
+      imp.trial={key, P, r}; }
+    return imp.trial;
+  }
+  // how many workouts some sessions come from (a workout can give one to Muscle and one to Strength)
+  const workouts=(P, ids)=>{ const w={}; P.lift.concat(P.str).forEach(s=>{ w[s.id]=s.w; }); return new Set(ids.map(id=>w[id])).size; };
+  const num=n=>n.toLocaleString();
+  const overText=o=>['lift','str'].filter(m=>o[m]).map(m=>`This is more history than Milo can keep in ${m==='lift'? 'Muscle' : 'Strength'}, so the oldest ${plural(o[m],'session')} ${o[m]===1? 'is' : 'are'} left out.`).join(' ');
+  function paintImport(){
+    const W=imp.W, dt=t=>new Date(t).toLocaleDateString(undefined,{day:'numeric', month:'short', year:'numeric'});
+    $('imp-title').textContent='Import from '+(W.app==='hevy'? 'Hevy' : 'Strong');
+    let h=`<p>${plural(W.sessions.length,'workout')} and ${plural(W.sets,'set')}, from ${dt(W.sessions[0].start)} to ${dt(W.sessions[W.sessions.length-1].start)}. They are added beside your own sessions; an exercise you already logged that day is left out.</p>`, n=0;
+    if(imp.done){ const d=imp.done, also=[d.skipped? plural(d.skipped,'exercise')+' already in Milo on those days left out.' : '', overText(d.over)].filter(Boolean).join(' ');
+      h+= d.added? `<p class="ok">Added ${d.workouts===1? '1 workout' : num(d.workouts)+' workouts'} (${d.sets===1? '1 set' : num(d.sets)+' sets'}).${d.dup? ' '+(d.dup===1? '1 workout was' : num(d.dup)+' workouts were')+' already imported.' : ''}</p>${also? '<p>'+also+'</p>' : ''}
+        <button class="b" data-imp="undo" style="width:100%">Undo the import</button>`
+        : `<p class="ok">Nothing was added${d.dup? ': '+(d.dup===1? 'this workout was' : 'these workouts were')+' imported before' : ''}.</p>${also? '<p>'+also+'</p>' : ''}`;
+    } else {
+      const t=trial(), r=t.r, over={lift:r.lift.over, str:r.str.over}, dup=workouts(t.P, r.lift.dup.concat(r.str.dup));
+      n=workouts(t.P, r.lift.added.concat(r.str.added));
+      if(dup) h+=`<p>${dup===1? '1 workout was' : num(dup)+' workouts were'} imported before, so ${dup===1? 'it is' : 'they are'} left out.</p>`;
+      if(over.lift||over.str) h+=`<p class="bad">${overText(over)}</p>`;
+      if(!W.unitKnown) h+=`<p class="fld">Weights in this file are in</p><div class="row seg2">${['kg','lb'].map(u=>`<button class="b sm" data-imp="unit" data-v="${u}" aria-pressed="${imp.unit===u}">${u}</button>`).join('')}</div>`;
+      h+=`<h3 style="margin-top:14px">Exercises</h3><p class="small">Each is matched to the closest Milo exercise. Tap one to change it or skip it.</p>`;
+      W.exercises.slice().sort((a,b)=>b.sets-a.sets||a.name.localeCompare(b.name)).forEach(x=>{
+        const k=x.name.toLowerCase(), m=imp.map[k], e=m.id&&imp.byId[m.id], s=m.id&&STR_OF[m.id], on=imp.open===k;
+        h+=`<div class="imx"><div class="imx-n"><b>${esc(x.name)}</b><span>${plural(x.sets,'set')}</span></div>
+          <div class="row"><button class="b sm" data-imp="open" data-k="${esc(k)}" aria-expanded="${on}">${e? 'Milo: '+esc(e.name) : 'Skipped'}</button>
+          ${s? `<span class="seg2">${['lift','str'].map(v=>`<button class="b sm" data-imp="sec" data-k="${esc(k)}" data-v="${v}" aria-pressed="${m.sec===v}">${v==='lift'? 'Muscle' : 'Strength'}</button>`).join('')}</span>` : ''}</div>
+          ${on? `<input class="txt" type="search" id="imp-q" placeholder="Search Milo’s exercises" aria-label="Search Milo’s exercises" value="${esc(imp.q)}"><div class="imx-list" id="imp-list">${listHtml(k)}</div>` : ''}</div>`; });
+    }
+    $('imp-body').innerHTML=MiloSecurity.html(h);
+    const go=$('imp-go'); go.hidden=!!imp.done; go.disabled=!n; go.textContent= n? 'Import '+(n===1? '1 workout' : num(n)+' workouts') : 'Nothing to import';
+    $('imp-cancel').textContent= imp.done? 'Done' : 'Cancel';
+  }
+  $('imp').addEventListener('click',e=>{
+    const b=e.target.closest('[data-imp]'); if(!b||!imp) return; const a=b.dataset.imp, k=b.dataset.k;
+    if(a==='open'){ imp.open= imp.open===k? null : k; imp.q=''; paintImport(); const q=$('imp-q'); if(q) q.focus(); }
+    else if(a==='choose'){ imp.map[imp.open]=pick(b.dataset.id||null); imp.open=null; paintImport(); }
+    else if(a==='sec'){ imp.map[k].sec=b.dataset.v; paintImport(); }
+    else if(a==='unit'){ imp.unit=b.dataset.v; paintImport(); }
+    else if(a==='undo'){ undoImport(imp.done); imp.done=null; paintImport(); say('imp-msg','Import undone.'); }
+  });
+  $('imp').addEventListener('input',e=>{ if(e.target.id!=='imp-q'||!imp||!imp.open) return; imp.q=e.target.value; $('imp-list').innerHTML=MiloSecurity.html(listHtml(imp.open)); });
+  $('imp-go').addEventListener('click',()=>{
+    if(!imp||imp.done) return;
+    const P=D.toPast(imp.W, pastMap(), imp.unit), d={res:{}, added:0, sets:0, skipped:0, over:{}, workouts:0, dup:0}, ids=[], dups=[];
+    ['lift','str'].forEach(m=>{ if(!P[m].length) return; const a=H.api(m), r=a&&a.past? a.past(P[m]) : null; if(!r) return;
+      d.res[m]=r.added; d.added+=r.added.length; d.sets+=r.sets; d.skipped+=r.skipped; d.over[m]=r.over||0;
+      ids.push(...r.added); dups.push(...(r.dup||[])); });
+    d.workouts=workouts(P, ids); d.dup=workouts(P, dups);
+    imp.done=d; lastImport=d.added? d : null; paintImport(); say('imp-msg','');
+  });
+  function undoImport(d){ if(!d) return; Object.keys(d.res).forEach(m=>{ const a=H.api(m); if(a&&a.past&&d.res[m].length) a.past(null, d.res[m]); }); if(lastImport===d) lastImport=null; paintUndo(); }
+  // after the sheet closes, the backup sheet keeps a way to take the last import back
+  function paintUndo(){ $('yd-undo').hidden=!lastImport; }
+  $('imp-cancel').addEventListener('click',()=>close($('imp')));
+  // (the event comes a moment after the sheet closes: by then another file may have opened it again)
+  $('imp').addEventListener('close',()=>{ if($('imp').open) return; if(imp&&imp.done&&imp.done.added) say('yd-msg','Imported '+plural(imp.done.workouts,'workout')+'.'); imp=null; paintUndo(); });
+  $('yd-undo').addEventListener('click',()=>{ undoImport(lastImport); say('yd-msg','Import undone.'); });
+
+  /* ---- The app badge ----
+     Installed on a phone, Milo's icon shows a badge on a planned training day until that day's training is done. */
+  function paintBadge(){
+    try{ if(!('setAppBadge' in navigator)) return;
+      const installed=matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; if(!installed) return;
+      const n=D.badge(together(), saved(), Date.now());
+      (n? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(()=>{}); }catch(e){}
+  }
+  let badgeT=null; const badgeSoon=()=>{ clearTimeout(badgeT); badgeT=setTimeout(paintBadge, 1500); };   // after the section's own save
+  if(H) H.on(badgeSoon);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) badgeSoon(); });
+  badgeSoon();
+
+  /* ---- Privacy, and erasing everything ----
+     Erasing is parked in sessionStorage and done on the next load (SHELL), before any section starts, so a section's
+     save on the way out can't write anything back. */
+  document.querySelectorAll('[data-open-privacy]').forEach(b=>b.addEventListener('click',()=>{
+    $('er-in').value=''; $('er-go').disabled=true; say('er-msg',''); open($('privacy')); }));
+  $('privacy-done').addEventListener('click',()=>close($('privacy')));
+  const typed=()=>$('er-in').value.trim().toLowerCase()==='erase';
+  $('er-in').addEventListener('input',()=>{ $('er-go').disabled=!typed(); });
+  $('er-go').addEventListener('click',()=>{
+    if(!typed()) return;
+    try{ sessionStorage.setItem('milo.erase','1'); }
+    catch(e){ try{ MiloSecurity.erase(localStorage); }catch(_){ say('er-msg','Couldn’t erase: '+e.message,true); return; } }
+    location.replace(location.pathname);
+  });
+})();
 
 ;
 
