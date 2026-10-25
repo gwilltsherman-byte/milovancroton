@@ -2267,7 +2267,7 @@ function storePayload(){
   return { v:state.v, route:state.route, onboarded:state.onboarded, settings:state.settings,
     exercises: state.exercises.filter(e=>e.custom),
     history: state.history, active: state.active, parked: state.parked, repeat: state.repeat, mesos: state.mesos, bodylog: state.bodylog, milestones: state.milestones,
-    rirCal: state.rirCal, readyDay: state.readyDay||null };
+    rirCal: state.rirCal, readyDay: state.readyDay||null, readyAns: state.readyAns||null };
 }
 /* Finishing or ending a session, deleting one or saving changes to one can be taken back (TakeBack, shared). */
 const tb=TakeBack.make({key:LS_KEY+'.undo', data:()=>storePayload(), load:c=>hydrate(c),
@@ -2782,7 +2782,7 @@ function setRow(en, ei, s, si){
       : isAssisted(en.exId)? `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev&&prev.weight!=null?fmtW(prev.weight):'0'}" aria-label="Set ${idxLabel} help from the counterweight, blank for none"></div>`
       : `<div class="setwrap"><input class="sinput" inputmode="decimal" data-field="weight" data-ex="${ei}" data-set="${si}" value="${s.weight!=null?fmtW(s.weight):''}" placeholder="${prev&&prev.weight!=null?fmtW(prev.weight):'&ndash;'}" aria-label="Set ${idxLabel} weight"></div>`}
     <div class="setwrap"><input class="sinput${s.assumed?' assumed':''}" inputmode="numeric" data-field="reps" data-ex="${ei}" data-set="${si}" value="${s.reps!=null?s.reps:''}" placeholder="${repsPh}" aria-label="Set ${idxLabel} reps${s.assumed?', assumed from the hint: type the real count':''}"${s.assumed?' title="Assumed from the hint. Type the real count if it was different."':''}></div>
-    <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${lastFailSet(en,si)? 0 : en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
+    <input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="${calSet(en, ei)===si? '?' : lastFailSet(en,si)? 0 : en.target.rir}" maxlength="2" aria-label="Set ${idxLabel} reps in reserve">
     <button class="donebtn" data-act="toggle-done" data-ex="${ei}" data-set="${si}" aria-label="Complete set">${I.check}</button>
     <button class="setopt" data-act="set-menu" data-ex="${ei}" data-set="${si}" aria-label="Set options">${I.dots}</button>
     ${tagBadge? `<div style="grid-column:1/7;padding:0 2px 2px">${tagBadge}</div>`:''}
@@ -2962,7 +2962,8 @@ function exerciseExposures(exId, days){
 }
 /* A lighter week is offered when performance falls and fatigue shows at the same time: two or more lifts of the block
    (any lifts without one) going down beyond the noise, with a joint flag, lasting soreness or low readiness in the last
-   ~9 days. Not on a timer: a planned lighter week adds no muscle (Coleman et al. 2024), so blocks have none unless you add one. */
+   ~9 days. Not on a timer: a week off mid-block added no muscle and slowed lower-body strength gains (Coleman et al. 2024,
+   a week off rather than a lighter week), so blocks have none unless you add one. */
 function coachDeload(){
   const reasons=[], m=getActiveMeso(), inBlock= m? new Set(m.days.flatMap(d=>d.exercises.map(e=>e.exId))) : null;
   const falls=stalledLifts(inBlock), pf=recentPainFlags(), low=recentLowReadiness(), tired=[];
@@ -2980,7 +2981,7 @@ function coachVolume(muscle){
   const fb=muscleFeedback(muscle);
   const parts=[]; let verdict, flag;
   if(fb.pain>=1){ verdict='Hold, and watch that joint.'; flag='warn'; parts.push('you flagged joint discomfort here recently'); }
-  else if(v < target){ verdict='Yes, adding 1-2 sets is reasonable.'; flag='good'; parts.push(MUSCLES[muscle].n+' is at '+v+' hard sets/week (helpers at half), under your '+target+' marker'); if(fb.up) parts.push('and it\'s been progressing'); }
+  else if(v < target){ verdict='Yes, adding 1-2 sets is reasonable.'; flag='good'; parts.push(MUSCLES[muscle].n+' is at '+v+' hard set'+(v===1?'':'s')+'/week (helpers at half), under your '+target+' marker'); if(fb.up) parts.push('and it\'s been progressing'); }
   else if(fb.sore>=1){ verdict='Hold for now.'; flag='ok'; parts.push('you\'re still getting sore at '+v+' sets/week'); }
   else if(fb.down>=1){ verdict='Hold, and check effort and recovery first.'; flag='ok'; parts.push('performance dipped recently at '+v+' sets/week'); }
   else { verdict='You could try +1-2 sets, but you don\'t have to.'; flag='ok'; parts.push('you\'re at '+v+' sets/week with no red flags'); parts.push('more isn\'t automatically better'); }
@@ -2989,7 +2990,7 @@ function coachVolume(muscle){
 function explainPlateau(exId){
   const ex=exById(exId)||{name:exId,primary:[]};
   const muscle=(ex.primary||[])[0]; const hyps=[];
-  if(muscle&&MUSCLES[muscle]){ const vol=Math.round((weeklyVolume().frac[muscle]||0)*2)/2; if(vol<state.settings.target) hyps.push({t:'Volume is on the low side', d:'Your '+MUSCLES[muscle].n+' is getting '+vol+' hard sets a week (helpers at half), under your '+state.settings.target+' marker. Try adding a set or two.', ev:'volume'}); }
+  if(muscle&&MUSCLES[muscle]){ const vol=Math.round((weeklyVolume().frac[muscle]||0)*2)/2; if(vol<state.settings.target) hyps.push({t:'Volume is on the low side', d:'Your '+MUSCLES[muscle].n+' is getting '+vol+' hard set'+(vol===1?'':'s')+' a week (helpers at half), under your '+state.settings.target+' marker. Try adding a set or two.', ev:'volume'}); }
   const rir=exerciseRecentRir(exId);
   if(rir!=null && rir>=3) hyps.push({t:'You\'re leaving reps in the tank', d:'Recent sets averaged about '+rir.toFixed(1)+' reps in reserve. Pushing a little closer to failure can restart progress.', ev:'effort'});
   const bt=bodyTrendCheck();
@@ -3256,8 +3257,8 @@ function rirAccuracy(){
 function shareBias(){ Lift.use(Lift.model(state.rirCal||[])); }
 /* A reps-in-reserve check every three weeks or so, asked during the set: where you would usually stop, you enter your reps
    and call how many you have left, then keep going to failure and enter the extra reps. Asked after a set is ticked, a short
-   rest lets you squeeze out rest-pause reps and makes the miss look bigger. Offered on the last set of the session's first
-   isolation exercise, where going to failure is safe, and on any isolation set you pick from its menu. */
+   rest lets you squeeze out rest-pause reps and makes the miss look bigger. Offered once a session, on the last set of the
+   session's first isolation exercise, where going to failure is safe, and on any isolation set you pick from its menu. */
 function calDue(){ const c=state.rirCal||[], last=c.length? c[c.length-1].date : 0; return Date.now()-last > 21*86400000; }
 function calOk(en){ const x=exById(en.exId); return !!x && !x.comp && !isHold(en.exId); }
 /* The set in entry en (at ei in the session) to check, or -1. */
@@ -3589,7 +3590,7 @@ function exRir(rir, ex){
 }
 /* The week's effort in words, by kind of exercise. */
 function rirLine(rir){ const c=Math.max(rir,1), h=Math.max(rir, Math.min(rir+1,2));
-  return c===rir&&h===rir? 'target '+rir+' RIR' : 'RIR '+rir+' isolation &middot; '+(c===h? c : c+'&ndash;'+h)+' compounds'; }
+  return c===rir&&h===rir? 'target '+rir+' RIR' : 'RIR '+rir+' single-joint &middot; '+(c===h? c : c+'&ndash;'+h)+' compound'; }
 function plannedSets(m,dayId,idx,w){
   const arr=m.setPlan[dayId+':'+idx]||[];
   if(isDeloadWeek(m,w)){ const lh=arr[hardWeeks(m)-1]!=null?arr[hardWeeks(m)-1]:(arr[0]||3); return Math.max(1,Math.round(lh/2)); }
@@ -3809,8 +3810,9 @@ function generateDraft(o){
   const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
   const parts=(Array.isArray(o.emphasis)?o.emphasis:[o.emphasis]).filter(e=>e&&e!=='balanced');
   const label=parts.length? parts.map(cap).join(' & ')+' ' : '';
-  // no planned lighter week: one adds no muscle and can slow lower-body strength (Coleman et al. 2024); the app offers one
-  // when lifts go down while you're worn out. Effort starts 2 short of failure, not 3, and climbs from there.
+  // no planned lighter week: a week off mid-block added no muscle and slowed lower-body strength gains (Coleman et al. 2024,
+  // a week off rather than a lighter week); the app offers one when lifts go down while you're worn out. Effort starts 2
+  // short of failure, not 3, and climbs from there.
   return {name:nd+'-Day '+label+'Block', totalWeeks:o.weeks||4, hasDeload:false, startRir:2, endRir:o.experience==='beginner'?1:0, days:out, targets:T};
 }
 let genOpts={days:4, experience:'intermediate', emphasis:['balanced'], weeks:4, gap:false};
@@ -4021,8 +4023,10 @@ function startDayFrom(name, list, rir, deload, tg, link){
   if(tg&&tg.short) pairUp(state.active.entries);
   warmUp(state.active.entries);
   if(cuts.length) state.active.trim={cuts};
-  if(tg&&tg.readiness) state.active.readiness=tg.readiness;   // answered already, in Together's check-in
-  save(); state.route='train'; render(); if(!(tg&&tg.readiness) && !askedToday()) openReadiness();
+  // answered already today: in Together's check-in, or here for an earlier session
+  const asked=askedToday(), ready=(tg&&tg.readiness) || (asked? todayReadiness() : null);
+  if(ready) state.active.readiness=ready;
+  save(); state.route='train'; render(); if(!ready && !asked) openReadiness();
   if(window.__hub) window.__hub.changed('lift');
 }
 /* Put back what a combined day took off this session. */
@@ -4051,8 +4055,11 @@ function advanceWeek(m){
    held steady while you recovered, a set more (two if you recovered early); went down, a set fewer (two if you're still
    sore); went up, the same, since what you do is working and more sets than you recover from add nothing. A joint that
    hurt blocks any increase, and a significant one takes a set off. Soreness only breaks ties, and pump isn't asked:
-   neither tracks growth well. A muscle moves once a week, however many days train it, and the change is split across
-   its exercises, those that train it alone first. */
+   neither tracks growth well. Weekly sets count a set at half for a muscle it only helps, as the block's card does. A
+   muscle moves once a week, however many days train it, and the change is split across its exercises, those that train
+   it alone first. An exercise that trains two muscles (an incline press, a chest-supported row) changes only when the
+   other may move that way too, and each muscle's line shows what it really gets from every exercise that changed, which
+   is what the limits hold to. */
 /* How a muscle's lifts went in a session (rec), against the last time you did each one, lighter weeks left out: the best
    set's estimated max up more than 2 percent on average is 'up', down more than 2.5 (about a rep) 'down', else 'same';
    null with nothing to compare. The estimate counts the reps you had left, so sets at the planned effort compare fairly. */
@@ -4080,34 +4087,66 @@ function deltaFor(a, W){
 }
 /* The hard weeks after week w in which the plan can still change. */
 function weeksAfter(m, w){ const out=[]; for(let ww=w+1; ww<=m.totalWeeks; ww++) if(!isDeloadWeek(m,ww)) out.push(ww); return out; }
-/* What the answers do to the block, without changing it: {muscles:[{mu, from, to, delta, reason}], next:{'day:idx': sets},
-   exercises:[{ex, from, to}]}, the weekly sets from next week on. */
+/* What the answers do to the block, without changing it: {muscles:[{mu, from, to, delta, reason, helper}], next:{'day:idx':
+   sets}, exercises:[{ex, day, from, to}], weeks}, the weekly sets from next week on. A muscle you weren't asked about that
+   moves as a helper is listed after the rest, with helper true. */
 function feedbackPlan(m, week, ans){
-  const ahead=weeksAfter(m, week), w1=ahead[0], next={}, out=[], light=isDeloadWeek(m, week), adj=m.adj||{};
-  const cur=k=>{ if(k in next) return next[k]; const c=k.lastIndexOf(':'); return plannedSets(m, k.slice(0,c), +k.slice(c+1), w1||week); };
+  const ahead=weeksAfter(m, week), w1=ahead[0], next={}, light=isDeloadWeek(m, week), adj=m.adj||{};
+  const items=[]; m.days.forEach(d=>d.exercises.forEach((e,idx)=>items.push({key:d.id+':'+idx, M:musclesOf(e)})));
+  const was=k=>{ const c=k.lastIndexOf(':'); return plannedSets(m, k.slice(0,c), +k.slice(c+1), w1||week); }, cur=k=> k in next? next[k] : was(k);
+  const credit=n=>{ const C={}; items.forEach(({key,M})=>{ const v=n(key); M.p.forEach(q=>{ C[q]=(C[q]||0)+v; }); M.s.forEach(q=>{ C[q]=(C[q]||0)+v/2; }); }); return C; };
+  const C0=credit(was), ch={}, want={}, why={}, stuck={};
+  const capOf=q=>Math.max(1, Math.min(2, Math.round((C0[q]||0)*0.2)));
+  const held=q=> light || !w1 || (week+':'+q) in adj;   // moves no more this week
   Object.keys(ans).forEach(mu=>{
-    const items=[]; m.days.forEach(d=>d.exercises.forEach((e,idx)=>{ const M=musclesOf(e); if(M.p.includes(mu)) items.push({key:d.id+':'+idx, only:M.p.length===1}); }));
-    const W=items.reduce((a,it)=>a+cur(it.key),0);
-    let {delta, reason}=deltaFor(ans[mu], W);
+    let {delta, reason}=deltaFor(ans[mu], C0[mu]||0);
     if(light){ delta=0; reason='a lighter week: sets stay'; }
     else if(!w1){ delta=0; reason='the block ends this week'; }
     else if((week+':'+mu) in adj){ delta=0; reason='changed already this week'; }
-    let done=0;
-    for(let k=0;k<Math.abs(delta);k++){
-      const c=items.filter(it=> delta>0? cur(it.key)<6 : cur(it.key)>1); if(!c.length) break;
-      c.sort((a,b)=>(b.only-a.only) || (delta>0? cur(a.key)-cur(b.key) : cur(b.key)-cur(a.key)));
-      next[c[0].key]=cur(c[0].key)+Math.sign(delta); done+=Math.sign(delta);
-    }
-    out.push({mu, from:W, to:W+done, delta:done, reason});
+    want[mu]=delta; why[mu]=reason;
   });
+  /* Whether a set more (s 1) or fewer (s -1) of an exercise for mu suits the other muscles it trains. Another main muscle
+     must have been asked about and be moving the same way, within its own change. A helper moves half a set: never up when
+     a joint hurt or it is coming down, at most a set past what it asked for, and within its limit. Neither moves again in
+     a week it changed. */
+  const lo=q=>Math.min(0, want[q]||0), hi=q=>Math.max(0, want[q]||0), E=1e-9;
+  const fitsAll=(M, mu, s)=> M.p.every(q=> q===mu || (q in want && !held(q) && Math.sign(want[q])===s && (ch[q]||0)+s>=lo(q)-E && (ch[q]||0)+s<=hi(q)+E))
+    && M.s.every(q=>{ if(held(q)) return false; const v=(ch[q]||0)+s/2, a=ans[q];
+      if(s>0 && a && ((a.pain||'none')!=='none' || (want[q]||0)<0)) return false;
+      return Math.abs(v)<=capOf(q)+E && v>=lo(q)-1-E && v<=hi(q)+1+E; });
+  // how many muscles it trains would rather go the other way
+  const against=(M, s)=> M.s.filter(q=>(want[q]||0)*s<0).length;
+  // the cuts first, so a shared exercise that has to come down does; then the bigger changes, whose sets help the rest
+  Object.keys(want).filter(mu=>want[mu]).sort((a,b)=>(want[a]<0? 0 : 1)-(want[b]<0? 0 : 1) || Math.abs(want[b])-Math.abs(want[a])).forEach(mu=>{ const s=Math.sign(want[mu]);
+    for(let k=0;k<4;k++){
+      const gap=want[mu]-(ch[mu]||0);
+      // each set brings it nearer; coming down, half a set past is fine (easing off errs on the safe side)
+      if(!(Math.abs(gap-s)<Math.abs(gap)-E || (s<0 && gap<0 && Math.abs(gap-s)<=Math.abs(gap)+E))) break;
+      if(Math.abs((ch[mu]||0)+s)>capOf(mu)+E) break;
+      const room=items.filter(x=>x.M.p.includes(mu) && (s>0? cur(x.key)<6 : cur(x.key)>1)), c=room.filter(x=>fitsAll(x.M, mu, s));
+      if(!c.length){ if(!(ch[mu]||0)) stuck[mu]= room.length? 'shared' : s>0? 'full' : 'least'; break; }
+      c.sort((a,b)=>(a.M.p.length-b.M.p.length) || against(a.M, s)-against(b.M, s) || (s>0? cur(a.key)-cur(b.key) : cur(b.key)-cur(a.key)));
+      const x=c[0]; next[x.key]=cur(x.key)+s;
+      x.M.p.forEach(q=>{ ch[q]=(ch[q]||0)+s; }); x.M.s.forEach(q=>{ ch[q]=(ch[q]||0)+s/2; });
+    }
+  });
+  // each muscle's line from the plan as it would be, every exercise that changed counted
+  const C1=credit(cur), half=v=>Math.round(v*2)/2, out=[];
+  const line=(mu, reason, helper)=>{ const from=half(C0[mu]||0), to=half(C1[mu]||0); return {mu, from, to, delta:half(to-from), reason, helper}; };
+  const STUCK={shared:' &middot; held: its exercises train a muscle that can&rsquo;t change', full:' &middot; its exercises are full', least:' &middot; its exercises are down to a set'};
+  Object.keys(ans).forEach(mu=>{ const c=line(mu, why[mu], false);
+    if(c.delta*Math.sign(want[mu]||0)<=0 && c.delta) c.reason+=' &middot; moved by a shared exercise';
+    else if(!c.delta && stuck[mu]) c.reason+=STUCK[stuck[mu]];
+    out.push(c); });
+  Object.keys(C1).forEach(q=>{ if(q in ans) return; const c=line(q, 'helps in an exercise that changed', true); if(c.delta) out.push(c); });
   const exercises=Object.keys(next).map(k=>{ const c=k.lastIndexOf(':'), d=m.days.find(x=>x.id===k.slice(0,c)), e=d&&d.exercises[+k.slice(c+1)];
-    return e? {ex:e.name, day:d.name, from:plannedSets(m, d.id, +k.slice(c+1), w1), to:next[k]} : null; }).filter(x=>x && x.from!==x.to);
+    return e? {ex:e.name, day:d.name, from:was(k), to:next[k]} : null; }).filter(x=>x && x.from!==x.to);
   return {muscles:out, next, exercises, weeks:ahead};
 }
 function applyFeedback(m, week, dayId, ans){
   const P=feedbackPlan(m, week, ans);
   Object.keys(P.next).forEach(k=>{ if(!m.setPlan[k]) m.setPlan[k]=[]; P.weeks.forEach(ww=>{ m.setPlan[k][ww-1]=P.next[k]; }); });
-  if(!m.adj) m.adj={}; P.muscles.forEach(c=>{ if(c.delta) m.adj[week+':'+c.mu]=c.delta; });
+  if(!m.adj) m.adj={}; P.muscles.forEach(c=>{ if(c.delta) m.adj[week+':'+c.mu]=c.delta; });   // every muscle that moved, helpers too
   return P;
 }
 
@@ -4151,7 +4190,8 @@ function viewPlanList(){
     </div>
     ${savedHtml?`<div><div class="section-label">Your programs <span class="ln"></span></div><div class="stack" style="gap:0">${savedHtml}</div></div>`:''}
     <div class="tip"><div class="lbl">${I.info}<span>How progression works</span></div>
-      <p>Each block starts at a manageable volume and gets harder: target RIR drops week to week, load and reps climb by double progression, and after each session how your lifts went and how you recovered nudge next week's sets. No lighter week is planned: one is offered when lifts go down while you're worn out, and you can add one. They’re only suggestions, and you can change any of them.</p></div>
+      <p>Effort rises each week; sets follow how your lifts go. A lighter week is offered when you need one.</p>
+      <details class="why"><summary>${I.info} Why?</summary><p>Target RIR drops week to week, and load and reps climb by double progression. After each session, how your lifts went and how you recovered move next week's sets. No lighter week is planned: one is offered when lifts go down while you're worn out, and you can add one. You can change any of it.</p></details></div>
   </div>`;
 }
 function openTemplatePreview(i){
@@ -4281,7 +4321,8 @@ function viewBuilder(){
         <div class="field" style="margin:0"><label>Start RIR (wk 1)</label><div class="pillpick">${rirPills('startRir')}</div></div>
         <div class="field" style="margin:0"><label>End RIR (last hard wk)</label><div class="pillpick">${rirPills('endRir')}</div></div>
       </div>
-      <p class="muted" style="font-size:11px;line-height:1.5;margin:10px 0 0">RIR drops from start to end across the hard weeks, so effort ramps up. Reps in reserve = how many you stop short of failure. Single-joint exercises go all the way; other compounds stop at 1, squats, deadlifts and bench presses at 1 or 2.</p>
+      <p class="muted" style="font-size:11px;line-height:1.5;margin:10px 0 0">Reps in reserve: how many you stop short of failure. It drops week to week.</p>
+      <details class="why"><summary>${I.info} Why?</summary><p>Single-joint exercises go all the way to the end RIR. Other compounds stop at 1, and squats, deadlifts and bench presses at 1 or 2: a grinding rep there costs the most recovery and risk.</p></details>
     </div>
     <div><div class="section-label">Training days <span class="ln"></span></div>${daysHtml}
       <button class="btn ghost block" data-act="b-add-day" style="margin-top:4px">${I.plus} Add day</button></div>
@@ -4294,11 +4335,31 @@ function viewBuilder(){
 
 /* ---- READINESS (optional, pre-session) ---- */
 /* One check-in a day: once you have answered or skipped it today, here or in Together's daily check-in, a session
-   doesn't ask again (it can still be answered from the banner). */
+   doesn't ask again (it can still be answered from the banner), and starts with today's answer instead. */
 function askedToday(){
   if(state.readyDay===Day.key()) return true;
   try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'), d=Day.start();
     return !!(t && Array.isArray(t.checkins) && t.checkins.some(c=>c && c.day===d)); }catch(e){ return false; }
+}
+const READY_TXT={low:'Recovery looks low today. Consider adding a rep of RIR (stop a bit further from failure) or dropping your last set on the big lifts. Your call.',
+  ok:'Recovery looks good. Train as planned.', good:'You’re feeling good. A great day to push for the top of your rep ranges.'};
+/* Today's answer when there is one: the last one given here today, or else Together's check-in, rated as Together rates it
+   (the mean of its four 1-to-7 answers against your usual over the 28 days before: a spread or more below it and under 5 is
+   low, as is 2.5 or under; with fewer than seven earlier check-ins, 3.5 or under). null when today's was skipped or not
+   answered, so a session and its record go on without one, as before. */
+function todayReadiness(){
+  const own=state.readyAns; if(own && own.day===Day.key() && own.r) return Object.assign({}, own.r);
+  try{
+    const t=JSON.parse(localStorage.getItem('trainer.together')||'null'), d=Day.start();
+    const L=t && Array.isArray(t.checkins)? t.checkins.filter(c=>c && c.w && typeof c.w==='object') : [], c=L.find(x=>x.day===d && !x.skip); if(!c) return null;
+    const sc=w=>{ const v=['sleep','energy','stress','mood'].map(k=>w[k]).filter(x=>x>=1&&x<=7); return v.length>=3? v.reduce((a,b)=>a+b,0)/v.length : null; };
+    const W=sc(c.w); if(W==null) return null;
+    const xs=L.filter(x=>x.day<d && x.day>=Day.add(d,-28)).map(x=>sc(x.w)).filter(v=>v!=null);
+    let z=null; if(xs.length>=7){ const mean=xs.reduce((a,b)=>a+b,0)/xs.length; z=(W-mean)/Math.max(0.6, Math.sqrt(xs.reduce((a,x)=>a+(x-mean)*(x-mean),0)/xs.length)); }
+    const flag= W<=2.5 || (z==null? W<=3.5 : z<=-1 && W<5)? 'low' : W>=5.5 && (z==null || z>=0.5)? 'good' : 'ok';
+    const lvl=v=> !(v>=1&&v<=7)? null : v>=5? 'good' : v>=3? 'ok' : 'low', top=Math.max(0, ...Object.values(c.sore||{}).filter(v=>typeof v==='number'));
+    return {sleep:lvl(c.w.sleep), energy:lvl(c.w.energy), soreness: top>=6? 'low' : top>=3? 'ok' : 'good', flag, text:'From your check-in: '+READY_TXT[flag]};
+  }catch(e){ return null; }
 }
 let readiDraft=null;
 function openReadiness(){
@@ -4327,6 +4388,7 @@ function finishReadiness(){
   state.readyDay=Day.key();   // answered or skipped: not asked again today
   if(answered.length===0){ // nothing picked -> treat as skipped, no fabricated reading
     if(state.active) state.active.readiness=null;
+    state.readyAns={day:Day.key(), r:null};
     save(); closeModal(); if(state.route==='train') render();
     toast('Skipped. You can answer it any time');
     return;
@@ -4335,10 +4397,11 @@ function finishReadiness(){
   const score=answered.reduce((a,f)=>a+val(r[f]),0);
   const ratio=score/(answered.length*2);
   const partial = answered.length<3 ? ' (from '+answered.length+' of 3)' : '';
-  let flag='ok', text='Recovery looks good. Train as planned.'+partial;
-  if(ratio<=0.34){ flag='low'; text='Recovery looks low today. Consider adding a rep of RIR (stop a bit further from failure) or dropping your last set on the big lifts. Your call.'; }
-  else if(ratio>=0.83){ flag='good'; text='You’re feeling good. A great day to push for the top of your rep ranges.'; }
+  let flag='ok', text=READY_TXT.ok+partial;
+  if(ratio<=0.34){ flag='low'; text=READY_TXT.low; }
+  else if(ratio>=0.83){ flag='good'; text=READY_TXT.good; }
   if(state.active) state.active.readiness={...r, flag, text};
+  state.readyAns={day:Day.key(), r:{...r, flag, text}};   // a second session today starts with it
   save(); closeModal(); render();
 }
 
@@ -4713,13 +4776,18 @@ function toggleDone(ei,si){
     if(s.reps==null){ const hint=repHint(en,s,si), r= hint!=null? hint : prev&&prev.reps? prev.reps : (en.target&&en.target.repLow)||null;   // never no reps
       if(r!=null){ s.reps=r; s.assumed=true; } }
   } else if(s.assumed){ s.reps=null; delete s.assumed; }   // unticked: the box offers the hint again
-  const rated = s.rir!=null && s.rir!=='', check = !s.done && isWork(s) && calSet(en, ei)===si && Num.int(s.calx)!=null;
+  const rated = s.rir!=null && s.rir!=='', asked = !s.done && isWork(s) && calSet(en, ei)===si, check = asked && Num.int(s.calx)!=null;
   s.done=!s.done;
   let jumpTo=null, noW=false, adj=null, cal=null;
   if(s.done){
     noW= s.weight==null && !isBW(en.exId) && !isAssisted(en.exId);
     if(s.rir==null || s.rir==='') s.rir = lastFailSet(en, si)? 0 : state.active.entries[ei].target.rir;
-    if(check) cal=recordCheck(en, s);
+    // the check needs the reps in reserve you called: without it the set is logged as done, to failure, and not kept as a
+    // check (a blank box would read as a call of 0, which tells the model nothing)
+    if(check && !rated){ const x=Math.max(0, Num.int(s.calx)||0); if(s.reps>0) s.reps+=x; s.rir=0; if(!s.tag) s.tag='Failure';
+      delete s.calx; delete s.check; cal='Enter how many you had left to check it. Logged to failure'; }
+    else if(check) cal=recordCheck(en, s);
+    if(asked) state.active.calSkip=true;   // offered once a session: ticked without it, it doesn't move on to the next exercise
     else if(rated && isWork(s) && (s.weight>0 || (isAssisted(en.exId) && s.weight!=null))) adj=adjustNext(en, si, s);
     const g=ssGroup(ei);
     const rest = (g && !g.isLast)? 20 : (state.active.entries[ei].target.rest||120);
@@ -5156,8 +5224,9 @@ function myEquip(){ const own=state.settings.equipment; if(own&&own.length) retu
   const k=Prefs.get('kit',null); return Array.isArray(k)&&k.length? k.filter(x=>KIT_NAME[x]).map(x=>KIT_NAME[x]).concat('Bodyweight') : ['Barbell','Dumbbell','Machine','Cable','Bodyweight']; }
 /* ---- EXERCISE SWAP / SUBSTITUTION ----
    The same movement first (a squat for a squat, a curl for a curl), on the same kit before other kit, then the other
-   exercises for the same main muscles by how much they overlap. Exercises your kit lacks come last and say what they
-   need. Searching looks through the whole library. */
+   exercises for the same main muscles by how much they overlap (a split squat before a hinge for a squat), the same kit
+   first among equals. Exercises your kit lacks come last and say what they need. Searching looks through the whole
+   library. */
 const MOVES={squat:['back-squat','front-squat','goblet-squat','smith-squat','hack-squat','leg-press','pistol-squat'],
   lunge:['bulgarian-split-squat','walking-lunge','split-squat','reverse-lunge','db-step-up'],
   hinge:['deadlift','romanian-deadlift','db-rdl','single-leg-rdl','good-morning','sumo-deadlift','rack-pull','cable-pull-through','back-extension'],
@@ -5185,12 +5254,13 @@ function moveOf(e){ return MOVE_OF[e.exId||e.id] || (e.primary||[])[0]+':'+(e.co
 const NEEDS={Barbell:'needs a barbell', Dumbbell:'needs dumbbells', Machine:'needs a machine', Cable:'needs a cable'};
 function swapCandidates(en, q){
   const equip=myEquip(), mv=moveOf(en), ql=String(q||'').trim().toLowerCase(), rank=rankIn((en.primary||[])[0]);
-  const ov=x=> x.primary.filter(m=>en.primary.includes(m)).length + x.secondary.filter(m=>(en.secondary||[]).includes(m)).length*0.5;
+  // overlap: main muscles shared, the first (the one it is for) counting double, helpers at half
+  const ov=x=> x.primary.filter(m=>en.primary.includes(m)).length + (x.primary[0]===(en.primary||[])[0]? 1 : 0) + x.secondary.filter(m=>(en.secondary||[]).includes(m)).length*0.5;
   let list=state.exercises.filter(e=>e.id!==en.exId);
   list= ql? list.filter(e=>e.name.toLowerCase().includes(ql) || e.primary.some(m=>MUSCLES[m]&&MUSCLES[m].n.toLowerCase().includes(ql)))
     : list.filter(e=>moveOf(e)===mv || e.primary.some(m=>en.primary.includes(m)));
   const lacks=e=>equip.includes(e.equipment)? 0 : 1, other=e=>moveOf(e)===mv? 0 : 1, kit=e=>e.equipment===en.equipment? 0 : 1;
-  list.sort((a,b)=> lacks(a)-lacks(b) || other(a)-other(b) || kit(a)-kit(b) || ov(b)-ov(a) || rank(a)-rank(b) || a.name.localeCompare(b.name));
+  list.sort((a,b)=> lacks(a)-lacks(b) || other(a)-other(b) || (other(a)? ov(b)-ov(a) || kit(a)-kit(b) : kit(a)-kit(b) || ov(b)-ov(a)) || rank(a)-rank(b) || a.name.localeCompare(b.name));
   const have=list.filter(e=>!lacks(e));
   return have.slice(0, ql? 40 : 16).concat(list.filter(lacks).slice(0, ql? 20 : 4));
 }
@@ -5767,7 +5837,7 @@ __root.addEventListener('click', e=>{
     case 'open-readiness': openReadiness(); break;
     case 'readi': { readiDraft[el.dataset.f]=el.dataset.v; const row=el.closest('.readi-opt'); if(row) row.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b===el)); break; }
     case 'readi-done': finishReadiness(); break;
-    case 'readi-skip': closeModal(); state.readyDay=Day.key(); if(state.active){ state.active.readiness=null; } save(); if(state.route==='train') render(); break;
+    case 'readi-skip': closeModal(); state.readyDay=Day.key(); state.readyAns={day:Day.key(), r:null}; if(state.active){ state.active.readiness=null; } save(); if(state.route==='train') render(); break;
     /* ---- SURVEY ---- */
     case 'sv': {
       const mm=el.dataset.m, f=el.dataset.f;

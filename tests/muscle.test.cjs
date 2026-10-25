@@ -219,6 +219,50 @@ test('applying the survey changes the plan once a week per muscle, split across 
   assert.equal(total(2), 17);
 });
 
+/* Two muscles share one exercise: an incline press (chest and front delts), a chest-supported row (upper back and lats), a
+   back squat (quads and glutes). Each line must say what the plan really gives the muscle afterwards, helpers at half as on
+   the block's card, and keep to its limit and to a joint that hurt. */
+function surveyCase(make, dayIndex, answers) {
+  const api = muscle(), id = api.evaluate(make), m = `mesoById(${JSON.stringify(id)})`, dayId = api.evaluate(`${m}.days[${dayIndex}].id`);
+  const C = w => plain(api.evaluate(`daysCredit(${m}.days, (d,e,i)=>plannedSets(${m},d.id,i,${w}))`));
+  const ans = typeof answers === 'function' ? answers(plain(api.evaluate(`musclesTrained(${m}.days[${dayIndex}])`))) : answers;
+  const before = C(2), plan = plain(api.evaluate(`applyFeedback(${m}, 1, ${JSON.stringify(dayId)}, ${JSON.stringify(ans)})`)), after = C(2);
+  const half = v => Math.round((v || 0) * 2) / 2, lines = {};
+  for (const c of plan.muscles) {
+    lines[c.mu] = c;
+    assert.equal(c.from, half(before[c.mu]), `${c.mu}: from`); assert.equal(c.to, half(after[c.mu]), `${c.mu}: to`);
+    assert.ok(Math.abs(c.to - c.from) <= Math.max(1, Math.min(2, Math.round(c.from * 0.2))), `${c.mu}: ${c.from} → ${c.to} is past its limit`);
+    const a = ans[c.mu];
+    if (a && a.pain !== 'none') assert.ok(c.to <= c.from, `${c.mu}: a joint hurt, yet ${c.from} → ${c.to}`);
+  }
+  for (const q of Object.keys(after)) if (half(after[q]) !== half(before[q])) assert.ok(lines[q], `${q} moved without a line`);
+  return lines;
+}
+const generated = `makeMesoFromDraft(generateDraft({days:4, experience:'intermediate', emphasis:['balanced']}), true).id`;
+const every = o => mus => Object.fromEntries(mus.map(mu => [mu, Object.assign({perf: 'same', soreness: 'ok', pain: 'none'}, o)]));
+test('the survey counts every muscle an exercise trains: the lines say what really changes, within each one’s limit', () => {
+  const upper = mus => every({})(mus);
+  let L = surveyCase(generated, 0, mus => Object.assign(upper(mus), {chest: {perf: 'same', soreness: 'ok', pain: 'significant'}, fdelt: {perf: 'same', soreness: 'none', pain: 'none'}}));
+  assert.ok(L.chest.to < L.chest.from, 'joint pain takes a set off, even with the front delts asking for more: ' + JSON.stringify(L.chest));
+  L = surveyCase(generated, 0, mus => Object.assign(upper(mus), {chest: {perf: 'same', soreness: 'none', pain: 'some'}}));
+  assert.equal(L.chest.to, L.chest.from, 'a joint that hurt blocks an increase');
+  surveyCase(generated, 0, every({soreness: 'none'}));
+  surveyCase(generated, 0, every({perf: 'down', soreness: 'high'}));
+  L = surveyCase(generated, 0, mus => Object.assign(every({perf: 'up'})(mus), {uback: {perf: 'same', soreness: 'ok', pain: 'none'}, lat: {perf: 'same', soreness: 'ok', pain: 'none'}}));
+  assert.ok(L.lat.to > L.lat.from);
+  // the ready-made Push/Pull/Legs block: quads recovered early, glutes and hamstrings on time
+  L = surveyCase(`makeMesoFromTemplate(MESO_TEMPLATES[1]).id`, 2, {quad: {perf: 'same', soreness: 'none', pain: 'none'}, glute: {perf: 'same', soreness: 'ok', pain: 'none'}, ham: {perf: 'same', soreness: 'ok', pain: 'none'}});
+  assert.ok(L.quad.to - L.quad.from <= 2 && L.quad.to > L.quad.from, JSON.stringify(L.quad));
+});
+
+test('a muscle that moved as a helper is held for the rest of the week too', () => {
+  const api = muscle(), id = block(api), m = `mesoById(${JSON.stringify(id)})`;
+  const P = plain(api.evaluate(`applyFeedback(${m}, 1, 'd1', {chest:{perf:'same', soreness:'none', pain:'none'}})`));
+  const moved = P.muscles.filter(c => c.delta).map(c => c.mu);
+  assert.ok(moved.includes('chest'));
+  for (const mu of moved) assert.ok(api.evaluate(`'1:${mu}' in ${m}.adj`), mu);
+});
+
 test('how a muscle’s lifts went comes from the estimated max of its best sets against last time', () => {
   const api = muscle(), S = api.state();
   const rec = (id, date, w, r) => ({id, name: 'x', date, entries: [{exId: 'barbell-bench', name: 'Bench', primary: ['chest'], secondary: ['tri'], sets: [{type: 'work', done: true, weight: w, reps: r, rir: 2}]}]});
@@ -252,6 +296,58 @@ test('the reps-in-reserve check is offered on the last set of the first isolatio
   assert.equal(set.reps, 15); assert.equal(set.rir, 0);
   assert.match(msg, /1 more/);
   assert.equal(api.evaluate('calSet(state.active.entries[1], 1)'), -1, 'once checked, not again for a while');
+});
+
+test('a check left with the reps-in-reserve box blank is logged to failure, not kept as a call of 0', () => {
+  const api = muscle(), S = api.state();
+  const en = id => ({exId: id, name: id, primary: ['quad'], secondary: [], equipment: 'Machine', lastFail: true, target: {repLow: 10, repHigh: 15, rir: 1, rest: 90},
+    sets: [0, 1].map(() => ({type: 'work', weight: 40, reps: null, rir: null, done: false}))});
+  S.active = {id: 'a1', name: 'T', startedAt: Date.now(), entries: [en('leg-extension'), en('leg-curl'), en('lateral-raise')]};
+  assert.equal(api.evaluate('calSet(state.active.entries[0], 0)'), 1);
+  const set = S.active.entries[0].sets[1]; set.reps = 12; set.calx = 3;
+  try { api.evaluate('toggleDone(0,1)'); } catch (e) { /* the screen isn't there */ }
+  assert.equal(S.rirCal.length, 0, 'no check saved without a call');
+  assert.equal(set.done, true); assert.equal(set.reps, 15); assert.equal(set.rir, 0);
+  assert.equal(api.evaluate('calSet(state.active.entries[1], 1)'), -1, 'and it does not move on to the next exercise');
+});
+
+test('the check is offered once a session: ticked without it, it does not move on to the next isolation exercise', () => {
+  const api = muscle(), S = api.state();
+  const en = id => ({exId: id, name: id, primary: ['quad'], secondary: [], equipment: 'Machine', target: {repLow: 10, repHigh: 15, rir: 2, rest: 90},
+    sets: [0, 1].map(() => ({type: 'work', weight: 40, reps: 12, rir: 2, done: false}))});
+  S.active = {id: 'a1', name: 'T', startedAt: Date.now(), entries: [en('leg-extension'), en('leg-curl'), en('lateral-raise')]};
+  const at = () => [0, 1, 2].map(i => api.evaluate(`calSet(state.active.entries[${i}], ${i})`));
+  assert.deepEqual(at(), [1, -1, -1]);
+  try { api.evaluate('toggleDone(0,1)'); } catch (e) { /* the screen isn't there */ }
+  assert.deepEqual(at(), [-1, -1, -1]);
+  // one picked from a set's menu is still offered
+  S.active.entries[1].sets[1].check = true;
+  assert.equal(api.evaluate('calSet(state.active.entries[1], 1)'), 1);
+});
+
+test('a session started after today’s check-in starts with its answer, here or from Together', () => {
+  const start = api => {
+    try { api.evaluate(`startDayFrom('Legs', [{ex:{exId:'leg-extension', name:'Leg Extension', primary:['quad'], secondary:[], equipment:'Machine', comp:false, repLow:10, repHigh:15}, n:2}], 2, false, null, null)`); } catch (e) { /* the screen isn't there */ }
+    return plain(api.state().active.readiness || null); };
+  const api = muscle();
+  api.evaluate(`localStorage.setItem('trainer.together', JSON.stringify({checkins:[{day:Day.start(), at:Date.now(), w:{sleep:1, energy:1, stress:1, mood:1}, sore:{quad:7}}]}))`);
+  const r = start(api);
+  assert.equal(r.flag, 'low'); assert.equal(r.soreness, 'low'); assert.match(r.text, /check-in/);
+  const own = muscle();
+  own.state().readyDay = own.evaluate('Day.key()');
+  own.state().readyAns = {day: own.evaluate('Day.key()'), r: {sleep: 'good', energy: 'good', soreness: 'good', flag: 'good', text: 'x'}};
+  assert.equal(start(own).flag, 'good', 'the answer from an earlier session today');
+  const skipped = muscle();
+  skipped.evaluate(`localStorage.setItem('trainer.together', JSON.stringify({checkins:[{day:Day.start(), at:Date.now(), skip:true}]}))`);
+  assert.equal(start(skipped), null, 'skipped: nothing made up');
+});
+
+test('the swap list puts split squats ahead of hinges for a squat', () => {
+  const api = muscle(), list = id => plain(api.evaluate(`swapCandidates(Object.assign({exId:'${id}'}, exById('${id}')))`)).map(e => e.id);
+  const squat = list('back-squat');
+  assert.ok(squat.indexOf('bulgarian-split-squat') >= 0 && squat.indexOf('bulgarian-split-squat') < squat.indexOf('romanian-deadlift'), squat.join());
+  const press = list('leg-press');
+  assert.ok(press.indexOf('bulgarian-split-squat') < press.indexOf('hip-abduction'), press.join());
 });
 
 test('one check-in a day: answered or skipped here or in Together, a session does not ask again', () => {
