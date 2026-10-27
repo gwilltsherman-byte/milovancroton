@@ -1,0 +1,108 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const security = require('../security.js');
+const state = {v: 1, settings: {unit: 'kg'}, exercises: [], history: [
+  {id: 'session-1', name: "O'Brien <Gym>", date: 1700000000000, entries: [
+    {exId: 'squat', name: 'Squat', sets: [{weight: 50, reps: 5, rir: 2, done: true}]}
+  ]}
+]};
+const envelope = data => JSON.stringify({app: 'milovancroton', version: 1, data});
+class Storage {
+  constructor(data = {}, failure = ()=>false) { this.values = {...data}; this.failure = failure; }
+  getItem(k) { return this.values[k] ?? null; }
+  setItem(k,v) { if (this.failure(k,v)) throw new Error('quota'); this.values[k]=String(v); }
+  removeItem(k) { delete this.values[k]; }
+}
+
+test('valid backups preserve text, version and records', () => {
+  const parsed = security.backup(envelope({'hyplog.v1': JSON.stringify(state)}));
+  assert.deepEqual(JSON.parse(parsed.data['hyplog.v1']),state);
+  assert.doesNotThrow(()=>security.section({v:2, history:[], repeat:{name:'Next',ids:['pullup']}},'proladder.v1'));
+  assert.doesNotThrow(()=>security.section({v:1, custom:[['lift'],['str']],days:2},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, custom:null, days:2},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, custom:null, prio:['cal','lift','str'], days:2},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, days:2, tune:{focus:{Arms:'more', Core:'skip'}, ex:{bi:'cable-curl'}, lift:{legs:'squat'}, off:{lats:true}}},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, days:2, tune:{focus:{}, ex:{bi:['cable-curl','db-curl']}, lift:{}, off:{}}},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, days:2, tune:{focus:{Back:'more'}, mu:{trap:'skip'}, ex:{}, lift:{}, off:{}}},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, days:2, roundAt:1700000000000, log:[{date:1700000000001, start:1700000000001, day:0, skipped:true, parts:[['str','skip',null]]}]},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, custom:null, prio:['str','cal','lift'], days:2, kit:['bar','db'], exp:'advanced',
+    plan:{v:1, at:1700000000000, week:2, weeks:5, kinds:[['str'],['lift','cal']], dose:{str:'build', cal:'moderate', lift:'maintain'},
+      days:[{str:[{id:'squat', a:'legs', k:'load', key:'back-squat', heavy:true, sets:4}], lift:[], cal:null},
+        {str:[], lift:[{exId:'cable-lateral', mu:'sdelt', sets:2, comp:false}], cal:{dose:'moderate'}}]}},'trainer.together'));
+  assert.doesNotThrow(()=>security.section({v:1, history:[], repeat:{name:'Next',items:[['squat',3]]}},'hyplog.v1'));
+});
+test('answered and skipped Muscle readiness checks survive backup, restore and undo', () => {
+  for (const r of [null, {sleep:'good', energy:'ok', soreness:'good', flag:'good', text:'Train as planned.'}]) {
+    const muscle = {...structuredClone(state), readyDay:'2026-10-25', readyAns:{day:'2026-10-25', r}};
+    const raw = JSON.stringify(muscle), storage = new Storage({'hyplog.v1':raw});
+    assert.deepEqual(security.parseSection(raw, 'hyplog.v1'), muscle);
+    const copy = security.backup(envelope(security.snapshot(storage)));
+    security.restore(storage, {'strlog.v2':JSON.stringify({v:2, history:[]})});
+    security.restore(storage, copy.data);
+    assert.equal(storage.getItem('hyplog.v1'), raw);
+    const before = JSON.parse(storage.getItem('milo.before')).data;
+    security.restore(storage, before);
+    assert.equal(storage.getItem('hyplog.v1'), null);
+    assert.equal(storage.getItem('strlog.v2'), '{"v":2,"history":[]}');
+  }
+});
+test('text dates are accepted only for Muscle’s readiness day, with a real calendar date', () => {
+  const muscle = {...structuredClone(state), readyAns:{day:'2024-02-29', r:null}};
+  assert.doesNotThrow(()=>security.section(muscle, 'hyplog.v1'));
+  for (const day of ['2026-02-29', '2026-02-30', '2026-13-01', '2026-1-1', 'not a date', '<img onerror=alert(1)>']) {
+    assert.throws(()=>security.section({...muscle, readyAns:{day, r:null}}, 'hyplog.v1'));
+  }
+  for (const key of ['strlog.v2', 'proladder.v1', 'trainer.together']) {
+    assert.throws(()=>security.section({readyAns:{day:'2026-10-25', r:null}}, key));
+  }
+  for (const value of [{day:'2026-10-25'}, {active:{day:'2026-10-25'}}, {checkins:[{day:'2026-10-25'}]},
+    {readyAns:{r:{day:'2026-10-25'}}}, {readyAns:{day:'2026-10-25', r:{reps:'5'}}}]) {
+    assert.throws(()=>security.section(value, 'hyplog.v1'));
+  }
+  assert.throws(()=>security.section({...structuredClone(state), history:[{...state.history[0], date:'2026-10-25'}]}, 'hyplog.v1'));
+});
+test('foreign storage, future versions, malformed sessions, injected identifiers and prototype keys are refused', () => {
+  assert.throws(()=>security.backup(envelope({'other-app.token':'secret'})));
+  assert.throws(()=>security.backup(JSON.stringify({app:'milovancroton',version:2,data:{}})));
+  assert.throws(()=>security.parseSection('{"history":[{"id":"x","name":"X","entries":{}}]}','hyplog.v1'));
+  const poisoned=structuredClone(state); poisoned.history[0].id='" onmouseover="alert(1)';
+  assert.throws(()=>security.section(poisoned,'hyplog.v1'));
+  assert.throws(()=>security.parseSection('{"settings":{"__proto__":{"polluted":true}}}','strlog.v2'));
+  assert.throws(()=>security.parseSection('{"settings":{"rest":"<img onerror=alert(1)>"}}','strlog.v2'));
+  assert.throws(()=>security.parseSection('{"v":99}','strlog.v2'));
+  // sessions left open beside the one on screen are checked like it
+  const open={id:'open-1', name:'Pull day', startedAt:1700000000000, entries:[{exId:'squat', name:'Squat', sets:[{weight:50, reps:5, done:true}]}]};
+  assert.ok(security.section({...structuredClone(state), parked:[open]}, 'hyplog.v1'));
+  assert.throws(()=>security.section({...structuredClone(state), parked:open}, 'hyplog.v1'));
+  assert.throws(()=>security.section({...structuredClone(state), parked:[{...open, id:'" onclick="x'}]}, 'hyplog.v1'));
+  assert.throws(()=>security.parseSection('{"parked":[{"id":"s","name":"S","entries":[{"sets":[]}]}]}','proladder.v1'));
+});
+test('oversized and deeply nested inputs fail before storage changes', () => {
+  assert.throws(()=>security.backup(' '.repeat(security.MAX_BYTES+1)));
+  let value={}; for(let i=0;i<30;i++) value={child:value};
+  assert.throws(()=>security.section(value,'hyplog.v1'));
+});
+test('snapshot and restore are confined to this app', () => {
+  const storage=new Storage({'hyplog.v1':JSON.stringify(state),'other-app.token':'secret','other.undo':'keep','hyplog.v1.undo':'old'});
+  assert.equal(security.snapshot(storage)['other-app.token'],undefined);
+  security.restore(storage,{'strlog.v2':JSON.stringify({v:2,history:[]})});
+  assert.equal(storage.getItem('other-app.token'),'secret');
+  assert.equal(storage.getItem('other.undo'),'keep');
+  assert.equal(storage.getItem('hyplog.v1.undo'),null);
+  assert.equal(storage.getItem('hyplog.v1'),null);
+  assert.equal(JSON.parse(storage.getItem('milo.before')).data['hyplog.v1'],JSON.stringify(state));
+});
+test('invalid or unreservable restore leaves workouts untouched', () => {
+  const before={'hyplog.v1':JSON.stringify(state)};
+  for(const failure of [()=>false,k=>k==='milo.before']) {
+    const storage=new Storage(before,failure);
+    assert.throws(()=>security.restore(storage, failure('milo.before')? {'strlog.v2':'{"v":2,"history":[]}'} : {'hyplog.v1':'{"history":[false]}'}));
+    assert.equal(storage.getItem('hyplog.v1'),before['hyplog.v1']);
+  }
+});
+test('quota failure during writes rolls back without touching other apps', () => {
+  const before={'hyplog.v1':JSON.stringify(state),'other.token':'secret','hyplog.v1.undo':'old'};
+  const storage=new Storage(before,k=>k==='strlog.v2');
+  assert.throws(()=>security.restore(storage,{'strlog.v2':'{"v":2,"history":[]}'}));
+  assert.deepEqual(storage.values,before);
+});

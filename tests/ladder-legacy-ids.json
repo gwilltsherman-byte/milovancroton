@@ -1,0 +1,315 @@
+{
+  "pull": [
+    "dead-hang",
+    "scap-pullup",
+    "negative-pullup",
+    "band-pullup",
+    "pullup",
+    "archer-pullup",
+    "weighted-pullup",
+    "assisted-oap",
+    "oap"
+  ],
+  "row": [
+    "incline-row",
+    "inverted-row",
+    "feet-elevated-row",
+    "tuck-fl-row",
+    "archer-row",
+    "one-arm-row"
+  ],
+  "dip": [
+    "support-hold",
+    "negative-dip",
+    "band-dip",
+    "dip",
+    "weighted-dip"
+  ],
+  "pushh": [
+    "wall-pushup",
+    "incline-pushup",
+    "knee-pushup",
+    "pushup",
+    "diamond-pushup",
+    "archer-pushup",
+    "pseudo-planche-pushup",
+    "one-arm-pushup"
+  ],
+  "pushv": [
+    "pike-pushup",
+    "elevated-pike-pushup",
+    "wall-handstand-hold",
+    "partial-wall-hspu",
+    "wall-hspu",
+    "freestanding-hspu"
+  ],
+  "legs": [
+    "assisted-squat",
+    "bodyweight-squat",
+    "split-squat",
+    "bulgarian-split-squat",
+    "shrimp-squat",
+    "pistol-squat"
+  ],
+  "hinge": [
+    "glute-bridge",
+    "single-leg-glute-bridge",
+    "back-extension-hold",
+    "nordic-negative",
+    "nordic-curl"
+  ],
+  "core": [
+    "dead-bug",
+    "hollow-hold",
+    "tuck-lsit",
+    "one-leg-lsit",
+    "lsit",
+    "vsit"
+  ],
+  "handstand": [
+    "wall-plank",
+    "chest-to-wall-handstand",
+    "heel-pulls",
+    "freestanding-handstand"
+  ],
+  "frontlever": [
+    "tuck-fl",
+    "adv-tuck-fl",
+    "straddle-fl",
+    "half-lay-fl",
+    "full-fl"
+  ],
+  "planche": [
+    "planche-lean",
+    "tuck-planche",
+    "adv-tuck-planche",
+    "straddle-planche",
+    "full-planche"
+  ],
+  "muscleup": [
+    "chest-to-bar",
+    "explosive-pullup",
+    "straight-bar-dip",
+    "jumping-muscleup",
+    "strict-muscleup"
+  ],
+  "pullvar": [
+    "wide-pullup",
+    "commando-pullup",
+    "lsit-pullup",
+    "typewriter-pullup",
+    "clapping-pullup"
+  ],
+  "plyopush": [
+    "explosive-incline-pushup",
+    "clap-pushup",
+    "double-clap-pushup",
+    "behind-back-clap-pushup",
+    "superman-pushup"
+  ],
+  "tri": [
+    "bench-dip",
+    "sphinx-pushup",
+    "bw-tricep-ext-high",
+    "bw-tricep-ext-low",
+    "tiger-bend"
+  ],
+  "curl": [
+    "bw-curl-incline",
+    "bw-curl",
+    "chin-up",
+    "weighted-chin-up"
+  ],
+  "grip": [
+    "dead-hang",
+    "towel-hang",
+    "assisted-one-arm-hang",
+    "one-arm-hang"
+  ],
+  "jump": [
+    "squat-jump",
+    "tuck-jump",
+    "broad-jump",
+    "box-jump",
+    "depth-jump"
+  ],
+  "lunge": [
+    "reverse-lunge",
+    "bw-walking-lunge",
+    "lateral-lunge",
+    "cossack-squat",
+    "skater-squat"
+  ],
+  "knee": [
+    "assisted-sissy-squat",
+    "sissy-squat",
+    "partial-reverse-nordic",
+    "reverse-nordic",
+    "dragon-squat"
+  ],
+  "calf": [
+    "bw-calf-raise",
+    "single-leg-calf-raise",
+    "deficit-calf-raise",
+    "weighted-calf-raise"
+  ],
+  "legraise": [
+    "lying-leg-raise",
+    "hanging-knee-raise",
+    "hanging-leg-raise",
+    "toes-to-bar",
+    "windshield-wiper"
+  ],
+  "dragonflag": [
+    "reverse-crunch",
+    "tuck-dragon-flag",
+    "dragon-flag-negative",
+    "one-leg-dragon-flag",
+    "dragon-flag"
+  ],
+  "sidecore": [
+    "side-plank",
+    "star-side-plank",
+    "short-copenhagen",
+    "copenhagen-plank"
+  ],
+  "abwheel": [
+    "short-rollout",
+    "kneeling-rollout",
+    "standing-rollout-wall",
+    "standing-rollout"
+  ],
+  "bridge": [
+    "straight-bridge",
+    "table-bridge",
+    "full-bridge",
+    "wall-walk-bridge",
+    "stand-to-stand-bridge"
+  ],
+  "backlever": [
+    "german-hang",
+    "skin-the-cat",
+    "tuck-bl",
+    "adv-tuck-bl",
+    "straddle-bl",
+    "full-bl"
+  ],
+  "flag": [
+    "side-plank",
+    "vertical-flag",
+    "tuck-flag",
+    "straddle-flag",
+    "human-flag"
+  ],
+  "armbalance": [
+    "frog-stand",
+    "crow-pose",
+    "crane-pose",
+    "elbow-lever",
+    "one-arm-elbow-lever"
+  ],
+  "press": [
+    "pike-compression",
+    "press-negative",
+    "elevated-straddle-press",
+    "straddle-press",
+    "pike-press"
+  ],
+  "onearmhs": [
+    "hs-shoulder-tap",
+    "straddle-handstand",
+    "weight-shift-hs",
+    "fingertip-oahs",
+    "oahs"
+  ],
+  "planchepush": [
+    "pseudo-planche-pushup",
+    "tuck-planche-pushup",
+    "adv-tuck-planche-pushup",
+    "straddle-planche-pushup",
+    "full-planche-pushup"
+  ],
+  "rings": [
+    "ring-support",
+    "ring-pushup",
+    "rto-support",
+    "ring-dip",
+    "false-grip-hang",
+    "false-grip-pullup",
+    "ring-muscleup"
+  ],
+  "ankle": [
+    "calf-wall-stretch",
+    "ankle-rock-8",
+    "ankle-rock-10",
+    "ankle-rock-12"
+  ],
+  "balance": [
+    "sl-stand",
+    "sl-stand-soft",
+    "sl-stand-eyes-closed",
+    "sl-reach"
+  ],
+  "overhead": [
+    "bench-lat-stretch",
+    "wall-arm-raise",
+    "overhead-stick-lift"
+  ],
+  "pike": [
+    "long-sit",
+    "pike-fold-toes",
+    "pike-fold-palms",
+    "pike-fold-chest"
+  ],
+  "compression": [
+    "seated-leg-lift",
+    "pike-compression",
+    "straddle-lift"
+  ],
+  "straddle": [
+    "frog-stretch",
+    "straddle-fold-hands",
+    "straddle-fold-elbows",
+    "straddle-fold-chest"
+  ],
+  "hipflex": [
+    "half-kneel-hip-flexor",
+    "couch-stretch",
+    "couch-stretch-upright"
+  ],
+  "shoulderext": [
+    "shoulder-ext-stretch",
+    "german-hang-feet",
+    "german-hang"
+  ],
+  "wrist": [
+    "wrist-rocks",
+    "wrist-lean",
+    "palm-pulses"
+  ],
+  "scap": [
+    "scap-pushup",
+    "scap-dip",
+    "hs-shrug"
+  ],
+  "landing": [
+    "snap-down",
+    "drop-landing",
+    "hop-stick"
+  ],
+  "pistoldrill": [
+    "assisted-pistol",
+    "box-pistol",
+    "counterbalance-pistol"
+  ],
+  "hsdrill": [
+    "cartwheel-bail",
+    "btw-heel-pulls",
+    "kick-up"
+  ],
+  "mudrill": [
+    "low-bar-transition",
+    "muscleup-negative",
+    "band-muscleup"
+  ]
+}
