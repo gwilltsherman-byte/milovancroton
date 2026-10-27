@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(root, 'assets/brand/milo-symbol.svg'), 
 const glyph = source.match(/<path\b[^>]*\/>/)[0];
 const appSource = fs.readFileSync(path.join(root, 'assets/brand/milo-app-symbol.svg'), 'utf8');
 const appGlyph = [...appSource.matchAll(/<path\b[^>]*\/>/g)].map(match => match[0]).join('');
-const signal = '#f5a879', action = '#b44720', appField = '#ff6a3d', revision = 'simple-m-v3';
+const signal = '#f5a879', action = '#b44720', appField = '#ffffff', revision = 'black-bull-v4';
 const svg = (body, title) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${title}">${body}</svg>\n`;
 const icon = scale => svg(`<rect width="64" height="64" fill="${appField}"/><g transform="translate(${32*(1-scale)} ${32*(1-scale)}) scale(${scale})">${appGlyph}</g>`, 'Milo app icon');
 async function writePNG(file, sourceSVG, size) {
@@ -16,11 +16,11 @@ async function writePNG(file, sourceSVG, size) {
 }
 async function run() {
   fs.writeFileSync(path.join(root, 'assets/brand/milo-symbol-light.svg'), source.replace(action, signal));
-  fs.writeFileSync(path.join(root, 'assets/brand/milo-app-icon.svg'), icon(1));
-  // Give the M more presence at the browser tab's smaller viewing size.
-  const favicon = svg(`<rect width="64" height="64" rx="13" fill="${appField}"/><g transform="translate(-3.84 -3.84) scale(1.12)">${appGlyph}</g>`, 'Milo');
+  fs.writeFileSync(path.join(root, 'assets/brand/milo-app-icon.svg'), icon(.88));
+  // Give the bull more presence at the browser tab's smaller viewing size.
+  const favicon = svg(`<rect width="64" height="64" rx="13" fill="${appField}"/><g transform="translate(1.28 1.28) scale(.96)">${appGlyph}</g>`, 'Milo');
   fs.writeFileSync(path.join(root, 'favicon.svg'), favicon);
-  for (const [file, size, scale] of [['icon-192.png',192,1],['icon-512.png',512,1],['icon-maskable-512.png',512,.94],['apple-touch-icon.png',180,1]]) {
+  for (const [file, size, scale] of [['icon-192.png',192,.88],['icon-512.png',512,.88],['icon-maskable-512.png',512,.80],['apple-touch-icon.png',180,.88]]) {
     await writePNG(file,icon(scale),size);
   }
   await writePNG('favicon-32.png',favicon,32);
