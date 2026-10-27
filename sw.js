@@ -1,12 +1,12 @@
 /* Offline cache belongs only to this app and contains only its static assets. */
 const PREFIX = 'milo-app-';
-const CACHE = PREFIX + 'v59-cf9b9fd26598f79c1733';
+const CACHE = PREFIX + 'v59-efcd02bfb55549a58211';
 const NAV_WAIT = 3000;
 const BASE = new URL('./', self.registration.scope);
 const SHELL = ['./', './index.html', './boot.js', './security.js', './app.js', './fonts.css', './shell.css', './trainer.css',
   './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.svg', './favicon-32.png',
-  './icon-192.png?v=rising-bull-v2', './icon-512.png?v=rising-bull-v2', './icon-maskable-512.png?v=rising-bull-v2',
-  './apple-touch-icon.png?v=rising-bull-v2', './favicon.svg?v=rising-bull-v2', './favicon-32.png?v=rising-bull-v2'];
+  './icon-192.png?v=simple-m-v3', './icon-512.png?v=simple-m-v3', './icon-maskable-512.png?v=simple-m-v3',
+  './apple-touch-icon.png?v=simple-m-v3', './favicon.svg?v=simple-m-v3', './favicon-32.png?v=simple-m-v3'];
 const PATHS = new Set(SHELL.map(path => new URL(path, BASE).pathname));
 const VERSIONED = new Set(['boot.js', 'app.js', 'security.js', 'fonts.css', 'shell.css', 'trainer.css'].map(path => new URL(path, BASE).pathname));
 const ownAsset = url => url.origin === BASE.origin &&
