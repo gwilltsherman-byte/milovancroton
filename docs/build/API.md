@@ -126,6 +126,14 @@ Muscle uses it through `doseKind(ex)`, `defOf(ex, w)` (`{repLow, repHigh, rir, r
 and `syncDefs()` (library `def`s and block exercises' stored ranges, on each render and `hubCatalog`). `mesoEntry` and
 `entryFromEx` take targets from `defOf`, and `mesoEntry` and `weekRir` never go under `Dose.floor`.
 
+## Together: a swap for the whole mesocycle (`__hub.api('mix').blockSwap`)
+
+`blockSwap(m, from, to, dry)`: m `'lift'` puts Muscle's exercise `to` in `from`'s place in the picks of each muscle `from`
+is planned for that `to` trains (`tune.ex`, plus `perDay`/`hold`); m `'str'` makes `to` the lift of each area `from` is
+on (`tune.lift`). The plan refills its days and keeps its week (the tune is in the plan's signature, not its base), with
+one Undo. With `dry`, only whether it can (Strength needs only `from`). Muscle calls it for a Together day
+(`state.active.tgDay`, `tgBlockSwap`), Strength for a day Together started (`state.active.tg`, `tgSwap`).
+
 ## Hub API additions (Muscle, `__hub.api('lift')`)
 
 - `bodyLog()` → `[{date, kg}]` oldest first (copies).
