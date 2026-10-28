@@ -9531,7 +9531,8 @@ function render(){
     const side=perSide(st)?set.lr&&set.lr[0]!=null?'r':'l':null;
     return {name:st.n, target:target+(e.kind==='hold'?' s hold':' reps')+(side?' each side':''), side,
       effort:e.kind==='hold'||practiceOf(e.ladderId,e.stepIdx)==='balance'||practiceOf(e.ladderId,e.stepIdx)==='power'?null:'rir', effortValue:set.rir,
-      setup:(f?doseInput(e,ei,st,f):'')+`<label class="session-clean"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''}> Clean form, full range, no pain</label><div class="session-method">${esc(/negative|lowering|eccentric/i.test(st.id+' '+st.n)?'Lowering practice':f&&f.key!=='load'?'Assisted movement':'Strict movement')} · <button class="tinybtn" data-act="ex-menu" data-ex="${ei}">Change movement</button></div>`};
+      // the rung's cue where the set is done: the tempo of a negative, the line of a lever, how far to lower
+      setup:(st.cue?`<p class="session-cue">${esc(st.cue)}</p>`:'')+(f?doseInput(e,ei,st,f):'')+`<label class="session-clean"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''}> Clean form, full range, no pain</label><div class="session-method">${esc(/negative|lowering|eccentric/i.test(st.id+' '+st.n)?'Lowering practice':f&&f.key!=='load'?'Assisted movement':'Strict movement')} · <button class="tinybtn" data-act="ex-menu" data-ex="${ei}">Change movement</button></div>`};
   },(ei,si,side)=>{
     const e=state.active.entries[ei], set=e.sets[si], st=stepsOf(e.ladderId)[e.stepIdx];
     if(holdOn(ei,si)){ holdGo(ei,si); return; }
@@ -14029,11 +14030,15 @@ function heroNext(W){
   if(d<0) return `<section class="card"><div class="eyebrow">Next up</div><div class="h2">Nothing planned</div>
     <p class="lead">Every day in your week is empty. Tap a section on a day below to add it, or change the set-up.</p></section>`;
   const I=dayInfo(d), C=carryOver(), order=dayParts(W[d], jointAdjust(I, C).I), P=planDay(order, I, tg.short, {carry:C}), ready=P.parts.some(p=>p.ready);
+  // a day that can't start only because Ladder has no goals yet leads to choosing them, not to a button that does nothing
+  const goalless=!ready && W[d].includes('cal') && !((infoOf('cal')||{}).ready);
   const D=W.length;
   return `<section class="card next-session">
     <div class="workout-heading"><div class="workout-order" aria-label="Day ${d+1} of ${D}"><span>Day</span><b>${d+1}</b><span>of ${D}</span></div><div class="workout-title"><h2>${dayTitle(order)}</h2>${ready?`<span class="workout-duration">${IC.clock} about ${r5(P.mins)} min</span>`:''}</div></div>
-    <div class="workout-start"><button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button></div>
-    ${ready? `<p class="hint workout-warmup">Warm up: 5 easy minutes, then the prescribed warm-up sets.</p>` : ''}
+    <div class="workout-start">${!ready&&goalless? `<button class="btn pri block big" data-a="setup" data-m="cal">${IC.arrow} Choose Ladder goals</button>`
+      : `<button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button>`}</div>
+    ${ready? `<p class="hint workout-warmup">Warm up: 5 easy minutes, then the prescribed warm-up sets.</p>`
+      : goalless? `<p class="hint workout-warmup">Day ${d+1} is Ladder. Pick what you want to be able to do, and the day fills with work toward it.</p>` : ''}
     <details class="rules copyfold" data-fold="workout"><summary>Workout details</summary><div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div></details>
     ${dayExtras(W, d, order, I).concat(dayNotes(order, I, P, C)).map(note).join('')}
     ${RED_FLAGS}
@@ -14982,7 +14987,7 @@ __root.addEventListener('click', e=>{
       tg.secs=CHOICES.filter(m=>f.secs.includes(m)); Object.assign(tg.conditioning,f.conditioning); tg.days=f.days; tg.mins=60; tg.prio=firstOrder(f.secs); tg.on=true; tg.type=null;
       tg.kit=null; tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
       Prefs.set({unit:f.unit, kit:KIT.map(k=>k[0])});
-      first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Your week is built. Day 1 is ready.'); break; }
+      first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(tg.secs.length===1&&tg.secs[0]==='cal'&&!((infoOf('cal')||{}).ready)? 'Your week is built. Choose a Ladder goal to fill it.' : 'Your week is built. Day 1 is ready.'); break; }
     // the one-tap check-in
     case 'ci-q': { const q=QUICK.find(x=>x[0]===el.dataset.v); if(!q) break;
       const rec={day:startOfToday(), at:Date.now(), w:{}, sore:{}, x:{}, cw:2, quick:q[0]}; WELL.forEach(([k])=>{ rec.w[k]=q[2]; });

@@ -53,6 +53,7 @@
     frame.style.width='195px';await pause(250);check(doc.documentElement.scrollWidth<=196,'Strength list fits 195 px');
     ({root,win,doc}=await seed('cal',{...base,v:2,rung:{legs:5},placed:{legs:true},tests:[],goals:[],active:active([{ladderId:'legs',stepIdx:5,kind:'reps',target:5,setup:{},clean:true,sets:[{v:null,done:false},{v:null,done:false}]}])}));
     check(root.querySelector('.session-count').textContent.includes('Left')&&!root.querySelector('[data-field="r"]'),'Ladder presents the left side first');
+    check(/\S/.test(root.querySelector('.session-card .session-cue')?.textContent||''),'the rung’s cue shows where the set is done');
     root.querySelector('[data-session="done"]').click();await pause(250);saved=JSON.parse(localStorage.getItem('proladder.v1'));
     check(saved.active.entries[0].sets[0].lr[0]===5&&!saved.active.entries[0].sets[0].done&&root.querySelector('.session-count').textContent.includes('Right'),'left-side completion advances without logging both sides');
     const right=root.querySelector('[data-field="r"]');right.value='3';right.dispatchEvent(new win.Event('input',{bubbles:true}));root.querySelector('[data-session="done"]').click();await pause(250);saved=JSON.parse(localStorage.getItem('proladder.v1'));

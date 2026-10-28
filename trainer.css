@@ -633,6 +633,7 @@ button.dchip {min-height:36px}
 .session-card h2 {font-size:32px;line-height:1.15;margin:10px 0;overflow-wrap:anywhere}
 .session-count {display:inline-flex;align-items:center;min-height:28px;padding:4px 8px;background:var(--well);border-radius:5px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .session-target {font-size:16px;color:var(--ink-2);margin:0 0 24px}
+.session-cue {font-size:13.5px;line-height:1.5;color:var(--muted);margin:-12px 0 16px}
 .session-card .setrow {display:flex!important;flex-direction:column;align-items:stretch;gap:20px;padding:24px 0 0;border:0;border-top:1px solid var(--border);background:none}
 .session-card .setwrap,.session-card .lr {display:contents}
 .session-field {display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:650;min-width:0}
@@ -660,6 +661,7 @@ button.dchip {min-height:36px}
   .session-card {padding:18px}
   .session-card h2 {font-size:28px}
   .session-target {font-size:14px;margin-bottom:16px}
+  .session-cue {margin-top:-8px}
   .session-card .setrow {gap:12px;padding-top:16px}
   .session-field {gap:6px}
   .session-step {grid-template-columns:44px minmax(0,1fr) 44px;gap:6px}
