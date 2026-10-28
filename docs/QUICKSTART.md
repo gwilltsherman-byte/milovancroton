@@ -1,8 +1,8 @@
 # Your first workout
 
-Open [Milo](https://gwilltsherman-byte.github.io/milovancroton/). Pick Muscle, Strength, Ladder, Conditioning, or a mix. Choose your training days and weight units, then build your week.
+Open [Milo](https://gwilltsherman-byte.github.io/milovancroton/). Pick Muscle, Strength, Ladder, Conditioning, or a mix. With more than one, tap your main goal first: picks are numbered, and the first builds, the second gets a moderate dose and the rest keep what you have. Choose your training days and weight units, then build your week.
 
-Milo starts with a full gym and 60 minutes per training day. Change equipment, priorities, weekdays, time and experience in Settings. Choose Ladder goals before expecting Ladder sessions.
+Milo starts with a full gym and 60 minutes per training day. Change equipment, priorities, weekdays, time and experience in Settings. Choose Ladder goals before expecting Ladder sessions; until you do, Today's main button opens the goal chooser.
 
 ## Today
 

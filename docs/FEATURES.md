@@ -10,7 +10,7 @@ Together builds a combined program. Muscle, Strength and Ladder also support the
 
 ## Together’s week
 
-Priority changes dose, not exercise order. The first selected section builds, the second receives a moderate dose, and later sections receive maintenance doses. Conditioning uses the same ranking principle.
+Priority changes dose, not exercise order. The first selected section builds, the second receives a moderate dose, and later sections receive maintenance doses. On the first run, picks are numbered in the order you tap them and that order is the priority; Program setup can reorder it later. Conditioning uses the same ranking principle.
 
 Skills come first, followed by heavy lifts, other Ladder work, Muscle and any remaining core work. Conditioning comes last. The planner uses chosen weekdays, equipment, experience and available time.
 
@@ -48,6 +48,8 @@ Optional life-stage settings adapt training for younger people, older adults, an
 
 Muscle plans hard sets across muscles and regions. Together accounts for overlapping work from other sections. Helping muscles receive fractional credit where the volume view uses it; warm-ups are excluded.
 
+Big muscles receive the full weekly dose. Arms and calves receive a little less, rear and front delts and abs less again, and adductors, obliques and traps about half, because the big lifts already train them. The upper back is trained with rows and the lats with pull-ups or pulldowns. When exercises tie, Muscle's own ranking decides, and Muscle never repeats the lift Strength has that day. These shares are planning defaults, not measured needs.
+
 The log supports rep ranges, reps in reserve, warm-ups, supersets, exercise changes and custom exercises. Load progression uses completed performance and available equipment. Larger load jumps can require extra reps first.
 
 Volume adjustments use training performance and bounded changes. Recovery estimates can trim planned sets. Exercise instructions explain setup and movement; they do not measure form.
@@ -62,7 +64,7 @@ Back-offs can follow the top set logged today. Misses, breaks and equipment incr
 
 Ladder trains named calisthenics goals and their supporting qualities. Rep ranges include effort targets. Holds, left/right work and timed balance practice have dedicated controls.
 
-Progression depends on the exact movement, standard, form and setup. Load, assistance and execution mode affect whether a set proves readiness. Muscle entries contribute training volume, not automatic rung completion.
+The next-set card shows each movement's cue, such as the tempo of a negative. Progression depends on the exact movement, standard, form and setup. Load, assistance and execution mode affect whether a set proves readiness. Muscle entries contribute training volume, not automatic rung completion.
 
 Entry checks, prerequisites and spacing govern advancement. A later rung never automatically proves an unmet earlier standard. See [Ladder progression](ladder-progression.md) for the rules and their limits.
 
