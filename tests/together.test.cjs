@@ -654,3 +654,37 @@ test('the first run ranks what you picked in the order you picked it, then the r
   T.reset({on: true, secs: ['lift', 'str', 'cal'], prio: T.call('firstOrder', ['lift', 'str', 'cal'])});
   assert.deepEqual(plain(T.call('doses')), {lift: 'build', str: 'moderate', cal: 'maintain'});
 });
+
+test('a swap in a workout for the whole mesocycle: the block’s picks change, the week stays', () => {
+  const T = together();
+  const ex = (id, p, comp, rank) => ({id, name: id, equipment: 'Machine', p, s: [], comp, long: 0, custom: false, alt: false, last: 0, rank});
+  const cat = [ex('machine-chest-press', ['chest'], true, {chest: 0}), ex('pec-deck', ['chest'], false, {chest: 1}), ex('cable-fly', ['chest'], false, {chest: 2}),
+    ex('leg-press', ['quad', 'glute'], true, {quad: 0}), ex('leg-extension', ['quad'], false, {quad: 1}), ex('lateral-raise', ['sdelt'], false, {sdelt: 0}),
+    ex('lat-pulldown', ['lat'], true, {lat: 0}), ex('chest-supported-row', ['uback', 'lat'], true, {uback: 0})];
+  T.apis.lift = {table: () => null, catalog: () => cat, info: () => ({ready: true}), work: () => []};
+  T.reset({on: true, secs: ['lift'], days: 4, mins: 0});
+  T.call('plan').week = 3;
+  const chest = () => [...new Set(T.call('plan').days.flatMap(d => d.lift).filter(x => x.mu === 'chest').map(x => x.exId))];
+  const from = chest()[0], to = ['machine-chest-press', 'pec-deck', 'cable-fly'].find(id => !chest().includes(id));
+  assert.ok(from && to, 'a chest exercise to swap, and one not in the block: ' + chest());
+  // Muscle: only for an exercise that trains a muscle the old one was there for
+  assert.equal(T.call('blockSwap', 'lift', from, 'lateral-raise', true), false, 'a side-delt raise can’t stand in for chest work');
+  assert.equal(T.call('blockSwap', 'lift', 'not-in-the-block', to, true), false);
+  assert.equal(T.call('blockSwap', 'lift', from, to, true), true);
+  assert.ok(T.call('blockSwap', 'lift', from, to));
+  assert.ok(!chest().includes(from) && chest().includes(to), 'every day it was on: ' + chest());
+  assert.equal(T.call('plan').week, 3, 'the block keeps its week');
+  assert.ok(T.evaluate('tg.tune.ex.chest').includes(to));
+  // Strength: the area’s lift for the rest of the block
+  T.apis.str = strApi();
+  T.reset({on: true, secs: ['str'], days: 3, kit: ['bar', 'machine'], mins: 0});
+  T.call('plan').week = 3;
+  const legs = () => [...new Set(T.call('plan').days.flatMap(d => d.str).filter(x => x.a === 'legs').map(x => x.id))];
+  assert.deepEqual(legs(), ['squat']);
+  assert.equal(T.call('blockSwap', 'str', 'squat', null, true), true, 'a dry check needs only the lift in the block');
+  assert.ok(T.call('blockSwap', 'str', 'squat', 'legpress'));
+  assert.deepEqual(legs(), ['legpress']);
+  assert.equal(T.call('plan').week, 3);
+  // and one undo puts it back
+  assert.match(T.evaluate('undos[undos.length-1].label'), /whole mesocycle/);
+});

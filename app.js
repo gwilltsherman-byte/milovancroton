@@ -5659,33 +5659,37 @@ function applyMesoSwap(newId, scope){
   mesoSwapCtx=null; save(); closeModal(); render();
   toast('Swapped to '+esc(ex.name)+(n>1? ' on all '+n+' days' : ' for '+esc((m.days.find(d=>d.id===c.dayId)||{}).name||'that day'))+' of the mesocycle');
 }
+/* A Together day's mesocycle is Together's: whether a swap there can be for all of it (dry), or making it. */
+function tgBlockSwap(from, to, dry){ const a=state.active, T=a&&a.tgDay&&window.__hub&&window.__hub.api('mix'); return !!(T&&T.blockSwap&&T.blockSwap('lift', from, to, dry)); }
 function doSwap(ei, newId, scope){
   const ex=exById(newId); if(!ex) return;
   const en=state.active.entries[ei]; const oldExId=en.exId;
   const nSets=Math.max(1, en.sets.filter(s=>isWork(s)).length);
   en.exId=ex.id; en.name=ex.name; en.primary=ex.primary.slice(); en.secondary=ex.secondary.slice(); en.equipment=ex.equipment; en.overloadNote=null;
   en.sets=Array.from({length:nSets},()=>makeSet('work'));
-  let days=0; if(scope==='block'){ const md=mesoDayForActive(); if(md) days=mesoReplaceAll(md.m, oldExId, ex); }
-  save(); closeModal(); render(); toast(scope==='block'? 'Swapped to '+esc(ex.name)+' for the whole mesocycle'+(days>1?', on all '+days+' days it was on':'') : 'Swapped to '+esc(ex.name)+' for today');
+  let days=0, whole=false;
+  if(scope==='block'){ const md=mesoDayForActive(); if(md){ days=mesoReplaceAll(md.m, oldExId, ex); whole=true; } else whole=tgBlockSwap(oldExId, ex.id); }
+  save(); closeModal(); render(); toast('Swapped to '+esc(ex.name)+(whole? ' for the whole mesocycle'+(days>1?', on all '+days+' days it was on':'') : ' for this session'));
 }
 function deleteExercise(ei, scope){
   const en=state.active.entries[ei]; const exId=en.exId;
   state.active.entries.splice(ei,1);
   if(scope==='block'){ const md=mesoDayForActive(); if(md) mesoRemoveEx(md.m, md.dayId, exId); }
-  save(); closeModal(); render(); if(scope==='block') toast('Removed for the whole block');
+  save(); closeModal(); render(); if(scope==='block') toast('Removed for the whole mesocycle');
 }
 function scopeSheet(kind, ei, newId){
   const en=state.active.entries[ei]; if(!en) return;
-  const verb = kind==='swap'?'swap':'removal';
+  const at=`data-act="scope-apply" data-kind="${kind}" data-ex="${ei}"${kind==='swap'?` data-newid="${esc(newId)}"`:''}`;
   openModal(`
     <div class="sheet-grab"></div>
     <div class="sheet-body">
       <div style="text-align:center;padding:4px 0 8px">
-        <h2 class="disp" style="font-weight:800;font-size:20px;margin:0 0 6px">${kind==='swap'?'Today, or the whole mesocycle?':'Today, or the whole block?'}</h2>
-        <p class="muted" style="font-size:13px;margin:0 auto;max-width:290px">${kind==='swap'? `Swap <b style="color:var(--ink2)">${esc(en.name)}</b> for today only, or on every day of this mesocycle it is on, for the weeks that are left?` : `You're mid-mesocycle. Apply this ${verb} of <b style="color:var(--ink2)">${esc(en.name)}</b> to today only, or to every remaining week?`}</p>
+        <h2 class="disp" style="font-weight:800;font-size:20px;margin:0 0 6px">Just this session, or the whole mesocycle?</h2>
+        <p class="muted" style="font-size:13px;margin:0 auto;max-width:300px">${kind==='swap'? `Swap <b style="color:var(--ink2)">${esc(en.name)}</b> for this session only, or on every day of this mesocycle it’s on, for the weeks that are left.`
+          : `Remove <b style="color:var(--ink2)">${esc(en.name)}</b> from this session only, or from every week that’s left of this mesocycle.`}</p>
       </div>
-      <button class="btn primary block" data-act="scope-apply" data-kind="${kind}" data-ex="${ei}"${kind==='swap'?` data-newid="${esc(newId)}"`:''} data-scope="block" style="margin-top:14px">${I.repeat} ${kind==='swap'?'Whole mesocycle':'Rest of the block'}</button>
-      <button class="btn ghost block" data-act="scope-apply" data-kind="${kind}" data-ex="${ei}"${kind==='swap'?` data-newid="${esc(newId)}"`:''} data-scope="session" style="margin-top:8px">Just today</button>
+      <button class="btn primary block" ${at} data-scope="session" style="margin-top:14px">Just this session</button>
+      <button class="btn ghost block" ${at} data-scope="block" style="margin-top:8px">${I.repeat} Whole mesocycle</button>
     </div>`, true);
 }
 
@@ -6019,7 +6023,7 @@ __root.addEventListener('click', e=>{
     case 'repeat-set': { const en=state.active.entries[ei]; const s=en.sets[si]; en.sets.splice(si+1,0,Object.assign(makeSet('work'),{weight:s.weight,reps:s.reps,rir:s.rir})); save(); closeModal(); render(); toast('Set repeated'); break; }
     case 'add-warmup-ramp': { const en=state.active.entries[ei]; const ramp=warmupRamp(loadingState.weight); ramp.slice().reverse().forEach(r=>{ en.sets.unshift(Object.assign(makeSet('warmup'),{weight:fromDisp(r.w), reps:r.reps})); }); save(); closeModal(); render(); toast(ramp.length+' warm-up sets added'); break; }
     case 'ex-swap': openSwap(ei); break;
-    case 'do-swap': { const nid=el.dataset.id; if(state.active&&state.active.meso) scopeSheet('swap', ei, nid); else doSwap(ei, nid, 'session'); break; }
+    case 'do-swap': { const nid=el.dataset.id, a=state.active; if(a&&(a.meso||tgBlockSwap(a.entries[ei].exId, nid, true))) scopeSheet('swap', ei, nid); else doSwap(ei, nid, 'session'); break; }
     case 'scope-apply': { const kind=el.dataset.kind, sc=el.dataset.scope; if(kind==='swap') doSwap(ei, el.dataset.newid, sc); else deleteExercise(ei, sc); break; }
     case 'ex-menu': openExMenu(ei); break;
     case 'del-ex': if(state.active&&state.active.meso) scopeSheet('delete', ei); else deleteExercise(ei, 'session'); break;
@@ -11461,8 +11465,10 @@ let swapStick=false;
    then the rest, each in strength-pick order. */
 function likeness(a, b){ const A=EX[a], B=EX[b]; return A.mv===B.mv? 0 : (A.fam||A.mv)===(B.fam||B.mv)? 1 : 2; }
 function swapOrder(id, ids){ return ids.slice().sort((x,y)=>likeness(id,x)-likeness(id,y)||EX[x].rank-EX[y].rank); }
+/* A day Together started: its mesocycle is Together's, which takes the swap for all of it (blockSwap). */
+function tgSwap(from, to, dry){ const a=state.active, T=a&&a.tg&&window.__hub&&window.__hub.api('mix'); return !!(T&&T.blockSwap&&T.blockSwap('str', from, to, dry)); }
 function swapCanStick(ei){ const a=state.active, en=a&&a.entries[ei], S=state.setup;
-  return !!(en && a.plan && planLive(a) && S && S.choice[EX[en.liftId].a]===en.liftId); }
+  return !!(en && ((a.plan && planLive(a) && S && S.choice[EX[en.liftId].a]===en.liftId) || tgSwap(en.liftId, null, true))); }
 function openSessionSwap(ei, keep){
   const a=state.active, en=a&&a.entries[ei]; if(!en) return;
   if(!keep) swapStick=false;
@@ -11472,8 +11478,10 @@ function openSessionSwap(ei, keep){
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><button class="iconbtn" data-act="ex-menu" data-ex="${ei}" data-back aria-label="Back">${I.back}</button><h3>Swap ${esc(exName(en.liftId,en.vi))}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
-      ${stick?`<div class="field"><div class="pillpick">${pill(false,'Just this session')}${pill(true,'From now on')}</div></div>
-      <p class="muted" style="font-size:12.5px;line-height:1.5;margin:-2px 2px 12px">${swapStick? `Your plan uses the new one for ${esc(AREAS[area].n.toLowerCase())} from today, and stays on the same week and day.` : `Only today. Next time your plan goes back to ${esc(exName(en.liftId,en.vi))}.`}</p>`
+      ${stick?`<div class="field"><div class="pillpick">${pill(false,'Just this session')}${pill(true, a.tg? 'Whole mesocycle' : 'From now on')}</div></div>
+      <p class="muted" style="font-size:12.5px;line-height:1.5;margin:-2px 2px 12px">${!swapStick? `Only this session. Next time your plan goes back to ${esc(exName(en.liftId,en.vi))}.`
+        : a.tg? `Every day of this mesocycle with ${esc(AREAS[area].n.toLowerCase())} uses the new one, for the weeks that are left. Your week stays where it is.`
+        : `Your plan uses the new one for ${esc(AREAS[area].n.toLowerCase())} from today, and stays on the same week and day.`}</p>`
       : `<p class="muted" style="font-size:12.5px;line-height:1.5;margin:0 2px 12px">Just for this session.</p>`}
       ${opts.map(id=>{ const X=EX[id], nm=exName(id);
         return `<button class="pick" data-act="sswap-pick" data-ex="${ei}" data-v="${id}"><span class="pt"><span class="a">${esc(nm)}</span>
@@ -11494,16 +11502,20 @@ function applySessionSwap(ei, id, stick){
   } else ne=freeEntry(id);
   ne.note=en.note||null;
   a.entries[ei]=ne;
-  if(stick){
+  // a day Together started: the swap is for Together's mesocycle, never Strength's own plan
+  let when=' for this session';
+  if(stick && a.tg){ if(tgSwap(old, id)) when=' for the whole mesocycle'; }
+  else if(stick){
     const S=state.setup, Pr=state.program;
     if(S && S.choice[area]===old){ S.choice[area]=id;
       if(Pr){ const o=startE1s(Pr), e=currentE1(id); if(e&&o[id]==null) o[id]=e; } }
+    when=' from now on';
   }
   save(); closeModal(); render();
   if(window.__hub) window.__hub.changed('str');
   const nm=esc(exName(id));
-  if(EX[id].k==='load' && ne.sets.some(s=>s.kind!=='warm'&&s.w==null)) toast(nm+(stick?' from now on':' for today')+'. Pick a weight you could lift for the reps with '+spareFor([ne])+' to spare');
-  else toast(nm+(stick?' from now on':' for today'));
+  if(EX[id].k==='load' && ne.sets.some(s=>s.kind!=='warm'&&s.w==null)) toast(nm+when+'. Pick a weight you could lift for the reps with '+spareFor([ne])+' to spare');
+  else toast(nm+when);
 }
 
 /* Stopping a session you picked back up: keep it with what you added, or put it back exactly as it was. */
@@ -12411,7 +12423,7 @@ function hubStartWith(spec){
   if(state.active) return null;
   const entries=(spec.slots||[]).filter(x=>EX[x.id]).map(x=>makeEntry(x.id, tgSlot(x.id, x.sc), x.sc, x.label||chipText(x.id, x.sc, tgWeek(x.sc), 'together')));
   if(!entries.length) return null;
-  state.active={id:uid(), name:spec.name||'Together', startedAt:Date.now(), entries, restEndsAt:null, restDur:0, note:null, plan:null};
+  state.active={id:uid(), name:spec.name||'Together', startedAt:Date.now(), entries, restEndsAt:null, restDur:0, note:null, plan:null, tg:true};
   save(); closeModal(); state.route='train'; render(); window.scrollTo(0,0);
   if(window.__hub) window.__hub.changed('str');
   const blank=entries.filter(en=>EX[en.liftId].k==='load' && en.sets.some(s=>s.kind!=='warm'&&s.w==null));
@@ -14956,7 +14968,37 @@ function viewLibraryAll(){
 }
 /* What the shell asks of Together: its pages, the program type, opening the set-up at one question, and the section
    running a part of today's day. */
+/* A swap made in a workout, for the whole mesocycle: Muscle's exercise (m 'lift') takes the old one's place in its
+   muscle's picks, or Strength's lift (m 'str') becomes its area's lift. Only the days refill: the week and your progress
+   through the block stay (plan). With dry, whether it can: the old one is in this block, and a Muscle exercise trains a
+   muscle the old one was there for. */
+function blockSwap(m, from, to, dry){
+  if(!tg.on || !from || (!dry && (!to || from===to))) return false;
+  const P=plan(), T=cleanTune(tg.tune);
+  if(m==='str'){
+    // the block only takes a lift your kit allows there, as Together's own choices do
+    const S=H.api('str'), fits=a=>dry || !S || !S.options || S.options(a, kit()).some(x=>x.id===to);
+    const areas=[...new Set(P.days.flatMap(d=>d.str||[]).filter(x=>x.id===from).map(x=>x.a))].filter(a=>STR_ORDER.includes(a) && fits(a));
+    if(!areas.length || dry) return areas.length>0;
+    remember('a swap for the whole mesocycle'); areas.forEach(a=>{ T.lift[a]=to; delete T.off[a]; });
+  } else if(m==='lift'){
+    const L=H.api('lift'), cat=L&&L.catalog? L.catalog() : [], ne=cat.find(e=>e.id===to), all=P.days.flatMap(d=>d.lift||[]);
+    const mus=ne? [...new Set(all.filter(x=>x.exId===from).map(x=>x.mu))].filter(mu=>ne.p.includes(mu)) : [];
+    if(!mus.length || dry) return mus.length>0;
+    remember('a swap for the whole mesocycle');
+    const sw=id=>id===from? to : id;
+    mus.forEach(mu=>{
+      // the muscle's exercises as the block has them (your picks, or the ones Together chose), the new one in the old one's place
+      const now=(T.ex[mu]||[]).length? T.ex[mu] : [...new Set(all.filter(x=>x.mu===mu).map(x=>x.exId))];
+      T.ex[mu]=[...new Set(now.map(sw))].slice(0, PICKS_MAX);
+      ['perDay','hold'].forEach(k=>{ const v=T[k][mu]; if(v) Object.keys(v).forEach(i=>{ v[i]=Array.isArray(v[i])? v[i].map(sw) : sw(v[i]); }); });
+    });
+  } else return false;
+  tg.tune=T; save(); render(); H.changed('mix');
+  return true;
+}
 H.reg('mix', {
+  blockSwap,
   openOutcomes(m){goalForm={kind:'max',m:['lift','str'].includes(m)?m:'str'};page='progress';render();},
   go(p){ page=PAGE_H[p]? p : 'today'; render(); window.scrollTo(0,0); },
   redraw(){ render(); },

@@ -396,6 +396,31 @@
       check(Math.abs(root.querySelector('[data-a="t-focus"][data-g="Arms"][data-v="more"]').getBoundingClientRect().top-y0)<2, 'choosing More keeps the page where it was');
       root.querySelector('[data-a="t-pick"][data-t="ex"]').click(); await pause(150); root.querySelector('[data-a="t-back"]').click(); await pause(150);
       check(root.querySelector('.tpart[data-fold="tune-lift"]').open, 'back from an exercise library keeps Muscle open'); }
+    // a swap in a workout: just this session, or the whole mesocycle (Together's block takes it, the week stays)
+    for(const m of ['lift','str']){ frame.remove(); frame=null; reset({'milo.persist':'1'});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      root.querySelector('[data-a="f-sec"][data-m="'+m+'"]').click(); root.querySelector('[data-a="f-unit"][data-v="kg"]').click();
+      root.querySelector('[data-a="f-go"]').click(); await pause(300); await startDay(root); await pause(300);
+      const S=doc.getElementById('m-'+m).shadowRoot; S.querySelector('[data-session="list"]').click(); await pause(200);
+      if(m==='lift'){
+        const from=JSON.parse(localStorage.getItem('hyplog.v1')).active.entries[0].exId;
+        S.querySelector('[data-act="ex-swap"][data-ex="0"]').click(); await pause(200);
+        const opt=S.querySelector('[data-act="do-swap"]'), to=opt.dataset.id; opt.click(); await pause(200);
+        const scopes=[...S.querySelectorAll('[data-act="scope-apply"]')].map(b=>b.dataset.scope+':'+b.textContent.trim());
+        check(scopes.length===2 && /^session:Just this session/.test(scopes[0]) && /^block:.*Whole mesocycle/.test(scopes[1]), 'a Muscle swap on a Together day asks: just this session, or the whole mesocycle ('+scopes+')');
+        S.querySelector('[data-act="scope-apply"][data-scope="block"]').click(); await pause(300);
+        const T=saved().tune||{}, mine=Object.values(T.ex||{}).flat();
+        check(mine.includes(to) && !mine.includes(from) && JSON.parse(localStorage.getItem('hyplog.v1')).active.entries[0].exId===to, 'the whole mesocycle: Together’s picks take the new exercise, and so does this session');
+      } else {
+        S.querySelector('[data-act="ex-menu"][data-ex="0"]').click(); await pause(200);
+        S.querySelector('[data-act="sswap"]').click(); await pause(200);
+        const pills=[...S.querySelectorAll('[data-act="sswap-scope"]')].map(b=>b.textContent.trim());
+        check(pills.join('|')==='Just this session|Whole mesocycle', 'a Strength swap on a Together day asks the same ('+pills+')');
+        S.querySelector('[data-act="sswap-scope"][data-v="1"]').click(); await pause(150);
+        const opt=S.querySelector('[data-act="sswap-pick"]'), to=opt.dataset.v; opt.click(); await pause(300);
+        check(Object.values((saved().tune||{}).lift||{}).includes(to), 'the whole mesocycle: Together’s lift for that area is the new one');
+      }
+      check(saved().plan.week===1 && !!saved().run, 'the block and the day carry on'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;

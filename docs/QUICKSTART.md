@@ -16,7 +16,7 @@ The next-set screen shows one exercise and set. Check the suggested load and rep
 
 RIR means reps left in the tank. RPE rates effort; a lifting RPE of 8 means roughly two reps remain. Conditioning asks for the effort of the whole activity instead.
 
-Done starts rest, timed for the exercise. Use Skip rest or add 30 seconds as needed. Rep ranges, reps in reserve and rests are set for you from the exercise, your block's week and your experience. Switch between Next set and All sets with the switch at the top (swiping doesn't change it); All sets shows the whole workout and lets you edit sets. The bottom bar stays during a workout: step out to any tab and the session waits for you under Train. An old unfinished session shows its start date.
+Done starts rest, timed for the exercise. To change an exercise, use Swap: choose just this session, or the whole mesocycle. Use Skip rest or add 30 seconds as needed. Rep ranges, reps in reserve and rests are set for you from the exercise, your block's week and your experience. Switch between Next set and All sets with the switch at the top (swiping doesn't change it); All sets shows the whole workout and lets you edit sets. The bottom bar stays during a workout: step out to any tab and the session waits for you under Train. An old unfinished session shows its start date.
 
 Warm-ups stay separate from working sets. Ladder may ask for each side, a hold duration, or the assistance and load used. Keep form and setup accurate because they affect progression proof.
 
