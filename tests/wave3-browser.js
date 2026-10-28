@@ -24,7 +24,7 @@
       let {win,doc}=await seed();let root=rootOf(doc,'mix');
       root.querySelector('[data-a="f-sec"][data-m="cond"]').click();
       check(!!root.querySelector('#cond-target'),'Conditioning has target and style controls on first setup');
-      root.querySelector('[data-a="f-go"]').click();
+      root.querySelector('[data-a="f-unit"][data-v="kg"]').click();root.querySelector('[data-a="f-go"]').click();
       check(!/hit a problem/.test(root.textContent),'conditioning-only week renders');
       root.querySelector('[data-a="start-day"]').click();await pause(100);
       check(!!root.querySelector('[data-cond-clock]'),'planned conditioning opens the timer');
@@ -49,7 +49,7 @@
       const a=active([{exId:'db_row_cs',name:'Chest-Supported Dumbbell Row',target:{repLow:6,repHigh:10,rir:3,rest:180},sets:[{weight:25,reps:6,rir:1,done:true},{weight:null,reps:null,rir:null,done:false}]}]);a.startedAt=Date.now()-2238*60000;
       const {win,doc}=await seed({'hyplog.v1':{...base,settings:{sessionView:'list'},active:a}},'m=lift');const root=rootOf(doc,'lift');
       check(win.getComputedStyle(doc.querySelector('.shellbar')).display==='none','old saved list hides the global header');
-      check(win.getComputedStyle(doc.querySelector('.sidebar')).display==='none','old saved list hides bottom navigation');
+      check(win.getComputedStyle(doc.querySelector('.sidebar')).display!=='none','old saved list keeps the bottom navigation');
       check(/Open since/.test(root.querySelector('#elapsed').textContent),'old workout shows its start date instead of thousands of elapsed minutes');
       check(!!root.querySelector('.train-head [data-session="focus"]'),'Next set is grouped with workout controls');
     });

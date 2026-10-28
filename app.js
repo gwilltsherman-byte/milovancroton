@@ -1217,18 +1217,28 @@ window.HOWTO = {
    that returns to the one before. A step that changes data keeps a copy first, so going back undoes it.
    The phone's back button or gesture does the same while a sheet is open. */
 window.SheetNav=(function(){
-  let onBack=null, pushed=false, skip=0, leaving=null;
+  let onBack=null, pushed=false, skip=0, leaving=null, page=null;
+  /* Milo's own place in the browser's history: its entry ('base') with a guard entry on top, so a back gesture with no
+     sheet open steps back inside Milo (page) instead of leaving it, and the guard goes back up for the next one. With
+     nowhere to step back to, back leaves as it does on any page. Sheets push their entry above the guard. */
+  function guard(){ try{ const s=history.state; if(!(s&&(s.milo==='guard'||s.sheet))) history.pushState({milo:'guard'},''); }catch(e){} }
   addEventListener('popstate', ()=>{
-    if(skip){ skip--; return; }
-    if(!pushed) return;
-    pushed=false;
-    const f=onBack; onBack=null; if(f) f();
+    if(skip){ skip--; if(page) guard(); return; }
+    if(pushed){ pushed=false; const f=onBack; onBack=null; if(f) f(); return; }
+    if(!page || !(history.state&&history.state.milo==='base')) return;
+    let went=false; try{ went=!!page(); }catch(e){}
+    if(went) guard(); else try{ history.back(); }catch(e){}
   });
   // reloaded with a sheet's history entry on top: step off it
   try{ if(history.state&&history.state.sheet){ skip++; history.back(); } }catch(e){}
   function hold(fn){
     onBack=fn; clearTimeout(leaving); leaving=null;
     if(!pushed){ try{ history.pushState({sheet:1},''); pushed=true; }catch(e){} }
+  }
+  function setPage(fn){
+    page=fn;
+    try{ const s=history.state; if(s&&(s.sheet||s.milo==='guard')) return;
+      history.replaceState(Object.assign({}, s||{}, {milo:'base'}),''); guard(); }catch(e){}
   }
   function release(){
     onBack=null;
@@ -1294,7 +1304,7 @@ window.SheetNav=(function(){
       back
     };
   }
-  return {make};
+  return {make, page:setPage};
 })();
 
 ;
@@ -1882,7 +1892,7 @@ window.MiloSession=(()=>{
     if(when&&sets){ const time=elapsed(a), text=tally(count,work); if(when.textContent!==time)when.textContent=time; if(sets.textContent!==text)sets.textContent=text; }
     else { const text=elapsed(a)+tally(count,work); if(el.textContent!==text)el.textContent=text; }
   }
-  const icon=(kind)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="${kind==='plus'?'M5 12h14M12 5v14':'M5 12h14'}"/></svg>`;
+  const icon=(kind)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${kind==='plus'?'M5 12h14M12 5v14':kind==='flag'?'M5 22V4M5 4h11l-2 4 2 4H5':'M5 12h14'}"/></svg>`;
   const ios=()=>/iP(ad|hone|od)/.test(navigator.userAgent)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
   const alertsAvailable=()=>!ios()&&'Notification' in window&&'serviceWorker' in navigator;
   async function requestAlerts(){
@@ -1913,6 +1923,9 @@ window.MiloSession=(()=>{
     } return null;
   }
   function active(c){ return c.st.route==='train'&&!!c.st.active; }
+  /* The two ways of logging, side by side in both, so the other one is always in sight: the set you're on, or every set. */
+  function viewSwitch(cur){ return `<div class="session-views" role="group" aria-label="Show">${[['focus','Next set'],['list','All sets']].map(([v,t])=>
+    `<button type="button"${v===cur? '' : ` data-session="${v}"`}${v==='focus'? ' class="session-switch"' : ''} aria-pressed="${v===cur}">${t}</button>`).join('')}</div>`; }
   function focus(c){ return c.st.settings.sessionView!=='list'; }
   function syncShell(root){
     const c=views.get(root), on=!!(c&&active(c));
@@ -1972,9 +1985,10 @@ window.MiloSession=(()=>{
     if(!on){
       const head=view.querySelector('.train-head');
       if(head){
+        const h=head.querySelector('h2'), day=dayName(st.active); if(h&&day) h.textContent=day;
         let tools=head.querySelector('.session-tools');
         if(!tools){ tools=document.createElement('div'); tools.className='session-tools'; head.appendChild(tools); }
-        tools.insertAdjacentHTML('afterbegin',MiloSecurity.html('<button class="tinybtn session-switch" data-session="focus">Next set</button>'));
+        tools.insertAdjacentHTML('afterbegin',MiloSecurity.html(viewSwitch('list')));
         const menu=head.querySelector('[data-act="session-menu"]'); if(menu) tools.appendChild(menu);
       }
       let target=find(root,old);
@@ -1985,7 +1999,8 @@ window.MiloSession=(()=>{
       }
       focusField(target); c.returnTo=null; return;
     }
-    let row='', detail=null, setup='', name='All sets logged', target='Finish, or use List to change a set.', setText='';
+    const empty=!st.active.entries.length, ADD={lift:'open-picker', str:'pick-lift', cal:'pick-ex'};
+    let row='', detail=null, setup='', name=empty? 'No exercises yet' : 'All sets logged', target=empty? 'Add your first exercise to start logging.' : 'Finish, or switch to All sets to change a set.', setText='';
     if(next){
       detail=meta(next.ei,next.si); c.kit=detail.kit||null; c.side=detail.side||null;
       name=detail.name; target=detail.target; setText=(detail.count||'Set '+(next.si+1)+' of '+st.active.entries[next.ei].sets.length)+(detail.side?' · '+(detail.side==='l'?'Left':'Right'):'');
@@ -2007,8 +2022,8 @@ window.MiloSession=(()=>{
       setup=detail.setup||'';
     }
     const day=dayName(st.active);
-    view.innerHTML=MiloSecurity.html(`<div class="session-top"><button class="btn ghost" data-session="list">List</button><div><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${esc(elapsed(st.active))}</span></div><button class="btn primary" data-act="finish">Finish</button></div>
-      <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<p class="hint">${detail.effort==='rpe'?'RPE: effort from 1–10; 8 means about 2 reps left.':'RIR: reps left in the tank.'}</p><div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
+    view.innerHTML=MiloSecurity.html(`<div class="session-top"><div class="session-title"><span data-session-day>${esc(day||st.active.name)}</span><span id="elapsed">${esc(elapsed(st.active))}</span></div><button class="btn primary session-finish" data-act="finish">${icon('flag')} Finish</button>${viewSwitch('focus')}</div>
+      <div class="session-stage"><section class="session-card"><div class="session-count">${esc(setText)}</div><h2>${esc(name)}</h2><p class="session-target">${esc(target)}</p>${setup}${row}<div data-session-plates></div>${detail&&detail.effort?`<p class="hint">${detail.effort==='rpe'?'RPE: effort from 1–10; 8 means about 2 reps left.':'RIR: reps left in the tank.'}</p><div class="session-effort" role="group" aria-label="${detail.effort==='rpe'?'RPE':'Reps in reserve'}">${(detail.effort==='rpe'?[6,7,8,9,10]:[0,1,2,3,4]).map(v=>`<button data-session="effort" data-field="${detail.effort}" data-v="${v}" aria-pressed="${String(v===detail.effortValue)}">${v}${detail.effort==='rpe'?' RPE':' RIR'}</button>`).join('')}</div>`:''}${next?`<button class="btn primary session-done" data-session="done" aria-pressed="false" aria-label="Log set ${next.si+1}${c.side?' '+(c.side==='l'?'left':'right'):''}">Done</button>`:empty&&ADD[c.m]?`<button class="btn primary session-done" data-act="${ADD[c.m]}">${icon('plus')} Add exercise</button>`:'<button class="btn primary session-done" data-act="finish">Finish session</button>'}</section>
       <section class="session-rest" hidden><h2>Rest</h2><div class="session-clock" role="timer" aria-label="Rest remaining"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="session-track" cx="50" cy="50" r="45"/><circle data-session-arc cx="50" cy="50" r="45"/></svg><span data-session-time></span></div><p>Next: ${esc(name)}${setText?' · '+esc(setText):''}</p><div class="session-rest-actions"><button class="btn ghost" data-session="add">+30 s</button><button class="btn primary" data-session="skip">Skip rest</button></div></section></div>`);
     plates(c); effort(c); tick(c);
     const restore=find(root,old)||view.querySelector('.session-rest:not([hidden]) button, .session-card:not([hidden]) .session-step input, .session-done');
@@ -5361,37 +5376,34 @@ function applyBuilderSwap(newId, scope){
   else { const d=b.days.find(x=>x.id===c.dayId), e=d&&d.exercises[c.idx]; if(e){ swap(e); n=1; } }
   bswapCtx=null; closeModal(); render(); toast('Swapped to '+esc(ex.name)+(n>1? ' on all '+n+' days' : ''));
 }
-function pickerHtml(q){
-  const ql=q.trim().toLowerCase();
-  let list=state.exercises.slice();
-  if(ql) list=list.filter(e=>e.name.toLowerCase().includes(ql)||e.primary.some(m=>MUSCLES[m]&&MUSCLES[m].n.toLowerCase().includes(ql)));
-  list.sort((a,b)=>a.name.localeCompare(b.name));
-  const items=list.slice(0,60).map(e=>`
+/* The exercises, muscle by muscle in the body's order, each muscle's best first: Muscle's ranking (PRIORITY: what grew it
+   more in trials, then the dependable classics), then your own, then the alternatives. A search keeps the order. */
+function pickerItems(q){
+  const ql=q.trim().toLowerCase(), by={};
+  state.exercises.filter(e=>!ql || e.name.toLowerCase().includes(ql) || e.primary.some(m=>MUSCLES[m]&&MUSCLES[m].n.toLowerCase().includes(ql)))
+    .forEach(e=>{ const m=e.primary[0]||'other'; (by[m]||(by[m]=[])).push(e); });
+  const html=Object.keys(MUSCLES).concat(Object.keys(by).filter(m=>!MUSCLES[m])).filter(m=>by[m]).map(m=>{ const r=rankIn(m);
+    return `<div class="pick-group">${esc(MUSCLES[m]? MUSCLES[m].n : 'Other')}</div>`+by[m].sort((a,b)=>r(a)-r(b) || a.name.localeCompare(b.name)).map((e,k)=>`
     <div class="exlist-item" data-act="pick-ex" data-id="${esc(e.id)}">
       <div class="xi">${esc(e.name.slice(0,1))}</div>
-      <div class="xn"><div class="t">${esc(e.name)}</div><div class="s">${e.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(', ')} &middot; ${esc(e.equipment)}</div></div>
+      <div class="xn"><div class="t">${esc(e.name)}</div><div class="s">${k===0&&r(e)<50? '<b class="toppick">Top pick</b> &middot; ' : ''}${e.primary.map(x=>MUSCLES[x]?MUSCLES[x].n:x).join(', ')} &middot; ${esc(e.equipment)}</div></div>
       <div class="add">${I.plus}</div>
-    </div>`).join('') || `<div class="muted" style="padding:24px;text-align:center">No matches</div>`;
+    </div>`).join(''); }).join('');
+  return html || `<div class="muted" style="padding:24px;text-align:center">No matches</div>`;
+}
+function pickerHtml(q){
   return `
     <div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Add exercise</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div style="padding:12px 16px 6px">
-      <div class="searchbar" style="position:static;margin:0;box-shadow:none">${I.search}<input id="pickersearch" placeholder="Search exercises" value="${esc(q)}" autocomplete="off"></div>
+      <div class="searchbar" style="position:static;margin:0;box-shadow:none">${I.search}<input id="pickersearch" placeholder="Search exercises or muscles" value="${esc(q)}" autocomplete="off"></div>
+      <p class="hint" style="margin:8px 2px 0">Best first for each muscle.</p>
     </div>
-    <div class="sheet-body tight" id="pickerlist">${items}</div>`;
+    <div class="sheet-body tight" id="pickerlist">${pickerItems(q)}</div>`;
 }
 function refreshPicker(q){
   const body=$('#pickerlist'); if(!body) return;
-  const ql=q.trim().toLowerCase();
-  let list=state.exercises.slice();
-  if(ql) list=list.filter(e=>e.name.toLowerCase().includes(ql)||e.primary.some(m=>MUSCLES[m]&&MUSCLES[m].n.toLowerCase().includes(ql)));
-  list.sort((a,b)=>a.name.localeCompare(b.name));
-  body.innerHTML=MiloSecurity.html(list.slice(0,60).map(e=>`
-    <div class="exlist-item" data-act="pick-ex" data-id="${esc(e.id)}">
-      <div class="xi">${esc(e.name.slice(0,1))}</div>
-      <div class="xn"><div class="t">${esc(e.name)}</div><div class="s">${e.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(', ')} &middot; ${esc(e.equipment)}</div></div>
-      <div class="add">${I.plus}</div>
-    </div>`).join('') || `<div class="muted" style="padding:24px;text-align:center">No matches</div>`);
+  body.innerHTML=MiloSecurity.html(pickerItems(q));
 }
 
 function openTemplates(){
@@ -6001,7 +6013,8 @@ __root.addEventListener('click', e=>{
     case 'ed-add-set': edAddSet(+el.dataset.e); break;
     case 'ed-save': saveEdit(); break;
     case 'ed-del': deleteEdit(); break;
-    case 'leave-session': state.route='today'; save(); render(); window.scrollTo(0,0); toast('Still running. Pick it up from Today'); if(window.__hub) window.__hub.left('lift'); break;
+    // a session with no exercises yet has nothing to keep: leaving it ends it
+    case 'leave-session': { const none=state.active&&!state.active.entries.length; if(none) state.active=null; state.route='today'; save(); render(); window.scrollTo(0,0); toast(none? 'Nothing added, so nothing kept' : 'Still running. Pick it up from Today'); if(window.__hub){ if(none) window.__hub.changed('lift'); window.__hub.left('lift'); } break; }
     case 'end-open': endOpt=null; openEnd(); break;
     case 'end-keep': endOpt.keep=el.dataset.v==='1'; openEnd(); break;
     case 'end-rep': endOpt.repeat=el.dataset.v==='1'; openEnd(); break;
@@ -9661,7 +9674,8 @@ __root.addEventListener('click', e=>{
     case 'session-menu': openModal(`<div class="sheet-grab"></div><div class="sheet-head"><h3>Session</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
       <div class="sheet-body tight"><button class="actitem" data-act="end-open">${I.flag}<span>End without finishing<div class="muted" style="font-size:11.5px;font-weight:500">Keep or drop what you did, and repeat it later if you like</div></span></button></div>`); break;
     case 'finish': finishWorkout(); break;
-    case 'leave-session': state.route='today'; save(); render(); window.scrollTo(0,0); toast('Still running. Pick it up from Today'); if(window.__hub) window.__hub.left('cal'); break;
+    // a session with no exercises yet has nothing to keep: leaving it ends it
+    case 'leave-session': { const none=state.active&&!state.active.entries.length; if(none) state.active=null; state.route='today'; save(); render(); window.scrollTo(0,0); toast(none? 'Nothing added, so nothing kept' : 'Still running. Pick it up from Today'); if(window.__hub){ if(none) window.__hub.changed('cal'); window.__hub.left('cal'); } break; }
     case 'end-open': endOpt=null; openEnd(); break;
     case 'end-keep': endOpt.keep=el.dataset.v==='1'; openEnd(); break;
     case 'end-rep': endOpt.repeat=el.dataset.v==='1'; openEnd(); break;
@@ -12060,7 +12074,8 @@ __root.addEventListener('click', e=>{
     case 'rm-ex': A.entries.splice(ei,1); save(); closeModal(); render(); toast('Removed'); break;
     case 'session-menu': openSessionMenu(); break;
     case 'finish': finishSession(); break;
-    case 'leave-session': state.route='today'; save(); render(); window.scrollTo(0,0); toast('Still running. Pick it up from Today'); if(window.__hub) window.__hub.left('str'); break;
+    // a session with no exercises yet has nothing to keep: leaving it ends it
+    case 'leave-session': { const none=state.active&&!state.active.entries.length; if(none) state.active=null; state.route='today'; save(); render(); window.scrollTo(0,0); toast(none? 'Nothing added, so nothing kept' : 'Still running. Pick it up from Today'); if(window.__hub){ if(none) window.__hub.changed('str'); window.__hub.left('str'); } break; }
     case 'end-open': endOpt=null; openEnd(); break;
     case 'end-keep': endOpt.keep=el.dataset.v==='1'; openEnd(); break;
     case 'end-rep': endOpt.repeat=el.dataset.v==='1'; openEnd(); break;
@@ -14028,7 +14043,7 @@ function heroNext(W){
     <div class="workout-heading"><div class="workout-order" aria-label="Day ${d+1} of ${D}"><span>Day</span><b>${d+1}</b><span>of ${D}</span></div><div class="workout-title"><h2>${dayTitle(order)}</h2>${ready?`<span class="workout-duration">${IC.clock} about ${r5(P.mins)} min</span>`:''}</div></div>
     <div class="workout-start">${!ready&&goalless? `<button class="btn pri block big" data-a="setup" data-m="cal">${IC.arrow} Choose Ladder goals</button>`
       : `<button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button>`}</div>
-    ${ready? `<p class="hint workout-warmup">Warm up: 5 easy minutes, then the prescribed warm-up sets.</p>`
+    ${ready? `${(n=>n.length? `<p class="workout-preview"><span class="sr">Exercises: </span>${n.join('<span aria-hidden="true"> &middot; </span><span class="sr">, </span>')}</p>` : '')(P.parts.filter(p=>p.ready).flatMap(p=>p.lines.filter(l=>!l.startsWith('<span class="x">')).map(l=>l.split(' <span class="n">')[0])))}<p class="hint workout-warmup">Warm up: 5 easy minutes, then the prescribed warm-up sets.</p>`
       : goalless? `<p class="hint workout-warmup">Day ${d+1} is Ladder. Pick what you want to be able to do, and the day fills with work toward it.</p>` : ''}
     <details class="rules copyfold" data-fold="workout"><summary>Workout details</summary><div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div></details>
     ${dayExtras(W, d, order, I).concat(dayNotes(order, I, P, C)).map(note).join('')}
@@ -14468,9 +14483,12 @@ function recModel(P){
 }
 function recHtml(M, compact){
   if(!M) return '';
-  const add=M.add.map((c,i)=>`<div class="trow"><span class="tn"><b>${esc(c.n)}</b><span>${i===0? 'Best fit &middot; ' : ''}${c.hint} &middot; ${esc(c.lvn)}${c.both? ' &middot; Strength trains this movement too' : ''}</span></span>
-    <button class="btn sm" data-a="t-rec-add" data-k="${esc(c.key)}">${IC.plus} Add</button></div>`).join('');
-  if(compact) return add? `<div class="trec"><div class="eyebrow">Recommended to start</div><p class="hint">${M.n===2? 'One or two goals' : 'One goal'} for the ${plural(M.days,'Ladder day')} in your week: fewer goals each get more of every session, so each moves faster.</p><div class="tlist">${add}</div></div>` : '';
+  // one recommendation, the best fit; the others wait in a fold beside it, so the choice is easy to see
+  const recRow=(c,best)=>`<div class="trow${best? ' best' : ''}"><span class="tn"><b>${esc(c.n)}</b><span>${best? 'Best fit &middot; ' : ''}${c.hint} &middot; ${esc(c.lvn)}${c.both? ' &middot; Strength trains this movement too' : ''}</span></span>
+    <button class="btn sm${best? ' pri' : ''}" data-a="t-rec-add" data-k="${esc(c.key)}">${IC.plus} Add</button></div>`;
+  const [top, ...rest]=M.add;
+  const add= top? `<div class="tlist">${recRow(top, true)}</div>`+(rest.length? `<details class="trec-more"><summary>Other goals that fit (${rest.length})</summary><div class="tlist">${rest.map(c=>recRow(c)).join('')}</div></details>` : '') : '';
+  if(compact) return add? `<div class="trec"><div class="eyebrow">Recommended to start</div><p class="hint">One goal for the ${plural(M.days,'Ladder day')} in your week: fewer goals each get more of every session, so each moves faster.</p>${add}</div>` : '';
   const why= M.n===2? `Ladder has ${plural(M.days,'day')} in your week. With two goals, both are trained early in every session, while you are fresh. Each goal you add shares the same sessions, so each one moves more slowly.`
     : `Ladder has ${M.days===1? 'one day' : plural(M.days,'day')} in your week${M.days>1? ', at a lighter dose because it is lower in your order' : ''}. One goal gets all of that room and moves fastest; start the next when it is done.`;
   const G=M.gs.length, row=(g,sub)=>`<div class="trow"><span class="tn"><b>${esc(g.n)}</b><span>${sub}</span></span></div>`;
@@ -14480,7 +14498,7 @@ function recHtml(M, compact){
       <div class="tlist">${M.keep.map(g=>row(g, togo(g))).join('')}</div>
       <p class="hint" style="margin-top:10px">Paused for now: ${esc(listText(M.pause.map(g=>g.n)))}. Their rungs and history stay in Ladder, and what you have built keeps with far less work than it took to build.</p>
       <button class="btn sm pri" data-a="t-rec-keep" data-ids="${esc(M.pause.map(g=>g.id).join(','))}" style="margin-top:8px">${IC.check} Keep ${M.keep.length===1? 'this one' : 'these '+M.keep.length}, pause ${plural(M.pause.length,'other')}</button>`;
-  else if(G<M.n && M.add.length) body=`<p class="hint">${G? `Your goal gets about ${plural(M.now,'set')} a week aimed at it, counting what it rests on. With one more, each would get about ${M.plus}. Room for one more:` : `Start with ${M.n===2? 'one or two' : 'one'} of these:`}</p><div class="tlist">${add}</div>`;
+  else if(G<M.n && M.add.length) body=`<p class="hint">${G? `Your goal gets about ${plural(M.now,'set')} a week aimed at it, counting what it rests on. With one more, each would get about ${M.plus}. Room for one more:` : 'Start with this one:'}</p>${add}`;
   else if(G) body=`<p class="hint">Your ${G===1? 'goal fits' : plural(G,'goal')+' fit'}: ${G===1? 'it gets' : 'each gets'} about ${plural(M.now,'set')} a week aimed at it, counting what it rests on.</p>`
       + (M.clash? `<p class="tnote">${IC.info}<span>${M.clash==='straight'? 'Both are straight-arm skills, which load the elbows and the biceps tendon the same way. Tendons adapt more slowly than muscle, so one at a time is the safer pace.'
         : M.clash==='balance'? 'Both are balance skills, so they share each session’s practice while you are fresh. One at a time gets it all.' : 'Both train the same movement, so they share its sets.'}</span></p>` : '');
@@ -14523,7 +14541,8 @@ function pickList(){
   const sub=e=>{ const also=e.p.filter(x=>x!==mu).map(x=>muscleName(x).toLowerCase()), on=D.by[e.id], k=mine.indexOf(e.id);
     const when= on? `<em class="tday">${dayWords(on)}</em>` : k>=0? `<em class="tday off">${held? 'Not on a day yet: re-optimize to fit it in' : 'No room for it this week'}</em>` : '';
     return (when? when+' &middot; ' : '')+(why(e)? [why(e)] : []).concat([e.comp? 'Compound' : 'Isolation', esc(e.equipment)]).concat(also.length? ['also '+esc(listText(also))] : [], e.custom? ['Yours'] : []).join(' &middot; '); };
-  const ord=(a,b)=>score(b)-score(a) || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (b.custom-a.custom) || a.name.localeCompare(b.name);
+  const rk=e=>{ const r=e.rank&&e.rank[mu]; return r!=null? r : e.custom? 60 : e.alt? 100 : 50; };
+  const ord=(a,b)=>score(b)-score(a) || ((a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')) || (b.custom-a.custom) || rk(a)-rk(b) || a.name.localeCompare(b.name);
   const inKit=all.filter(e=>eq.includes(e.equipment)&&match(e)).sort(ord), out=all.filter(e=>!eq.includes(e.equipment)&&match(e)).sort(ord);
   // choosing for one day: only the one you set for it is on
   const on=e=> day!=null? pins[day]===e.id : mine.includes(e.id);
@@ -14766,10 +14785,9 @@ __root.addEventListener('submit',e=>{if(e.target.id!=='goal-form')return;e.preve
    picks the page (go); each section's own pages stay its own. */
 const QUICK=[['rough','Rough',2],['ok','OK',4],['great','Great',6]];
 const FIRST_LINE={lift:'Build muscle', str:'Lift heavier', cal:'Calisthenics skills, rung by rung',cond:'Aerobic fitness and activity'};
-const localUnit=()=>/-(US|LR|MM)\b/i.test(String(navigator.language||''))? 'lb' : 'kg';
 const PAGE_H={today:'Today', train:'Train', progress:'Progress', library:'Library'};
 function progType(){ return !tg.on && ALL.includes(tg.type)? tg.type : 'mix'; }
-function newFirst(){ return {conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:autoOrder(ALL.filter(m=>H.has(m)), false), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit(), auto:true}; }
+function newFirst(){ return {conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:autoOrder(ALL.filter(m=>H.has(m)), false), days:tg.days||4, unit:Prefs.get('unit', null), kit:KIT.map(k=>k[0]), auto:true}; }
 /* The first run's ranking: what you picked, in the order you picked it, then the rest as suggested. Your order sets
    each section's dose (THE PROGRAM), so the first pick gets the most. Sections picked for you (those you already have
    training in) start in the suggested order; newFirst leaves skillGoal out, since asking Ladder starts its data. */
@@ -14785,9 +14803,11 @@ function viewFirst(){
       <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`; }).join('')}</div>
     ${f.secs.length>1? `<p class="hint" id="f-order">The order you pick sets how much each gets: ${listText(f.secs.map((m,k)=>`${SEC[m].n} &middot; ${DOSE_N[DOSE[Math.min(k,2)]]}`))}. Change it any time in setup.</p>` : ''}
     ${conditioningFields(f)}<div class="field"><label id="f-days-l">Days a week</label><div class="pills" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
-    <div class="spread"><span class="hint" id="f-unit-l" style="margin:0">Weights in</span><div class="pills" role="group" aria-labelledby="f-unit-l">${['kg','lb'].map(v=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${v}</button>`).join('')}</div></div>
-    <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length?'':'disabled'}>${IC.arrow} Build my week</button></div>
-    <p class="hint" style="text-align:center">${f.secs.length? 'Starts from a full gym, an hour a session and some training behind you. Change any of it later.' : 'Pick at least one.'}</p>
+    <div class="field"><label id="f-unit-l">Kilograms or pounds?</label><div class="pills f-unit" role="group" aria-labelledby="f-unit-l">${[['kg','Kilograms (kg)'],['lb','Pounds (lb)']].map(([v,t])=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${t}</button>`).join('')}</div></div>
+    <div class="field"><label id="f-kit-l">What can you train with?</label><div class="pills" role="group" aria-labelledby="f-kit-l">${KIT.map(([k,l])=>`<button class="${f.kit.includes(k)?'on':''}" data-a="f-kit" data-v="${k}" aria-pressed="${f.kit.includes(k)}">${l}</button>`).join('')}</div>
+      <p class="hint">${f.kit.length? 'Tap to take away what you don’t have.' : 'Bodyweight only: Milo plans around what needs no equipment.'}</p></div>
+    <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length&&f.unit?'':'disabled'}>${IC.arrow} Build my week</button></div>
+    <p class="hint" style="text-align:center">${!f.secs.length? 'Pick at least one.' : !f.unit? 'Pick kilograms or pounds.' : 'Starts from an hour a session and some training behind you. Change any of it later.'}</p>
     <button class="btn ghost block" data-a="f-backup">I have a backup</button>
   </section></div>`;
 }
@@ -14825,7 +14845,7 @@ function viewTrainHub(){
   let today='';
   if(run && nxt>=0) today=`<button class="btn pri block" data-a="part" data-k="${nxt}">${IC.play} Start ${partName(run.parts[nxt])}</button>`;
   else if(run) today=`<p class="lead">Today’s day is under way. Its parts are on Today.</p>`;
-  else if(type==='mix' && tg.on && d>=0) today=`<button class="btn pri block" data-a="tr-day" data-d="${d}">${IC.play} Start today’s workout: Day ${d+1}</button><p class="hint">${dayTitle(dayParts(W[d], dayInfo(d)))}</p>`;
+  else if(type==='mix' && tg.on && d>=0) today=`<div class="h2 train-day">Day ${d+1} &middot; ${dayTitle(dayParts(W[d], dayInfo(d)))}</div><button class="btn pri block big" data-a="tr-day" data-d="${d}">${IC.play} Start Day ${d+1}</button>`;
   else if(type!=='mix') today=`<button class="btn pri block" data-a="tr-quick" data-m="${type}">${IC.play} Start today’s workout</button>`;
   else today=`<p class="lead">Set up your week on Today, and its workouts start here.</p>`;
   const quick=used.filter(m=>m!==type && !(infoOf(m)||{}).busy);
@@ -14833,10 +14853,10 @@ function viewTrainHub(){
     ${open.length? `<section class="card"><div class="eyebrow">${plural(open.length,'section')} with a session open</div>${open.map(m=>{ const i=infoOf(m), n=(i.open||[]).length;
       return `<div class="spread" style="margin-top:10px"><div style="min-width:0"><b>${esc(i.activeName||SEC[m].n)}</b><div class="hint" style="margin:2px 0 0">${SEC[m].n}${n>1? ' &middot; '+n+' open' : ''}</div></div>
         <button class="btn pri sm" data-a="resume" data-m="${m}" style="flex:none">Resume</button></div>`; }).join('')}</section>` : ''}
-    ${conditioningCard()}<section class="card"><div class="eyebrow">Today</div>${today}</section>
-    ${quick.length? `<section class="card"><div class="eyebrow">Or one section on its own</div><div class="stack" style="gap:8px;margin-top:10px">${quick.map(m=>
-      `<button class="btn block" data-a="tr-quick" data-m="${m}"><span class="dot" style="background:${SEC[m].c}"></span> ${SEC[m].n} session</button>`).join('')}</div>
-      <p class="hint">Its own next session, outside your week. It still counts toward each muscle’s weekly sets.</p></section>` : ''}
+    <section class="card"><div class="eyebrow">Today’s workout</div>${today}</section>
+    ${quick.length? `<section class="card"><div class="eyebrow">Or one section on its own</div><p class="hint" style="margin:4px 0 12px">Its own next session, outside your week. It still counts toward each muscle’s weekly sets.</p><div class="stack" style="gap:8px">${quick.map(m=>
+      `<button class="btn block" data-a="tr-quick" data-m="${m}"><span class="dot" style="background:${SEC[m].c}"></span> ${SEC[m].n} session</button>`).join('')}</div></section>` : ''}
+    ${conditioningCard()}
   </div>`;
 }
 /* Progress, All: one summary across everything. */
@@ -14972,12 +14992,13 @@ __root.addEventListener('click', e=>{
     case 'f-sec': { first.auto=false; const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : s.concat(m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 'f-days': first.auto=false; first.days=+el.dataset.v; render(); { const b=$(`[data-a="f-days"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
     case 'f-unit': first.auto=false; first.unit=el.dataset.v==='lb'? 'lb' : 'kg'; render(); { const b=$(`[data-a="f-unit"][data-v="${first.unit}"]`); if(b) b.focus({preventScroll:true}); } break;
+    case 'f-kit': { first.auto=false; const v=el.dataset.v, k=first.kit; first.kit= k.includes(v)? k.filter(x=>x!==v) : KIT.map(x=>x[0]).filter(x=>k.includes(x)||x===v); render(); { const b=$(`[data-a="f-kit"][data-v="${v}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 'f-backup': if(window.__openSettings) window.__openSettings('restore'); break;
-    case 'f-go': { const f=first; if(!f||!f.secs.length) break;
+    case 'f-go': { const f=first; if(!f||!f.secs.length||!f.unit) break;
       if(tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
       tg.secs=CHOICES.filter(m=>f.secs.includes(m)); Object.assign(tg.conditioning,f.conditioning); tg.days=f.days; tg.mins=60; tg.prio=firstOrder(f.secs); tg.on=true; tg.type=null;
-      tg.kit=null; tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
-      Prefs.set({unit:f.unit, kit:KIT.map(k=>k[0])});
+      tg.kit= f.kit.length===KIT.length? null : f.kit.slice(); tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
+      Prefs.set({unit:f.unit, kit:f.kit.slice()});
       first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(tg.secs.length===1&&tg.secs[0]==='cal'&&!((infoOf('cal')||{}).ready)? 'Your week is built. Choose a Ladder goal to fill it.' : 'Your week is built. Day 1 is ready.'); break; }
     // the one-tap check-in
     case 'ci-q': { const q=QUICK.find(x=>x[0]===el.dataset.v); if(!q) break;
@@ -15885,6 +15906,11 @@ render();
     if(q||g) history.replaceState(history.state,'',location.pathname+location.hash); }catch(e){}
   if(open){ show(open); const A=hubApi(open); if(A&&A.open) A.open(); } else goDest(start);
   booted=true; paintNudge();
+  /* A back gesture with no sheet open: from a session (it keeps running), a section's own page or another tab, back to
+     Today; from Today itself, out of Milo. */
+  if(window.SheetNav&&SheetNav.page) SheetNav.page(()=>{ const t=progType();
+    if(dest==='today'&&active===t&&(routes[t]||'today')==='today') return false;
+    goDest('today'); return true; });
   // Together keeps the combined-day strip up to date from any tab, so it starts with the app once it is in use
   try{ const t=JSON.parse(localStorage.getItem('trainer.together')||'null'); if(t&&t.on) ensureInit('mix'); }catch(e){}
   if(window.MiloBoot) MiloBoot.ready(()=>{ stampTheme();paintBg();syncShellTop(); });

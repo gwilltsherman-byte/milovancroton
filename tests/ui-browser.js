@@ -23,14 +23,14 @@
     await group('Fresh combined workout',async()=>{
       const {win,doc}=await seed();let root=rootOf(doc,'mix');
       for(const m of ['str','lift'])root.querySelector('[data-a="f-sec"][data-m="'+m+'"]').click();
-      root.querySelector('[data-a="f-go"]').click();root.querySelector('[data-a="start-day"]').click();await pause(250);
+      root.querySelector('[data-a="f-unit"][data-v="kg"]').click();root.querySelector('[data-a="f-go"]').click();root.querySelector('[data-a="start-day"]').click();await pause(250);
       root=rootOf(doc,'str');
       check(win.__hub.current()==='str'&&!!root.querySelector('.session-card'),'a fresh combined day opens the next-set card');
-      check(win.getComputedStyle(doc.querySelector('.shellbar')).display==='none'&&win.getComputedStyle(doc.querySelector('.sidebar')).display==='none','starting from Together immediately hides the shell in focus mode');
+      check(win.getComputedStyle(doc.querySelector('.shellbar')).display==='none'&&win.getComputedStyle(doc.querySelector('.sidebar')).display!=='none','starting from Together hides the header in focus mode and keeps the navigation');
       check(win.getComputedStyle(doc.getElementById('tgstrip')).display==='none','starting from Together folds the day strip into the focus header');
       check(/Day 1 · Strength/.test(root.querySelector('[data-session-day]').textContent),'the focus header separates day and program names');
       root.querySelector('[data-session="list"]').click();await pause(50);
-      check(win.getComputedStyle(doc.querySelector('.sidebar')).display==='none','List keeps the logging area clear of the main navigation');
+      check(win.getComputedStyle(doc.querySelector('.sidebar')).display!=='none'&&root.querySelector('.session-views [data-session="focus"]')&&root.querySelector('.session-views [aria-pressed="true"]').textContent==='All sets','List keeps the navigation and shows both views side by side');
       for(const width of [390,360]){
         frame.style.width=width+'px';await pause(60);
         const row=root.querySelector('.setrow'), idx=row.querySelector('.sidx').getBoundingClientRect(), weight=row.querySelector('[data-field="w"]').getBoundingClientRect();

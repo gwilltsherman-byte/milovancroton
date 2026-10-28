@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-hkud9NcP9lW+EKTSvTY7y16zsebYknJUi3L6kQNciHI=' 'sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=' 'sha256-bUCf3TLULmjFshOZIxxs6o4Ck6lLatqpstQuIsFirDM='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-hkud9NcP9lW+EKTSvTY7y16zsebYknJUi3L6kQNciHI=' 'sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=' 'sha256-tlaF0a1Xujo9gV2zaxYrJU84C4iI5bNM5Ipp/2wXywo='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -123,7 +123,7 @@ body{background:#0A0D12; overflow-x:hidden;
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 </style>
-<link rel="stylesheet" href="shell.css?v=93324310b6a46237de25">
+<link rel="stylesheet" href="shell.css?v=0b466ebfd8561589f941">
 </head>
 <body>
 
@@ -203,7 +203,8 @@ body{background:#0A0D12; overflow-x:hidden;
     <button class="b" id="yd-sum">Share a summary</button>
     <div class="calrow">
       <button class="b" id="yd-cal">Add training days to your calendar</button>
-      <label class="tm" for="yd-time">Training time <input class="txt" type="time" id="yd-time" value="18:00"></label>
+      <label class="tm" for="yd-time">Calendar events start at <input class="txt" type="time" id="yd-time" value="18:00" aria-describedby="yd-time-h"></label>
+      <p class="od" id="yd-time-h">Only the time your training days show in your calendar. It doesn’t change your plan.</p>
     </div>
     <button class="b" data-open-privacy>Privacy and erasing your data</button>
   </div>
@@ -256,7 +257,8 @@ body{background:#0A0D12; overflow-x:hidden;
   <h3>Backups and files</h3>
   <p>Backups, spreadsheets, summaries and calendar files are yours to keep or share. A backup holds your check-in answers too. Notes apps and cloud drives may sync what you put in them, so give a backup kept there a passphrase.</p>
   <h3>Deleting it</h3>
-  <p>Erase everything removes all of Milo’s data from this browser and starts Milo fresh. It can’t be undone, so make a backup first if you may want it back. Clearing this site’s data in your browser settings does the same.</p>
+  <p>Erase everything removes all of Milo’s data from this browser and starts Milo fresh: workouts, programs, goals, check-ins, settings and the copies kept for Undo. It can’t be undone, so make a backup first if you may want it back. Clearing this site’s data in your browser settings does the same.</p>
+  <p><b>Used Milo somewhere else too?</b> Each browser keeps its own copy. On iPhone, Milo on your Home Screen and Milo in Safari are separate, so erase in each one you’ve used. Files you exported stay where you saved them.</p>
   <label class="fld" for="er-in">Type erase to confirm</label>
   <input class="txt" id="er-in" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
   <button class="b danger" id="er-go" disabled style="width:100%">Erase everything</button>
@@ -890,7 +892,7 @@ details.why p{margin:0 0 4px}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} .tinput input{width:31px} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=66b0c4bcf2674a5bc464">
+<link rel="stylesheet" href="trainer.css?v=75986b9219d99b35f8e1">
 <div id="app">
   <div class="appbar">
     <div class="brand">
@@ -1415,7 +1417,7 @@ button.banner{font:inherit}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=66b0c4bcf2674a5bc464">
+<link rel="stylesheet" href="trainer.css?v=75986b9219d99b35f8e1">
 <div id="app">
   <header class="appbar">
     <div class="brand">
@@ -1940,7 +1942,7 @@ button.pl.chk{display:flex; align-items:center; gap:5px; background:none; border
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=66b0c4bcf2674a5bc464">
+<link rel="stylesheet" href="trainer.css?v=75986b9219d99b35f8e1">
 <div id="app">
   <header class="appbar">
     <div class="brand">
@@ -2298,7 +2300,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=66b0c4bcf2674a5bc464">
+<link rel="stylesheet" href="trainer.css?v=75986b9219d99b35f8e1">
 <div id="app">
   <header class="appbar">
     <div class="logo" aria-hidden="true"><i style="background:#FF5C3C"></i><i style="background:#5B8CFF"></i><i style="background:#F2C14E"></i></div>
@@ -2323,7 +2325,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=be2418cb2a65944fd0de" integrity="sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=6d409fdd32d42e68c5b2" integrity="sha256-bUCf3TLULmjFshOZIxxs6o4Ck6lLatqpstQuIsFirDM=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=b65685d1ad57ba3a3d81" integrity="sha256-tlaF0a1Xujo9gV2zaxYrJU84C4iI5bNM5Ipp/2wXywo=" crossorigin="anonymous"></script>
 </body>
 </html>
 

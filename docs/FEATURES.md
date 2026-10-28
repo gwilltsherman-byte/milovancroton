@@ -92,7 +92,7 @@ Restore validates the file and attempts rollback if writing fails. Storage and b
 
 ## Accessibility
 
-The app supports keyboard navigation, focus indicators, light and dark themes, reduced motion and labelled inputs. Next-set and list views keep logging clear of global navigation. Narrow layouts wrap controls and long exercise names.
+The app supports keyboard navigation, focus indicators, light and dark themes, reduced motion and labelled inputs. Next set and All sets share one header and keep the bottom navigation in reach; a back gesture returns to Today instead of leaving Milo. Narrow layouts wrap controls and long exercise names.
 
 Rest alerts depend on browser support and permission. iOS does not receive the optional background rest notification. No browser-only implementation guarantees alerts while the phone is locked.
 

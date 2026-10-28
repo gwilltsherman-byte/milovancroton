@@ -95,6 +95,7 @@ button,a,input,textarea{touch-action:manipulation}
 .bk h2:focus{outline:none}
 .bk .calrow{display:grid;gap:6px}
 .bk .calrow .b{width:100%;text-align:left}
+.bk .calrow .od{margin:0;font-size:12.5px;line-height:1.5;color:var(--sh-muted)}
 .bk .tm{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--sh-muted)}
 .bk .tm .txt{width:auto;margin:0;min-height:44px;padding:8px}
 .bk .b:disabled{opacity:.45;cursor:default;filter:none}
@@ -148,10 +149,11 @@ button,a,input,textarea{touch-action:manipulation}
 @media(min-width:720px){.subnav{padding:20px 32px 0}}
 @media(min-width:1000px){.subnav{padding:24px 40px 0}}
 @media(max-width:999px){#main{padding-bottom:0}.tgstrip{bottom:calc(80px + env(safe-area-inset-bottom,0px))}}
-/* While a session is in its focus mode the frame steps back: no header, no navigation. */
-.focus-mode .shellbar,.focus-mode .sidebar,.focus-mode .subnav{display:none!important}
+/* While a session runs the frame steps back: no header, but the navigation stays, so you can always step out and come
+   back to the session from Train. */
+.focus-mode .shellbar,.focus-mode .subnav{display:none!important}
 /* The hidden header must not take the installed iPhone's safe area with it. */
-.focus-mode #main{margin-left:0;padding:var(--shell-safe-top) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.focus-mode #main{padding:var(--shell-safe-top) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px)}
 /* Keep scrolling workout text behind a solid status-area background. */
 html.focus-mode::before{content:"";position:fixed;inset:0 0 auto;height:var(--shell-safe-top);background:var(--sh-bg);z-index:60;pointer-events:none}
 /* Settings: one sheet, in groups that open out. */

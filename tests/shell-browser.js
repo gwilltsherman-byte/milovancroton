@@ -128,7 +128,7 @@
 
     // focus mode's frame: the header and the navigation step back while it's on
     win.__sessionMode(true);
-    check(getComputedStyle(doc.querySelector('.shellbar')).display==='none' && getComputedStyle(doc.querySelector('.sidebar')).display==='none', 'focus mode hides the header and the navigation');
+    check(getComputedStyle(doc.querySelector('.shellbar')).display==='none' && getComputedStyle(doc.querySelector('.sidebar')).display!=='none', 'focus mode hides the header and keeps the navigation, so a session is never a dead end');
     win.__sessionMode(false);
     check(getComputedStyle(doc.querySelector('.sidebar')).display!=='none', 'and they come back when it ends');
 

@@ -67,6 +67,13 @@
     saved=JSON.parse(localStorage.getItem('proladder.v1'));
     check(saved.active.entries[0].sets[0].done&&saved.active.entries[0].sets[0].v>=1&&saved.active.entries[0].sets[0].v<5,'stopping a hold logs its measured seconds');
 
+    // a session with no exercises yet asks for one, and stepping away from it keeps nothing
+    ({root,win,doc}=await seed('lift',{...base,v:1,exercises:[],mesos:[],bodylog:[],active:active([])}));
+    check(root.querySelector('.session-card h2').textContent==='No exercises yet'&&root.querySelector('.session-card [data-act="open-picker"]'),'an empty session asks for its first exercise instead of calling every set logged');
+    check(win.getComputedStyle(doc.querySelector('.sidebar')).display!=='none'&&root.querySelector('.session-views [aria-pressed="true"]').textContent==='Next set','the navigation and both views stay in reach');
+    root.querySelector('[data-session="list"]').click();await pause(150);
+    root.querySelector('[data-act="leave-session"]').click();await pause(250);
+    check(JSON.parse(localStorage.getItem('hyplog.v1')).active===null,'leaving a session with nothing in it ends it');
     ({root,win,doc}=await seed('lift',{...base,v:1,exercises:[],mesos:[],bodylog:[],active:active([{...entry,sg:'pair'},{...entry,sg:'pair',exId:'partner',name:'Partner row'}])}));
     const weight=root.querySelector('[data-field="weight"]'), shown=Number(root.querySelector('[data-field="reps"]').value);
     weight.value='50';weight.dispatchEvent(new win.Event('input',{bubbles:true}));
