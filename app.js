@@ -14424,12 +14424,14 @@ function viewTune(){
           const names=[...new Set(P.days.flatMap(d=>d.lift).filter(x=>x.mu===k).map(x=>(cat.find(e=>e.id===x.exId)||{}).name).filter(Boolean))];
           return row('ex', k, esc(mName(k)), plural(sets[k],'set')+' a week'+(mine>1? ' &middot; your '+mine+' picks' : mine? ' &middot; your pick' : '')+(byDay? ' &middot; your pick on '+plural(byDay,'day') : ''), esc(names.join(', '))); }).join('');
         // chosen as you started: the exercises come first, the volume after
-        const exBlock= ex? `<div class="grp">Exercises</div><div class="tlist">${ex}</div>` : '';
-        return `${tune.first? exBlock : ''}<p class="hint"${tune.first&&ex? '' : ' style="margin-top:0"'}>How much Muscle gives each muscle group; tap a muscle in a group to leave just that one out. The numbers are hard sets a week for each muscle (sets taken close to failure) across your whole week. A set counts in full for the muscles an exercise mainly works and half for the ones that help, like biceps in a row, so ${rest? rest+' and your other exercises all count, and Muscle tops up the rest' : 'one exercise counts toward several muscles'}.</p>
-          <dl class="tkey">${key.map(([t,d])=>`<div><dt>${t}</dt><dd>${d}</dd></div>`).join('')}</dl>
+        // how much each group gets, then its exercises; what the choices mean is a tap away below them
+        return `<div class="grp" style="margin-top:0">Muscle groups</div><p class="hint" style="margin-top:0">More, Normal, Less or Skip for each group, in hard sets a week; tap a muscle to leave just that one out.</p>
           ${tight? `<p class="tnote">${IC.info}<span>Your ${plural(nd,'Muscle day')}${tg.mins? ' and time limit' : ''} can’t fit every target, so some muscles get less, marked below. More training days${tg.mins? ' or time' : ''} make room, or set a group you care less about to Less.</span></p>` : ''}
           <div class="tlist">${rows}</div>
-          ${tune.first? '' : exBlock}
+          ${ex? `<div class="grp">Exercises</div><div class="tlist">${ex}</div>` : ''}
+          <details class="based tmean copyfold" data-fold="tune-mean"><summary>${IC.info}<span>What More, Normal, Less and Skip mean</span>${IC.chev}</summary>
+            <p>How much Muscle gives each muscle group. The numbers are hard sets a week for each muscle (sets taken close to failure) across your whole week. A set counts in full for the muscles an exercise mainly works and half for the ones that help, like biceps in a row, so ${rest? rest+' and your other exercises all count, and Muscle tops up the rest' : 'one exercise counts toward several muscles'}.</p>
+            <dl class="tkey">${key.map(([t,d])=>`<div><dt>${t}</dt><dd>${d}</dd></div>`).join('')}</dl></details>
           ${basedOn('What More and Less are based on', ['Weekly hard sets for each muscle is the best-studied measure of how much training a muscle gets, counted as recent analyses do: in full for an exercise’s main muscles and half for the ones that help. Growth rises with it, by less for each extra set, and reviews of trained lifters find little clear extra growth past about 20 sets a week. Far less work keeps much of what you have: in one trial, young adults kept their strength and the muscle they had built for 8 months on a ninth of their training; older adults kept their strength on a third, but not their muscle fibre size. The exact numbers here are coaching defaults drawn from these studies, not results of one trial.'], FOCUS_SOURCES)}`; },
     str:()=>{ const di=DOSE.indexOf(P.dose.str), areas=STR_ORDER.filter(a=>STR_FREQ[a][di]>0);
         return `<p class="hint" style="margin-top:0">The lift for each area, or leave one out. Keep a lift for the whole block so its numbers mean something.</p><div class="tlist">`+areas.map(a=>{
@@ -14449,7 +14451,7 @@ function viewTune(){
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tune.fresh? 'New block &middot; week 1 of '+BLOCK : 'Week '+Math.min(plan().week,BLOCK)+' of '+BLOCK}</div>
     <div class="h2">${tune.fresh? 'Make this block yours' : 'Customize this block'}</div>
-    <p class="lead">${tune.first? 'Each muscle’s exercise and each lift was picked for you. Tap one to choose your own from its library, best first, then start.' : tune.fresh? 'Choose a section to customize, then start your block.' : 'Choose a section to customize. Your current week stays.'}</p>
+    <p class="lead">${tune.first? 'Set how much each muscle group gets, then tap any exercise or lift to choose your own from its library, best first. Then start.' : tune.fresh? 'Choose a section to customize, then start your block.' : 'Choose a section to customize. Your current week stays.'}</p>
     ${R.map((m,k)=>`<details class="tpart rules copyfold" data-fold="tune-${m}"><summary class="spread"><span class="h3">${SEC[m].n}</span><span class="chip">${DOSE_N[P.dose[m]]}</span></summary>${part[m]()}</details>`).join('')}
     ${JSON.stringify(cleanTune(T))===JSON.stringify(cleanTune(tg.tune))? `<div style="margin-top:20px"><button class="btn pri block" data-a="${tune.fresh?'t-save':'t-cancel'}">${tune.fresh? IC.play+' Start this block' : IC.check+' Done'}</button></div>
       ${tune.fresh&&!tune.first? `<button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">Keep my current block</button>` : ''}`
@@ -14602,7 +14604,7 @@ function viewPick(){
 }
 /* Back from the library to the row you opened it from. */
 function closePick(){
-  const K=tune.pick; tune.pick=null; render(); window.scrollTo(0, K.y||0);
+  const K=tune.pick; tune.pick=null; openOnce=(K.folds||[]).slice(); render(); window.scrollTo(0, K.y||0);
   const b=$(`[data-a="t-pick"][data-t="${K.t}"][data-k="${K.k}"]`); if(b) b.focus({preventScroll:true});
 }
 function pickTop(){ window.scrollTo(0,0); const b=$('[data-a="t-back"],[data-a="t-mk-cancel"],[data-a="t-day-cancel"]'); if(b) b.focus({preventScroll:true}); }
@@ -14945,6 +14947,10 @@ H.reg('mix', {
   sheetOpen:()=>false,
 });
 /* A drawing error shows what went wrong, with a retry, instead of taking the whole tab down. */
+/* Draws again with the control you tapped kept where it was on screen, though what's above it changed (a note that
+   appears, a count): the page never jumps under your finger. */
+function stayOn(el, sel){ const top=el.getBoundingClientRect().top; render(); const b=$(sel); if(!b) return;
+  const d=b.getBoundingClientRect().top-top; if(Math.abs(d)>0.5) window.scrollBy(0, d); b.focus({preventScroll:true}); }
 function render(){
   try{ draw(); }
   catch(err){ console.error('Together couldn’t draw', err);
@@ -14954,7 +14960,7 @@ function render(){
 }
 const newDraft=()=>({conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice(), kit:kit().length<KIT.length? kit().slice() : null, exp:tg.exp||'intermediate',
   wd:tg.wd&&tg.wd.slice(), stage:tg.stage||'', yes:tg.screen? tg.screen.yes.slice() : [], asked:!!tg.screen});
-let openOnce=[];   // folds the next draw opens: the block's exercises, when you chose to pick them as you started
+let openOnce=[];   // folds the next draw opens: the block's sections on the way back from a library, or as you start choosing exercises
 function draw(){
   fresh(); refreshRun(); strip();
   const y=window.scrollY, opened=[...__root.querySelectorAll('.copyfold[open]')].map(x=>x.dataset.fold).concat(openOnce.splice(0));
@@ -15006,7 +15012,7 @@ __root.addEventListener('click', e=>{
       // choosing your own exercises opens the block's exercises and lifts, each with its library, before the first day
       const pick=!!el.dataset.pick; if(pick){ tune={T:cleanTune(tg.tune), fresh:true, first:true}; openOnce=['lift','str'].filter(m=>tg.secs.includes(m)).map(m=>'tune-'+m); }
       first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0);
-      toast(pick? 'Your week is built. Tap any exercise or lift to choose your own.' : tg.secs.length===1&&tg.secs[0]==='cal'&&!((infoOf('cal')||{}).ready)? 'Your week is built. Choose a Ladder goal to fill it.' : 'Your week is built. Day 1 is ready.'); break; }
+      toast(pick? 'Your week is built. Set each group, then choose your exercises.' : tg.secs.length===1&&tg.secs[0]==='cal'&&!((infoOf('cal')||{}).ready)? 'Your week is built. Choose a Ladder goal to fill it.' : 'Your week is built. Day 1 is ready.'); break; }
     // the one-tap check-in
     case 'ci-q': { const q=QUICK.find(x=>x[0]===el.dataset.v); if(!q) break;
       const rec={day:startOfToday(), at:Date.now(), w:{}, sore:{}, x:{}, cw:2, quick:q[0]}; WELL.forEach(([k])=>{ rec.w[k]=q[2]; });
@@ -15046,10 +15052,8 @@ __root.addEventListener('click', e=>{
     case 'd-exp': draft.exp=el.dataset.v; render(); break;
     case 't-new': tune={T:cleanTune(tg.tune), fresh:true}; render(); window.scrollTo(0,0); break;
     case 't-edit': tune={T:cleanTune(tg.tune), fresh:false}; render(); window.scrollTo(0,0); break;
-    case 't-mu': { const k=el.dataset.k, M=tune.T.mu||(tune.T.mu={}); if(M[k]) delete M[k]; else M[k]='skip'; render();
-      { const b=$(`[data-a="t-mu"][data-k="${k}"]`); if(b) b.focus({preventScroll:true}); } break; }
-    case 't-focus': { const g=el.dataset.g, v=el.dataset.v; if(v==='normal') delete tune.T.focus[g]; else tune.T.focus[g]=v; render();
-      { const b=$(`[data-a="t-focus"][data-g="${g}"][data-v="${v}"]`); if(b) b.focus(); } break; }
+    case 't-mu': { const k=el.dataset.k, M=tune.T.mu||(tune.T.mu={}); if(M[k]) delete M[k]; else M[k]='skip'; stayOn(el, `[data-a="t-mu"][data-k="${k}"]`); break; }
+    case 't-focus': { const g=el.dataset.g, v=el.dataset.v; if(v==='normal') delete tune.T.focus[g]; else tune.T.focus[g]=v; stayOn(el, `[data-a="t-focus"][data-g="${g}"][data-v="${v}"]`); break; }
     case 't-save': { const fresh=tune.fresh;
       if(!tune.setup) remember(fresh? 'a new block started' : 'changes to this block');
       tg.tune=cleanTune(tune.T);
@@ -15060,7 +15064,8 @@ __root.addEventListener('click', e=>{
       toast(fresh? `Your new block starts: week 1 of ${BLOCK}, Day 1.${open.length? ' '+listText(open)+' is still open: finish or end it there.' : ''}` : `Saved. You stay on week ${plan().week} of ${BLOCK}.`, true); break; }
     case 't-cancel': tune=null; render(); window.scrollTo(0,0); break;
     case 't-discard': tune.T=cleanTune(tg.tune); render(); { const b=$('[data-a="t-save"],[data-a="t-cancel"]'); if(b) b.focus({preventScroll:true}); } break;
-    case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, day:null, y:window.scrollY}; render(); pickTop(); break;
+    // the library replaces the block on screen: remember which of its sections were open, for the way back
+    case 't-pick': tune.pick={t:el.dataset.t, k:el.dataset.k, q:'', make:null, day:null, y:window.scrollY, folds:[...__root.querySelectorAll('.copyfold[open]')].map(x=>x.dataset.fold)}; render(); pickTop(); break;
     case 't-day': { const K=tune.pick; K.day=+el.dataset.d; K.q=''; K.dy=window.scrollY; render(); pickTop(); break; }
     case 't-day-cancel': { const K=tune.pick, d=K.day; K.day=null; K.q=''; render(); window.scrollTo(0, K.dy||0);
       { const b=$(`[data-a="t-day"][data-d="${d}"]`); if(b) b.focus({preventScroll:true}); } break; }
