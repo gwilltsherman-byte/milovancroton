@@ -389,8 +389,13 @@
       const pick=root.querySelector('[data-a="f-go"][data-pick="1"]');
       check(!!pick && !pick.disabled && pick.textContent.includes('choose my exercises'), 'Muscle or Strength offers to build and choose your own exercises');
       pick.click(); await pause(300);
-      const open=root.querySelector('.tpart[open]'), first=open&&open.querySelector('.grp');
-      check(root.textContent.includes('Make this block yours') && first && first.textContent==='Exercises' && open.querySelector('[data-a="t-pick"][data-t="ex"]') && !root.textContent.includes('Keep my current block'), 'and opens the block on its exercises, first in the section, with nothing else to keep'); }
+      const open=root.querySelector('.tpart[open]'), heads=open? [...open.querySelectorAll('.grp')].map(g=>g.textContent) : [];
+      check(root.textContent.includes('Make this block yours') && heads[0]==='Muscle groups' && heads[1]==='Exercises' && open.querySelector('[data-a="t-pick"][data-t="ex"]') && !root.textContent.includes('Keep my current block'), 'and opens the block on how much each group gets, then its exercises, with nothing else to keep');
+      // More, Less and Skip leave the page where it was, and back from a library keeps the section open
+      const more=open.querySelector('[data-a="t-focus"][data-g="Arms"][data-v="more"]'), y0=more.getBoundingClientRect().top; more.click(); await pause(150);
+      check(Math.abs(root.querySelector('[data-a="t-focus"][data-g="Arms"][data-v="more"]').getBoundingClientRect().top-y0)<2, 'choosing More keeps the page where it was');
+      root.querySelector('[data-a="t-pick"][data-t="ex"]').click(); await pause(150); root.querySelector('[data-a="t-back"]').click(); await pause(150);
+      check(root.querySelector('.tpart[data-fold="tune-lift"]').open, 'back from an exercise library keeps Muscle open'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;
