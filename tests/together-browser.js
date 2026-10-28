@@ -405,6 +405,8 @@
       if(m==='lift'){
         const from=JSON.parse(localStorage.getItem('hyplog.v1')).active.entries[0].exId;
         S.querySelector('[data-act="ex-swap"][data-ex="0"]').click(); await pause(200);
+        const pk=S.querySelector('.weekpeek'), now=pk&&pk.querySelector('.wp-row.today');
+        check(!!now && /^Day \d/.test(now.querySelector('b').textContent) && now.textContent.includes(JSON.parse(localStorage.getItem('hyplog.v1')).active.entries[0].name), 'the Muscle swap shows what each day of the week has for those muscles');
         const opt=S.querySelector('[data-act="do-swap"]'), to=opt.dataset.id; opt.click(); await pause(200);
         const scopes=[...S.querySelectorAll('[data-act="scope-apply"]')].map(b=>b.dataset.scope+':'+b.textContent.trim());
         check(scopes.length===2 && /^session:Just this session/.test(scopes[0]) && /^block:.*Whole mesocycle/.test(scopes[1]), 'a Muscle swap on a Together day asks: just this session, or the whole mesocycle ('+scopes+')');
@@ -414,6 +416,8 @@
       } else {
         S.querySelector('[data-act="ex-menu"][data-ex="0"]').click(); await pause(200);
         S.querySelector('[data-act="sswap"]').click(); await pause(200);
+        const pk=S.querySelector('.weekpeek');
+        check(!!pk && !!pk.querySelector('.wp-row.today') && pk.querySelectorAll('.wp-row').length>=2, 'the Strength swap shows each day of the week with that area’s lift');
         const pills=[...S.querySelectorAll('[data-act="sswap-scope"]')].map(b=>b.textContent.trim());
         check(pills.join('|')==='Just this session|Whole mesocycle', 'a Strength swap on a Together day asks the same ('+pills+')');
         S.querySelector('[data-act="sswap-scope"][data-v="1"]').click(); await pause(150);

@@ -671,6 +671,10 @@ test('a swap in a workout for the whole mesocycle: the block’s picks change, t
   assert.equal(T.call('blockSwap', 'lift', from, 'lateral-raise', true), false, 'a side-delt raise can’t stand in for chest work');
   assert.equal(T.call('blockSwap', 'lift', 'not-in-the-block', to, true), false);
   assert.equal(T.call('blockSwap', 'lift', from, to, true), true);
+  // the swap sheet's week: each day with the muscle, what it has there
+  const peek = plain(T.call('weekPeek', 'lift', from));
+  assert.ok(peek.length >= 1 && peek.some(d => d.ids.includes(from)) && peek.every(d => d.n >= 1 && d.ids.length), JSON.stringify(peek));
+  assert.deepEqual([...new Set(peek.flatMap(d => d.ids))].sort(), chest().sort(), 'every chest exercise of the week, by day');
   assert.ok(T.call('blockSwap', 'lift', from, to));
   assert.ok(!chest().includes(from) && chest().includes(to), 'every day it was on: ' + chest());
   assert.equal(T.call('plan').week, 3, 'the block keeps its week');
@@ -681,6 +685,8 @@ test('a swap in a workout for the whole mesocycle: the block’s picks change, t
   T.call('plan').week = 3;
   const legs = () => [...new Set(T.call('plan').days.flatMap(d => d.str).filter(x => x.a === 'legs').map(x => x.id))];
   assert.deepEqual(legs(), ['squat']);
+  assert.ok(plain(T.call('weekPeek', 'str', 'squat')).every(d => d.ids.includes('squat')), 'the days with legs, each with its lift');
+  assert.equal(T.call('weekPeek', 'str', 'not-in-the-week'), null);
   assert.equal(T.call('blockSwap', 'str', 'squat', null, true), true, 'a dry check needs only the lift in the block');
   assert.ok(T.call('blockSwap', 'str', 'squat', 'legpress'));
   assert.deepEqual(legs(), ['legpress']);
