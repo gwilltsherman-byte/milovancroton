@@ -5591,25 +5591,42 @@ function swapCandidates(en, q){
 /* The swap sheet on screen: which kind of swap it is (the button each row carries) and the exercise being swapped. */
 let swapCtx=null;
 function swapSearch(){ return `<div class="searchbar" style="position:static;margin:10px 0 0;box-shadow:none">${I.search}<input id="swapsearch" placeholder="Search all exercises" autocomplete="off" aria-label="Search all exercises"></div>`; }
+/* The days of this week with the swapped exercise's muscles, so a swap shows what the other days have: [{n, name, ids,
+   today}]. From your block (dayId: the Plan tab's day), or Together's week on a Together day; none for a session of its own. */
+function weekPeek(en, dayId){
+  const a=state.active, mus=en.primary||[], m= dayId? getActiveMeso() : a&&a.meso? mesoById(a.meso.mesoId) : null, cur= dayId || (a&&a.meso&&a.meso.dayId);
+  if(m) return m.days.map((d,i)=>({n:i+1, name:d.name, today:d.id===cur, ids:[...new Set(d.exercises.filter(x=>(x.primary||[]).some(p=>mus.includes(p))).map(x=>x.exId))]})).filter(d=>d.ids.length);
+  const T=!dayId&&a&&a.tgDay&&window.__hub&&window.__hub.api('mix');
+  return T&&T.weekPeek? T.weekPeek('lift', en.exId, mus) : null;
+}
+const dayLabel=d=>d.name||'Day '+d.n;
+function peekHtml(W, label, now){
+  if(!W||!W.length) return '';
+  const nm=id=>{ const e=exById(id); return e? e.name : id; };
+  return `<div class="weekpeek"><div class="wp-h">${esc(label)} this week</div>${W.map(d=>`<div class="wp-row${d.today?' today':''}"><b>${esc(dayLabel(d))}</b><span>${d.ids.map(id=>esc(nm(id))).join(', ')}</span>${d.today?`<em>${now}</em>`:''}</div>`).join('')}
+    ${W.length===1&&W[0].today? '<p class="wp-note">No other day this week has it.</p>' : ''}</div>`;
+}
 function swapItems(q){
   const c=swapCtx; if(!c) return '';
   const equip=myEquip(), mv=moveOf(c.en);
   return swapCandidates(c.en, q).map(e=>{
     const musc=e.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(', '), need=!equip.includes(e.equipment)&&NEEDS[e.equipment];
+    const other=(c.week||[]).filter(d=>!d.today&&d.ids.includes(e.id)).map(dayLabel);   // already on another day this week
     return `<div class="exlist-item${need?' lacks':''}" data-act="${c.act}"${c.ei!=null?` data-ex="${c.ei}"`:''} data-id="${esc(e.id)}">
       <div class="xi">${esc(e.name.slice(0,1))}</div>
-      <div class="xn"><div class="t">${esc(e.name)}</div><div class="s">${musc} &middot; ${esc(e.equipment)}${moveOf(e)===mv?' &middot; same movement':''}${need?' &middot; <b>'+need+'</b>':''}</div></div>
+      <div class="xn"><div class="t">${esc(e.name)}</div><div class="s">${musc} &middot; ${esc(e.equipment)}${moveOf(e)===mv?' &middot; same movement':''}${other.length?' &middot; <b>on '+esc(andList(other))+'</b>':''}${need?' &middot; <b>'+need+'</b>':''}</div></div>
       <div class="add">${I.swap}</div></div>`;
   }).join('') || `<div class="muted" style="padding:22px;text-align:center;font-size:13px">${q? 'No exercises match.' : 'No close matches. Search, or turn on more equipment in Settings.'}</div>`;
 }
 function refreshSwap(q){ const b=$('#swaplist'); if(b) b.innerHTML=MiloSecurity.html(swapItems(q)); }
 function openSwap(ei){
   nav.reg('swap:'+ei, ()=>openSwap(ei));
-  const en=state.active.entries[ei];
-  swapCtx={act:'do-swap', ei, en:{exId:en.exId, primary:en.primary, secondary:en.secondary, equipment:en.equipment}};
+  const en=state.active.entries[ei], week=weekPeek(en);
+  swapCtx={act:'do-swap', ei, week, en:{exId:en.exId, primary:en.primary, secondary:en.secondary, equipment:en.equipment}};
   openModal(`
     <div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Swap exercise</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
+    ${peekHtml(week, en.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(' / '), 'this session')}
     <div style="padding:10px 16px 4px"><p class="muted" style="font-size:12.5px;margin:0;line-height:1.5">For <b style="color:var(--ink-2)">${esc(en.name)}</b>: the same movement first, then others for ${en.primary.map(m=>MUSCLES[m]?MUSCLES[m].n:m).join(' / ')}. Swapping starts fresh sets of the same count.</p>${swapSearch()}</div>
     <div class="sheet-body tight" id="swaplist">${swapItems('')}</div>`);
 }
@@ -5635,9 +5652,11 @@ function openMesoSwap(dayId, idx){
   const m=getActiveMeso(), day=m&&m.days.find(d=>d.id===dayId), e=day&&day.exercises[idx]; if(!e) return;
   mesoSwapCtx={mesoId:m.id, dayId, idx, exId:e.exId};
   nav.reg('meso-swap:'+dayId+':'+idx, ()=>openMesoSwap(dayId, idx));
-  swapCtx={act:'meso-swap-pick', en:{exId:e.exId, primary:e.primary, secondary:e.secondary, equipment:e.equipment}};
+  const week=weekPeek(e, dayId);
+  swapCtx={act:'meso-swap-pick', week, en:{exId:e.exId, primary:e.primary, secondary:e.secondary, equipment:e.equipment}};
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><h3>Swap exercise</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
+    ${peekHtml(week, e.primary.map(p=>MUSCLES[p]?MUSCLES[p].n:p).join(' / '), 'this day')}
     <div style="padding:10px 16px 4px"><p class="muted" style="font-size:12.5px;margin:0;line-height:1.5">For <b style="color:var(--ink-2)">${esc(e.name)}</b> in ${esc(m.name)}: the same movement first, then others for ${e.primary.map(p=>MUSCLES[p]?MUSCLES[p].n:p).join(' / ')}. Sets and rep ranges stay as planned.</p>${swapSearch()}</div>
     <div class="sheet-body tight" id="swaplist">${swapItems('')}</div>`);
 }
@@ -5685,7 +5704,7 @@ function scopeSheet(kind, ei, newId){
     <div class="sheet-body">
       <div style="text-align:center;padding:4px 0 8px">
         <h2 class="disp" style="font-weight:800;font-size:20px;margin:0 0 6px">Just this session, or the whole mesocycle?</h2>
-        <p class="muted" style="font-size:13px;margin:0 auto;max-width:300px">${kind==='swap'? `Swap <b style="color:var(--ink2)">${esc(en.name)}</b> for this session only, or on every day of this mesocycle it’s on, for the weeks that are left.`
+        <p class="muted" style="font-size:13px;margin:0 auto;max-width:300px">${kind==='swap'? `Swap <b style="color:var(--ink2)">${esc(en.name)}</b> for this session only, or on every day of this mesocycle it’s on, for the weeks that are left.${(on=>on.length? ` It’s on ${esc(andList(on))} this week.` : '')(((swapCtx&&swapCtx.ei===ei&&swapCtx.week)||[]).filter(d=>d.ids.includes(en.exId)).map(dayLabel))}`
           : `Remove <b style="color:var(--ink2)">${esc(en.name)}</b> from this session only, or from every week that’s left of this mesocycle.`}</p>
       </div>
       <button class="btn primary block" ${at} data-scope="session" style="margin-top:14px">Just this session</button>
@@ -11469,15 +11488,24 @@ function swapOrder(id, ids){ return ids.slice().sort((x,y)=>likeness(id,x)-liken
 function tgSwap(from, to, dry){ const a=state.active, T=a&&a.tg&&window.__hub&&window.__hub.api('mix'); return !!(T&&T.blockSwap&&T.blockSwap('str', from, to, dry)); }
 function swapCanStick(ei){ const a=state.active, en=a&&a.entries[ei], S=state.setup;
   return !!(en && ((a.plan && planLive(a) && S && S.choice[EX[en.liftId].a]===en.liftId) || tgSwap(en.liftId, null, true))); }
+/* The days of this week with the lift's area, so a swap shows what the other days have: Together's week on a day it
+   started, or your program's. [{n, name, today, ids}] */
+function strWeek(en){ const a=state.active, area=EX[en.liftId]&&EX[en.liftId].a; if(!a||!area) return null;
+  if(a.tg){ const T=window.__hub&&window.__hub.api('mix'); return T&&T.weekPeek? T.weekPeek('str', en.liftId) : null; }
+  const P=a.plan, D=P&&progDef(P.week); if(!D) return null;
+  return D.days.map((d,i)=>({n:i+1, name:d.n, today:i===(P.day||0), ids:[...new Set(d.slots.filter(([sid])=>EX[sid]&&EX[sid].a===area).map(([sid])=>sid))]})).filter(d=>d.ids.length);
+}
 function openSessionSwap(ei, keep){
   const a=state.active, en=a&&a.entries[ei]; if(!en) return;
   if(!keep) swapStick=false;
   const area=EX[en.liftId].a, stick=swapCanStick(ei), opts=swapOrder(en.liftId, options(area,true).filter(id=>id!==en.liftId));
+  const W=strWeek(en), dl=d=>d.name||'Day '+d.n, onDays=id=>(W||[]).filter(d=>!d.today&&d.ids.includes(id)).map(dl);
   const pill=(v,t)=>`<button class="${swapStick===v?'on':''}" data-act="sswap-scope" data-ex="${ei}" data-v="${v?1:0}">${t}</button>`;
   nav.reg('sswap:'+ei, ()=>openSessionSwap(ei, true), true);
   openModal(`<div class="sheet-grab"></div>
     <div class="sheet-head"><button class="iconbtn" data-act="ex-menu" data-ex="${ei}" data-back aria-label="Back">${I.back}</button><h3>Swap ${esc(exName(en.liftId,en.vi))}</h3><button class="iconbtn" data-act="close-modal" aria-label="Close">${I.x}</button></div>
     <div class="sheet-body">
+      ${W&&W.length? `<div class="weekpeek" style="margin:0 0 14px"><div class="wp-h">${esc(AREAS[area].n)} this week</div>${W.map(d=>`<div class="wp-row${d.today?' today':''}"><b>${esc(dl(d))}</b><span>${d.ids.map(id=>esc(exName(id))).join(', ')}</span>${d.today?'<em>this session</em>':''}</div>`).join('')}${W.length===1&&W[0].today?'<p class="wp-note">No other day this week has it.</p>':''}</div>` : ''}
       ${stick?`<div class="field"><div class="pillpick">${pill(false,'Just this session')}${pill(true, a.tg? 'Whole mesocycle' : 'From now on')}</div></div>
       <p class="muted" style="font-size:12.5px;line-height:1.5;margin:-2px 2px 12px">${!swapStick? `Only this session. Next time your plan goes back to ${esc(exName(en.liftId,en.vi))}.`
         : a.tg? `Every day of this mesocycle with ${esc(AREAS[area].n.toLowerCase())} uses the new one, for the weeks that are left. Your week stays where it is.`
@@ -11485,7 +11513,7 @@ function openSessionSwap(ei, keep){
       : `<p class="muted" style="font-size:12.5px;line-height:1.5;margin:0 2px 12px">Just for this session.</p>`}
       ${opts.map(id=>{ const X=EX[id], nm=exName(id);
         return `<button class="pick" data-act="sswap-pick" data-ex="${ei}" data-v="${id}"><span class="pt"><span class="a">${esc(nm)}</span>
-          <span class="b">${nm!==X.n? esc(X.n)+' &middot; ' : ''}${X.k==='bw'?'bodyweight progression':X.k==='added'?'bodyweight plus load':'weighted'}</span></span></button>`; }).join('')}
+          <span class="b">${nm!==X.n? esc(X.n)+' &middot; ' : ''}${X.k==='bw'?'bodyweight progression':X.k==='added'?'bodyweight plus load':'weighted'}${(o=>o.length? ' &middot; <b>on '+esc(o.join(', '))+'</b>' : '')(onDays(id))}</span></span></button>`; }).join('')}
     </div>`);
 }
 function applySessionSwap(ei, id, stick){
@@ -14997,8 +15025,18 @@ function blockSwap(m, from, to, dry){
   tg.tune=T; save(); render(); H.changed('mix');
   return true;
 }
+/* What each day of this week has where an exercise is, for a swap to show: Muscle's exercises for the muscles it's on
+   (mus, its own, when it isn't planned), or Strength's lifts for its area. [{n, today, ids}], the days with any. */
+function weekPeek(m, id, mus){
+  if(!tg.on) return null;
+  const P=plan(), today=tg.run? tg.run.day : -1, day=(d,i,ids)=>({n:i+1, today:i===today, ids:[...new Set(ids)]});
+  if(m==='str'){ const x=P.days.flatMap(d=>d.str||[]).find(x=>x.id===id); if(!x) return null;
+    return P.days.map((d,i)=>day(d,i,(d.str||[]).filter(y=>y.a===x.a).map(y=>y.id))).filter(d=>d.ids.length); }
+  const on=[...new Set(P.days.flatMap(d=>d.lift||[]).filter(x=>x.exId===id).map(x=>x.mu))], use=on.length? on : (mus||[]);
+  return P.days.map((d,i)=>day(d,i,(d.lift||[]).filter(x=>use.includes(x.mu)).map(x=>x.exId))).filter(d=>d.ids.length);
+}
 H.reg('mix', {
-  blockSwap,
+  blockSwap, weekPeek,
   openOutcomes(m){goalForm={kind:'max',m:['lift','str'].includes(m)?m:'str'};page='progress';render();},
   go(p){ page=PAGE_H[p]? p : 'today'; render(); window.scrollTo(0,0); },
   redraw(){ render(); },

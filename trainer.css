@@ -430,6 +430,15 @@ button.dchip {min-height:36px}
 :host(#m-mix) .pills.even {display:grid; grid-template-columns:repeat(auto-fit,minmax(44px,1fr))}
 .secdot {display:inline-block; width:8px; height:8px; border-radius:99px; margin-right:7px; vertical-align:1px}
 .nw {white-space:nowrap}
+/* A swap shows what each day of the week has for that muscle or area. */
+.weekpeek {margin:10px 16px 4px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2,var(--well))}
+.wp-h {margin-bottom:2px; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+.wp-row {display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 10px; align-items:baseline; padding:6px 0; border-top:1px solid var(--border); font-size:13px; line-height:1.4}
+.wp-h+.wp-row {border-top:0}
+.wp-row b {font-weight:650; color:var(--ink); white-space:nowrap}
+.wp-row span {min-width:0; color:var(--ink-2,var(--ink)); overflow-wrap:anywhere}
+.wp-row em {font-style:normal; font-size:11px; font-weight:600; color:var(--accent-ink,var(--accent)); white-space:nowrap}
+.wp-note {margin:4px 0 0; font-size:12px; color:var(--muted)}
 /* Progress and Library carry their page title, and a section's evidence button, above the filters (the shell's
    subhead), so a section's own header gives way. */
 :host(.subnav-head) .appbar {display:none}
@@ -767,7 +776,7 @@ button.dchip {min-height:36px}
   .workout-title h2 {font-size:24px}
 }
 .session-top {position:sticky;top:var(--shell-safe-top,0px);z-index:20;background:var(--bg)}
-:host(.session-focus) .toast {top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto}
+:host(.session-focus) #toast,:host(.session-focus) .toast {top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto}
 :host(.session-running) #view button,:host(.session-running) #view input:not([type=range]) {min-height:44px;min-width:44px}
 :host(.session-running) #view .pillpick,:host(.session-running) #view .row {gap:8px!important}
 :host(.session-running) .train-head {gap:8px}
@@ -813,7 +822,9 @@ progress {display:block;width:100%;height:10px;accent-color:var(--accent);margin
 :host(.session-running) #view {padding-top:16px}
 :host(.session-running) .sheet {left:0}
 :host(.session-running) .scrim {padding-left:0}
-:host(.session-running) .toast {left:50%;top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto;max-width:calc(100vw - 32px)}
+/* In a workout the header is gone (--shell-top is 0), so a message sits under the status bar and Dynamic Island, not on them.
+   #toast as well as .toast: the Train rule above names the id, which would otherwise win. */
+:host(.session-running) #toast,:host(.session-running) .toast {left:50%;top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto;max-width:calc(100vw - 32px)}
 /* Ladder's recommendation: one goal in front, the others in a fold beside it. */
 .trec .trow.best {border:1px solid var(--accent); border-radius:10px; padding:12px; background:var(--accent-soft)}
 .trec-more {margin-top:10px}
