@@ -20,6 +20,11 @@
   try{
     let {root,win,doc}=await seed('lift',{...base,v:1,exercises:[],mesos:[],bodylog:[],active:active([entry])});
     check(root.querySelector('.session-card h2').textContent==='Bench Press','Muscle starts in next-set mode');
+    // a phone's status bar and Dynamic Island (safe area 59 px): the toast's own transition is off while it's measured
+    {const toastTop=(m,r)=>{const t=r.getElementById('toast');t.style.transition='none';doc.documentElement.style.setProperty('--shell-safe-top','59px');t.classList.add('on');
+        const y=parseFloat(win.getComputedStyle(t).top);t.classList.remove('on');doc.documentElement.style.removeProperty('--shell-safe-top');t.style.transition='';return y;};
+      check(toastTop('lift',root)>=59+8,'in a workout, Muscle’s messages sit below the status bar and Dynamic Island');
+      window.__toastTop=toastTop;}
     check(root.querySelector('[data-field="reps"]').value==='8','Muscle shows the reps it will log');
     root.querySelector('[data-session="done"]').click();await pause(250);
     let saved=JSON.parse(localStorage.getItem('hyplog.v1'));
@@ -43,6 +48,7 @@
     root.querySelector('[data-act="toggle-done"][data-set="1"]').click();await pause(250);
     check(root.activeElement!==doc.body,'logging in List retains focus');
     ({root,win,doc}=await seed('str',{...base,v:2,active:active([{liftId:'bench',sets:[{kind:'work',w:40,reps:null,tr:5,trpe:8,done:false},{kind:'work',w:40,reps:null,tr:5,trpe:8,done:false}]}])}));
+    check(window.__toastTop('str',root)>=59+8,'in a workout, Strength’s messages sit below the status bar and Dynamic Island');
     check(root.querySelector('[data-field="w"]').getAttribute('aria-label')==='Set 1 weight','Strength set fields name their set');
     const inc=root.querySelector('[data-field="w"]').parentElement.querySelector('[data-step]:last-child');inc.click();await pause(250);
     check(JSON.parse(localStorage.getItem('strlog.v2')).active.entries[0].sets[0].w===42.5,'Strength weight stepper uses the available kit jump');

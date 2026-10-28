@@ -776,7 +776,7 @@ button.dchip {min-height:36px}
   .workout-title h2 {font-size:24px}
 }
 .session-top {position:sticky;top:var(--shell-safe-top,0px);z-index:20;background:var(--bg)}
-:host(.session-focus) .toast {top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto}
+:host(.session-focus) #toast,:host(.session-focus) .toast {top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto}
 :host(.session-running) #view button,:host(.session-running) #view input:not([type=range]) {min-height:44px;min-width:44px}
 :host(.session-running) #view .pillpick,:host(.session-running) #view .row {gap:8px!important}
 :host(.session-running) .train-head {gap:8px}
@@ -822,7 +822,9 @@ progress {display:block;width:100%;height:10px;accent-color:var(--accent);margin
 :host(.session-running) #view {padding-top:16px}
 :host(.session-running) .sheet {left:0}
 :host(.session-running) .scrim {padding-left:0}
-:host(.session-running) .toast {left:50%;top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto;max-width:calc(100vw - 32px)}
+/* In a workout the header is gone (--shell-top is 0), so a message sits under the status bar and Dynamic Island, not on them.
+   #toast as well as .toast: the Train rule above names the id, which would otherwise win. */
+:host(.session-running) #toast,:host(.session-running) .toast {left:50%;top:calc(var(--shell-safe-top,0px) + 8px);bottom:auto;max-width:calc(100vw - 32px)}
 /* Ladder's recommendation: one goal in front, the others in a fold beside it. */
 .trec .trow.best {border:1px solid var(--accent); border-radius:10px; padding:12px; background:var(--accent-soft)}
 .trec-more {margin-top:10px}
