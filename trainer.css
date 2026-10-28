@@ -741,30 +741,14 @@ button.dchip {min-height:36px}
   .session-step button {width:44px}
   .session-step input.sinput {font-size:20px}
 }
-.exercise-targets {margin:0 18px 12px}
-.exercise-targets summary {display:flex;align-items:center;gap:12px;min-height:44px;list-style:none;cursor:pointer;border-radius:6px}
-.exercise-targets summary::-webkit-details-marker {display:none}
-.exercise-targets summary:focus-visible {outline:2px solid var(--accent);outline-offset:3px}
+.exercise-targets {display:flex;align-items:center;min-height:32px;margin:0 18px 12px}
 .target-summary {display:flex;flex:1;flex-wrap:wrap;align-items:baseline;gap:4px 12px;min-width:0;color:var(--muted);font-size:13px;line-height:1.5}
 .target-summary>span {white-space:nowrap}
 .target-summary b {color:var(--ink-2);font-weight:600;font-variant-numeric:tabular-nums}
-.target-edit {display:flex;align-items:center;justify-content:flex-end;min-width:44px;min-height:44px;color:var(--steel);font-size:12px;font-weight:650}
-.target-edit-open,.exercise-targets[open] .target-edit-closed {display:none}
-.exercise-targets[open] .target-edit-open {display:inline}
-.exercise-targets .target-row {display:flex;flex-wrap:wrap;gap:12px;padding:8px 0 4px;max-width:380px}
-.exercise-targets .tinput {display:flex;flex-wrap:wrap;flex:1 1 60px;justify-content:flex-start;align-content:flex-start;gap:4px;padding:0;border:0;border-radius:0;background:none;min-width:0}
-.exercise-targets .tinput:first-child {flex:2 1 116px}
-.exercise-targets .tinput label {flex-basis:100%;color:var(--muted);font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;white-space:normal}
-.exercise-targets .tinput input {flex:1 1 44px;width:44px;min-width:44px;max-width:68px;min-height:44px;padding:6px 2px;font-size:16px;font-weight:600;border:1px solid var(--border-2);border-radius:7px;background:var(--surface-2)}
-.exercise-targets .tinput input:focus-visible {outline:2px solid var(--accent);outline-offset:2px}
-.exercise-targets .dash {align-self:center}
-@media(hover:hover) {.exercise-targets summary:hover .target-edit {text-decoration:underline;text-underline-offset:3px}}
 @media(min-width:900px) {.exercise-targets {margin-left:24px;margin-right:24px}}
 @media(max-width:380px) {.exercise-targets {margin-left:12px;margin-right:12px}}
 @media(max-width:259px) {
-  .exercise-targets summary {align-items:flex-start;gap:4px}
   .target-summary {gap:2px 8px}
-  .exercise-targets .tinput {flex-basis:100%}
   .first .pick {flex-wrap:wrap;padding:12px;gap:8px}
   .first .pick .pt2 {flex-basis:100%}
   .workout-heading {flex-direction:column;align-items:flex-start;gap:12px}

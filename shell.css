@@ -5,6 +5,7 @@
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--mv-body:#cfd6da;--mv-far:#5d6870;--mv-main:#f39a63;--mv-help:#8f5d40;--mv-floor:#3c464d;--mv-prop:#4b565d;--mv-gear:#9aa5ad;--mv-sil:#2b333a;--mv-off:#3a444b;--sh-bg:#171b1f;--sh-solid:#20262b;--sh-ink:#f4f3ef;--sh-muted:#abb5bb;--sh-border:#3a454c;--sh-well:#283037;--sh-accent:#f4a070;--sh-on-accent:#2e1d14;--sh-focus:#f4a070;--sh-edge:#71818a;--sh-selection:#5b3d2c;--sh-selection-ink:#f4f3ef;--sh-danger:#ffaaa1;--sh-on-danger:#451a17;color-scheme:dark}}
 body{background:var(--sh-bg);color:var(--sh-ink);font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 html{background:var(--sh-bg)}
+html,body{overscroll-behavior-x:none}
 html.app-starting body{visibility:hidden}
 ::selection{background:var(--sh-selection);color:var(--sh-selection-ink)}
 input,textarea{caret-color:var(--sh-accent)}

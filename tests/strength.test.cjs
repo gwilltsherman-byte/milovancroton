@@ -38,7 +38,7 @@ function strength({prefs = {}, body = [], start = Date.UTC(2026, 0, 5, 9)} = {})
   vm.runInContext(app.slice(0, app.indexOf('/* ==================== BACK ====================')), ctx, {filename: 'app.js:HOWTO'});
   const a = app.indexOf('/* ==================== SETS NOT TICKED OFF ===================='), b = app.indexOf('/* ==================== TAKE BACK ====================', a);
   vm.runInContext(app.slice(a, b), ctx, {filename: 'app.js:shared'});
-  for (const k of ['OpenSets', 'Parked', 'Prefs', 'Lift', 'SAME_LIFT', 'Num', 'Day', 'Kit', 'Body']) ctx[k] = ctx.window[k];
+  for (const k of ['OpenSets', 'Parked', 'Prefs', 'Lift', 'SAME_LIFT', 'Num', 'Day', 'Kit', 'Body', 'Dose']) ctx[k] = ctx.window[k];
   ctx.window.MiloDesign = null;
   const s = app.indexOf('  str: function(__root){'), from = app.indexOf('\n', s), to = app.indexOf('/* ==================== BOOT ==================== */', from);
   vm.runInContext(`(function(__root){ ${app.slice(from, to)}
@@ -676,4 +676,10 @@ test('small things: a back extension with nothing held, the main split squat day
   assert.equal(K.fn.warmups('deadlift', 140, true)[0].w, 65, '20 kg bar, 20 kg plates and 2.5 kg collars');
   K.T.state.settings.unit = 'lb'; K.T.run('openSettings()');
   assert.ok(K.T.run("$('#sheet').innerHTML").match(/class="on" data-act="set-collar" data-v="[\d.]+">5\.5 lb/), 'the collar in use, 5.5 lb, not None');
+});
+
+test('rest is set for you, not chosen: 4 minutes after a top or plus set, 3 after other work, 75 s after warm-ups', () => {
+  const S = strength();
+  assert.deepEqual(['warm', 'top', 'plus', 'bo', 'work'].map(k => S.T.run(`Dose.strRest(${JSON.stringify(k)})`)), [75, 240, 240, 180, 180]);
+  assert.ok(!S.hub.opts().some(o => o.k === 'rest'), 'no rest option in Settings');
 });

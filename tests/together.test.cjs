@@ -49,7 +49,7 @@ function together() {
   vm.runInContext(app.slice(0, app.indexOf('/* ==================== BACK ====================')), context, {filename: 'app.js:HOWTO'});
   const shared = app.indexOf('/* ==================== SETS NOT TICKED OFF ====================');
   vm.runInContext(app.slice(shared, app.indexOf('/* ==================== TAKE BACK ====================', shared)), context, {filename: 'app.js:shared'});
-  ['Prefs', 'Lift', 'Num', 'Day', 'Kit', 'Body', 'GROWTH', 'SAME_LIFT', 'OpenSets', 'Parked'].forEach(k => { context[k] = context.window[k]; });
+  ['Prefs', 'Lift', 'Num', 'Day', 'Kit', 'Body', 'GROWTH', 'SAME_LIFT', 'OpenSets', 'Parked', 'Dose'].forEach(k => { context[k] = context.window[k]; });
   vm.runInContext(`(function(__root) { ${app.slice(bodyStart, end)}
     globalThis.tgTest = {
       reset: o => { tg = Object.assign(load(), o || {}); fresh(); },

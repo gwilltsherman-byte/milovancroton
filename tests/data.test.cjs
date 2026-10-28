@@ -16,7 +16,7 @@ function load() {
   const ctx = {window: {}, localStorage, console, Date, Math, JSON, TextEncoder};
   vm.createContext(ctx);
   vm.runInContext(ENGINE, ctx, {filename: 'app.js:engine'});
-  for (const k of ['Prefs', 'Lift', 'Num', 'Day', 'Kit', 'Body', 'SAME_LIFT']) ctx[k] = ctx.window[k];
+  for (const k of ['Prefs', 'Lift', 'Num', 'Day', 'Kit', 'Body', 'SAME_LIFT', 'Dose']) ctx[k] = ctx.window[k];
   vm.runInContext(DATA, ctx, {filename: 'app.js:your-data'});
   return ctx.window;
 }

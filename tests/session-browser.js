@@ -32,6 +32,9 @@
     root.querySelector('[data-session="list"]').click();await pause(250);
     check(root.querySelectorAll('[data-act="toggle-done"]').length===2&&root.querySelector('[data-act="toggle-done"]').getAttribute('aria-pressed')==='true','List keeps both editable sets and announces logged state');
     check(JSON.parse(localStorage.getItem('hyplog.v1')).settings.sessionView==='list','the chosen view is saved');
+    {const card=root.querySelector('.excard'),r=card.getBoundingClientRect(),o={bubbles:true,composed:true,isPrimary:true,pointerType:'touch',pointerId:7,clientY:r.top+30};
+      for(const dx of [-160,160]){card.dispatchEvent(new win.PointerEvent('pointerdown',{...o,clientX:r.left+r.width/2}));card.dispatchEvent(new win.PointerEvent('pointerup',{...o,clientX:r.left+r.width/2+dx}));await pause(150);
+        check(JSON.parse(localStorage.getItem('hyplog.v1')).settings.sessionView==='list'&&root.querySelectorAll('[data-act="toggle-done"]').length===2,'a swipe '+(dx<0?'left':'right')+' never switches the view');}}
     for(const width of [390,195]){frame.style.width=width+'px';await pause(250);check(doc.documentElement.scrollWidth<=width+1,'Muscle list has no horizontal scrolling at '+width+' px');}
     root.querySelector('[data-session="focus"]').click();await pause(250);frame.style.width='195px';await pause(250);
     check(doc.documentElement.scrollWidth<=196,'Muscle focus fits a 195 px viewport');
