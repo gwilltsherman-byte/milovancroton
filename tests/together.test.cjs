@@ -581,3 +581,76 @@ test('unlimited conditioning days have no hidden ninety-minute cap and mixed int
   assert.equal(T.call('condEquivalent',{minutes:24,intensity:'intervals'}),36);
   assert.equal(T.call('condEquivalent',{minutes:3,intensity:'intervals'}),5);
 });
+
+test('Muscle in Together: each muscle its share of the dose, a row for the upper back, Muscle’s ranking before the alphabet', () => {
+  const T = together();
+  const ex = (id, name, equipment, p, s, comp, rank, more) => Object.assign({id, name, equipment, p, s, comp, long: 0, custom: false, alt: false, last: 0, rank}, more || {});
+  const cat = [
+    ex('back-squat', 'Barbell Back Squat', 'Barbell', ['quad', 'glute'], ['adductor'], true, {quad: 0}),
+    ex('leg-extension', 'Leg Extension', 'Machine', ['quad'], [], false, {quad: 4}),
+    ex('romanian-deadlift', 'Romanian Deadlift', 'Barbell', ['ham', 'glute'], [], true, {ham: 0}),
+    ex('deadlift', 'Deadlift', 'Barbell', ['glute', 'ham'], ['trap'], true, {ham: 5}),
+    ex('leg-curl', 'Seated Leg Curl', 'Machine', ['ham'], [], false, {ham: 1}, {long: 2}),
+    ex('barbell-bench', 'Barbell Bench Press', 'Barbell', ['chest'], ['fdelt', 'tri'], true, {chest: 0}),
+    ex('cable-fly', 'Cable Fly', 'Cable', ['chest'], ['fdelt'], false, {chest: 7}),
+    ex('assisted-pullup', 'Assisted Pull-Up', 'Machine', ['lat'], ['bi', 'uback'], true, {lat: 5}),
+    ex('lat-pulldown', 'Lat Pulldown', 'Cable', ['lat'], ['bi', 'uback'], true, {lat: 0}),
+    ex('straight-arm-pulldown', 'Straight-Arm Pulldown', 'Cable', ['lat'], [], false, {lat: 7}, {alt: true}),
+    ex('barbell-row', 'Barbell Row', 'Barbell', ['uback', 'lat'], ['bi', 'rdelt'], true, {uback: 2}),
+    ex('chest-supported-row', 'Chest-Supported Row', 'Machine', ['uback', 'lat'], ['bi', 'rdelt'], true, {uback: 0}),
+    ex('prone-y-raise', 'Prone Y-Raise', 'Dumbbell', ['uback'], ['rdelt', 'sdelt'], false, {}, {alt: true}),
+    ex('lateral-raise', 'Dumbbell Lateral Raise', 'Dumbbell', ['sdelt'], [], false, {sdelt: 1}),
+    ex('hip-adduction', 'Hip Adduction Machine', 'Machine', ['adductor'], [], false, {adductor: 0}),
+    ex('cable-woodchop', 'Cable Woodchop', 'Cable', ['obli'], ['abs'], false, {}, {alt: true}),
+  ];
+  T.apis.lift = {table: () => null, catalog: () => cat, info: () => ({ready: true}), work: () => []};
+  T.reset({on: true, secs: ['lift'], prio: ['lift', 'str', 'cal'], days: 4, mins: 0});
+  const P = T.call('buildPlan'), all = P.days.flatMap(d => d.lift), of = mu => all.filter(x => x.mu === mu);
+  // the dose: in full for a big muscle, a share for those the big lifts already work
+  assert.equal(P.goal.chest, 10);
+  assert.equal(P.goal.sdelt, 10);
+  assert.equal(P.goal.bi, 8);
+  assert.equal(P.goal.rdelt, 6);
+  assert.equal(P.goal.adductor, 5);
+  assert.equal(P.goal.obli, 5);
+  // the upper back is rowed, even though the lat work already reaches it
+  assert.ok(of('uback').length && of('uback').every(x => ['chest-supported-row', 'barbell-row'].includes(x.exId)), JSON.stringify(of('uback')));
+  assert.ok(!all.some(x => x.exId === 'prone-y-raise'), 'no prone Y-raise standing in for a row');
+  assert.equal(of('uback')[0].exId, 'chest-supported-row', 'Muscle’s ranking, not the alphabet, picks the first row');
+  // the lats: a pulldown before an assisted pull-up (first by name), and never only a straight-arm pulldown
+  const lats = of('lat').map(x => x.exId);
+  assert.ok(lats.length && lats[0] === 'lat-pulldown', JSON.stringify(lats));
+  assert.ok(lats.every(id => id !== 'straight-arm-pulldown'), JSON.stringify(lats));
+  // hamstrings: the Romanian deadlift Muscle ranks first, not the deadlift that comes first by name
+  assert.ok(of('ham').some(x => x.exId === 'romanian-deadlift') && !of('ham').some(x => x.exId === 'deadlift'), JSON.stringify(of('ham')));
+  assert.equal(T.evaluate("WHY['fit-row']"), 'A row: the upper back’s main exercise, which no single-joint exercise replaces');
+});
+
+test('Muscle in Together never repeats the lift Strength already has that day', () => {
+  const T = together();
+  // the barbell row ranks first here, so only the guard keeps it off a day with Strength's barbell row
+  const row = (id, name, equipment, rank) => ({id, name, equipment, p: ['uback', 'lat'], s: ['bi', 'rdelt'], comp: true, long: 0, custom: false, alt: false, last: 0, rank: {uback: rank}});
+  const cat = [row('barbell-row', 'Barbell Row', 'Barbell', 0), row('seated-cable-row', 'Seated Cable Row', 'Cable', 1)];
+  T.apis.lift = {table: () => null, catalog: () => cat, info: () => ({ready: true}), work: () => []};
+  T.apis.str = strApi();
+  // both sections on every day, and an advanced lifter's upper back needs every one of them
+  T.reset({on: true, secs: ['str', 'lift'], prio: ['lift', 'str', 'cal'], days: 3, mins: 0, exp: 'advanced', kit: ['bar', 'db', 'machine', 'cable'],
+    custom: [['str', 'lift'], ['str', 'lift'], ['str', 'lift']]});
+  const P = T.call('buildPlan');
+  const rowDays = P.days.filter(d => d.str.some(x => x.id === 'row'));
+  assert.ok(rowDays.length, 'Strength rows somewhere in the week');
+  assert.ok(rowDays.some(d => d.lift.some(x => x.mu === 'uback')), 'Muscle rows on a day Strength rows too: ' + JSON.stringify(P.days.map(d => d.lift)));
+  rowDays.forEach(d => assert.ok(!d.lift.some(x => x.exId === 'barbell-row'), 'Strength’s barbell row and Muscle’s on the same day'));
+});
+
+test('the first run ranks what you picked in the order you picked it, then the rest as suggested', () => {
+  const T = together();
+  T.reset({});
+  assert.deepEqual(plain(T.call('firstOrder', ['lift', 'str'])), ['lift', 'str', 'cal']);
+  assert.deepEqual(plain(T.call('firstOrder', ['cal', 'lift', 'str'])), ['cal', 'lift', 'str']);
+  assert.deepEqual(plain(T.call('firstOrder', ['str'])), ['str', 'cal', 'lift'], 'the rest keep the suggested order');
+  assert.deepEqual(plain(T.call('firstOrder', ['lift', 'cond'])), ['lift', 'cond', 'str', 'cal'], 'Conditioning takes its place when picked');
+  // the order sets the dose: first builds, second moderate, the rest maintain
+  T.reset({on: true, secs: ['lift', 'str', 'cal'], prio: T.call('firstOrder', ['lift', 'str', 'cal'])});
+  assert.deepEqual(plain(T.call('doses')), {lift: 'build', str: 'moderate', cal: 'maintain'});
+});

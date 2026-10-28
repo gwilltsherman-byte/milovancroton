@@ -2260,8 +2260,8 @@ const TEMPLATES = [
   {id:'pull', name:'Pull Day', accent:'lat', items:[['lat-pulldown',3],['chest-supported-row',3],['seated-cable-row',3],['face-pull',3],['incline-db-curl',3],['hammer-curl',3]]},
   {id:'legs', name:'Leg Day', accent:'quad', items:[['back-squat',3],['romanian-deadlift',3],['leg-press',3],['leg-curl',3],['leg-extension',3],['standing-calf',4]]},
   {id:'upper', name:'Upper Body', accent:'chest', items:[['barbell-bench',3],['chest-supported-row',3],['db-shoulder-press',3],['lat-pulldown',3],['machine-lateral',3],['db-curl',3],['tricep-pushdown',3]]},
-  {id:'lower', name:'Lower Body', accent:'quad', items:[['back-squat',3],['romanian-deadlift',3],['leg-press',3],['lying-leg-curl',3],['hip-thrust',3],['seated-calf',4]]},
-  {id:'full', name:'Full Body', accent:'quad', items:[['back-squat',3],['db-bench',3],['seated-cable-row',3],['lateral-raise',3],['db-curl',2],['tricep-pushdown',2],['standing-calf',3]]},
+  {id:'lower', name:'Lower Body', accent:'quad', items:[['back-squat',3],['romanian-deadlift',3],['leg-press',3],['leg-curl',3],['hip-thrust',3],['standing-calf',4]]},
+  {id:'full', name:'Full Body', accent:'quad', items:[['back-squat',3],['db-bench',3],['seated-cable-row',3],['lateral-raise',3],['db-curl',2],['overhead-ext',2],['standing-calf',3]]},
 ];
 
 /* ==================== EVIDENCE LIBRARY ==================== */
@@ -3771,12 +3771,15 @@ function lineChart(pts){
 
 /* ==================== MESOCYCLE ENGINE ==================== */
 /* Ready-made blocks: four weeks of rising effort and no planned lighter week. One is offered when two or more lifts go
-   down while you're worn out (coachDeload), and you can add one any time. */
+   down while you're worn out (coachDeload), and you can add one any time. Their exercises follow WHAT GROWS MORE: a seated
+   leg curl before a lying one, standing or straight-knee calf raises, overhead triceps work, and a leg extension for the
+   part of the quads squats miss (in Lower it takes the hip thrust's place: squats grew the glutes as much as hip thrusts
+   did, Plotkin et al. 2023). */
 const MESO_TEMPLATES = [
   { name:'5-Day Hypertrophy Split', weeks:4, deload:false, blurb:'Chest&middot;tri &amp; back&middot;bi twice weekly, delts&middot;legs once', days:[
     {name:'Chest & Triceps', ex:[['machine-chest-press',3],['incline-db-press',3],['seated-db-tri-ext',3],['close-grip-pushup',2],['lateral-raise',2]]},
     {name:'Back & Biceps', ex:[['pullup',3],['chin-up',3],['seated-cable-row',3],['incline-db-curl',3]]},
-    {name:'Delts & Legs', ex:[['cable-lateral',3],['db-shoulder-press',3],['db-reverse-fly',3],['bulgarian-split-squat',3],['pistol-squat',2],['single-leg-rdl',3],['nordic-curl',2]]},
+    {name:'Delts & Legs', ex:[['cable-lateral',3],['db-shoulder-press',3],['db-reverse-fly',3],['bulgarian-split-squat',3],['leg-extension',2],['single-leg-rdl',3],['nordic-curl',2]]},
     {name:'Chest & Triceps II', ex:[['machine-chest-press',3],['incline-db-press',3],['deficit-pushup',2],['close-grip-pushup',2],['lateral-raise',2]]},
     {name:'Back & Biceps II', ex:[['chin-up',3],['assisted-pullup',3],['seated-cable-row',3],['cable-curl',3]]},
   ]},
@@ -3786,13 +3789,13 @@ const MESO_TEMPLATES = [
     {name:'Legs', ex:[['back-squat',3],['romanian-deadlift',3],['leg-press',3],['leg-curl',3],['leg-extension',2],['standing-calf',4]]},
   ]},
   { name:'Upper / Lower', weeks:4, deload:false, blurb:'Classic 4-day split', days:[
-    {name:'Upper', ex:[['barbell-bench',3],['chest-supported-row',3],['db-shoulder-press',3],['lat-pulldown',3],['machine-lateral',3],['db-curl',2],['tricep-pushdown',2]]},
-    {name:'Lower', ex:[['back-squat',3],['romanian-deadlift',3],['leg-press',3],['lying-leg-curl',3],['hip-thrust',2],['seated-calf',4]]},
+    {name:'Upper', ex:[['barbell-bench',3],['chest-supported-row',3],['db-shoulder-press',3],['lat-pulldown',3],['machine-lateral',3],['db-curl',2],['overhead-ext',2]]},
+    {name:'Lower', ex:[['back-squat',3],['romanian-deadlift',3],['leg-press',3],['leg-curl',3],['leg-extension',2],['standing-calf',4]]},
   ]},
   { name:'Full Body', weeks:4, deload:false, blurb:'3 balanced full-body days', days:[
     {name:'Full A', ex:[['back-squat',3],['db-bench',3],['seated-cable-row',3],['lateral-raise',2],['db-curl',2],['standing-calf',3]]},
-    {name:'Full B', ex:[['romanian-deadlift',3],['incline-db-press',3],['lat-pulldown',3],['machine-lateral',2],['tricep-pushdown',2],['cable-crunch',3]]},
-    {name:'Full C', ex:[['leg-press',3],['ohp',3],['chest-supported-row',3],['leg-curl',3],['hammer-curl',2],['seated-calf',3]]},
+    {name:'Full B', ex:[['romanian-deadlift',3],['incline-db-press',3],['lat-pulldown',3],['machine-lateral',2],['overhead-ext',2],['cable-crunch',3]]},
+    {name:'Full C', ex:[['leg-extension',3],['ohp',3],['chest-supported-row',3],['leg-curl',3],['hammer-curl',2],['leg-press-calf',3]]},
   ]},
 ];
 function getActiveMeso(){ return state.mesos.find(m=>m.status==='active'); }
@@ -6416,7 +6419,10 @@ function hubStart(tg){
 }
 /* Exercises Together can build a day from, with what each trains and its rep range. */
 function hubCatalog(){ const last=lastDone(); return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp, long:GROWTH.long[e.id]||0,
-  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt, last:last[e.id]||0})); }
+  repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt, last:last[e.id]||0, rank:rankOf(e)})); }
+/* An exercise's place in each of its main muscles' rankings (PRIORITY), {muscle: place}, so Together breaks a tie the
+   way Muscle's own blocks do. */
+function rankOf(e){ const o={}; e.primary.forEach(m=>{ const i=(PRIORITY[m]||[]).indexOf(e.id); if(i>=0) o[m]=i; }); return o; }
 /* When each exercise last had a ticked work set: {exId: date}. */
 function lastDone(){ const out={}; state.history.forEach(w=>w.entries.forEach(en=>{ if(en.sets.some(s=>isWork(s)&&s.done) && !(out[en.exId]>=w.date)) out[en.exId]=w.date; })); return out; }
 /* A day Together built: [{exId, sets}] at one effort, loads from your last sets of each exercise. tg trims it as for a block day. */
@@ -10713,6 +10719,13 @@ function markCheck(entries){
     const s=en.sets.filter(x=>(x.kind==='work'||x.kind==='bo')&&x.trpe!=null&&x.trpe>=7&&x.trpe<=9&&x.tr!=null&&x.tr<=10).pop();
     if(s){ s.chk=true; return; } }
 }
+/* A blank weight's first guess, in words: the reps to leave at the blank sets' easiest target (RPE 7 leaves about
+   three), and never fewer than two, since a weight you haven't lifted yet is a guess. Sets with no target: one or two. */
+function spareFor(entries){
+  const t=[]; entries.forEach(en=>{ if(EX[en.liftId]&&EX[en.liftId].k==='load') en.sets.forEach(s=>{ if(s.kind!=='warm'&&s.w==null&&s.trpe!=null) t.push(s.trpe); }); });
+  if(!t.length) return 'one or two';
+  return 'about '+['two','three','four'][Math.max(2, Math.min(4, Math.round(10-Math.min(...t))))-2];
+}
 function startProgramDay(d){
   const P=state.program, D=progDef(); if(!P||!D||!D.days[d]) return;
   const day=D.days[d], week=P.week;
@@ -10723,7 +10736,7 @@ function startProgramDay(d){
   save(); closeModal(); state.route='train'; render(); window.scrollTo(0,0);
   if(window.__hub) window.__hub.changed('str');
   const back=entries.filter(en=>en.back);
-  if(entries.some(en=>EX[en.liftId].k==='load' && en.sets.some(s=>s.kind!=='warm'&&s.w==null))) toast(introOn()? 'Some weights are blank: pick a weight that feels easy for the reps' : 'Some weights are blank: pick a weight you could lift for the reps with one or two to spare');
+  if(entries.some(en=>EX[en.liftId].k==='load' && en.sets.some(s=>s.kind!=='warm'&&s.w==null))) toast(introOn()? 'Some weights are blank: pick a weight that feels easy for the reps' : 'Some weights are blank: pick a weight you could lift for the reps with '+spareFor(entries)+' to spare');
   else if(back.length) toast('Back after a break: today is '+Math.round((1-Math.min(...back.map(en=>en.back)))*100)+'% lighter');
 }
 function startRepeat(){
@@ -11454,7 +11467,7 @@ function applySessionSwap(ei, id, stick){
   save(); closeModal(); render();
   if(window.__hub) window.__hub.changed('str');
   const nm=esc(exName(id));
-  if(EX[id].k==='load' && ne.sets.some(s=>s.kind!=='warm'&&s.w==null)) toast(nm+(stick?' from now on':' for today')+'. Pick a weight you could lift for the reps with one or two to spare');
+  if(EX[id].k==='load' && ne.sets.some(s=>s.kind!=='warm'&&s.w==null)) toast(nm+(stick?' from now on':' for today')+'. Pick a weight you could lift for the reps with '+spareFor([ne])+' to spare');
   else toast(nm+(stick?' from now on':' for today'));
 }
 
@@ -12017,7 +12030,7 @@ __root.addEventListener('click', e=>{
     case 'sheet-back': nav.back(); break;
     case 'st-var': { const id=el.dataset.id, L=state.lifts[id]; L.var=+el.dataset.v; L.seed={date:Date.now(), var:L.var}; save(); el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el)); break; }
     case 'st-save': saveStart(); break;
-    case 'st-skip': stDraft={}; closeModal(); state.route='program'; render(); toast('Plan ready. Pick weights you could do for the reps with one or two to spare'); break;
+    case 'st-skip': stDraft={}; closeModal(); state.route='program'; render(); toast('Plan ready. Pick first weights you could do for the reps with two or three to spare'); break;
     case 'swap-area': openSwap(el.dataset.a); break;
     case 'swap-pick': { const a=el.dataset.a, id=el.dataset.v; state.setup.choice[a]=id; resetProgram(); save(); closeModal(); render();
       const X=EX[id]; if(X.k==='load' && !currentE1(id) && state.lifts[id].work==null) toast(esc(X.n)+': test it in Starting strength, or pick a weight in the first session'); else toast('Switched to '+esc(exName(id))); break; }
@@ -12368,7 +12381,7 @@ function hubStartWith(spec){
   if(window.__hub) window.__hub.changed('str');
   const blank=entries.filter(en=>EX[en.liftId].k==='load' && en.sets.some(s=>s.kind!=='warm'&&s.w==null));
   // a new lifter's first weight starts light: about a 10-rep weight for sets of 5
-  if(blank.length) toast(blank.some(en=>en.sc&&(en.sc.t==='lp'||en.sc.intro))? 'Some weights are blank: start with one you could lift about 10 times' : 'Some weights are blank: pick a weight you could lift for the reps with one or two to spare');
+  if(blank.length) toast(blank.some(en=>en.sc&&(en.sc.t==='lp'||en.sc.intro))? 'Some weights are blank: start with one you could lift about 10 times' : 'Some weights are blank: pick a weight you could lift for the reps with '+spareFor(blank)+' to spare');
   return state.active.id;
 }
 if(window.__hub) window.__hub.reg('str', {
@@ -12496,8 +12509,17 @@ const STR_EASY=[[6,6],[5,6],[5,7],[4,7]];
 /* Muscle: weekly direct hard sets per muscle by dose, counting what Strength and Ladder in this week already give it:
    about 10 to grow (8 when new, 12 when experienced), 6 moderate, 3 to keep. Twice a week each to grow, once to keep. */
 const LIFT_TARGET={build:{beginner:8, intermediate:10, advanced:12}, moderate:{beginner:6, intermediate:6, advanced:6}, maintain:{beginner:3, intermediate:3, advanced:3}};
+/* Each muscle's share of that dose, as in Muscle's own blocks (TARGET_SHARE): in full for the big muscles and the side
+   delts; less for the arms and calves, and for the rear and front delts and abs, which the big lifts already work on the
+   side; half for the adductors, obliques and traps, which squats, hinges, carries and bracing train along the way. With
+   every muscle at the full dose, a week ran out of room and the small muscles kept their days while the chest and quads
+   lost theirs. More, Normal and Less move from here. */
+const LIFT_SHARE={bi:0.8, tri:0.8, calf:0.8, rdelt:0.6, fdelt:0.6, abs:0.6, adductor:0.5, obli:0.5, trap:0.5};
+const shareOf=(mu, n)=>Math.round(n*(LIFT_SHARE[mu]||1));
 const LIFT_MUSCLES=['quad','ham','glute','adductor','chest','uback','lat','fdelt','sdelt','rdelt','bi','tri','calf','abs','obli','trap'];
 const BIG=['quad','ham','glute','chest','uback','lat'];
+/* The back muscles, which take a compound pull in Muscle whatever the day holds, and the reason the plan gives (WHY). */
+const PULLS={uback:'fit-row', lat:'fit-pull'};
 /* Reps in reserve by week; new lifters keep 2 or more in reserve, so no set goes to failure, and a gentler block 3 or
    more (RPE 7 at most). Week 5 keeps week 4's, unless it is the lighter week. */
 const LIFT_RIR=[3,2,2,1], LIFT_RIR_EASY=[3,3,2,2], LIFT_RIR_GENTLE=[3,3,3,3];
@@ -12675,7 +12697,7 @@ function kit(){ if(tg.kit) return tg.kit;
 /* What the plan is built from. A change to what you train, its order, your number of days or your experience builds a
    new block; a change to your session time, kit, weekdays or life stage, or to which days a section is on, refills the
    days and keeps your week. */
-const GEN='g6';   // a fixed order within the day, heavy squats and hinges apart, real weekdays, adductors, no front raises after pressing
+const GEN='g7';   // a fixed order within the day, heavy squats and hinges apart, real weekdays, adductors, no front raises after pressing; g7: each muscle's share of the dose, rows for the upper back, Muscle's ranking to break ties
 function baseSig(){ return JSON.stringify([tg.secs, orderParts(tg.secs), tg.days, tg.exp||'intermediate']); }
 /* The same, as plans saved before g6 kept it (session time and kit in it too), so their week carries over. */
 function oldBase(){ return JSON.stringify([tg.secs, rankList(), tg.days, tg.mins, kit(), tg.exp||'intermediate']); }
@@ -12866,8 +12888,8 @@ function buildPlan(T){
     // your focus for the muscle's group: more is half as much again, less is the keeping dose, skip leaves it to the rest.
     // Each muscle's own dose moves by how it responded last block (learnVolume), but never the keeping dose, and no
     // muscle's week goes past WEEK_MAX
-    const targetOf=mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null, f=(T.mu&&T.mu[mu])||(g&&T.focus[g]), b=Math.max(lo, base+(dose.lift==='maintain'? 0 : (tg.adj||{})[mu]||0));
-      return Math.min(WEEK_MAX, f==='skip'? 0 : f==='less'? Math.min(b, keep) : f==='more'? Math.round(b*1.5) : b); };
+    const targetOf=mu=>{ const g=T2&&T2.muscles[mu]? T2.muscles[mu].g : null, f=(T.mu&&T.mu[mu])||(g&&T.focus[g]), b=Math.max(lo, shareOf(mu, base)+(dose.lift==='maintain'? 0 : (tg.adj||{})[mu]||0));
+      return Math.min(WEEK_MAX, f==='skip'? 0 : f==='less'? Math.min(b, Math.max(lo, shareOf(mu, keep))) : f==='more'? Math.round(b*1.5) : b); };
     // muscles you left out, on their own or with their group: no exercise for another muscle aims at them if one doesn't have to
     const dropped=new Set(MUS.filter(mu=>targetOf(mu)===0)), aims=(e,mu)=>e.p.filter(q=>q!==mu&&dropped.has(q)).length;
     MUS.forEach(mu=>{ goal[mu]=targetOf(mu); });
@@ -12878,6 +12900,7 @@ function buildPlan(T){
     // twice a week to keep too)
     const natural=need=> dose.lift==='maintain'? Math.min(ld.length, older()? 2 : 1) : Math.max(Math.min(2, ld.length), Math.min(ld.length, Math.ceil(need/4)));
     // one go at the week: each muscle in turn gets what it still needs after the exercises before it
+    const strSets=days.map(d=>d.str.reduce((t,y)=>t+(y.sets||0),0));
     const run=(freqOf, room)=>{
       const C=Object.assign({}, cov), hit=dayHit.map(s=>new Set(s)), taken=days.map(()=>new Set()), used={}, out=days.map(()=>[]), at={}, skipped=[], lim=room===Infinity? Infinity : cap;
       // the parts of each muscle the week trains (GROWTH.region), starting with Strength's lifts
@@ -12893,32 +12916,41 @@ function buildPlan(T){
         const f=Math.min(ld.length, freqOf(x.mu, need)); if(f>left){ skipped.push(x.mu); return; }
         const n=Math.max(lo, Math.min(4, Math.round(need/f)));
         let got=0; const cnt={}, own=i=>((T.perDay||{})[x.mu]||{})[i]||null, held=i=>((T.hold||{})[x.mu]||{})[i]||null, pinOf=i=>own(i)||(held(i)||[])[0]||null;
-        choose(f, ld.length, sel=>spacing(sel.map(j=>ld[j]),PW)*2 + sel.reduce((c,j)=>c + out[ld[j]].length*3 + (hit[ld[j]].has(x.mu)? 4 : 0) + (out[ld[j]].length>=lim? 1e4 : 0),0))
+        // a day's Strength sets count as well as its Muscle exercises: they take its time, so work put there was cut first
+        choose(f, ld.length, sel=>spacing(sel.map(j=>ld[j]),PW)*2 + sel.reduce((c,j)=>c + out[ld[j]].length*3 + strSets[ld[j]] + (hit[ld[j]].has(x.mu)? 4 : 0) + (out[ld[j]].length>=lim? 1e4 : 0),0))
           // a day you set an exercise for (or one held as it was) goes first, so the other days fit around it
           .sort((a,b)=>!!pinOf(ld[b]) - !!pinOf(ld[a]))
           .forEach((j,nth,sel)=>{ const i=ld[j]; if(out[i].length>=lim) return;
             // with heavy lifting that day, or a muscle the week already works, isolation adds the least to what's tired;
-            // otherwise a big muscle gets a compound. An exercise you picked comes first, even if it needs equipment you didn't choose
+            // otherwise a big muscle gets a compound. The back always gets a pull (PULLS): the upper back's single-joint
+            // exercises train the lower traps or rear delts instead, and a pullover or straight-arm pulldown is an extra for the
+            // lats, not their main work; a chest-supported row or a pulldown adds little to what's tired. An exercise you
+            // picked comes first, even if it needs equipment you didn't choose
             // one you set for this day first; then your picks, the one used least this week first, each on the day it suits best
-            const iso= days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu), avoid=hit[i], mine=T.ex[x.mu]||[];
+            const row=PULLS[x.mu], iso= !row && (days[i].str.length>0 || (C[x.mu]||0)>0 || !BIG.includes(x.mu)), avoid=hit[i], mine=T.ex[x.mu]||[];
             const pin=pinOf(i);
-            const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id) || e.id===pin) && (e.id===pin || !setOn[i].has(e.id));
+            // never the lift Strength already has that day
+            const same=new Set(days[i].str.map(y=>SAME_LIFT[y.id]).filter(Boolean));
+            const fits=e=>e.p.includes(x.mu) && !taken[i].has(e.id) && (eq.includes(e.equipment) || mine.includes(e.id) || e.id===pin) && (e.id===pin || (!setOn[i].has(e.id) && !same.has(e.id)));
             const miss=GROWTH.missing(x.mu, regs), gain=e=>miss.includes(GROWTH.region(e.id,x.mu))? 1 : 0, spare=e=>e.p.filter(q=>q!==x.mu&&avoid.has(q)).length;
             // the rules in order, each named so the plan can say which one chose the exercise (WHY). After your own choices:
             // a part of the muscle the week doesn't train yet (GROWTH), like a leg extension next to squats; one you have logged
             // before, the most recent first: its weights carry on, and getting better at an exercise is part of the progress, so
             // changing it at random slows things down; one that trains it at long lengths (GROWTH); something you can load before
-            // bodyweight work, which is harder to progress; then variety across the days
+            // bodyweight work, which is harder to progress; then variety across the days; then Muscle's own ranking for the
+            // muscle (a lat pulldown before an assisted pull-up, a chest-supported row before a barbell row), not the alphabet
+            const rk=e=>{ const r=e.rank&&e.rank[x.mu]; return r!=null? r : e.custom? 60 : e.alt? 100 : 50; };
             const rules=[['set',(a,b)=>(b.id===pin)-(a.id===pin)], ['mine',(a,b)=>mine.includes(b.id)-mine.includes(a.id)], ['even',(a,b)=>(cnt[a.id]||0)-(cnt[b.id]||0)],
               ['gain',(a,b)=>gain(b)-gain(a)], ['aims',(a,b)=>aims(a,x.mu)-aims(b,x.mu)], ['fit',(a,b)=>(a.comp===iso)-(b.comp===iso)], ['spare',(a,b)=>spare(a)-spare(b)],
               ['logged',(a,b)=>(b.last>0)-(a.last>0)], ['long',(a,b)=>(b.long||0)-(a.long||0)], ['load',(a,b)=>(a.equipment==='Bodyweight')-(b.equipment==='Bodyweight')],
-              ['vary',(a,b)=>(used[a.id]||0)-(used[b.id]||0)], ['recent',(a,b)=>(b.last||0)-(a.last||0)], ['tie',(a,b)=>(a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name)]];
+              ['vary',(a,b)=>(used[a.id]||0)-(used[b.id]||0)], ['recent',(a,b)=>(b.last||0)-(a.last||0)], ['rank',(a,b)=>rk(a)-rk(b)],
+              ['tie',(a,b)=>(a.alt-b.alt) || (a.custom-b.custom) || a.name.localeCompare(b.name)]];
             const cs=cat.filter(fits).sort((a,b)=>{ for(const r of rules){ const v=r[1](a,b); if(v) return v; } return 0; }), e=cs[0];
             if(!e) return;
             // why it won: the first rule that put it ahead of the next best
             let why= cs.length<2? 'only' : (rules.find(r=>r[1](e,cs[1])<0)||['tie'])[0];
             if(why==='set' && !own(i)) why='held';
-            if(why==='fit') why= !iso? 'fit-big' : days[i].str.length>0? 'fit-heavy' : (C[x.mu]||0)>0? 'fit-worked' : 'fit-small';
+            if(why==='fit') why= row? row : !iso? 'fit-big' : days[i].str.length>0? 'fit-heavy' : (C[x.mu]||0)>0? 'fit-worked' : 'fit-small';
             // more of your picks not used yet than days left: this day takes two, its sets split, the one better for growth getting more
             const rest=mine.filter(id=>id!==e.id && !cnt[id] && exOf[id] && fits(exOf[id])).map(id=>exOf[id])
               // one with no other day left to go to first (another muscle has it there), then the one that suits this day
@@ -14205,7 +14237,7 @@ function volCard(I){
 }
 function rulesCard(){
   const R=[
-    ['Your order sets the dose',`First in your order gets a building dose: in Strength each main lift once or twice a week, heavy; in Muscle about ${LIFT_TARGET.build[tg.exp||'intermediate']} hard sets a week for each muscle; Ladder three or four sessions a week. Second gets a moderate dose. Third gets enough to keep what you have: much less work at the same effort, about once a week. In one trial that kept strength for most people, and muscle size mainly in younger adults, so from 65 it is twice a week.`],
+    ['Your order sets the dose',`First in your order gets a building dose: in Strength each main lift once or twice a week, heavy; in Muscle about ${LIFT_TARGET.build[tg.exp||'intermediate']} hard sets a week for each big muscle, and a little less for the smaller ones the big lifts already work; Ladder three or four sessions a week. Second gets a moderate dose. Third gets enough to keep what you have: much less work at the same effort, about once a week. In one trial that kept strength for most people, and muscle size mainly in younger adults, so from 65 it is twice a week.`],
     ['One order for every day','Whatever your order, every day runs the same way: a short warm-up, Ladder’s balance and straight-arm skills while you’re fresh, the heavy Strength lifts, Ladder’s strength work, then Muscle, compounds first, and core last, Ladder’s core work included. Exercise order changes strength gains, but hardly growth, so the heavy lifts never come after work that tires the same muscles or your trunk.'],
     ['One program, one count','Together builds every session itself, from each trainer&rsquo;s exercises and your own numbers: estimated maxes in Strength, your last sets in Muscle, your rungs in Ladder. Hard sets from every part count toward one weekly total per muscle, so Muscle tops up only what Strength and Ladder leave, and on a heavy day it uses isolation work that adds little to what&rsquo;s already tired. No muscle goes past about 22 a week.'],
     ['Blocks that build, then a fifth week',`A block is four weeks of rising effort (Strength&rsquo;s heavy sets go from 5 reps at RPE 7 to 3 at RPE 9; Muscle from 3 reps in reserve to 1), then a fifth decided as it starts. It is lighter (about half the sets, RPE 6 at most) when your estimated maxes are falling on two or more lifts, your week’s check-ins are well below your usual, or a joint was sore on two or more days. Otherwise it is a top week: a single at RPE 8 then back-off sets in Strength, last week’s sets in Muscle. A planned deload adds no muscle and can slightly slow lower-body strength (Coleman et al. 2024), so it isn’t automatic. New lifters, under-18s, pregnancy and a yes on the health check keep to RPE 7 and nothing to failure.`],
@@ -14355,9 +14387,9 @@ function viewTune(){
           : P.dose.lift==='moderate'? 'A moderate dose, because Muscle is second in your order: still enough to grow, more slowly.'
           : 'The dose that keeps what you have, because Muscle is last in your order.';
         const key=[
-          ['More', `<b>${more} sets a week for each muscle, instead of ${base}.</b> Half as much again, for the one or two groups you most want to grow; when your days are full, they get room first. Each extra set adds less growth than the one before and more to recover from, and past about 20 a week the gain is small and uncertain, so More on every group only makes your days longer.`],
-          ['Normal', `<b>${base} sets a week for each muscle.</b> ${normal}`],
-          ['Less', keep<base? `<b>${keep} sets a week for each muscle.</b> Far less work, kept hard, held strength for months for most people in a trial, and muscle size mainly in younger adults. It frees time for what you want more of.` : '<b>The same as Normal here.</b> Muscle is already at the dose that keeps what you have.'],
+          ['More', `<b>${more} sets a week for a big muscle, instead of ${base}.</b> Half as much again, for the one or two groups you most want to grow, and the smaller muscles in proportion; when your days are full, they get room first. Each extra set adds less growth than the one before and more to recover from, and past about 20 a week the gain is small and uncertain, so More on every group only makes your days longer.`],
+          ['Normal', `<b>${base} sets a week for a big muscle</b>, and a little less for smaller ones the big lifts already work, like the biceps. ${normal}`],
+          ['Less', keep<base? `<b>${keep} sets a week for a big muscle.</b> Far less work, kept hard, held strength for months for most people in a trial, and muscle size mainly in younger adults. It frees time for what you want more of.` : '<b>The same as Normal here.</b> Muscle is already at the dose that keeps what you have.'],
           ['Skip', '<b>No Muscle work for the group.</b> It still gets what the rest of your training gives it, like biceps from rows.'],
         ];
         let tight=0;
@@ -14474,6 +14506,9 @@ const WHY={held:'Kept as it was until you re-optimize', only:'The only exercise 
   gain:m=>`Trains the part of ${m} the rest of your week misses`, aims:'Doesn’t aim at a muscle you left out',
   'fit-heavy':'Isolation, as this day already has heavy lifting', 'fit-worked':m=>`Isolation, as ${m} is already worked elsewhere this week`,
   'fit-small':'Isolation suits a smaller muscle', 'fit-big':m=>`A compound: nothing heavy this day, and ${m} is a big muscle`,
+  'fit-row':'A row: the upper back’s main exercise, which no single-joint exercise replaces',
+  'fit-pull':'A pull-up or pulldown: the lats’ main exercise, which a pullover doesn’t replace',
+  rank:m=>`Muscle’s first choice for ${m} among the rest`,
   spare:'Spares muscles already worked this day', logged:'You’ve logged it before, so its weights carry on', long:'Trains it at long lengths, which grew muscle more in trials',
   load:'You can add weight to it, so it’s easier to progress than bodyweight', vary:'Adds variety across your days', recent:'The one you logged most recently',
   tie:'No better than the others here, so first by name', split:'More picks than days, so two share this day’s sets'};
@@ -14738,15 +14773,21 @@ const FIRST_LINE={lift:'Build muscle', str:'Lift heavier', cal:'Calisthenics ski
 const localUnit=()=>/-(US|LR|MM)\b/i.test(String(navigator.language||''))? 'lb' : 'kg';
 const PAGE_H={today:'Today', train:'Train', progress:'Progress', library:'Library'};
 function progType(){ return !tg.on && ALL.includes(tg.type)? tg.type : 'mix'; }
-function newFirst(){ return {conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:ALL.filter(m=>H.has(m)), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit(), auto:true}; }
+function newFirst(){ return {conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:autoOrder(ALL.filter(m=>H.has(m)), false), days:tg.days||4, unit:Prefs.get('unit', null)||localUnit(), auto:true}; }
+/* The first run's ranking: what you picked, in the order you picked it, then the rest as suggested. Your order sets
+   each section's dose (THE PROGRAM), so the first pick gets the most. Sections picked for you (those you already have
+   training in) start in the suggested order; newFirst leaves skillGoal out, since asking Ladder starts its data. */
+function firstOrder(picks){ const auto=autoOrder(picks.includes('cond')? CHOICES : ALL, skillGoal()); return picks.filter(m=>auto.includes(m)).concat(auto.filter(m=>!picks.includes(m))); }
 /* First run: what you train, how many days, and units. Everything else starts from a full gym, an hour and some
    training behind you, and is yours to change once the first session is done. */
 function viewFirst(){
   const f=first;
   return `<div class="stack"><section class="card first">
     <div class="h2">What do you want to train?</div>
-    <div class="field" role="group" aria-label="Train">${CHOICES.map(m=>`<button class="pick ${f.secs.includes(m)?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${f.secs.includes(m)}"><span class="ck">${IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
-      <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`).join('')}</div>
+    <div class="field" role="group" aria-label="Train"${f.secs.length>1? ' aria-describedby="f-order"' : ''}>${CHOICES.map(m=>{ const k=f.secs.indexOf(m);
+      return `<button class="pick ${k>=0?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${k>=0}"><span class="ck">${k>=0&&f.secs.length>1? `<b class="rank">${k+1}</b>` : IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
+      <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`; }).join('')}</div>
+    ${f.secs.length>1? `<p class="hint" id="f-order">The order you pick sets how much each gets: ${listText(f.secs.map((m,k)=>`${SEC[m].n} &middot; ${DOSE_N[DOSE[Math.min(k,2)]]}`))}. Change it any time in setup.</p>` : ''}
     ${conditioningFields(f)}<div class="field"><label id="f-days-l">Days a week</label><div class="pills" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
     <div class="spread"><span class="hint" id="f-unit-l" style="margin:0">Weights in</span><div class="pills" role="group" aria-labelledby="f-unit-l">${['kg','lb'].map(v=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${v}</button>`).join('')}</div></div>
     <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length?'':'disabled'}>${IC.arrow} Build my week</button></div>
@@ -14932,13 +14973,13 @@ __root.addEventListener('click', e=>{
     case 'goal-remove': {const A=H.api(el.dataset.m);if(A?.outcomes)A.setOutcomes(A.outcomes().filter(g=>g.id!==el.dataset.id));render();break;}
     case 'summary-dismiss': tg.summarySeen=weekStart(); save(); render(); break;
     // first run: what you train, days a week, units, then build
-    case 'f-sec': { first.auto=false; const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : CHOICES.filter(x=>s.includes(x)||x===m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
+    case 'f-sec': { first.auto=false; const m=el.dataset.m, s=first.secs; first.secs= s.includes(m)? s.filter(x=>x!==m) : s.concat(m); render(); { const b=$(`[data-a="f-sec"][data-m="${m}"]`); if(b) b.focus({preventScroll:true}); } break; }
     case 'f-days': first.auto=false; first.days=+el.dataset.v; render(); { const b=$(`[data-a="f-days"][data-v="${el.dataset.v}"]`); if(b) b.focus({preventScroll:true}); } break;
     case 'f-unit': first.auto=false; first.unit=el.dataset.v==='lb'? 'lb' : 'kg'; render(); { const b=$(`[data-a="f-unit"][data-v="${first.unit}"]`); if(b) b.focus({preventScroll:true}); } break;
     case 'f-backup': if(window.__openSettings) window.__openSettings('restore'); break;
     case 'f-go': { const f=first; if(!f||!f.secs.length) break;
       if(tg.blocks==null && !(tg.log||[]).length) tg.blocks=0;
-      tg.secs=f.secs.slice(); Object.assign(tg.conditioning,f.conditioning); tg.days=f.days; tg.mins=60; tg.prio=autoOrder(tg.secs.includes('cond')?CHOICES:ALL, skillGoal()).slice(); tg.on=true; tg.type=null;
+      tg.secs=CHOICES.filter(m=>f.secs.includes(m)); Object.assign(tg.conditioning,f.conditioning); tg.days=f.days; tg.mins=60; tg.prio=firstOrder(f.secs); tg.on=true; tg.type=null;
       tg.kit=null; tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
       Prefs.set({unit:f.unit, kit:KIT.map(k=>k[0])});
       first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast('Your week is built. Day 1 is ready.'); break; }

@@ -428,6 +428,7 @@ button.dchip {min-height:36px}
 .first .pick .pt2 b {font-family:var(--disp)!important; font-size:18px}
 .first .pick .pt2 span {font-size:13px; line-height:1.5}
 .first .pick .ck {width:28px; height:28px; border-radius:7px; flex:none}
+.first .pick .ck .rank {font-size:15px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums}
 .first .field {margin-top:24px}
 .first .btn.big {margin-top:12px}
 .stat {background:transparent; border:0; border-bottom:1px solid var(--border); border-radius:0; padding:14px 0}
