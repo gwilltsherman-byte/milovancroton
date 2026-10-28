@@ -14423,11 +14423,13 @@ function viewTune(){
           const byDay=Object.keys(dp).filter(i=>P.days[i]&&P.days[i].lift.some(x=>x.mu===k&&x.exId===dp[i])).length;
           const names=[...new Set(P.days.flatMap(d=>d.lift).filter(x=>x.mu===k).map(x=>(cat.find(e=>e.id===x.exId)||{}).name).filter(Boolean))];
           return row('ex', k, esc(mName(k)), plural(sets[k],'set')+' a week'+(mine>1? ' &middot; your '+mine+' picks' : mine? ' &middot; your pick' : '')+(byDay? ' &middot; your pick on '+plural(byDay,'day') : ''), esc(names.join(', '))); }).join('');
-        return `<p class="hint" style="margin-top:0">How much Muscle gives each muscle group; tap a muscle in a group to leave just that one out. The numbers are hard sets a week for each muscle (sets taken close to failure) across your whole week. A set counts in full for the muscles an exercise mainly works and half for the ones that help, like biceps in a row, so ${rest? rest+' and your other exercises all count, and Muscle tops up the rest' : 'one exercise counts toward several muscles'}.</p>
+        // chosen as you started: the exercises come first, the volume after
+        const exBlock= ex? `<div class="grp">Exercises</div><div class="tlist">${ex}</div>` : '';
+        return `${tune.first? exBlock : ''}<p class="hint"${tune.first&&ex? '' : ' style="margin-top:0"'}>How much Muscle gives each muscle group; tap a muscle in a group to leave just that one out. The numbers are hard sets a week for each muscle (sets taken close to failure) across your whole week. A set counts in full for the muscles an exercise mainly works and half for the ones that help, like biceps in a row, so ${rest? rest+' and your other exercises all count, and Muscle tops up the rest' : 'one exercise counts toward several muscles'}.</p>
           <dl class="tkey">${key.map(([t,d])=>`<div><dt>${t}</dt><dd>${d}</dd></div>`).join('')}</dl>
           ${tight? `<p class="tnote">${IC.info}<span>Your ${plural(nd,'Muscle day')}${tg.mins? ' and time limit' : ''} can’t fit every target, so some muscles get less, marked below. More training days${tg.mins? ' or time' : ''} make room, or set a group you care less about to Less.</span></p>` : ''}
           <div class="tlist">${rows}</div>
-          ${ex? `<div class="grp">Exercises</div><div class="tlist">${ex}</div>` : ''}
+          ${tune.first? '' : exBlock}
           ${basedOn('What More and Less are based on', ['Weekly hard sets for each muscle is the best-studied measure of how much training a muscle gets, counted as recent analyses do: in full for an exercise’s main muscles and half for the ones that help. Growth rises with it, by less for each extra set, and reviews of trained lifters find little clear extra growth past about 20 sets a week. Far less work keeps much of what you have: in one trial, young adults kept their strength and the muscle they had built for 8 months on a ninth of their training; older adults kept their strength on a third, but not their muscle fibre size. The exact numbers here are coaching defaults drawn from these studies, not results of one trial.'], FOCUS_SOURCES)}`; },
     str:()=>{ const di=DOSE.indexOf(P.dose.str), areas=STR_ORDER.filter(a=>STR_FREQ[a][di]>0);
         return `<p class="hint" style="margin-top:0">The lift for each area, or leave one out. Keep a lift for the whole block so its numbers mean something.</p><div class="tlist">`+areas.map(a=>{
@@ -14447,10 +14449,10 @@ function viewTune(){
   return `<div class="stack"><section class="card">
     <div class="eyebrow">${tune.fresh? 'New block &middot; week 1 of '+BLOCK : 'Week '+Math.min(plan().week,BLOCK)+' of '+BLOCK}</div>
     <div class="h2">${tune.fresh? 'Make this block yours' : 'Customize this block'}</div>
-    <p class="lead">${tune.fresh? 'Choose a section to customize, then start your block.' : 'Choose a section to customize. Your current week stays.'}</p>
+    <p class="lead">${tune.first? 'Each muscle’s exercise and each lift was picked for you. Tap one to choose your own from its library, best first, then start.' : tune.fresh? 'Choose a section to customize, then start your block.' : 'Choose a section to customize. Your current week stays.'}</p>
     ${R.map((m,k)=>`<details class="tpart rules copyfold" data-fold="tune-${m}"><summary class="spread"><span class="h3">${SEC[m].n}</span><span class="chip">${DOSE_N[P.dose[m]]}</span></summary>${part[m]()}</details>`).join('')}
     ${JSON.stringify(cleanTune(T))===JSON.stringify(cleanTune(tg.tune))? `<div style="margin-top:20px"><button class="btn pri block" data-a="${tune.fresh?'t-save':'t-cancel'}">${tune.fresh? IC.play+' Start this block' : IC.check+' Done'}</button></div>
-      ${tune.fresh? `<button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">Keep my current block</button>` : ''}`
+      ${tune.fresh&&!tune.first? `<button class="btn ghost block" data-a="t-cancel" style="margin-top:8px">Keep my current block</button>` : ''}`
     : `<div style="margin-top:20px"><button class="btn pri block" data-a="t-save">${tune.fresh? IC.play+' Start with my changes' : IC.check+' Save my changes'}</button></div>
       <button class="btn ghost block" data-a="t-discard" style="margin-top:8px">${IC.undo} Discard changes</button>`}
   </section></div>`;
@@ -14806,7 +14808,8 @@ function viewFirst(){
     <div class="field"><label id="f-unit-l">Kilograms or pounds?</label><div class="pills f-unit" role="group" aria-labelledby="f-unit-l">${[['kg','Kilograms (kg)'],['lb','Pounds (lb)']].map(([v,t])=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${t}</button>`).join('')}</div></div>
     <div class="field"><label id="f-kit-l">What can you train with?</label><div class="pills" role="group" aria-labelledby="f-kit-l">${KIT.map(([k,l])=>`<button class="${f.kit.includes(k)?'on':''}" data-a="f-kit" data-v="${k}" aria-pressed="${f.kit.includes(k)}">${l}</button>`).join('')}</div>
       <p class="hint">${f.kit.length? 'Tap to take away what you don’t have.' : 'Bodyweight only: Milo plans around what needs no equipment.'}</p></div>
-    <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length&&f.unit?'':'disabled'}>${IC.arrow} Build my week</button></div>
+    <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length&&f.unit?'':'disabled'}>${IC.arrow} Build my week</button>
+      ${f.secs.includes('lift')||f.secs.includes('str')? `<button class="btn block" data-a="f-go" data-pick="1" style="margin-top:8px" ${f.secs.length&&f.unit?'':'disabled'}>Build and choose my exercises</button>` : ''}</div>
     <p class="hint" style="text-align:center">${!f.secs.length? 'Pick at least one.' : !f.unit? 'Pick kilograms or pounds.' : 'Starts from an hour a session and some training behind you. Change any of it later.'}</p>
     <button class="btn ghost block" data-a="f-backup">I have a backup</button>
   </section></div>`;
@@ -14951,9 +14954,10 @@ function render(){
 }
 const newDraft=()=>({conditioning:{target:tg.conditioning.target,style:tg.conditioning.style}, secs:tg.secs.slice(), days:tg.days, mins:tg.mins, prio:tg.prio&&tg.prio.slice(), kit:kit().length<KIT.length? kit().slice() : null, exp:tg.exp||'intermediate',
   wd:tg.wd&&tg.wd.slice(), stage:tg.stage||'', yes:tg.screen? tg.screen.yes.slice() : [], asked:!!tg.screen});
+let openOnce=[];   // folds the next draw opens: the block's exercises, when you chose to pick them as you started
 function draw(){
   fresh(); refreshRun(); strip();
-  const y=window.scrollY, opened=[...__root.querySelectorAll('.copyfold[open]')].map(x=>x.dataset.fold);
+  const y=window.scrollY, opened=[...__root.querySelectorAll('.copyfold[open]')].map(x=>x.dataset.fold).concat(openOnce.splice(0));
   let html;
   if(condScreen) html=conditioningScreen();
   else if(goalForm) html=outcomeForm();
@@ -14999,7 +15003,10 @@ __root.addEventListener('click', e=>{
       tg.secs=CHOICES.filter(m=>f.secs.includes(m)); Object.assign(tg.conditioning,f.conditioning); tg.days=f.days; tg.mins=60; tg.prio=firstOrder(f.secs); tg.on=true; tg.type=null;
       tg.kit= f.kit.length===KIT.length? null : f.kit.slice(); tg.exp='intermediate'; tg.wd=null; tg.custom=null; tg.next=0;
       Prefs.set({unit:f.unit, kit:f.kit.slice()});
-      first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0); toast(tg.secs.length===1&&tg.secs[0]==='cal'&&!((infoOf('cal')||{}).ready)? 'Your week is built. Choose a Ladder goal to fill it.' : 'Your week is built. Day 1 is ready.'); break; }
+      // choosing your own exercises opens the block's exercises and lifts, each with its library, before the first day
+      const pick=!!el.dataset.pick; if(pick){ tune={T:cleanTune(tg.tune), fresh:true, first:true}; openOnce=['lift','str'].filter(m=>tg.secs.includes(m)).map(m=>'tune-'+m); }
+      first=null; save(); H.changed('mix'); render(); window.scrollTo(0,0);
+      toast(pick? 'Your week is built. Tap any exercise or lift to choose your own.' : tg.secs.length===1&&tg.secs[0]==='cal'&&!((infoOf('cal')||{}).ready)? 'Your week is built. Choose a Ladder goal to fill it.' : 'Your week is built. Day 1 is ready.'); break; }
     // the one-tap check-in
     case 'ci-q': { const q=QUICK.find(x=>x[0]===el.dataset.v); if(!q) break;
       const rec={day:startOfToday(), at:Date.now(), w:{}, sore:{}, x:{}, cw:2, quick:q[0]}; WELL.forEach(([k])=>{ rec.w[k]=q[2]; });

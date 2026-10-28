@@ -71,7 +71,7 @@ button,a,input,textarea{touch-action:manipulation}
  .shell-actions{display:none;position:absolute;top:calc(100% + 8px);right:0;padding:8px;background:var(--sh-solid);border:1px solid var(--sh-border);border-radius:12px}
  .tools-open .shell-actions{display:flex}.shell-actions .shbtn{flex:none}.sidebar{padding-left:4px;padding-right:4px}.sw{gap:0}.seg{min-width:44px}
  .bk.set{width:calc(100vw - 12px);max-width:calc(100vw - 12px);padding:16px}.set .pills .b{max-width:100%;overflow-wrap:anywhere}.set .grp>summary{flex-wrap:wrap}.set .grp>summary span{margin-left:0;text-align:left}
- .bk .stack,.bk .calrow{grid-template-columns:minmax(0,1fr)}.bk .tm{flex-wrap:wrap}.bk .tm .txt{min-width:0;max-width:100%}.bk .b{min-width:0;overflow-wrap:anywhere}
+ .bk .stack,.bk .calrow{grid-template-columns:minmax(0,1fr)}.bk .caltime{grid-template-columns:minmax(0,1fr)}.bk .caltime .txt{min-width:0;max-width:100%}.bk .b{min-width:0;overflow-wrap:anywhere}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
@@ -93,11 +93,13 @@ button,a,input,textarea{touch-action:manipulation}
 .bk .stack{display:grid;gap:8px}
 .bk .stack>.b{width:100%;text-align:left}
 .bk h2:focus{outline:none}
-.bk .calrow{display:grid;gap:6px}
-.bk .calrow .b{width:100%;text-align:left}
-.bk .calrow .od{margin:0;font-size:12.5px;line-height:1.5;color:var(--sh-muted)}
-.bk .tm{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--sh-muted)}
-.bk .tm .txt{width:auto;margin:0;min-height:44px;padding:8px}
+/* The calendar export is one unit: its button, and attached below it, when the events start. */
+.bk .calrow{display:grid;gap:0}
+.bk .calrow .b{width:100%;text-align:left;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.bk .caltime{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 12px;padding:10px 12px 12px;border:1px solid var(--sh-edge);border-top:0;border-radius:0 0 8px 8px;background:var(--sh-solid)}
+.bk .caltime .tm{font-size:14px;font-weight:600;color:var(--sh-ink)}
+.bk .caltime .txt{width:auto;margin:0;min-height:44px;padding:6px 10px}
+.bk .caltime .od{grid-column:1/-1;margin:0;font-size:12.5px;line-height:1.5;color:var(--sh-muted)}
 .bk .b:disabled{opacity:.45;cursor:default;filter:none}
 .bk .b.danger{background:var(--sh-danger);border-color:transparent;color:var(--sh-on-danger)}
 .bk .b.sm{flex:1 1 auto;min-height:44px;padding:9px 12px;font-size:13.5px;text-align:left}

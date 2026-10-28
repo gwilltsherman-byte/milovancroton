@@ -382,6 +382,15 @@
       const lead=root.querySelector('.next-session .workout-start [data-a="setup"][data-m="cal"]');
       check(!!lead && lead.textContent.includes('Choose Ladder goals') && !root.querySelector('.next-session [data-a="start-day"][disabled]'), 'a Ladder week with no goals leads to choosing them');
       check(doc.getElementById('toast')?.textContent.includes('Choose a Ladder goal') || root.querySelector('#toast')?.textContent.includes('Choose a Ladder goal'), 'and the build message says so instead of calling Day 1 ready'); }
+    // choosing your own exercises as you start: the block opens on its exercises, each with its library
+    { frame.remove(); frame=null; reset({'milo.persist':'1'});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      root.querySelector('[data-a="f-sec"][data-m="lift"]').click(); root.querySelector('[data-a="f-unit"][data-v="kg"]').click();
+      const pick=root.querySelector('[data-a="f-go"][data-pick="1"]');
+      check(!!pick && !pick.disabled && pick.textContent.includes('choose my exercises'), 'Muscle or Strength offers to build and choose your own exercises');
+      pick.click(); await pause(300);
+      const open=root.querySelector('.tpart[open]'), first=open&&open.querySelector('.grp');
+      check(root.textContent.includes('Make this block yours') && first && first.textContent==='Exercises' && open.querySelector('[data-a="t-pick"][data-t="ex"]') && !root.textContent.includes('Keep my current block'), 'and opens the block on its exercises, first in the section, with nothing else to keep'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;

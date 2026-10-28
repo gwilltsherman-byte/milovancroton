@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-hkud9NcP9lW+EKTSvTY7y16zsebYknJUi3L6kQNciHI=' 'sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=' 'sha256-tlaF0a1Xujo9gV2zaxYrJU84C4iI5bNM5Ipp/2wXywo='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-hkud9NcP9lW+EKTSvTY7y16zsebYknJUi3L6kQNciHI=' 'sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=' 'sha256-kMbBpt543rcsEYczKhkjFo6AnsBq/FUf1Y0p57p2wLI='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -123,7 +123,7 @@ body{background:#0A0D12; overflow-x:hidden;
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 </style>
-<link rel="stylesheet" href="shell.css?v=0b466ebfd8561589f941">
+<link rel="stylesheet" href="shell.css?v=83a7fffec8c9a830545e">
 </head>
 <body>
 
@@ -203,8 +203,11 @@ body{background:#0A0D12; overflow-x:hidden;
     <button class="b" id="yd-sum">Share a summary</button>
     <div class="calrow">
       <button class="b" id="yd-cal">Add training days to your calendar</button>
-      <label class="tm" for="yd-time">Calendar events start at <input class="txt" type="time" id="yd-time" value="18:00" aria-describedby="yd-time-h"></label>
-      <p class="od" id="yd-time-h">Only the time your training days show in your calendar. It doesn’t change your plan.</p>
+      <div class="caltime">
+        <label class="tm" for="yd-time">Events start at</label>
+        <input class="txt" type="time" id="yd-time" value="18:00" aria-describedby="yd-time-h">
+        <p class="od" id="yd-time-h">Only when they show in your calendar. Your plan doesn’t change.</p>
+      </div>
     </div>
     <button class="b" data-open-privacy>Privacy and erasing your data</button>
   </div>
@@ -2325,7 +2328,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=be2418cb2a65944fd0de" integrity="sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=b65685d1ad57ba3a3d81" integrity="sha256-tlaF0a1Xujo9gV2zaxYrJU84C4iI5bNM5Ipp/2wXywo=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=90c6c1a6de78deb72c11" integrity="sha256-kMbBpt543rcsEYczKhkjFo6AnsBq/FUf1Y0p57p2wLI=" crossorigin="anonymous"></script>
 </body>
 </html>
 
