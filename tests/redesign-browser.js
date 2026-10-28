@@ -325,7 +325,8 @@
       frame.remove(); frame=null; localStorage.setItem('hyplog.v1',JSON.stringify(fixture));
       ({win,doc}=await load()); root=rootOf(doc,'lift'); }
 
-    // in a session: a set much easier than planned moves the next ones up; the hard weeks take an isolation exercise's last set to failure
+    // in a session: a set much easier than planned leaves the next ones at their weight (the next session moves it); the hard
+    // weeks take an isolation exercise's last set to failure
     { frame.remove(); frame=null;
       const fx=JSON.parse(JSON.stringify(fixture)), d=new Date(); d.setDate(d.getDate()-2); d.setHours(12,0,0,0);
       fx.history=[{id:'recent-bench',name:'Push',date:d.getTime(),durationSec:600,prs:[],entries:[{exId:'barbell-bench',name:'Barbell Bench Press',primary:['chest'],secondary:['tri','fdelt'],equipment:'Barbell',sets:[{type:'work',weight:80,reps:8,rir:2,done:true}]}]}];
@@ -337,7 +338,7 @@
       const rir=root.querySelector(`input[data-field="rir"][data-ex="${ei}"][data-set="${wi}"]`); rir.value='4'; rir.dispatchEvent(new Event('input',{bubbles:true}));
       root.querySelector(`[data-act="toggle-done"][data-ex="${ei}"][data-set="${wi}"]`).click(); await pause(250);
       const after=saved().entries[ei].sets.filter(x=>x.type!=='warmup');
-      check(after[1].weight>after[0].weight && after[2].weight===after[1].weight,'A set 3 reps easier than planned moves the next sets up a step');
+      check(after[0].weight>0 && after[1].weight===after[0].weight && after[2].weight===after[0].weight,'A set 3 reps easier than planned leaves the next sets at their weight: weights change between sessions, not during one');
       const ci=saved().entries.findIndex(e=>e.exId==='db-curl'), cu=saved().entries[ci];
       check(cu.lastFail && /last set to failure/.test(cu.overloadNote),'In a hard week the curl’s last set is marked to go to failure');
       const last=cu.sets.length-1; root.querySelector(`[data-act="toggle-done"][data-ex="${ci}"][data-set="${last}"]`).click(); await pause(250);

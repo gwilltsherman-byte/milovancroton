@@ -118,14 +118,14 @@ instead of the saved one (tests, or Muscle itself).
 - Muscle: `fromDisp` (Num); new `clsOf(exId)` → `Lift.cls` (passes id and name, so the leg press and hack squat are `'sled'`); `est1RM(kg,reps,rir,exId)` passes the class; `bodyAt` →
   `Body.at` over Muscle's own log (falls back to Strength's weight); `startOfToday`/`daysAgo`/`relDay` (Day);
   `predictReps(lastW,lastR,lastRir,newW,targetRir,cls?)` = `Lift.e1rm` + `Lift.reps`; `repHint` passes the class;
-  `weeklyVolume`, `hubWork`, `adjustNext`, `suggestLoad` use the class for `hard`/`trueRir`; `rirAccuracy` (recency
+  `weeklyVolume`, `hubWork`, `suggestLoad` use the class for `hard`/`trueRir`; `rirAccuracy` (recency
   weighted, adds `.model`), `shareBias` → `Lift.use(Lift.model(...))`; `kitEq(eq, kg)` maps Muscle equipment to Kit
   (`Barbell` → `'bar'`, or `'plate'` below the bar weight, compared unrounded in the unit in use so a bar picked in the
   other unit counts as the bar); `loadStep`, `stepOf`, `roundLoad`, `availablePlates`, `barDisp`, `roundToPlate`,
   `platesFor` → Kit; new `lighter(kg, f, eq)` (kg*f to the nearest you can load, or the next one down when that rounds
   back to kg) for the deload and the back-after-a-break drop; suggestLoad's "every set at the top" step (`Kit.next`; at the
   heaviest you can load it holds the weight: "the heaviest you can load · +1 rep instead"), its ease-off below the range
-  (`Kit.next` down; "the lightest you can load" when nothing is lighter) and `adjustNext` use `Kit.next`; settings bar pills (all six, both units), plate toggles and jumps write through Kit; heatmap, 7/28-day
+  (`Kit.next` down; "the lightest you can load" when nothing is lighter) use `Kit.next` (no set's weight changes mid-session: Muscle's former `adjustNext` and Strength's top-set following were removed, and Strength's `sessionPts` caps a back-off left at its target effort at that day's top set); settings bar pills (all six, both units), plate toggles and jumps write through Kit; heatmap, 7/28-day
   counts, `weeklyBuckets`, "away" checks → Day; typed numbers → Num.
 - Strength: `fromDisp` (Num); `plateList`, `barDisp`, `stepDisp`, `roundLoad`, `platesFor` → Kit; settings bars (both
   units), plates, jumps via Kit; `relDay`, return-after-a-break days, this week's sessions → Day; starting test, Max

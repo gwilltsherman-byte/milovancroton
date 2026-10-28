@@ -5033,19 +5033,9 @@ function ssGroup(ei){
   if(end===start) return null;
   return {sg, start, end, total:end-start+1, index:ei-start, isLast:ei===end};
 }
-/* After a set you rated: 2 or more reps further from failure than planned, the next sets at that weight go up a step;
-   2 or more closer, or under the rep range, down a step. Adjusting load to how the sets actually go matched or beat
-   fixed loads in trials (Helms et al. 2018; Graham & Cleather 2021). On an assisted exercise the step is in the help,
-   the other way round: easier takes some away. */
-function adjustNext(en, si, s){
-  const nx=en.sets.find((x,k)=>k>si && isWork(x) && !x.done); if(!nx || (nx.weight!=null && nx.weight!==s.weight)) return null;
-  const r=Lift.trueRir(s.rir, s.reps, clsOf(en.exId)), t=en.target.rir, as=isAssisted(en.exId), w0=s.weight||0;
-  const d= r>=t+2? 1 : (r<=t-2 || (s.reps!=null && s.reps<en.target.repLow))? -1 : 0; if(!d) return null;
-  const inc=(as? -d : d)*fromDisp(loadStep(en.equipment)), w=Kit.next(w0, inc, kitEq(en.equipment, w0+inc), unit()).kg;
-  if(w==null || !(w>0 || (as && w>=0)) || Math.abs(w-w0)<1e-6) return null;
-  en.sets.forEach((x,k)=>{ if(k>si && isWork(x) && !x.done && (x.weight==null || x.weight===s.weight)) x.weight=w; });
-  return (d>0? 'Easier than planned' : 'Harder than planned')+': next set'+(en.sets.filter((x,k)=>k>si&&isWork(x)&&!x.done).length>1?'s':'')+' '+(as? wTxt(en.exId, w, ' ') : fmtW(w)+' '+unit());
-}
+/* Weights never change on their own mid-exercise: a set much easier or harder than planned, or under the rep range,
+   moves the next session's suggestion (suggestLoad), not the sets still to come today. A weight you type still carries
+   down to the later sets (the change handler below). */
 /* In the hard weeks (1 rep or fewer in reserve), the last set of an isolation exercise goes to failure: it's safe there,
    and sets closer to failure grow a little more (Robinson et al. 2024). */
 function lastFailSet(en, si){ if(!en.lastFail) return false; let k=-1; en.sets.forEach((x,i)=>{ if(isWork(x)) k=i; }); return si===k; }
@@ -5059,7 +5049,7 @@ function toggleDone(ei,si){
   } else if(s.assumed){ s.reps=null; delete s.assumed; }   // unticked: the box offers the hint again
   const rated = s.rir!=null && s.rir!=='', asked = !s.done && isWork(s) && calSet(en, ei)===si, check = asked && Num.int(s.calx)!=null;
   s.done=!s.done;
-  let jumpTo=null, noW=false, adj=null, cal=null;
+  let jumpTo=null, noW=false, cal=null;
   if(s.done){
     noW= s.weight==null && !isBW(en.exId) && !isAssisted(en.exId);
     if(s.rir==null || s.rir==='') s.rir = lastFailSet(en, si)? 0 : state.active.entries[ei].target.rir;
@@ -5069,7 +5059,6 @@ function toggleDone(ei,si){
       delete s.calx; delete s.check; cal='Enter how many you had left to check it. Logged to failure'; }
     else if(check) cal=recordCheck(en, s);
     if(asked) state.active.calSkip=true;   // offered once a session: ticked without it, it doesn't move on to the next exercise
-    else if(rated && isWork(s) && (s.weight>0 || (isAssisted(en.exId) && s.weight!=null))) adj=adjustNext(en, si, s);
     const g=ssGroup(ei);
     const rest = (g && !g.isLast)? 20 : (state.active.entries[ei].target.rest||120);
     startRest(rest);
@@ -5079,7 +5068,6 @@ function toggleDone(ei,si){
   save(); render();
   if(noW) toast('Logged with no weight. Type it in, and next time starts from it');
   else if(cal) toast(cal);
-  else if(adj) toast(adj);
   if(jumpTo!=null){ setTimeout(()=>{ const card=__root.querySelector(`.excard[data-ex="${jumpTo}"]`); if(card){ card.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'center'}); card.classList.add('ss-next'); setTimeout(()=>card.classList.remove('ss-next'),1600); } },70); }
 }
 
@@ -10132,7 +10120,7 @@ const MILESTONES={ squat:[1,1.5,2,2.5], bench:[0.75,1,1.25,1.5,2], deadlift:[1.2
    dp    double progression: add reps to the top of the range on every set, then add a step of weight
    var   bodyweight: the same, but the step up is a harder variation
    wave  percentages of a training max for the week; the last set is a plus set
-   top   one top set at a target RPE, then back-off sets at a target RPE from that day's top set
+   top   one top set at a target RPE, then back-off sets at a target RPE, planned from your estimated max
    rpe   straight sets at a target RPE, load from your current estimated max
    lite: true on lp, dp and var is lighter practice of a lift trained heavy on another day of the week: two sets at 90
    percent of the working weight, which move nothing on. */
@@ -10143,7 +10131,7 @@ const WAVE_WEEKS=[
   {n:'Deload', sets:[[.40,5],[.50,5],[.60,5]], bo:null},
 ];
 /* borpe: the back-offs' target. Back-offs a fixed 8 or 10 percent under a top set at RPE 7 or 8 landed near RPE 4 or 5,
-   too easy to count as hard sets; set from the day's top set at RPE 7 to 8, they stay hard enough to count and are never
+   too easy to count as hard sets; planned from your estimated max at RPE 7 to 8, they stay hard enough to count and are never
    heavier than the top set. */
 const TOP_WEEKS=[ {n:'RPE 7 week', rpe:7, bo:1, borpe:7}, {n:'RPE 8 week', rpe:8, bo:1, borpe:7.5}, {n:'RPE 9 week', rpe:9, bo:1, borpe:8}, {n:'Deload', rpe:6, bo:.5, borpe:6} ];
 const MODELS={
@@ -10154,8 +10142,8 @@ const MODELS={
     blurb:'Four-week waves off a training max: fives, threes, a heavy week, then a deload. The first session of the week for each exercise is the wave; any repeat is lighter volume.',
     how:'Loads are percentages of a training max set a little under your true max, so the work stays crisp. Every plus set is an estimate of your max: the training max goes up a step after a cycle only when your plus sets show you have grown into it, and if a 5s or 3s plus set falls short of its reps, it drops to your training-max share of that set\'s estimate. Built on the fives, threes and singles wave popularised by Jim Wendler\'s 5/3/1. Bodyweight work keeps its own rep-range progression.'},
   topset:{n:'Top sets', lvl:'Experienced, rates effort well', weeks:4,
-    blurb:'Work up to one heavy top set at a target effort, then back-off sets a bit lighter. Loads come from your own recent sets, so a flat day and a great day both get the right weight.',
-    how:'Target effort climbs from RPE 7 to RPE 9 over three weeks, then a lighter week. Each top set updates that exercise\'s estimated max, which sets the next prescription. Once you tick the top set, the back-offs are set from it at RPE 7 to 8: if it felt harder than planned, they drop to match, and if you change its weight, they follow. Bodyweight work keeps its own rep-range progression.'},
+    blurb:'Work up to one heavy top set at a target effort, then back-off sets a bit lighter. Loads come from your own recent sets, and each session’s sets set the next one’s weights.',
+    how:'Target effort climbs from RPE 7 to RPE 9 over three weeks, then a lighter week. Each top set updates that exercise\'s estimated max, which sets the next prescription. Back-offs are planned from that estimate at RPE 7 to 8, never heavier than the top set, and keep their weight through the session: a top set harder or easier than planned changes the next session, not the sets still to come. Bodyweight work keeps its own rep-range progression.'},
 };
 
 /* ==================== EVIDENCE ==================== */
@@ -10474,7 +10462,12 @@ function sessionPts(id){
   if(lsMemo.p[id]) return lsMemo.p[id];
   const out=[];
   state.history.forEach(h=>{ let best=0, top=null, lb=0;
-    h.entries.forEach(en=>{ if(en.liftId!==id) return; en.sets.forEach(s=>{ const v=setE1(s,id,h.date); if(v>best){ best=v; top=s; } lb=Math.max(lb, easyE1(s,id,h.date)); }); });
+    h.entries.forEach(en=>{ if(en.liftId!==id) return;
+      // a back-off whose effort was left at its target shows no more than that day's top set: its weight was planned before
+      // the session and stays put (followTop), so when the estimate runs high it is made at an effort it didn't have
+      const tp=en.sets.find(x=>x.kind==='top'&&x.done), tv=tp? setE1(tp,id,h.date) : 0;
+      en.sets.forEach(s=>{ let v=setE1(s,id,h.date); if(s.kind==='bo'&&tv>0&&!setEffort(s).rated) v=Math.min(v, tv);
+        if(v>best){ best=v; top=s; } lb=Math.max(lb, easyE1(s,id,h.date)); }); });
     if(best>0||lb>0) out.push({date:h.date, best, top, rated:top? setEffort(top).rated : true, lb:lb>best? lb : 0}); });
   return lsMemo.p[id]=out;
 }
@@ -10639,7 +10632,7 @@ function schemeText(id, sc, week, model){
   if(sc.t==='wave'){ const wk=WAVE_WEEKS[week-1], last=wk.sets[wk.sets.length-1];
     return wk.n+' &middot; '+wk.sets.map(x=>Math.round(x[0]*100)+'%').join(' / ')+(last[2]?(sc.intro?', last set '+last[1]+' at RPE '+INTRO_RPE+' for now':', last set '+last[1]+'+'):'')+(wk.bo?' &middot; '+wk.bo[2]+'&times;'+wk.bo[1]+' back-off':''); }
   if(sc.t==='top'){ const wk=TOP_WEEKS[week-1], n=Math.max(1,Math.round(sc.n*wk.bo));
-    return 'Top set of '+sc.reps+' at RPE '+cap(sc, wk.rpe)+', then '+n+'&times;'+(sc.bor||sc.reps)+' at RPE '+cap(sc, wk.borpe!=null?wk.borpe:wk.rpe)+', set from the top set'+it; }
+    return 'Top set of '+sc.reps+' at RPE '+cap(sc, wk.rpe)+', then '+n+'&times;'+(sc.bor||sc.reps)+' at RPE '+cap(sc, wk.borpe!=null?wk.borpe:wk.rpe)+it; }
   if(sc.t==='rpe'){ const dl=isDeload(model,week); return (dl?Math.max(2,sc.sets-1):sc.sets)+'&times;'+sc.reps+' at RPE '+cap(sc, dl?sc.rpe-2:sc.rpe)+(sc.main?'':' (lighter volume)'); }
   return '';
 }
@@ -10787,29 +10780,26 @@ function addLift(id){
   state.active.entries.push(freeEntry(id));
   save(); closeModal(); render(); toast(esc(exName(id))+' added');
 }
-/* Back-offs follow their top set. Until it is done they keep their planned share of it, so a weight you change on the
-   top set moves them too; once it is ticked they are set from the estimated max it shows today, at their own target
-   RPE, never heavier than the top set. Back-offs you typed a weight into, or have done, stay as they are. Returns the
-   indexes of the sets that moved. */
+/* Back-offs keep the weight planned for them before the session, from your estimated max: how today's top set goes
+   moves that estimate, and so the next session's weights, not the sets still to come. Only a back-off with no weight of
+   its own (a lift with no estimate yet) takes its planned share of the top-set weight you enter, and follows it while
+   you correct it, until the top set is done; never heavier than the top set. Back-offs you typed a weight into, or have
+   done, stay as they are. Returns the indexes of the sets filled. */
 function followTop(en){
   const id=en.liftId, X=EX[id], top=en.sets.find(s=>s.kind==='top'), moved=[];
-  if(!top||!X||X.k!=='load'||!(top.w>0)) return moved;
-  const eq=eqOf(id), e=top.done? setE1(top, id) : 0;
-  en.sets.forEach((s,i)=>{ if(s.kind!=='bo'||s.done||s.edited||s.trpe==null) return;
-    let w=null;
-    if(e>0) w=boxOf(id, loadFor(e, s.tr||top.tr, s.trpe, id));
-    else if(top.trpe!=null) w=boxOf(id, totalOf(id, top.w)*loadFor(1, s.tr||top.tr, s.trpe, id)/loadFor(1, top.tr, top.trpe, id));
-    if(w==null||!(w>0)) return;
-    w=roundLoad(Math.min(w, top.w), eq);
-    if(w>0 && Math.abs((s.w||0)-w)>1e-6){ s.w=w; moved.push(i); } });
+  if(!top||!X||X.k!=='load'||!(top.w>0)||top.trpe==null) return moved;
+  const eq=eqOf(id);
+  en.sets.forEach((s,i)=>{ if(s.kind!=='bo'||s.done||s.edited||s.trpe==null||!(s.w==null||(s.fromTop&&!top.done))) return;
+    const w=roundLoad(Math.min(boxOf(id, totalOf(id, top.w)*loadFor(1, s.tr||top.tr, s.trpe, id)/loadFor(1, top.tr, top.trpe, id)), top.w), eq);
+    if(w>0 && Math.abs((s.w||0)-w)>1e-6){ s.w=w; s.fromTop=true; moved.push(i); } });
   return moved;
 }
 /* A weight typed in a set goes into the later sets of the same kind not yet done that are blank or still show the old
-   weight, as in Muscle, so a new lift takes one typed weight, not one a set. Back-offs after a top set follow it instead. */
+   weight, as in Muscle, so a new lift takes one typed weight, not one a set: back-offs too, from the one you type. */
 function fillOn(en, si, old){
-  const s=en.sets[si], moved=[], top=en.sets.some(x=>x.kind==='top');
-  en.sets.forEach((x,i)=>{ if(i<=si||x.done||x.kind!==s.kind||(x.kind==='bo'&&top)) return;
-    if(x.w==null || (old!=null && Math.abs(x.w-old)<1e-6)){ x.w=s.w; moved.push(i); } });
+  const s=en.sets[si], moved=[];
+  en.sets.forEach((x,i)=>{ if(i<=si||x.done||x.kind!==s.kind) return;
+    if(x.w==null || (old!=null && Math.abs(x.w-old)<1e-6)){ x.w=s.w; delete x.fromTop; moved.push(i); } });
   return moved;
 }
 function toggleDone(ei,si){
@@ -12168,10 +12158,11 @@ __root.addEventListener('input', e=>{
     if(!state.active) return; const ei=+el.dataset.ex, si=+el.dataset.set, en=state.active.entries[ei], s=en&&en.sets[si]; if(!s) return;
     let moved=[];
     if(f==='w'){ const old=s.w; s.w=fromDisp(el.value); s.edited=true; const pl=__root.getElementById('pl-'+ei+'-'+si); if(pl&&s.w!=null) pl.innerHTML=MiloSecurity.html(loadNote(en.liftId,s.w));
-      // later sets of the same kind take the new weight; back-offs follow their top set
+      // later sets of the same kind take the new weight; a back-off with no weight of its own takes its share of the top set's
+      if(s.kind==='bo') delete s.fromTop;
       moved=fillOn(en, si, old).concat(s.kind==='top'? followTop(en) : []); }
-    else if(f==='reps'){ const n=Num.int(el.value); s.reps=n==null?null:Math.max(0,n); if(s.ra){ s.rpe=assumedRpe(s); moved=[si]; } if(s.kind==='top'&&s.done) moved=moved.concat(followTop(en)); }
-    else { const n=Num.parse(el.value); s.rpe=n==null?null:Math.max(1,Math.min(10,n)); s.ra=false; el.classList.remove('auto'); if(s.kind==='top'&&s.done) moved=followTop(en); }
+    else if(f==='reps'){ const n=Num.int(el.value); s.reps=n==null?null:Math.max(0,n); if(s.ra){ s.rpe=assumedRpe(s); moved=[si]; } }
+    else { const n=Num.parse(el.value); s.rpe=n==null?null:Math.max(1,Math.min(10,n)); s.ra=false; el.classList.remove('auto'); }
     moved.forEach(i=>paintSet(ei, i));
     // Focus shows a suggestion as a value. Keep it in agreement with the effort that Done will save.
     if(f==='reps'&&s.rpe==null&&s.trpe!=null){

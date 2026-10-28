@@ -50,7 +50,7 @@ Muscle plans hard sets across muscles and regions. Together accounts for overlap
 
 Big muscles receive the full weekly dose. Arms and calves receive a little less, rear and front delts and abs less again, and adductors, obliques and traps about half, because the big lifts already train them. The upper back is trained with rows and the lats with pull-ups or pulldowns. When exercises tie, Muscle's own ranking decides, and Muscle never repeats the lift Strength has that day. These shares are planning defaults, not measured needs.
 
-The log supports rep ranges, reps in reserve, warm-ups, supersets, exercise changes and custom exercises. Load progression uses completed performance and available equipment. Larger load jumps can require extra reps first.
+The log supports rep ranges, reps in reserve, warm-ups, supersets, exercise changes and custom exercises. Load progression uses completed performance and available equipment. Larger load jumps can require extra reps first. Weights never change on their own mid-exercise: a set easier or harder than planned moves the next session's suggestion, and a weight you type carries to your later sets.
 
 Volume adjustments use training performance and bounded changes. Recovery estimates can trim planned sets. Exercise instructions explain setup and movement; they do not measure form.
 
@@ -58,7 +58,7 @@ Volume adjustments use training performance and bounded changes. Recovery estima
 
 Strength supports linear practice, percentage-based waves and top-set/back-off training. Working weights and estimated maxima remain distinct. Estimates use recorded performance; repeatedly accepting a prescription does not compound a training-max multiplier.
 
-Back-offs can follow the top set logged today. Misses, breaks and equipment increments affect the next prescription. Warm-ups and deliberately easy power work are treated separately from estimation evidence.
+Back-offs are planned from your estimated max and keep their weight through the session; the top set changes the next session's weights, not today's. A back-off left at its target effort counts for no more than that day's top set in the estimate. Misses, breaks and equipment increments affect the next prescription. Warm-ups and deliberately easy power work are treated separately from estimation evidence.
 
 ## Ladder
 
