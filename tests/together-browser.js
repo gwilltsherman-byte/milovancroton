@@ -372,6 +372,13 @@
       await tap('[data-a="d-save"]');
       const t2=saved();
       check(t2.blocks===1 && t2.screen.blk===1 && t2.plan.week===1 && root.textContent.includes('This block stays gentle'), 'a yes given with a change that starts a new block makes that new block gentle'); }
+    // Ladder on its own with no goals yet: Today leads to choosing them, not to a Start that can't start
+    { frame.remove(); frame=null; reset({'milo.persist':'1'});
+      ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
+      root.querySelector('[data-a="f-sec"][data-m="cal"]').click(); root.querySelector('[data-a="f-go"]').click(); await pause(300);
+      const lead=root.querySelector('.next-session .workout-start [data-a="setup"][data-m="cal"]');
+      check(!!lead && lead.textContent.includes('Choose Ladder goals') && !root.querySelector('.next-session [data-a="start-day"][disabled]'), 'a Ladder week with no goals leads to choosing them');
+      check(doc.getElementById('toast')?.textContent.includes('Choose a Ladder goal') || root.querySelector('#toast')?.textContent.includes('Choose a Ladder goal'), 'and the build message says so instead of calling Day 1 ready'); }
     result.textContent=results.join('\n')+'\nALL TESTS PASSED';
   } catch(error){
     result.textContent=results.join('\n')+'\nFAIL '+error.stack;
