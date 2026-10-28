@@ -223,7 +223,7 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 
 /* Logging retains compact, editable set tables and generous completion controls. */
 .train-head {gap:12px; margin-bottom:20px; align-items:flex-start}
-.train-head h2 {font-size:25px; font-weight:700; line-height:1.2; letter-spacing:-.025em; white-space:normal}
+.train-head h2 {font-size:25px; font-weight:700; line-height:1.2; letter-spacing:-.025em; white-space:normal; text-wrap:balance}
 .train-head .el {font-size:12px; line-height:1.4; margin-top:7px}
 .excard {margin-bottom:20px; border-radius:14px}
 .excard.ss-member {border-left-width:1px; border-color:var(--accent)}
@@ -235,7 +235,8 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .setgrid {padding:4px 12px 12px}
 .setrow-head {padding-bottom:9px}
 .setrow-head span {font-size:10px; letter-spacing:.025em; font-weight:600; color:var(--muted)}
-.setrow {padding-top:8px; padding-bottom:8px; border-radius:6px; border-bottom:1px solid var(--border)}
+.setrow {padding-top:8px; padding-bottom:8px; border-radius:0; border-bottom:1px solid var(--border)}
+.setrow.next,.setrow.done {border-radius:6px; border-bottom-color:transparent}
 .setrow.next {background:var(--accent-soft)}
 .sinput {height:44px; font-size:16px; font-weight:650; border:1px solid var(--border-2); border-radius:7px; background:var(--surface-2)}
 .sinput[data-field="weight"] {font-size:16px}
@@ -283,6 +284,7 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 /* Search, evidence, settings, and all existing sheets. */
 .seg-tabs {background:var(--well); padding:4px; border-radius:9px; margin-bottom:24px; gap:3px}
 .seg-tab {min-height:40px; border-radius:6px; font-size:12px; padding:9px 12px; font-weight:650}
+.seg-tabs.scroll .seg-tab {padding-left:6px; padding-right:6px}
 .seg-tab.on {background:var(--surface); color:var(--accent-ink)}
 .liftpick {margin-bottom:18px}
 .liftpick button,.fchip {min-height:36px; border-radius:7px; padding:8px 12px; font-size:12px}
@@ -413,16 +415,24 @@ button.dchip {min-height:36px}
 .copyfold>summary::after {content:""; width:7px; height:7px; border-right:1.5px solid var(--muted); border-bottom:1.5px solid var(--muted); transform:rotate(45deg); margin:0 4px 4px 0; flex:none}
 .copyfold[open]>summary::after {transform:rotate(225deg); margin-bottom:-4px}
 .copyfold>summary>svg {display:none}
-.today-main>.copyfold {margin:0; border-top:1px solid var(--border); padding:0 2px}
-.today-main>.copyfold>.card {background:transparent; border:0; border-radius:0; padding:16px 0 24px}
-.today-main>.copyfold[open]>summary {border-bottom:1px solid var(--border)}
+.foldlist {border-bottom:1px solid var(--border)}
+.foldlist>.copyfold {margin:0; border-top:1px solid var(--border); padding:0 2px}
+.foldlist>.copyfold>.card {background:transparent; border:0; border-radius:0; padding:16px 0 24px}
+.foldlist>.copyfold[open]>summary {border-bottom:1px solid var(--border)}
 .today-main>button[data-a="edit"] {justify-self:start; width:auto; padding-left:0; background:none; border-color:transparent; color:var(--accent-ink); text-align:left}
 .session-status {margin:6px 0 0; font-size:12px; line-height:1.5; color:var(--muted)}
 .today-main>.backto .h3 {overflow-wrap:anywhere}
 .today-main>.backto .spread {gap:16px}
 .today-main .running-day [data-a="open"] {background:var(--surface); color:var(--ink); border-color:var(--border-2)}
 .today-main .running-day [data-a="open"]:hover {background:var(--surface-2)}
-.today-main>#cicard {background:transparent; border:0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); border-radius:0}
+.ciline .pills {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); flex:1 1 100%}
+.ciline [data-a="ci-edit"] {width:100%}
+:host(#m-mix) .pills.even {display:grid; grid-template-columns:repeat(auto-fit,minmax(44px,1fr))}
+.secdot {display:inline-block; width:8px; height:8px; border-radius:99px; margin-right:7px; vertical-align:1px}
+.nw {white-space:nowrap}
+/* Progress and Library carry their page title, and a section's evidence button, above the filters (the shell's
+   subhead), so a section's own header gives way. */
+:host(.subnav-head) .appbar {display:none}
 .first>.field[aria-label="Train"] {display:grid; grid-template-columns:minmax(0,1fr); gap:10px; max-width:none}
 .first .pick {margin:0; min-width:0; min-height:86px; align-items:center}
 .first .pick .pt2 {overflow-wrap:anywhere}
@@ -434,7 +444,7 @@ button.dchip {min-height:36px}
 .first .pick .ck .rank {font-size:15px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums}
 .first .field {margin-top:24px}
 .first .btn.big {margin-top:12px}
-.stat {background:transparent; border:0; border-bottom:1px solid var(--border); border-radius:0; padding:14px 0}
+.stat {background:transparent; border:0; border-radius:0; padding:14px 0}
 .cond-history th {font-weight:600; color:var(--muted)}
 #cond-form,#goal-form {margin-top:24px}
 .sheet .sheet-body p {max-width:70ch}
@@ -630,7 +640,7 @@ button.dchip {min-height:36px}
 /* The session's header: the day and its clock, Finish, and the switch between the set you're on and every set. */
 .session-top {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 0 14px;border-bottom:1px solid var(--border);margin-bottom:20px}
 .session-title {display:flex;flex-direction:column;gap:3px;min-width:0}
-.session-title [data-session-day] {font-family:var(--disp)!important;font-size:19px;font-weight:700;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
+.session-title [data-session-day] {font-family:var(--disp)!important;font-size:19px;font-weight:700;line-height:1.25;color:var(--ink);overflow-wrap:anywhere;text-wrap:balance}
 .session-title #elapsed {font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .session-finish {padding:0 22px}
 .session-views {grid-column:1/-1;display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--well);min-width:0}
@@ -642,7 +652,7 @@ button.dchip {min-height:36px}
 .session-count {display:inline-flex;align-items:center;min-height:28px;padding:4px 8px;background:var(--well);border-radius:5px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .session-target {font-size:16px;color:var(--ink-2);margin:0 0 24px}
 .session-cue {font-size:13.5px;line-height:1.5;color:var(--muted);margin:-12px 0 16px}
-.session-card .setrow {display:flex!important;flex-direction:column;align-items:stretch;gap:20px;padding:24px 0 0;border:0;border-top:1px solid var(--border);background:none}
+.session-card .setrow {display:flex!important;flex-direction:column;align-items:stretch;gap:20px;padding:24px 0 0;border:0;border-top:1px solid var(--border);border-radius:0;background:none}
 .session-card .setwrap,.session-card .lr {display:contents}
 .session-field {display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:650;min-width:0}
 .session-step {display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:8px;align-items:center}
@@ -652,7 +662,7 @@ button.dchip {min-height:36px}
 .session-card .session-clean {display:flex;gap:12px;align-items:center;font-size:14px;margin:16px 0}
 .session-clean input {width:44px;height:44px;flex:none;accent-color:var(--accent)}
 .session-method {font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
-.session-effort {display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.session-effort {display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:8px;margin-top:20px}
 .session-effort button {min-width:44px;min-height:44px;padding:8px;border:1px solid var(--border-2);border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
 .session-effort button[aria-pressed=true] {background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .session-done {min-height:60px;width:100%;font-size:18px;margin:24px 0 12px}

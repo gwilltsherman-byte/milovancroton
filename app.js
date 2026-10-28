@@ -1977,9 +1977,12 @@ window.MiloSession=(()=>{
     c.root.host.classList.toggle('session-focus',!!on);
     if(!window.__hub||window.__hub.current()===c.m)syncShell(c.root);
   }
+  /* "Day 1 · Strength + Muscle", as Train names it; non-breaking spaces keep each separator with the word before it,
+     so a wrapped title never starts with one. */
   function dayName(a){
-    const strip=document.getElementById('tgstrip');
-    return strip&&!strip.hidden? [...strip.querySelectorAll('.tgs-lbl,.tgs-p')].map(el=>el.textContent.trim()).join(' · ')||a.name : a.name;
+    const strip=document.getElementById('tgstrip'); if(!strip||strip.hidden) return a.name;
+    const lbl=strip.querySelector('.tgs-lbl'), parts=[...strip.querySelectorAll('.tgs-p')].map(el=>el.textContent.trim()).filter(Boolean);
+    return [lbl&&lbl.textContent.trim(), parts.join('\u00a0+ ')].filter(Boolean).join('\u00a0· ')||a.name;
   }
   function effort(c){
     const card=c.root.querySelector('.session-card'); if(!card)return;
@@ -2050,7 +2053,8 @@ window.MiloSession=(()=>{
           const field=input.dataset.field, numeric=Num.parse(input.value), ph=detail.values&&detail.values[field]!=null? detail.values[field] : Num.parse(String(input.placeholder).replace(/^~/,''));
           if(numeric==null&&ph!=null){ input.value=ph; input.setAttribute('value',String(ph)); input.classList.add('assumed'); }
           const label=input.getAttribute('aria-label')||field, wrap=document.createElement('label'); wrap.className='session-field';
-          const title=document.createElement('span'); title.textContent=label.replace(/^Set (?:\d+|W) /,'')+((field==='weight'||field==='w'||field==='segweight')&&detail.unit?' ('+detail.unit+')':''); wrap.appendChild(title); input.replaceWith(wrap);
+          const name=label.replace(/^Set (?:\d+|W) /,''), title=document.createElement('span');   // "weight" → "Weight (kg)"
+          title.textContent=name.charAt(0).toUpperCase()+name.slice(1)+((field==='weight'||field==='w'||field==='segweight')&&detail.unit?' ('+detail.unit+')':''); wrap.appendChild(title); input.replaceWith(wrap);
           const box=document.createElement('div'); box.className='session-step'; wrap.appendChild(box);
           const step=(field==='w'||field==='weight')? detail.step||1 : field==='rpe'?0.5:1;
           box.innerHTML=MiloSecurity.html(`<button type="button" data-session="step" data-step="${-step}" aria-label="Decrease ${esc(label)}">${icon('minus')}</button>`);
@@ -12593,7 +12597,7 @@ const LEGS=['quad','ham','glute'];
 const sv=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const IC={
   play:sv('<path d="M7 5v14l11-7z"/>'), check:sv('<path d="M5 12.5l4.5 4.5L19 7.5"/>'), x:sv('<path d="M6 6l12 12M18 6L6 18"/>'),
-  clock:sv('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'), arrow:sv('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  clock:sv('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'), cal:sv('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>'), arrow:sv('<path d="M5 12h14M13 6l6 6-6 6"/>'),
   info:sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/>'), alert:sv('<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.2v.1"/>'),
   sliders:sv('<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>'),
   undo:sv('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'), chev:sv('<path d="M9 6l6 6-6 6"/>'),
@@ -13841,7 +13845,7 @@ function note(n){
 /* A part's name: its section, or Ladder's skills when Ladder is in two. */
 const partName=p=> p.m==='cal'&&p.seg==='skill'? 'Ladder skills' : p.m==='cal'&&p.seg==='core'? 'Ladder core' : SEC[p.m].n;
 /* The sections of a day, in its order, each once. */
-const dayTitle=order=>[...new Set(order.map(o=>SEC[o.m].n))].join(' + ');
+const dayTitle=order=>[...new Set(order.map(o=>SEC[o.m].n))].join('\u00a0+ ');   // a wrapped title never starts with "+"
 /* Stop signs, on every day: always worth one line. */
 const RED_FLAGS=`<div class="note warn redflag" role="note">${IC.alert}<span>Stop and get help for chest pain, fainting, unusual breathlessness or a racing, irregular heartbeat.</span></div>`;
 /* From 65, short balance work twice a week: on the two training days furthest apart. */
@@ -14065,13 +14069,13 @@ function heroNext(W){
     <div class="workout-heading"><div class="workout-order" aria-label="Day ${d+1} of ${D}"><span>Day</span><b>${d+1}</b><span>of ${D}</span></div><div class="workout-title"><h2>${dayTitle(order)}</h2>${ready?`<span class="workout-duration">${IC.clock} about ${r5(P.mins)} min</span>`:''}</div></div>
     <div class="workout-start">${!ready&&goalless? `<button class="btn pri block big" data-a="setup" data-m="cal">${IC.arrow} Choose Ladder goals</button>`
       : `<button class="btn pri block big" data-a="start-day" data-d="${d}" ${ready?'':'disabled'}>${IC.play} Start Day ${d+1}</button>`}</div>
-    ${ready? `${(n=>n.length? `<p class="workout-preview"><span class="sr">Exercises: </span>${n.join('<span aria-hidden="true"> &middot; </span><span class="sr">, </span>')}</p>` : '')(P.parts.filter(p=>p.ready).flatMap(p=>p.lines.filter(l=>!l.startsWith('<span class="x">')).map(l=>l.split(' <span class="n">')[0])))}<p class="hint workout-warmup">Warm up: 5 easy minutes, then the prescribed warm-up sets.</p>`
+    ${ready? `${(n=>n.length? `<p class="workout-preview"><span class="sr">Exercises: </span>${n.join('<span aria-hidden="true"> &middot; </span><span class="sr">, </span>')}</p>` : '')(P.parts.filter(p=>p.ready).flatMap(p=>p.lines.filter(l=>!l.startsWith('<span class="x">')).map(l=>l.split(' <span class="n">')[0])))}<p class="hint workout-warmup">Warm up: 5 easy minutes, then the prescribed <span class="nw">warm-up sets</span>.</p>`
       : goalless? `<p class="hint workout-warmup">Day ${d+1} is Ladder. Pick what you want to be able to do, and the day fills with work toward it.</p>` : ''}
     <details class="rules copyfold" data-fold="workout"><summary>Workout details</summary><div class="parts">${P.parts.map((p,k)=>partRow(p,k,null)).join('')}</div></details>
     ${dayExtras(W, d, order, I).concat(dayNotes(order, I, P, C)).map(note).join('')}
     ${RED_FLAGS}
     <div class="workout-options"><div class="row2"><button class="tog ${tg.short?'on':''}" data-a="short" aria-pressed="${tg.short?'true':'false'}">${IC.clock} Short on time</button>
-      <button class="tog ${pickOpen?'on':''}" data-a="pickday" aria-expanded="${pickOpen?'true':'false'}">Another day</button></div>
+      <button class="tog ${pickOpen?'on':''}" data-a="pickday" aria-expanded="${pickOpen?'true':'false'}">${IC.cal} Another day</button></div>
     ${pickOpen? `<div class="pills" style="margin-top:10px">${W.map((x,i)=>`<button class="${i===d?'on':''}" data-a="setnext" data-d="${i}" ${x.length?'':'disabled'}>Day ${i+1}</button>`).join('')}</div>` : ''}
     <button class="btn ghost block" data-a="skip-day" data-d="${d}">${IC.skip} Skip this day</button></div>
   </section>`;
@@ -14251,7 +14255,7 @@ function volCard(I){
   const x=H.sets(Day.add(startOfToday(), -6), null, ALL), goals=tg.on? (plan().goal||{}) : {}, target=(I.lift&&I.lift.target)||0;
   const targetOf=k=>Object.prototype.hasOwnProperty.call(goals,k)? goals[k] : target;
   const used=ALL.filter(m=>Object.values(x.by).some(b=>b[m]));
-  let body=!x.total? `<p class="lead muted" style="font-size:13px">No hard sets in the last seven days yet. They show up here from all three sections as you train.</p>` : '';
+  let body=!x.total? `<p class="hint">No hard sets in the last seven days yet. They show up here from all three sections as you train.</p>` : '';
   {
     // a set counts in full for the muscles it mainly works and half for those that help, as Muscle and the plan count
     const max=Math.max(1, target*1.6, ...Object.values(goals).map(n=>n*1.6), ...Object.values(x.frac));
@@ -14285,9 +14289,9 @@ function rulesCard(){
     ['Days in order','The week is a rotation on the weekdays you pick. Miss a day and it’s still next. Do a day&rsquo;s parts back to back or at different times of the day; the day stays open until 4 a.m., or 6 hours after its last part. A week that runs past 9 days says so, as each muscle then gets less.'],
     ['The trainers keep their own','A Muscle block, a Strength program or Ladder&rsquo;s own sessions are for training that one thing on its own. Together never moves them on; every session you log here still adds to that trainer&rsquo;s history, records and numbers.'],
   ];
-  return `<section class="card"><details class="rules"><summary><span class="h3">How the days are built</span>${IC.chev}</summary>
+  return `<details class="rules copyfold" data-fold="rules"><summary>How the days are built</summary><section class="card">
     ${R.map((r,i)=>`<div class="rule"><div class="rk">${i+1}</div><div><b>${r[0]}</b><p>${r[1]}</p></div></div>`).join('')}
-    ${basedOn('What the doses are based on', ['More weekly hard sets build more muscle and strength, with clearly diminishing returns, and when weekly volume is matched, how it is spread over the days changes little. Far less work at the same effort keeps strength for months for most people, and muscle size mainly in younger adults. Exercises done first in a session gain the most strength, while growth hardly depends on the order, so the order of a day protects the heavy lifts and your ranking only sets the dose. The exact numbers here (sets, sessions and the five-week block) are coaching defaults drawn from these studies, not results of one trial.'], PROGRAM_SOURCES)}</details></section>`;
+    ${basedOn('What the doses are based on', ['More weekly hard sets build more muscle and strength, with clearly diminishing returns, and when weekly volume is matched, how it is spread over the days changes little. Far less work at the same effort keeps strength for months for most people, and muscle size mainly in younger adults. Exercises done first in a session gain the most strength, while growth hardly depends on the order, so the order of a day protects the heavy lifts and your ranking only sets the dose. The exact numbers here (sets, sessions and the five-week block) are coaching defaults drawn from these studies, not results of one trial.'], PROGRAM_SOURCES)}</section></details>`;
 }
 const PROGRAM_SOURCES=[
   ['Spiering et al. 2021, The minimal dose to maintain strength and size','J Strength Cond Res','Maintaining physical performance the minimal dose of exercise needed to preserve endurance and strength over time'],
@@ -14642,13 +14646,13 @@ function viewMain(){
     ${ciCard()}
     ${tuneCard()}
     ${installCard()}
-    ${missing.map(m=>`<section class="card"><div class="spread" style="align-items:flex-start"><div style="min-width:0"><div class="eyebrow" style="color:${SEC[m].c}">${SEC[m].n}</div>
-      <p class="lead" style="margin-top:4px">${notReady(m,{})}</p></div>
-      ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="flex:none">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="flex:none">Change kit</button>`}</div>
+    ${missing.map(m=>`<section class="card"><div class="eyebrow"><span class="secdot" style="background:${SEC[m].c}"></span>${SEC[m].n}</div>
+      <p class="lead">${notReady(m,{})}</p>
+      ${m==='cal'? `<button class="btn sm pri" data-a="setup" data-m="${m}" style="margin-top:12px">Choose goals</button>` : `<button class="btn sm pri" data-a="edit" style="margin-top:12px">Change kit</button>`}
       ${m==='cal'? recHtml(recModel(plan()), true) : ''}</section>`).join('')}
-    <details class="rules copyfold" data-fold="week"><summary>Week schedule</summary>${weekCard(W, DM)}</details>
+    <div class="foldlist"><details class="rules copyfold" data-fold="week"><summary>Week schedule</summary>${weekCard(W, DM)}</details>
     <details class="rules copyfold" data-fold="program"><summary>Your program</summary>${programCard()}</details>
-    ${rulesCard()}
+    ${rulesCard()}</div>
     <button class="btn ghost block" data-a="edit">${IC.sliders} Change program setup</button>
   </div>`;
 }
@@ -14828,13 +14832,13 @@ function viewFirst(){
       return `<button class="pick ${k>=0?'on':''}" data-a="f-sec" data-m="${m}" aria-pressed="${k>=0}"><span class="ck">${k>=0&&f.secs.length>1? `<b class="rank">${k+1}</b>` : IC.check}</span><span class="dot" style="background:${SEC[m].c}"></span>
       <span class="pt2"><b>${SEC[m].n}</b><span>${FIRST_LINE[m]}</span></span></button>`; }).join('')}</div>
     ${f.secs.length>1? `<p class="hint" id="f-order">The order you pick sets how much each gets: ${listText(f.secs.map((m,k)=>`${SEC[m].n} &middot; ${DOSE_N[DOSE[Math.min(k,2)]]}`))}. Change it any time in setup.</p>` : ''}
-    ${conditioningFields(f)}<div class="field"><label id="f-days-l">Days a week</label><div class="pills" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
-    <div class="field"><label id="f-unit-l">Kilograms or pounds?</label><div class="pills f-unit" role="group" aria-labelledby="f-unit-l">${[['kg','Kilograms (kg)'],['lb','Pounds (lb)']].map(([v,t])=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${t}</button>`).join('')}</div></div>
+    ${conditioningFields(f)}<div class="field"><label id="f-days-l">Days a week</label><div class="pills even" role="group" aria-labelledby="f-days-l">${[2,3,4,5,6,7].map(n=>`<button class="${f.days===n?'on':''}" data-a="f-days" data-v="${n}" aria-pressed="${f.days===n}">${n}</button>`).join('')}</div></div>
+    <div class="field"><label id="f-unit-l">Kilograms or pounds?</label><div class="pills f-unit even" role="group" aria-labelledby="f-unit-l">${[['kg','Kilograms (kg)'],['lb','Pounds (lb)']].map(([v,t])=>`<button class="${f.unit===v?'on':''}" data-a="f-unit" data-v="${v}" aria-pressed="${f.unit===v}">${t}</button>`).join('')}</div></div>
     <div class="field"><label id="f-kit-l">What can you train with?</label><div class="pills" role="group" aria-labelledby="f-kit-l">${KIT.map(([k,l])=>`<button class="${f.kit.includes(k)?'on':''}" data-a="f-kit" data-v="${k}" aria-pressed="${f.kit.includes(k)}">${l}</button>`).join('')}</div>
       <p class="hint">${f.kit.length? 'Tap to take away what you don’t have.' : 'Bodyweight only: Milo plans around what needs no equipment.'}</p></div>
     <div style="margin-top:18px"><button class="btn pri block" data-a="f-go" ${f.secs.length&&f.unit?'':'disabled'}>${IC.arrow} Build my week</button>
       ${f.secs.includes('lift')||f.secs.includes('str')? `<button class="btn block" data-a="f-go" data-pick="1" style="margin-top:8px" ${f.secs.length&&f.unit?'':'disabled'}>Build and choose my exercises</button>` : ''}</div>
-    <p class="hint" style="text-align:center">${!f.secs.length? 'Pick at least one.' : !f.unit? 'Pick kilograms or pounds.' : 'Starts from an hour a session and some training behind you. Change any of it later.'}</p>
+    <p class="hint" style="text-align:center;margin:12px 0 16px">${!f.secs.length? 'Pick at least one.' : !f.unit? 'Pick kilograms or pounds.' : 'Starts from an hour a session and some training behind you. Change any of it later.'}</p>
     <button class="btn ghost block" data-a="f-backup">I have a backup</button>
   </section></div>`;
 }
@@ -15680,10 +15684,19 @@ render();
   /* The row under the header: the section filter on Progress and Library (with the one search box on Library), and
      Today and Plan when you train one section on its own. */
   const sub=document.getElementById('subnav'), chipsEl=document.getElementById('subchips'), qWrap=document.getElementById('libq-wrap'), qIn=document.getElementById('libq');
+  /* Progress and Library: the page title goes above its filters, so the sections' own headers give way to it
+     (their buttons stay). */
+  const SUBHEAD={progress:{all:'Every section together', lift:'Muscle: your training data', str:'Strength: your numbers over time', cal:'Ladder: what you have built', cond:'Conditioning: your activity'},
+    library:{all:'Every exercise, and the evidence', lift:'Muscle: every exercise', str:'Strength: every lift', cal:'Ladder: every progression'}};
   function paintSub(){
     const type=progType(); let chips=null, cur=null;
     if(dest==='progress'||dest==='library'){ chips=FILTERS.filter(f=>dest==='progress'||f!=='cond').map(f=>[f, NAMES[f]]); cur=filt[dest]; }
     else if(dest==='today' && type!=='mix'){ chips=[['today','Today'],[PLAN_ROUTE[type], type==='cal'? 'Goals' : 'Plan']]; cur= active===type && routes[type]===PLAN_ROUTE[type]? PLAN_ROUTE[type] : 'today'; }
+    const head=!!SUBHEAD[dest];
+    document.getElementById('subhead').hidden=!head; sub.classList.toggle('with-head', head);
+    document.getElementById('subhead-ev').hidden=!(head && ['lift','str','cal'].includes(cur) && active===cur);   // the section's evidence, from its own header
+    if(head){ document.getElementById('subhead-t').textContent=dest==='progress'? 'Progress' : 'Library'; document.getElementById('subhead-p').textContent=SUBHEAD[dest][cur]||''; }
+    document.querySelectorAll('.mod').forEach(m=>m.classList.toggle('subnav-head', head));
     sub.hidden=!chips; qWrap.hidden=dest!=='library';
     if(!chips) return;
     const html=chips.map(([v,l])=>`<button type="button" data-f="${v}" aria-pressed="${v===cur}">${l}</button>`).join('');
@@ -15691,6 +15704,7 @@ render();
       chipsEl.innerHTML=MiloSecurity.html(html); if(f){ const b=chipsEl.querySelector('[data-f="'+f+'"]'); if(b) b.focus(); } }
     chipsEl.setAttribute('aria-label', dest==='today'? 'Your section' : 'Show a section');
   }
+  document.getElementById('subhead-ev').addEventListener('click', ()=>{ const A=hubApi(active); if(A&&A.evidence) A.evidence(); });
   chipsEl.addEventListener('click', e=>{
     const b=e.target.closest('[data-f]'); if(!b) return; const v=b.dataset.f;
     if(dest==='today'){ const t=progType(); if(t!=='mix'){ show(t); apiGo(t, v); dest='today'; paintNav(); } return; }
