@@ -112,7 +112,7 @@
         check(light(doc),'Light theme survives render: '+module+'/'+route);
       }
       if(module==='mix'){
-        check(!!root.querySelector('[data-a="f-go"]') && root.querySelectorAll('[data-a="f-sec"]').length===4,'A first run asks what you train, in two taps');
+        check(!!root.querySelector('[data-a="f-go"]') && root.querySelectorAll('[data-a="f-sec"]').length===4,'A first run asks what you train, then units and kit');
         win.__hub.api('mix').setup('secs'); await pause(100);
         check(!!root.querySelector('[data-a="d-save"]'),'Together setup retains its schedule workflow');
         const order=()=>[...root.querySelectorAll('.prow b')].map(b=>b.textContent).join(' > ');
@@ -236,7 +236,8 @@
       act('start-empty').click(); await pause(150);
       check(!!dialog(root)?.querySelector('[data-act="park-active-confirm"]'),'Starting one offers to keep the open one going beside it');
       dialog(root).querySelector('[data-act="park-active-confirm"]').click(); await pause(250);
-      if(dialog(root)) closeDialog(root);   // the exercise picker a free session opens with
+      // the exercise picker a free session opens with: a session with an exercise in it is kept when you step away
+      if(dialog(root)) dialog(root).querySelector('[data-act="pick-ex"]').click();
       await pause(250);
       const second=saved().active.id;
       check(second!=='multi-a' && saved().parked.length===1 && saved().parked[0].id==='multi-a' && saved().parked[0].entries[0].sets[0].done,'The new workout is on screen and the first is kept open, sets and all');

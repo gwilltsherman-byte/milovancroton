@@ -2,7 +2,7 @@
 
 Open [Milo](https://gwilltsherman-byte.github.io/milovancroton/). Pick Muscle, Strength, Ladder, Conditioning, or a mix. With more than one, tap your main goal first: picks are numbered, and the first builds, the second gets a moderate dose and the rest keep what you have. Choose your training days and weight units, then build your week.
 
-Milo starts with a full gym and 60 minutes per training day. Change equipment, priorities, weekdays, time and experience in Settings. Choose Ladder goals before expecting Ladder sessions; until you do, Today's main button opens the goal chooser.
+Milo asks for kilograms or pounds and what equipment you have, and starts with 60 minutes per training day. Change equipment, priorities, weekdays, time and experience in Settings. Choose Ladder goals before expecting Ladder sessions; until you do, Today's main button opens the goal chooser.
 
 ## Today
 
@@ -16,7 +16,7 @@ The next-set screen shows one exercise and set. Check the suggested load and rep
 
 RIR means reps left in the tank. RPE rates effort; a lifting RPE of 8 means roughly two reps remain. Conditioning asks for the effort of the whole activity instead.
 
-Done starts rest. Use Skip rest or add 30 seconds as needed. List shows the whole workout and lets you edit sets. Its back arrow leaves the session open. An old unfinished session shows its start date.
+Done starts rest. Use Skip rest or add 30 seconds as needed. Switch between Next set and All sets at the top; All sets shows the whole workout and lets you edit sets. The bottom bar stays during a workout: step out to any tab and the session waits for you under Train. An old unfinished session shows its start date.
 
 Warm-ups stay separate from working sets. Ladder may ask for each side, a hold duration, or the assistance and load used. Keep form and setup accurate because they affect progression proof.
 

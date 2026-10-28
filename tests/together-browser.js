@@ -27,7 +27,7 @@
     reset({'milo.persist':'1'});
     let {win,doc}=await load();
     let root=doc.getElementById('m-mix').shadowRoot;
-    check(place(doc)==='today' && !!root.querySelector('[data-a="f-go"]') && !root.querySelector('[data-a="d-mins"]'), 'a new person opens on Today, at a first run that asks only what, how often and units');
+    check(place(doc)==='today' && !!root.querySelector('[data-a="f-go"]') && !root.querySelector('[data-a="d-mins"]'), 'a new person opens on Today, at a first run that asks only what, how often, units and kit');
     // the order you pick sets each section's dose, and the picks say so
     root.querySelector('[data-a="f-sec"][data-m="lift"]').click();
     root.querySelector('[data-a="f-sec"][data-m="str"]').click();
@@ -38,7 +38,10 @@
     root.querySelector('[data-a="f-sec"][data-m="str"]').click();
     check(!root.querySelector('[data-a="f-sec"][aria-pressed="true"]') && !root.querySelector('[data-a="f-sec"][data-m="cal"][aria-pressed="true"]'), 'nothing is picked for someone new, Ladder included');
     root.querySelector('[data-a="f-sec"][data-m="str"]').click();
-    check(!root.querySelector('[data-a="f-go"]').disabled, 'one kind of training is enough to build a program');
+    check(root.querySelector('[data-a="f-go"]').disabled && !root.querySelector('[data-a="f-unit"][aria-pressed="true"]') && root.textContent.includes('Kilograms or pounds?'), 'a new person is asked kilograms or pounds, with neither picked for them');
+    check(root.querySelectorAll('[data-a="f-kit"][aria-pressed="true"]').length===root.querySelectorAll('[data-a="f-kit"]').length && root.textContent.includes('What can you train with?'), 'and what they can train with, everything on until they take it away');
+    root.querySelector('[data-a="f-unit"][data-v="kg"]').click();
+    check(!root.querySelector('[data-a="f-go"]').disabled, 'one kind of training and a unit are enough to build a program');
     root.querySelector('[data-a="f-go"]').click(); await pause(300);
     const go=root.querySelector('[data-a="start-day"]');
     check(!!go && go.textContent.includes('Start Day 1') && go.getBoundingClientRect().bottom<=800 && !root.textContent.includes('Make this block yours'), 'Build goes straight to Today, with Start Day 1 above the fold and no page forced open');
@@ -375,7 +378,7 @@
     // Ladder on its own with no goals yet: Today leads to choosing them, not to a Start that can't start
     { frame.remove(); frame=null; reset({'milo.persist':'1'});
       ({win,doc}=await load()); root=doc.getElementById('m-mix').shadowRoot;
-      root.querySelector('[data-a="f-sec"][data-m="cal"]').click(); root.querySelector('[data-a="f-go"]').click(); await pause(300);
+      root.querySelector('[data-a="f-sec"][data-m="cal"]').click(); root.querySelector('[data-a="f-unit"][data-v="kg"]').click(); root.querySelector('[data-a="f-go"]').click(); await pause(300);
       const lead=root.querySelector('.next-session .workout-start [data-a="setup"][data-m="cal"]');
       check(!!lead && lead.textContent.includes('Choose Ladder goals') && !root.querySelector('.next-session [data-a="start-day"][disabled]'), 'a Ladder week with no goals leads to choosing them');
       check(doc.getElementById('toast')?.textContent.includes('Choose a Ladder goal') || root.querySelector('#toast')?.textContent.includes('Choose a Ladder goal'), 'and the build message says so instead of calling Day 1 ready'); }
