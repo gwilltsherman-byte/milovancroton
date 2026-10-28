@@ -179,25 +179,42 @@ test('ticking an untouched RPE box saves the target as assumed, 10 when the reps
   assert.ok(kept.some(s => s.kind === 'top' && s.rpe === 7 && s.ra === true), 'the finished session keeps the assumed RPE, marked');
 });
 
-test('back-offs follow the top set: set from today’s estimate once it is ticked, and from a top-set weight you change (item 39)', () => {
+test('back-offs keep their planned weights through the session; only blank ones take their share of the top set you enter (item 39)', () => {
   const S = strength();
   plan(S, {model: 'topset', choice: {chest: 'bench'}, exp: 'exp'});
   S.T.state.lifts.bench.seed = {v: 100, date: S.now - DAY, rated: true};
   S.fn.startProgramDay(0);
   const en = S.T.state.active.entries[0], top = en.sets.find(s => s.kind === 'top'), bos = () => en.sets.filter(s => s.kind === 'bo');
   assert.ok(bos().every(s => s.trpe === 7 && s.w <= top.w && s.w >= top.w - 2.5), 'back-offs carry a target RPE and sit at or just under the top set, not 8% under it');
-  // the top set felt like RPE 9, not 7: today's estimate is lower and the back-offs drop to match
+  const planned = bos().map(s => s.w);
+  // the top set felt like RPE 9, not 7: today's estimate is lower, which moves the next session, not today's back-offs
   top.reps = 5; top.rpe = 9; S.fn.toggleDone(0, en.sets.indexOf(top));
-  const e = S.fn.setE1(top, 'bench');
-  assert.ok(e < 100);
-  for (const s of bos()) assert.equal(s.w, S.fn.roundLoad(Math.min(top.w, S.fn.loadFor(e, 5, 7, 'bench')), 'bar'));
-  assert.ok(bos()[0].w < top.w - 2, 'lighter than the top set');
-  // a fresh day: typing a heavier top-set weight before it is done takes the back-offs with it
+  assert.ok(S.fn.setE1(top, 'bench') < 100);
+  assert.deepEqual(bos().map(s => s.w), planned, 'a top set harder than planned leaves the back-offs as planned');
+  // a fresh day: a top-set weight typed before it is done leaves planned back-offs alone too
   S.T.state.active = null; S.fn.startProgramDay(0);
-  const en2 = S.T.state.active.entries[0], top2 = en2.sets.find(s => s.kind === 'top'), was = en2.sets.find(s => s.kind === 'bo').w;
+  const en2 = S.T.state.active.entries[0], top2 = en2.sets.find(s => s.kind === 'top'), was = en2.sets.filter(s => s.kind === 'bo').map(s => s.w);
   const old = top2.w; top2.w = old + 10; top2.edited = true;
   S.fn.fillOn(en2, en2.sets.indexOf(top2), old); S.fn.followTop(en2);
-  assert.ok(en2.sets.filter(s => s.kind === 'bo').every(s => s.w > was), 'back-offs follow a heavier top set');
+  assert.deepEqual(en2.sets.filter(s => s.kind === 'bo').map(s => s.w), was, 'planned back-offs stay put');
+  // a lift with no estimate yet: blank back-offs take their share of the top-set weight you type, and follow a
+  // correction until the top set is done
+  S.T.state.active = null; S.T.state.lifts.bench.seed = null; S.T.state.history = []; S.fn.startProgramDay(0);
+  const en3 = S.T.state.active.entries[0], top3 = en3.sets.find(s => s.kind === 'top'), bo3 = () => en3.sets.filter(s => s.kind === 'bo');
+  assert.ok(top3.w == null && bo3().every(s => s.w == null), 'no estimate: the weights start blank');
+  top3.w = 100; top3.edited = true; S.fn.fillOn(en3, en3.sets.indexOf(top3), null); S.fn.followTop(en3);
+  const first = bo3().map(s => s.w);
+  assert.ok(first.every(w => w > 0 && w <= 100), 'blank back-offs take their share of the top set: ' + first);
+  top3.w = 110; S.fn.fillOn(en3, en3.sets.indexOf(top3), 100); S.fn.followTop(en3);
+  assert.ok(bo3().every((s, k) => s.w > first[k] && s.w <= 110), 'and follow a corrected top-set weight before it is done');
+  top3.reps = 5; top3.rpe = 9.5; S.fn.toggleDone(0, en3.sets.indexOf(top3));
+  const after = bo3().map(s => s.w);
+  top3.w = 120; S.fn.followTop(en3);
+  assert.deepEqual(bo3().map(s => s.w), after, 'once the top set is done, nothing moves them');
+  // a back-off weight you type carries to the later back-offs still showing the old one
+  const b = bo3(), was0 = b[0].w; b[0].w = was0 - 5; b[0].edited = true;
+  S.fn.fillOn(en3, en3.sets.indexOf(b[0]), was0);
+  assert.ok(bo3().every(s => s.w === was0 - 5), 'a typed back-off weight carries to the others');
 });
 
 test('a weight typed in a set fills the later undone sets of the same kind that are blank or still show the old weight (item 67)', () => {
