@@ -93,8 +93,9 @@
     check(JSON.parse(localStorage.getItem('trainer.shell.unit'))==='lb' && JSON.parse(localStorage.getItem('strlog.v2')).settings.unit==='lb', 'units change for every section from one place');
     doc.querySelector('#set-body [data-s="plate"][data-v="2.5"]').click(); await pause(150);
     check(!JSON.parse(localStorage.getItem('trainer.shell.platesLb')).includes(2.5) && doc.querySelector('#set-body [data-s="plate"][data-v="2.5"]').getAttribute('aria-pressed')==='false', 'the kit is set here, for every section');
-    doc.querySelector('#set-body [data-s="opt"][data-m="str"][data-k="rest"][data-v="240"]').click(); await pause(150);
-    check(JSON.parse(localStorage.getItem('strlog.v2')).settings.rest===240, 'a section’s own option is set from its group');
+    check(!doc.querySelector('#set-body [data-k="rest"]'), 'rest is set for you: there is no rest option');
+    doc.querySelector('#set-body [data-s="opt"][data-m="str"][data-k="tmPct"][data-v="85"]').click(); await pause(150);
+    check(JSON.parse(localStorage.getItem('strlog.v2')).settings.tmPct===85, 'a section’s own option is set from its group');
     doc.querySelector('#set-body [data-s="wake"][data-v="0"]').click(); await pause(100);
     check(JSON.parse(localStorage.getItem('trainer.shell.wake'))===false, 'keeping the screen on is a setting');
     doc.getElementById('bk-done').click(); await pause(100);

@@ -48,7 +48,7 @@ function ladder() {
   context.Parked = context.window.Parked;
   context.Prefs = context.window.Prefs;
   context.Lift = context.window.Lift;
-  context.SAME_LIFT = context.window.SAME_LIFT;
+  context.SAME_LIFT = context.window.SAME_LIFT; context.Dose = context.window.Dose;
   // the shared engine: typed numbers, calendar days, kit and bodyweight
   ['Num', 'Day', 'Kit', 'Body'].forEach(k => { context[k] = context.window[k]; });
   vm.runInContext(`(function(__root) { ${app.slice(bodyStart, end)}
@@ -1039,4 +1039,14 @@ test('the weighted calf raise asks for the dumbbell and moves along the dumbbell
   assert.match(api.evaluate(`stepsOf(${JSON.stringify(l)})[${i}].cue`), /Log the dumbbell weight/);
   assert.equal(api.evaluate(`nextVal(stepsOf(${JSON.stringify(l)})[${i}], 10)`), api.evaluate('Kit.next(10, 2.5, "db", "kg").kg'));
   assert.doesNotMatch(api.evaluate('stepsOf("planche")[0].cue'), /Measure/);
+});
+
+test('rest is set for you, not chosen: by the kind of practice and the reps', () => {
+  const api = ladder(), rest = (p, skill, reps) => api.evaluate(`Dose.ladderRest(${JSON.stringify(p)}, ${skill}, ${reps})`);
+  assert.equal(rest('balance', true, 0), 60, 'balance attempts');
+  assert.equal(rest('power', false, 6), 180, 'power: full recovery keeps it fast');
+  assert.equal(rest('strength', true, 0), 180, 'a strength skill, like a lever hold');
+  assert.equal(rest('strength', false, 5), 180, 'low-rep strength');
+  assert.equal(rest('strength', false, 8), 120, 'other reps');
+  assert.ok(!/settings\.rest/.test(require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'app.js'), 'utf8')), 'no rest setting is read anywhere');
 });

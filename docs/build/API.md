@@ -107,6 +107,25 @@ instead of the saved one (tests, or Muscle itself).
 | `Body.trend(days?, L?, now?)` | window in days (28) | `{kgPerWeek, smoothed, n}`: smoothed = 7-day moving average at the latest reading; kgPerWeek = slope of that average (null with under a week of readings); n = readings in the window | `Body.trend(28).kgPerWeek → -0.35` |
 | `Body.log(kg, ts?)` | kg (20–400), ms (today) | true when saved, for the day of ts, through Muscle's `logBody(kg, ts)` | `Body.log(80.4)` |
 
+## Dose: reps, effort and rest (set by the app, never edited)
+
+Marker `REPS, EFFORT AND REST`, right after `window.SAME_LIFT`. Global `Dose`; a vm harness exposes it with the others
+(`ctx.Dose=ctx.window.Dose`). "You" is `{exp, stage}`: Together's saved set-up (`trainer.together`: `exp` when `on`,
+`stage` always), else the section's own fallback (Muscle: `settings.exp`, saved by its block generator), else intermediate.
+
+| Function | Returns |
+|---|---|
+| `Dose.who(fallback?)` | `{exp, stage}`: exp `beginner`, `intermediate` or `advanced`; stage `''`, `u18`, `older` or `preg`; re-parses only when the saved text changed |
+| `Dose.reps(kind, w)` | Muscle `[low, high]` by kind: heavy 6–10 (8–12 when new, under 18, 65+ or pregnant), comp 8–12, bw 6–12, iso 10–15, bwiso 8–15, small 12–20, hold 20–60 s |
+| `Dose.rest(kind)` | Muscle seconds: heavy 180, comp/bw 120, others 90 |
+| `Dose.span(w)` / `Dose.floor(w)` | a block's `[startRir, endRir]` ([2,0]; [3,1] new or 65+; [3,3] under 18 or pregnant) / the fewest in reserve ever given (0, 1, 3) |
+| `Dose.strRest(kind)` | Strength: warm 75, top/plus 240, other work 180 |
+| `Dose.ladderRest(practice, skill, reps)` | Ladder: balance 60; power, skills and 1–5 reps 180; other 120 |
+
+Muscle uses it through `doseKind(ex)`, `defOf(ex, w)` (`{repLow, repHigh, rir, rest}`; rir outside a block), `muscleWho()`
+and `syncDefs()` (library `def`s and block exercises' stored ranges, on each render and `hubCatalog`). `mesoEntry` and
+`entryFromEx` take targets from `defOf`, and `mesoEntry` and `weekRir` never go under `Dose.floor`.
+
 ## Hub API additions (Muscle, `__hub.api('lift')`)
 
 - `bodyLog()` → `[{date, kg}]` oldest first (copies).

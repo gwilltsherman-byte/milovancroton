@@ -68,28 +68,17 @@
       check(/Warm-up/.test(root.querySelector('.session-count').textContent)&&/^5 reps/.test(root.querySelector('.session-target').textContent),'Muscle warm-ups show their own reps instead of the working-set target');
       check(!root.querySelector('.session-card [data-field="rir"]'),'Muscle warm-ups do not ask for working-set effort');
     });
-    await group('Compact exercise targets',async()=>{
+    await group('Exercise targets are set for you',async()=>{
       const entry={exId:'db_row_cs',name:'Chest-Supported Dumbbell Row',target:{repLow:6,repHigh:10,rir:3,rest:180},sets:[{weight:25,reps:6,rir:1,done:true},{weight:25,reps:null,done:false}]};
-      const {doc,win}=await seed({'hyplog.v1':{...base,v:1,settings:{...base.settings,sessionView:'list'},active:active([entry,{...entry,exId:'plank',name:'Plank',target:{repLow:30,repHigh:60,rir:0,rest:90}}])}},'m=lift');
-      const root=rootOf(doc,'lift'),details=root.querySelector('.exercise-targets'),summary=details.querySelector('summary');
-      check(!details.open&&/6–10 reps.*3 RIR.*3 min rest/.test(summary.textContent),'exercise targets start as a compact readable summary');
+      const {doc}=await seed({'hyplog.v1':{...base,v:1,settings:{...base.settings,sessionView:'list'},active:active([entry,{...entry,exId:'plank',name:'Plank',target:{repLow:30,repHigh:60,rir:0,rest:90}}])}},'m=lift');
+      const root=rootOf(doc,'lift'),targets=root.querySelector('.exercise-targets');
+      check(/6–10 reps.*3 RIR.*3 min rest/.test(targets.textContent),'exercise targets show as a compact readable summary');
       check(/30–60 s hold.*0 RIR.*90 s rest/.test(root.querySelectorAll('.target-summary')[1].textContent),'hold seconds, zero RIR and partial-minute rests retain their meaning');
+      check(!root.querySelector('[data-field="tRepLow"],[data-field="tRepHigh"],[data-field="tRir"],[data-field="tRest"]')&&!targets.querySelector('input,summary,button'),'rep range, reps in reserve and rest cannot be edited');
       for(const width of [1440,430,390,320,195]){
         frame.style.width=width+'px';await pause(60);
-        check(doc.documentElement.scrollWidth<=width+1&&summary.getBoundingClientRect().height>=44,'collapsed targets fit and remain tappable at '+width+' px');
-        summary.click();await pause(30);
-        check(details.open&&doc.documentElement.scrollWidth<=width+1&&[...details.querySelectorAll('input')].every(el=>{const r=el.getBoundingClientRect();return r.width>=44&&r.height>=44&&r.right<=width;}),'target editor fits with usable inputs at '+width+' px');
-        summary.click();
+        check(doc.documentElement.scrollWidth<=width+1&&targets.getBoundingClientRect().right<=width,'the targets fit at '+width+' px');
       }
-      summary.click();
-      for(const [field,value] of [['tRepLow','8'],['tRepHigh','12'],['tRir','0'],['tRest','90']]){
-        const input=details.querySelector('[data-field="'+field+'"]');input.value=value;input.dispatchEvent(new win.Event('input',{bubbles:true}));
-      }
-      summary.click();
-      check(/8–12 reps.*0 RIR.*90 s rest/.test(summary.textContent),'closing the editor immediately shows every updated target');
-      await until(()=>JSON.parse(localStorage.getItem('hyplog.v1')).active.entries[0].target.rest===90,'target edits did not save');
-      const saved=JSON.parse(localStorage.getItem('hyplog.v1')).active;
-      check(saved.entries[0].target.repLow===8&&saved.entries[0].target.repHigh===12&&saved.entries[0].target.rir===0&&saved.entries[0].target.rest===90&&saved.entries[0].sets[0].weight===25&&saved.entries[0].sets[0].done,'target edits persist without changing logged sets');
     });
     await group('Phone layout',async()=>{
       let {doc,win}=await seed({'strlog.v2':{...base,v:2,active:active([{liftId:'bench',sets:[{kind:'work',w:420,reps:5,tr:5,trpe:8,done:false}]}])}},'m=str');let root=rootOf(doc,'str');

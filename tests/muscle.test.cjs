@@ -32,7 +32,7 @@ function muscle({bodyKg = null} = {}) {
   vm.runInContext(app.slice(0, app.indexOf('/* ==================== BACK ====================')), context, {filename: 'app.js:HOWTO'});
   const shared = app.indexOf('/* ==================== SETS NOT TICKED OFF ====================');
   vm.runInContext(app.slice(shared, app.indexOf('/* ==================== TAKE BACK ====================', shared)), context, {filename: 'app.js:shared'});
-  ['OpenSets', 'Parked', 'Prefs', 'Lift', 'SAME_LIFT', 'GROWTH', 'Num', 'Day', 'Kit', 'Body'].forEach(k => { context[k] = context.window[k]; });
+  ['OpenSets', 'Parked', 'Prefs', 'Lift', 'SAME_LIFT', 'GROWTH', 'Num', 'Day', 'Kit', 'Body', 'Dose'].forEach(k => { context[k] = context.window[k]; });
   vm.runInContext(`(function(__root) { ${app.slice(bodyStart, end)}
     state = defaultState(); state.onboarded = true;
     globalThis.muscleTest = { state: () => state, evaluate: expression => eval(expression) };
@@ -429,4 +429,46 @@ test('ready-made blocks and one-session templates follow WHAT GROWS MORE', () =>
     if (tri.length) assert.ok(tri.some(id => G.R.tri.long.includes(id)), t.name + ': overhead triceps work');
     assert.ok(ex.some(id => G.R.quad.rf.includes(id)), t.name + ': a knee extension for the rectus femoris');
   }
+});
+
+/* ---- reps, effort and rest: set for you (Dose), never typed ---- */
+const startLegs = (api, list, rir = 2) => {
+  try { api.evaluate(`startDayFrom('Day', ${JSON.stringify(list)}.map(([id, n])=>{ const x=exById(id); return {ex:{exId:x.id, name:x.name, primary:x.primary.slice(), secondary:x.secondary.slice(), equipment:x.equipment, comp:x.comp, repLow:4, repHigh:30}, n}; }), ${rir}, false, null, null)`); } catch (e) { /* the screen isn't there */ }
+  return plain(api.state().active.entries.map(e => [e.exId, e.target, !!e.lastFail]));
+};
+test('each exercise’s reps, effort and rest come from its kind, not from typing', () => {
+  const api = muscle();
+  const def = id => plain(api.evaluate(`defOf(exById(${JSON.stringify(id)}), muscleWho())`));
+  assert.deepEqual(def('barbell-bench'), {repLow: 6, repHigh: 10, rir: 2, rest: 180}, 'a heavy barbell lift');
+  assert.deepEqual(def('machine-chest-press'), {repLow: 8, repHigh: 12, rir: 2, rest: 120}, 'another compound');
+  assert.deepEqual(def('pullup'), {repLow: 6, repHigh: 12, rir: 2, rest: 120}, 'a bodyweight compound');
+  assert.deepEqual(def('leg-extension'), {repLow: 10, repHigh: 15, rir: 1, rest: 90}, 'single-joint');
+  assert.deepEqual(def('nordic-curl'), {repLow: 8, repHigh: 15, rir: 1, rest: 90}, 'single-joint on your bodyweight');
+  assert.deepEqual(def('lateral-raise'), {repLow: 12, repHigh: 20, rir: 1, rest: 90}, 'a small muscle with a load');
+  assert.deepEqual(def('plank'), {repLow: 20, repHigh: 60, rir: 2, rest: 90}, 'a hold, in seconds');
+  assert.deepEqual(plain(api.evaluate(`exById('lateral-raise').def`)), def('lateral-raise'), 'the library says the same');
+  // a block's or Together's day: whatever range was stored, the exercise's own is used
+  const t = startLegs(api, [['barbell-bench', 3], ['machine-chest-press', 3], ['lateral-raise', 3]], 0);
+  assert.deepEqual(t[0], ['barbell-bench', {repLow: 6, repHigh: 10, rir: 1, rest: 180}, false], 'the heaviest stop 1 or 2 short');
+  assert.deepEqual(t[1], ['machine-chest-press', {repLow: 8, repHigh: 12, rir: 1, rest: 120}, false], 'compounds stop 1 short');
+  assert.deepEqual(t[2], ['lateral-raise', {repLow: 12, repHigh: 20, rir: 0, rest: 90}, true], 'single-joint can go to failure');
+});
+test('reps and effort follow you: new, 65 and over, under 18 or pregnant', () => {
+  const as = (who, f) => { const api = muscle(); api.evaluate(`localStorage.setItem('trainer.together', ${JSON.stringify(JSON.stringify(Object.assign({on: true}, who)))})`); return f(api); };
+  const benchDef = api => plain(api.evaluate(`defOf(exById('barbell-bench'), muscleWho())`));
+  assert.deepEqual(as({exp: 'advanced'}, benchDef), {repLow: 6, repHigh: 10, rir: 2, rest: 180});
+  assert.deepEqual(as({exp: 'beginner'}, benchDef), {repLow: 8, repHigh: 12, rir: 2, rest: 180}, 'new: moderate loads on the heavy lifts');
+  assert.deepEqual(as({stage: 'older'}, benchDef), {repLow: 8, repHigh: 12, rir: 2, rest: 180});
+  assert.deepEqual(as({exp: 'beginner'}, api => plain(api.evaluate(`Dose.span(muscleWho())`))), [3, 1], 'new: 3 short to 1 short');
+  assert.deepEqual(as({exp: 'intermediate'}, api => plain(api.evaluate(`Dose.span(muscleWho())`))), [2, 0]);
+  for (const stage of ['u18', 'preg']) {
+    const t = as({stage}, api => startLegs(api, [['machine-chest-press', 3], ['leg-extension', 3]], 0));
+    assert.ok(t.every(([, x, fail]) => x.rir === 3 && !fail), stage + ': 3 in reserve whatever the week says, nothing to failure');
+    assert.equal(as({stage}, api => api.evaluate(`weekRir({startRir:2, endRir:0, totalWeeks:4, hasDeload:false}, 4)`)), 3, stage + ': the block shows it too');
+  }
+  const t = as({exp: 'beginner'}, api => startLegs(api, [['leg-extension', 3]], 0));
+  assert.equal(t[0][1].rir, 1, 'new: never under 1 in reserve');
+  // Muscle on its own: the experience picked when it built your block
+  const own = muscle(); own.state().settings.exp = 'beginner';
+  assert.deepEqual(plain(own.evaluate(`defOf(exById('back-squat'), muscleWho())`)).repHigh, 12);
 });

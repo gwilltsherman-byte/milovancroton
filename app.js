@@ -1394,6 +1394,47 @@ window.SAME_LIFT={bench:'barbell-bench', dbbench:'db-bench', mchest:'machine-che
   deadlift:'deadlift', dbrdl:'db-rdl', rdl:'romanian-deadlift', sumo:'sumo-deadlift', wdip:'dip', wpull:'pullup', wpushup:'pushup', backext:'back-extension',
   dbsplit:'split-squat', sbench:'smith-press', ssquat:'smith-squat', hack:'hack-squat', thrust:'hip-thrust'};
 
+/* ==================== REPS, EFFORT AND REST ====================
+   Set by the app, never typed in: from the exercise, and from you (Together's set-up: training so far and life stage).
+   Reps: muscle grew alike from about 6 to 30 reps a set when sets ended near failure (Schoenfeld et al. 2017, 2021), so
+   the range suits the exercise. Heavy barbell lifts 6 to 10, where form goes before the muscle on a long set; other
+   compounds 8 to 12, bodyweight ones 6 to 12 (their load moves in big steps); single-joint 10 to 15, or 8 to 15 on your
+   bodyweight, which can't be made lighter; loaded side and rear delt, calf, ab, forearm and neck work 12 to 20, where a
+   heavy load turns into swinging. New lifters, under 18s, 65 and over, and pregnancy take the heavy lifts 8 to 12 as
+   well: moderate loads while technique beds in (ACSM 2009).
+   Effort: growth rose as sets ended closer to failure (Refalo et al. 2023; Robinson et al. 2024), and grinding reps
+   cost the most recovery. A block starts 2 reps short and ends at 0 on single-joint work (compounds stop at 1, the
+   heaviest at 1 or 2). New lifters and 65 and over start 3 short and end 1 short: early ratings run about a rep off.
+   Under 18s and pregnancy stay 3 short (RPE 7) throughout.
+   Rest: 3 minutes grew more than 1 (Schoenfeld et al. 2016), and past about 90 s there was little more to gain
+   (Singer et al. 2024), so 3 min on heavy lifts, 2 on other compounds, 90 s on single-joint work. Strength gains were
+   bigger with more than 2 minutes in trained lifters (Grgic et al. 2018), and 3 to 5 is the advice for the heaviest
+   sets (de Salles et al. 2009): Strength rests 4 min after a top set and 3 after the rest, and Ladder 3 after low-rep
+   strength, power and skill work, 2 after other reps, 1 between balance attempts. */
+window.Dose={
+  /* You: {exp, stage}. fallback is a section's own answer for when Together's set-up was never saved. */
+  who(fallback){ let raw=null; try{ raw=localStorage.getItem('trainer.together'); }catch(e){}
+    if(raw!==Dose.raw){ Dose.raw=raw; try{ Dose.saved=JSON.parse(raw||'null'); }catch(e){ Dose.saved=null; } }   // read again only when it changed
+    const t=Dose.saved;
+    const exp=[t&&t.on&&t.exp, fallback, t&&t.exp].find(x=>['beginner','intermediate','advanced'].includes(x))||'intermediate';
+    return {exp, stage:t&&['u18','older','preg'].includes(t.stage)? t.stage : ''}; },
+  gentle(w){ return w.stage==='u18'||w.stage==='preg'; },
+  careful(w){ return w.exp==='beginner'||!!w.stage; },
+  /* Muscle's [low, high] (seconds for a hold), by kind: heavy, comp, bw (a bodyweight compound), iso, bwiso (a
+     bodyweight single-joint), small (a loaded small muscle) and hold. */
+  reps(kind, w){ return kind==='hold'? [20,60] : kind==='heavy'? (Dose.careful(w)? [8,12] : [6,10]) : kind==='bw'? [6,12]
+    : kind==='comp'? [8,12] : kind==='bwiso'? [8,15] : kind==='small'? [12,20] : [10,15]; },
+  rest(kind){ return kind==='heavy'? 180 : kind==='comp'||kind==='bw'? 120 : 90; },
+  /* A block's reps in reserve: [first week, last hard week]. */
+  span(w){ return Dose.gentle(w)? [3,3] : Dose.careful(w)? [3,1] : [2,0]; },
+  /* The fewest in reserve you are ever given. */
+  floor(w){ return Dose.gentle(w)? 3 : Dose.careful(w)? 1 : 0; },
+  /* Strength, by kind of set: warm-up, top or plus (the day's heaviest), or another work set. */
+  strRest(kind){ return kind==='warm'? 75 : kind==='top'||kind==='plus'? 240 : 180; },
+  /* Ladder: practice ('strength', 'balance' or 'power'), a skill, and the reps asked for (0 for a hold). */
+  ladderRest(practice, skill, reps){ return practice==='balance'? 60 : practice==='power'||skill||(reps>0&&reps<=5)? 180 : 120; }
+};
+
 /* ==================== WHAT GROWS MORE ====================
    Shared by Muscle and Together when they choose exercises (Muscle's ids).
    long: exercises that train a muscle at long lengths, which grew it more than the same muscle trained short: overhead
@@ -1963,10 +2004,7 @@ window.MiloSession=(()=>{
       else if(a==='add'){ const v=c.st.active; if(v&&v.restEndsAt){ v.restEndsAt+=30000; if(v.restDuration!=null)v.restDuration+=30; else v.restDur=(v.restDur||0)+30; c.save(); tick(c); } }
     });
     root.addEventListener('input',e=>{ if(e.target.closest('.session-card')){ e.target.classList.remove('assumed'); effort(c); } if(e.target.matches('.session-card input[data-field="w"], .session-card input[data-field="weight"]'))plates(c); });
-    let down=null;
-    root.addEventListener('pointerdown',e=>{ if(e.isPrimary&&e.pointerType==='touch'&&!e.target.closest('input,button,textarea'))down={x:e.clientX,y:e.clientY,id:e.pointerId}; });
-    root.addEventListener('pointerup',e=>{ const d=down; down=null; if(d&&d.id===e.pointerId&&Math.abs(e.clientX-d.x)>70&&Math.abs(e.clientY-d.y)<40&&active(c)){ c.st.settings.sessionView=focus(c)?'list':'focus'; c.save(); c.render(); window.scrollTo(0,0); } });
-    root.addEventListener('pointercancel',()=>{down=null;});
+    // No swipe gesture: the views change from their switch only, so a sideways drag mid-set never flips them.
     return c;
   }
   function plates(c){
@@ -2262,12 +2300,10 @@ Object.assign(window.HOWTO, {
     note:'Stop if you feel a sharp pain in the groin.' },
 });
 function buildSeed(){
+  const w=muscleWho();   // reps, effort and rest: Dose's, for you (defOf)
   return RAW_EX.map(r=>{
-    const comp = r[5]===1;
-    const hold=HOLDS.includes(r[0]);   // seconds, not reps
-    return {id:r[0], name:r[1], equipment:r[2], primary:r[3], secondary:r[4], comp,
-      custom:false, alt:r[6]===1,
-      def: hold? {repLow:20, repHigh:60, rir:2, rest:90} : {repLow:comp?6:10, repHigh:comp?10:15, rir:comp?2:1, rest:comp?180:90}};
+    const e={id:r[0], name:r[1], equipment:r[2], primary:r[3], secondary:r[4], comp:r[5]===1, custom:false, alt:r[6]===1};
+    e.def=defOf(e, w); return e;
   });
 }
 const TEMPLATES = [
@@ -2296,7 +2332,7 @@ const EVIDENCE = {
   load:{ t:'Load & rep ranges', c:'high', g:'Essentials',
     s:'Light, moderate and heavy loads build similar muscle when sets are taken close to failure, but heavy loads build more maximal strength.',
     a:'Pick loads you can lift well and keep progressing, use higher reps where joints or equipment favour them, and use the Strength section for a bigger one-rep max.',
-    d:'The same percentage of your max allows very different rep counts between people and between exercises: a meta-regression of 269 studies found more reps on the leg press than on the bench press at the same percentage. That’s why Milo sets your weights from your own logged reps rather than from a percentage. There’s no special hypertrophy rep range.',
+    d:'The same percentage of your max allows very different rep counts between people and between exercises: a meta-regression of 269 studies found more reps on the leg press than on the bench press at the same percentage. That’s why Milo sets your weights from your own logged reps rather than from a percentage. There’s no special hypertrophy rep range, so Milo sets one to suit each exercise: 6 to 10 reps on heavy barbell lifts (8 to 12 while you’re new), 8 to 12 on other compounds, 10 to 15 on single-joint work, and 12 to 20 on loaded side and rear delt, calf, ab and forearm work, where heavy loads turn into swinging.',
     src:[['Lopez et al. 2021, load network meta-analysis','https://doi.org/10.1249/MSS.0000000000002585'],['ACSM 2026 Position Stand','https://pmc.ncbi.nlm.nih.gov/articles/PMC12965823/'],['Nuzzo et al. 2024, reps at each percentage of 1RM','https://pmc.ncbi.nlm.nih.gov/articles/PMC10933212/']] },
   progression:{ t:'Progressive overload', c:'mod', g:'Essentials',
     s:'Getting stronger over time goes along with growth, and in a controlled trial adding reps and adding load built muscle about equally.',
@@ -2319,8 +2355,8 @@ const EVIDENCE = {
     src:[['Kassiano et al. 2023, range of motion and hypertrophy review','https://pubmed.ncbi.nlm.nih.gov/36662126/'],['Varović et al. 2025, muscle length Bayesian meta-analysis','https://doi.org/10.1055/a-2615-4935'],['Maeo et al. 2023, overhead vs. arm-at-side triceps extensions','https://doi.org/10.1080/17461391.2022.2100279']] },
   rest:{ t:'Rest between sets', c:'mod', g:'Execution',
     s:'Rests longer than about a minute may give a small growth advantage, with little difference beyond about 90 seconds and plenty of uncertainty.',
-    a:'Rest long enough to keep your reps, load and form on the next set: often 2&ndash;3 minutes on big lifts and 1&ndash;2 on smaller ones.',
-    src:[['Singer et al. 2024, inter-set rest Bayesian meta-analysis','https://doi.org/10.3389/fspor.2024.1429789']] },
+    a:'Rest long enough to keep your reps, load and form on the next set: Milo times 3 minutes on heavy barbell lifts, 2 on other compounds and 90 seconds on single-joint work.',
+    src:[['Singer et al. 2024, inter-set rest Bayesian meta-analysis','https://doi.org/10.3389/fspor.2024.1429789'],['Schoenfeld et al. 2016, 3 vs. 1 minute rests in trained men','https://doi.org/10.1519/JSC.0000000000001272']] },
   tempo:{ t:'Rep tempo & time under tension', c:'mod', g:'Execution',
     s:'Growth is similar across rep durations of roughly 0.5 to 8 seconds, and deliberately very slow reps (over 10 seconds) may be worse.',
     a:'Control the weight without slowing reps on purpose, and don’t chase time under tension for its own sake.',
@@ -2525,6 +2561,28 @@ const BW_SHARE={pushup:0.7, 'close-grip-pushup':0.7, 'diamond-pushup':0.7, 'defi
   'glute-bridge':0.45, 'single-leg-glute-bridge':0.55, 'single-leg-calf-raise':0.97, 'bw-calf-raise':0.97};
 const HOLDS=['plank','side-plank','dead-hang','copenhagen-plank'];
 function isHold(exId){ return HOLDS.includes(exId); }
+/* Reps, effort and rest come from Dose, never from typing: the kind of exercise, then you (muscleWho). Side and rear
+   delts, calves, abs, forearms and neck are the small muscles. */
+const SMALL_MU=['sdelt','rdelt','calf','abs','obli','fore','neck'];
+function doseKind(ex){
+  const id=ex.exId||ex.id, e=ex.comp==null||!ex.primary||!ex.equipment? (state&&state.exercises&&exById(id))||{} : ex;
+  const comp=ex.comp!=null? !!ex.comp : !!e.comp, bw=(ex.equipment||e.equipment)==='Bodyweight';
+  return isHold(id)? 'hold' : HEAVY_RIR.includes(id)? 'heavy' : comp? (bw? 'bw' : 'comp') : bw? 'bwiso'
+    : SMALL_MU.includes((ex.primary||e.primary||[])[0])? 'small' : 'iso';
+}
+/* You, for Muscle: Together's answers, or the experience picked when Muscle last built a block. */
+function muscleWho(){ return Dose.who(state&&state.settings&&state.settings.exp); }
+/* {repLow, repHigh, rir, rest}; rir is for a session outside a block, where a block's week doesn't set it. */
+function defOf(ex, w){ const k=doseKind(ex), [lo,hi]=Dose.reps(k, w);
+  return {repLow:lo, repHigh:hi, rir:Math.max(k==='iso'||k==='bwiso'||k==='small'? 1 : 2, Dose.floor(w)), rest:Dose.rest(k)}; }
+/* The library and every block from you as you are now, so a change in Together's set-up reaches them. */
+function syncDefs(){
+  const w=muscleWho(), fix=x=>{ const d=defOf(x, w); x.repLow=d.repLow; x.repHigh=d.repHigh; };
+  state.exercises.forEach(e=>{ e.def=defOf(e, w); });
+  state.mesos.forEach(m=>(m.days||[]).forEach(d=>(d.exercises||[]).forEach(fix)));
+  if(state.builder) state.builder.days.forEach(d=>d.exercises.forEach(fix));
+  return w;
+}
 /* Your bodyweight then, from your log here (the shared Body log); Strength's bodyweight while nothing is logged. */
 let bodyMemo={k:null, v:[]};
 function bodyRows(){ const L=state.bodylog, z=L[L.length-1], k=L.length+':'+(z? z.date+':'+z.weight : '')+':'+histVer;
@@ -2696,6 +2754,7 @@ function weeklyVolume(){
 /* ==================== RENDER ROOT ==================== */
 const view = $('#view');
 function render(){
+  syncDefs();
   __root.getElementById('logo').innerHTML = MiloSecurity.html(I.bolt);
   __root.getElementById('gearbtn').innerHTML = MiloSecurity.html(I.gear);
   __root.getElementById('evbtn').innerHTML = MiloSecurity.html(I.book);
@@ -2963,25 +3022,7 @@ function exerciseCard(en, ei){
       </div>
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
     </div>
-    <details class="exercise-targets">
-    <summary><span class="target-summary">${exerciseTargetSummary(en)}</span><span class="target-edit"><span class="target-edit-closed">Edit</span><span class="target-edit-open">Done</span></span></summary>
-    <div class="target-row">
-      <div class="tinput">
-        <label>${isHold(en.exId)?'Hold (seconds)':'Rep range'}</label>
-        <input class="tnum" inputmode="numeric" data-field="tRepLow" data-ex="${ei}" value="${t.repLow}" maxlength="${isHold(en.exId)?3:2}" aria-label="Target ${isHold(en.exId)?'seconds':'reps'}, lowest">
-        <span class="dash">&ndash;</span>
-        <input class="tnum" inputmode="numeric" data-field="tRepHigh" data-ex="${ei}" value="${t.repHigh}" maxlength="${isHold(en.exId)?3:2}" aria-label="Target ${isHold(en.exId)?'seconds':'reps'}, highest">
-      </div>
-      <div class="tinput">
-        <label>RIR</label>
-        <input class="tnum" inputmode="numeric" data-field="tRir" data-ex="${ei}" value="${t.rir}" maxlength="1" aria-label="Target reps in reserve">
-      </div>
-      <div class="tinput">
-        <label>Rest (s)</label>
-        <input class="tnum" inputmode="numeric" data-field="tRest" data-ex="${ei}" value="${t.rest}" maxlength="3" aria-label="Rest in seconds">
-      </div>
-    </div>
-    </details>
+    <div class="exercise-targets"><span class="target-summary">${exerciseTargetSummary(en)}</span></div>
     <div class="setgrid">
       <div class="setrow-head">
         <span>Set</span><span>${bw?'+':isAssisted(en.exId)?'&minus;':''}${unit()==='kg'?'Kg':'Lb'}</span><span>${isHold(en.exId)?'Secs':'Reps'}</span><span>RIR</span><span></span><span></span>
@@ -3820,9 +3861,9 @@ function isDeloadWeek(m,w){ return (m.deloadWeeks && m.deloadWeeks.includes(w)) 
 function weekPhase(m,w){ return isDeloadWeek(m,w)?'Deload':'Accumulation'; }
 function weekRir(m,w){
   if(isDeloadWeek(m,w)) return Math.min(5, m.endRir+3);
-  const hw=hardWeeks(m); if(hw<=1) return m.startRir;
+  const lo=Dose.floor(muscleWho()), hw=hardWeeks(m); if(hw<=1) return Math.max(lo, m.startRir);   // never under your floor
   const t=(w-1)/(hw-1);
-  return Math.max(0, Math.round(m.startRir + t*(m.endRir-m.startRir)));
+  return Math.max(lo, Math.round(m.startRir + t*(m.endRir-m.startRir)));
 }
 /* How close to failure each kind of exercise goes in a week, from the block's ramp (its start to its end in reserve):
    single-joint exercises follow it all the way (2 down to 0, where failure is safe); other compounds stop at 1 in reserve;
@@ -3949,6 +3990,8 @@ const PRIORITY={
   abs:['cable-crunch','hanging-leg-raise','machine-crunch','kneeling-rollout','reverse-crunch','crunch'],
   adductor:['hip-adduction','cable-hip-adduction','copenhagen-plank']};
 function rankIn(mu){ const L=PRIORITY[mu]||[]; return e=>{ const i=L.indexOf(e.id); return i>=0? i : e.custom? 60 : e.alt? 100 : 50; }; }
+/* A built block's reps in reserve, first week to last (Dose), for the experience picked. */
+function genSpan(o){ const [startRir, endRir]=Dose.span({exp:o.experience||'intermediate', stage:muscleWho().stage}); return {startRir, endRir}; }
 function generateDraft(o){
   const nd=DAY_PLAN[o.days]? o.days : 4, equip=myEquip(), logged=lastDone(), emph=emphasisMuscles(o.emphasis);
   const T0=weeklyTargets(Object.assign({}, o, {days:nd})), maxP=o.experience==='advanced'? 5 : 4;
@@ -4109,7 +4152,7 @@ function generateDraft(o){
   // no planned lighter week: a week off mid-block added no muscle and slowed lower-body strength gains (Coleman et al. 2024,
   // a week off rather than a lighter week); the app offers one when lifts go down while you're worn out. Effort starts 2
   // short of failure, not 3, and climbs from there.
-  return {name:nd+'-Day '+label+'Block', totalWeeks:o.weeks||4, hasDeload:false, startRir:2, endRir:o.experience==='beginner'?1:0, days:out, targets:T, fit};
+  return {name:nd+'-Day '+label+'Block', totalWeeks:o.weeks||4, hasDeload:false, ...genSpan(o), days:out, targets:T, fit};
 }
 let genOpts={days:4, experience:'intermediate', emphasis:['balanced'], weeks:4, gap:false};
 function openGenerator(){
@@ -4171,7 +4214,7 @@ function generateGapDraft(o){
     names[name]=(names[name]||0)+1; if(names[name]>1) name+=' '+String.fromCharCode(64+names[name]);
     return {id:'d-'+uid(), name, exercises};
   });
-  return {name:nd+'-Day Block around Strength & Ladder', totalWeeks:o.weeks||4, hasDeload:false, startRir:2, endRir:o.experience==='beginner'?1:0, days};
+  return {name:nd+'-Day Block around Strength & Ladder', totalWeeks:o.weeks||4, hasDeload:false, ...genSpan(o), days};
 }
 function renderGenerator(){
   const pills=(field,opts)=>`<div class="pillpick">${opts.map(([v,l])=>{ const on=Array.isArray(genOpts[field])?genOpts[field].includes(v):genOpts[field]===v; return `<button class="${on?'on':''}" data-act="gen-set" data-f="${field}" data-v="${v}">${l}</button>`; }).join('')}</div>`;
@@ -4192,6 +4235,7 @@ function renderGenerator(){
     </div>`);
 }
 function genCreate(){
+  state.settings.exp=genOpts.experience; save();   // what you said, for reps and effort here (muscleWho)
   const draft=(genOpts.gap&&gapAvailable())? generateGapDraft(genOpts) : generateDraft(genOpts);
   if(!draft.days.some(d=>d.exercises.length)){ toast('None of the exercises matched your equipment. Turn more on in Settings'); return; }
   state.builder=draft; state.planMode='build'; state.route='plan';
@@ -4270,11 +4314,12 @@ function suggestHelp(exId, entry, prev, allTop, deload){
   return {weight:a, note:'same help &middot; aim for +1 rep toward '+entry.target.repHigh};
 }
 /* An exercise of a block or Together day as a session entry: rir is the week's, and the exercise's own comes from its kind
-   (exRir); the muscles are the library's as it is now. */
+   (exRir), never under your floor; reps and rest are the exercise's for you (defOf); the muscles are the library's as it
+   is now. */
 function mesoEntry(ex, idx, nSets, rir, deload){
-  const M=musclesOf(ex); rir=exRir(rir, ex);
+  const M=musclesOf(ex), w=muscleWho(), d=defOf(ex, w); rir=Math.max(exRir(rir, ex), Dose.floor(w));
   const entry={exId:ex.exId,name:ex.name,primary:M.p.slice(),secondary:M.s.slice(),equipment:ex.equipment,
-    target:{repLow:ex.repLow,repHigh:ex.repHigh,rir:rir,rest:ex.comp?180:90},
+    target:{repLow:d.repLow,repHigh:d.repHigh,rir:rir,rest:d.rest},
     sets:Array.from({length:nSets},()=>makeSet('work')), mi:idx};
   const sug=suggestLoad(ex.exId, entry, ex.comp, deload);
   if(sug.weight!=null){ entry.sets.forEach(s=>{ s.weight=sug.weight; }); }
@@ -4573,14 +4618,14 @@ function viewMesoDashboard(m){
 
 /* ---- BUILDER ---- */
 function newMeso(){
-  state.builder={name:'', totalWeeks:4, hasDeload:false, startRir:2, endRir:0,
+  const [startRir, endRir]=Dose.span(muscleWho());
+  state.builder={name:'', totalWeeks:4, hasDeload:false, startRir, endRir,
     days:[{id:'d-'+uid(), name:'Day 1', exercises:[]}]};
   state.planMode='build'; render();
 }
 function viewBuilder(){
   const b=state.builder;
   const weeksPills=[4,5,6].map(n=>`<button class="${b.totalWeeks===n?'on':''}" data-act="b-weeks" data-v="${n}">${n} wk</button>`).join('');
-  const rirPills=(field)=> [4,3,2,1,0].map(n=>`<button class="${b[field]===n?'on':''}" data-act="b-rir" data-f="${field}" data-v="${n}">${n}</button>`).join('');
   const daysHtml=b.days.map((d,di)=>`
     <div class="build-day">
       <div class="bdh">
@@ -4596,11 +4641,7 @@ function viewBuilder(){
             <span class="sv">${e.sets}</span>
             <button data-act="b-ex-setplus" data-day="${esc(d.id)}" data-idx="${idx}">+</button>
           </div>
-          <div class="rng-input">
-            <input inputmode="numeric" data-field="brl" data-day="${esc(d.id)}" data-idx="${idx}" value="${e.repLow}" maxlength="2">
-            <span class="faint">&ndash;</span>
-            <input inputmode="numeric" data-field="brh" data-day="${esc(d.id)}" data-idx="${idx}" value="${e.repHigh}" maxlength="2">
-          </div>
+          <span class="rng-input" title="Reps, set for you">${e.repLow}&ndash;${e.repHigh}</span>
           <button class="setmenu" style="width:28px;height:28px" data-act="b-del-ex" data-day="${esc(d.id)}" data-idx="${idx}" aria-label="Remove exercise">${I.x}</button>
         </div>`).join('') || `<div class="muted" style="font-size:12px;padding:12px">No exercises yet.</div>`}
       <div style="padding:10px 12px"><button class="tinybtn" data-act="b-add-ex" data-day="${esc(d.id)}">${I.plus} Add exercise</button></div>
@@ -4613,11 +4654,8 @@ function viewBuilder(){
       <div class="field" style="margin-bottom:12px"><label>Block name</label><input type="text" data-field="bname" value="${esc(b.name)}" placeholder="e.g. Summer Hypertrophy Block"></div>
       <div class="field" style="margin-bottom:12px"><label>Length</label><div class="pillpick">${weeksPills}
         <button class="${b.hasDeload?'on':''}" data-act="b-deload" style="margin-left:6px">${b.hasDeload?I.check+' ':''}Lighter last week</button></div></div>
-      <div class="grid2">
-        <div class="field" style="margin:0"><label>Start RIR (wk 1)</label><div class="pillpick">${rirPills('startRir')}</div></div>
-        <div class="field" style="margin:0"><label>End RIR (last hard wk)</label><div class="pillpick">${rirPills('endRir')}</div></div>
-      </div>
-      <p class="muted" style="font-size:11px;line-height:1.5;margin:10px 0 0">Reps in reserve: how many you stop short of failure. It drops week to week.</p>
+      <div class="field" style="margin:0"><label>Effort, set for you</label>
+        <p class="muted" style="font-size:12.5px;line-height:1.5;margin:4px 0 0">${b.startRir===b.endRir? `${b.startRir} reps in reserve every week` : `${b.startRir} reps in reserve in week 1, down to ${b.endRir} in the last hard week`}. Rep ranges and rests suit each exercise. All of it is set from your experience and the research.</p></div>
       <details class="why"><summary>${I.info} Why?</summary><p>Single-joint exercises go all the way to the end RIR. Other compounds stop at 1, and squats, deadlifts and bench presses at 1 or 2: a grinding rep there costs the most recovery and risk.</p></details>
     </div>
     <div><div class="section-label">Training days <span class="ln"></span></div>${daysHtml}
@@ -4837,7 +4875,7 @@ function saveBuilder(start){
   return m;
 }
 function restartMeso(old){
-  const draft={name:old.name.replace(/\s*\(block \d+\)$/,'')+' (block '+(2)+')', totalWeeks:old.totalWeeks, hasDeload:old.hasDeload, startRir:old.startRir, endRir:old.endRir, targets:old.targets||null,
+  const draft={name:old.name.replace(/\s*\(block \d+\)$/,'')+' (block '+(2)+')', totalWeeks:old.totalWeeks, hasDeload:old.hasDeload, startRir:Dose.span(muscleWho())[0], endRir:Dose.span(muscleWho())[1], targets:old.targets||null,
     days:old.days.map(d=>({id:'d-'+uid(), name:d.name, exercises:d.exercises.map((e,idx)=>({...e, sets:(old.setPlan[d.id+':'+idx]||[e.sets])[0]||e.sets}))}))};
   const m=makeMesoFromDraft(draft, true);
   state.planMode='home'; state.route='plan'; render(); toast('New block started');
@@ -4965,8 +5003,9 @@ function pushWorkSet(en){
   en.sets.push(s); return s;
 }
 function entryFromEx(ex, nSets){
+  const d=defOf(ex, muscleWho());
   return {exId:ex.id, name:ex.name, primary:ex.primary.slice(), secondary:ex.secondary.slice(),
-    equipment:ex.equipment, target:{repLow:ex.def.repLow, repHigh:ex.def.repHigh, rir:ex.def.rir, rest:ex.def.rest},
+    equipment:ex.equipment, target:{repLow:d.repLow, repHigh:d.repHigh, rir:d.rir, rest:d.rest},
     sets: Array.from({length:nSets||3}, ()=>makeSet('work'))};
 }
 function addExerciseToActive(exId){
@@ -5710,11 +5749,12 @@ function exDetail(id){
       <div class="section-label">Secondary</div><div class="mm" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px">${sec}</div>
       <div class="section-label">How to do it</div>
       <div class="card pad" style="box-shadow:none;margin-bottom:14px">${howtoHtml(id)}</div>
-      <div class="section-label">Suggested starting point</div>
+      <div class="section-label">Set for you</div>
       <div class="card pad" style="box-shadow:none;margin-bottom:14px">
-        <div class="spread"><span class="muted">Rep range</span><b>${e.def.repLow}&ndash;${e.def.repHigh}</b></div>
-        <div class="spread" style="margin-top:6px"><span class="muted">Target RIR</span><b>${e.def.rir} in reserve</b></div>
-        <div class="spread" style="margin-top:6px"><span class="muted">Rest</span><b>${e.def.rest}s</b></div>
+        <div class="spread"><span class="muted">${isHold(id)?'Hold':'Rep range'}</span><b>${e.def.repLow}&ndash;${e.def.repHigh}${isHold(id)?' s':''}</b></div>
+        <div class="spread" style="margin-top:6px"><span class="muted">Reps in reserve</span><b>${e.def.rir} outside a block</b></div>
+        <div class="spread" style="margin-top:6px"><span class="muted">Rest</span><b>${e.def.rest%60? e.def.rest+' s' : e.def.rest/60+' min'}</b></div>
+        <p class="muted" style="font-size:12px;line-height:1.5;margin:8px 0 0">From the kind of exercise, your experience and the research. A block’s week sets how close to failure you go.</p>
         ${perf?`<div class="spread" style="margin-top:6px"><span class="muted">Your last top set</span><b>${wTxt(id, perf.weight, ' ')} &times; ${perf.reps}</b></div>`:''}
       </div>
       <p class="muted" style="font-size:12.5px;line-height:1.55;margin:0 0 10px">Full, controlled, pain-free range of motion. Stop most sets 1&ndash;3 reps shy of failure. These are starting heuristics, not fixed rules.</p>
@@ -5790,8 +5830,8 @@ function addCustomEx(d){
   const name=String(d.name||'').trim(), primary=[...new Set((d.primary||[]).filter(m=>MUSCLES[m]))], comp=!!d.comp;
   if(!name||!primary.length||!CUSTOM_EQUIP.includes(d.equipment)) return null;
   const ex={id:'custom-'+uid(), name, equipment:d.equipment, primary,
-    secondary:[...new Set((d.secondary||[]).filter(m=>MUSCLES[m]&&!primary.includes(m)))], comp, custom:true,
-    def:{repLow:comp?6:10, repHigh:comp?10:15, rir:comp?2:1, rest:comp?180:90}};
+    secondary:[...new Set((d.secondary||[]).filter(m=>MUSCLES[m]&&!primary.includes(m)))], comp, custom:true};
+  ex.def=defOf(ex, muscleWho());
   state.exercises.push(ex); save();
   return ex;
 }
@@ -6106,7 +6146,6 @@ __root.addEventListener('click', e=>{
     case 'b-cancel': state.builder=null; state.planMode='home'; render(); break;
     case 'b-weeks': state.builder.totalWeeks=+el.dataset.v; render(); break;
     case 'b-deload': state.builder.hasDeload=!state.builder.hasDeload; render(); break;
-    case 'b-rir': state.builder[el.dataset.f]=+el.dataset.v; render(); break;
     case 'b-add-day': state.builder.days.push({id:'d-'+uid(), name:'Day '+(state.builder.days.length+1), exercises:[]}); render(); break;
     case 'b-del-day': state.builder.days=state.builder.days.filter(d=>d.id!==el.dataset.day); render(); break;
     case 'b-add-ex': openPicker({type:'builder', dayId:el.dataset.day}); break;
@@ -6164,20 +6203,12 @@ __root.addEventListener('input', e=>{
       const sg=state.active.entries[ei].sets[si].segments[gi];
       if(f==='segweight') sg.weight=fromDisp(el.value); else sg.reps=Num.int(el.value)||null;
       save();
-    } else if(f==='tRepLow'||f==='tRepHigh'||f==='tRir'||f==='tRest'){
-      const t=state.active.entries[ei].target;
-      const v=Num.int(el.value)||0;
-      if(f==='tRepLow') t.repLow=v; else if(f==='tRepHigh') t.repHigh=v; else if(f==='tRir') t.rir=v; else t.rest=v;
-      const summary=el.closest('.exercise-targets')?.querySelector('.target-summary');
-      if(summary) summary.innerHTML=exerciseTargetSummary(state.active.entries[ei]);
-      save();
     } else if(f==='loadw'){ loadingState.weight=Num.parse(el.value)||0; refreshLoading(); }
     else if(f==='metro'){ const i=+el.dataset.i; metro.tempo[i]=Num.parse(el.value)||0; state.settings.tempo=metro.tempo.slice(); save(); }
     else if(f==='body-weight'){ if(bodyDraft) bodyDraft.weight=el.value; }
     else if(f&&f.indexOf('body-')===0){ if(bodyDraft){ if(!bodyDraft.m)bodyDraft.m={}; bodyDraft.m[f.slice(5)]=el.value; } }
     else if(f==='bname'){ if(state.builder) state.builder.name=el.value; }
     else if(f==='bdayname'){ const d=state.builder&&state.builder.days.find(x=>x.id===el.dataset.day); if(d) d.name=el.value; }
-    else if(f==='brl'||f==='brh'){ const d=state.builder&&state.builder.days.find(x=>x.id===el.dataset.day); if(d){ const ex=d.exercises[+el.dataset.idx]; const v=Num.int(el.value)||0; if(f==='brl') ex.repLow=v; else ex.repHigh=v; } }
     return;
   }
   if(e.target.id==='libsearch'){ state.libSearch=e.target.value; renderLibListOnly(); }
@@ -6387,9 +6418,10 @@ function hubWork(since, until){
   return out;
 }
 function mesoDayInfo(m, d, w){
+  const you=muscleWho();
   return {id:d.id, name:d.name, week:w, rir:weekRir(m,w), deload:isDeloadWeek(m,w),
     exercises:d.exercises.map((e,idx)=>({exId:e.exId, name:e.name, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp,
-      sets:plannedSets(m,d.id,idx,w), reps:e.repLow+'&ndash;'+e.repHigh}))};
+      sets:plannedSets(m,d.id,idx,w), reps:(r=>r.repLow+'&ndash;'+r.repHigh)(defOf(e, you))}))};
 }
 /* The session k sessions from now: this week's days not done yet, in order, then each following week's. */
 function hubUpcoming(k){
@@ -6419,7 +6451,7 @@ function hubStart(tg){
   return state.active? state.active.id : null;
 }
 /* Exercises Together can build a day from, with what each trains and its rep range. */
-function hubCatalog(){ const last=lastDone(); return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp, long:GROWTH.long[e.id]||0,
+function hubCatalog(){ syncDefs(); const last=lastDone(); return state.exercises.map(e=>({id:e.id, name:e.name, equipment:e.equipment, p:e.primary.slice(), s:e.secondary.slice(), comp:!!e.comp, long:GROWTH.long[e.id]||0,
   repLow:e.def.repLow, repHigh:e.def.repHigh, custom:!!e.custom, alt:!!e.alt, last:last[e.id]||0, rank:rankOf(e)})); }
 /* An exercise's place in each of its main muscles' rankings (PRIORITY), {muscle: place}, so Together breaks a tie the
    way Muscle's own blocks do. */
@@ -8745,8 +8777,8 @@ function toggleDone(ei,si){
   s.done=!s.done;
   if(s.done) grow(e);
   save(); render();
-  const L=LADDERS[e.ladderId];   // prep has its own short rest, and balance attempts a shorter one
-  if(s.done) startRest(L.rest?Math.min(L.rest,state.settings.rest):e.block?30:practiceOf(e.ladderId,e.stepIdx)==='balance'?60:Math.max(120,state.settings.rest));
+  const L=LADDERS[e.ladderId];   // prep has its own short rest, a block 30 s, and the rest is Dose's for the practice
+  if(s.done) startRest(L.rest? L.rest : e.block? 30 : Dose.ladderRest(practiceOf(e.ladderId,e.stepIdx), !!L.skill, e.kind==='hold'? 0 : +e.target||0));
 }
 /* What a finished or ended session keeps of an exercise: the sets done, and the role it had (an easier day's sets
    aren't a hard session: RECOVERY SPACING). */
@@ -9449,8 +9481,6 @@ function openSettings(){
     <div class="sheet-body">
       <div class="field"><label>Theme</label>
         <div class="pillpick">${[['system','Auto'],['light','Light'],['dark','Dark']].map(t=>`<button class="${s.theme===t[0]?'on':''}" data-act="set-theme" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
-      <div class="field"><label>Rest between sets</label>
-        <div class="pillpick">${[60,90,120,180].map(n=>`<button class="${s.rest===n?'on':''}" data-act="set-rest" data-v="${n}">${n}s</button>`).join('')}</div></div>
       <div class="field"><label>Buzz when rest ends or a hold reaches its target</label>
         <div class="pillpick">${[['1','On'],['0','Off']].map(t=>`<button class="${(s.vibrate?'1':'0')===t[0]?'on':''}" data-act="set-vib" data-v="${t[0]}">${t[1]}</button>`).join('')}</div></div>
       <div class="field"><label>Beep when a hold reaches its target</label>
@@ -9717,7 +9747,6 @@ __root.addEventListener('click', e=>{
 
     /* settings */
     case 'set-theme': state.settings.theme=el.dataset.v; applyTheme(); save(); openSettings(); break;
-    case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
     case 'set-vib': state.settings.vibrate=el.dataset.v==='1'; Prefs.set({vibrate:state.settings.vibrate}); save(); openSettings(); break;
     case 'set-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); save(); openSettings(); break;
     case 'hold-off': state.hold=null; save(); render(); toast('Hold lifted'); if(window.__hub) window.__hub.changed('cal'); break;
@@ -9952,11 +9981,9 @@ if(window.__hub) window.__hub.reg('cal', {
   lib(){ return LADDER_ORDER.filter(id=>LADDERS[id]).map(id=>({id, n:LADDERS[id].n, steps:LADDERS[id].steps.map(st=>st.n)})); },
   howto(id, i){ if(!LADDERS[id]) return; if(i==null) openLadder(id); else openRungHow(id, i); },
   evidence(){ openEvidenceLib(); },
-  opts(){ return [{k:'rest', l:'Rest between sets', c:[60,90,120,180].map(n=>[n,n+' s']), v:state.settings.rest},
-    {k:'redo-place', l:'Redo the where-are-you survey', act:true},
+  opts(){ return [{k:'redo-place', l:'Redo the where-are-you survey', act:true},
     {k:'reset-rungs', l:'Reset all rungs to the start', act:true, ask:'Every ladder goes back to its first rung, and your goals ask where you are again. Your logged sessions stay.'}]; },
-  opt(k, v){ if(k==='rest'){ state.settings.rest=+v; save(); }
-    else if(k==='redo-place'){ state.placed={}; state.said={}; state.placing=null; save(); render(); toast('Done. Your goals will ask where you are again.'); }
+  opt(k, v){ if(k==='redo-place'){ state.placed={}; state.said={}; state.placing=null; save(); render(); toast('Done. Your goals will ask where you are again.'); }
     else if(k==='reset-rungs'){ LADDER_ORDER.forEach(x=>state.rung[x]=0); state.placed={}; state.said={}; state.advances=[]; save(); render(); toast('Rungs reset'); } },
   openRec(id){ openEditSession(id, true); },
   recsIn(a, b){ return state.history.filter(h=>h.date>=a&&h.date<b).map(h=>({id:h.id, date:h.date, partial:!!h.partial})); },
@@ -10235,7 +10262,7 @@ const EVIDENCE={
          ['Larsen et al. 2021, Autoregulation and maximal strength','PeerJ','https://doi.org/10.7717/peerj.10663']] },
   rest:{ t:'Rest longer between heavy sets', c:'mod', g:'Effort & rest',
     s:'Rests longer than about two minutes build more strength than short ones, most clearly in trained lifters.',
-    a:'Rest 3 to 5 minutes after top sets and heavy work and 2 to 3 after back-offs; the timer defaults to 3 minutes and adds one after top sets.',
+    a:'Rest 3 to 5 minutes after top sets and heavy work and 2 to 3 after back-offs; the timer is set for you: 4 minutes after a top or plus set, 3 after other work sets.',
     d:'Short rests cost reps and load on the next set. In untrained people, rests of one to two minutes looked sufficient.',
     src:[['Schoenfeld et al. 2016, Longer rests and strength','J Strength Cond Res','https://doi.org/10.1519/JSC.0000000000001272'],
          ['Grgic et al. 2018, Rest interval and strength review','Sports Med','https://doi.org/10.1007/s40279-017-0788-x']] },
@@ -10834,8 +10861,7 @@ function toggleDone(ei,si){
       msg= v? 'Top set in: e1RM '+fmtW(shownE1(en.liftId,v))+' '+u()+(bo&&bo.w?'. Back-offs '+wu(bo.w)+(mv.length?', set from it':''):'') : null; } }
   if(s.done){
     if(s.kind==='plus' && s.trpe==null && s.reps>s.tr){ const v=setE1(s,en.liftId); msg=s.reps+' reps on the plus set'+(v?'. e1RM '+fmtW(shownE1(en.liftId,v))+' '+u():''); }
-    const heavy=s.kind==='top'||s.kind==='plus';
-    startRest(s.kind==='warm'? 75 : heavy? state.settings.rest+60 : state.settings.rest, s.kind==='warm');
+    startRest(Dose.strRest(s.kind), s.kind==='warm');   // the rest is set for you (Dose), not chosen
     buzz(12);
     check=!!s.chk;
   }
@@ -11908,7 +11934,6 @@ function openSettings(){
         <div class="muted" style="font-size:11.5px;margin-top:5px">Lightest to heaviest, with spaces. Blank: every jump, no top.</div></div>
       <div class="field"><label>Machine and cable jumps</label>${isLb()?pills('set-stackstep',[[5,'5 lb'],[10,'10 lb'],[15,'15 lb']],K.stack):pills('set-stackstep',[[2.5,'2.5 kg'],[5,'5 kg'],[7,'7 kg']],K.stack)}</div>
       <div class="section-label" style="margin:14px 3px 8px">Training <span class="ln"></span></div>
-      <div class="field"><label>Rest after work sets</label>${pills('set-rest',[[120,'2 min'],[180,'3 min'],[240,'4 min'],[300,'5 min']],s.rest)}</div>
       <div class="field"><label>Training max</label>${pills('set-tm',[[85,'85%'],[90,'90%'],[95,'95%']],s.tmPct)}</div>
       <div class="settings-row"><div><div class="sl">Warm-up sets</div><div class="sd">Build a ramp to the first heavy set automatically.</div></div>${pills('set-warm',[[1,'On'],[0,'Off']],s.warmups?1:0)}</div>
       <div class="settings-row"><div><div class="sl">Sound</div><div class="sd">Chime when rest ends.</div></div>${pills('set-sound',[[1,'On'],[0,'Off']],s.sound?1:0)}</div>
@@ -12122,7 +12147,6 @@ __root.addEventListener('click', e=>{
     case 'set-dbstep': { const k=isLb()?'dbStepLb':'dbStepKg'; state.settings[k]=+el.dataset.v; Kit.set({[k]:+el.dataset.v}); save(); openSettings(); render(); break; }
     case 'set-stackstep': { const k=isLb()?'stackStepLb':'stackStepKg'; state.settings[k]=+el.dataset.v; Kit.set({[k]:+el.dataset.v}); save(); openSettings(); render(); break; }
     case 'set-collar': Kit.set({collarKg:fromDisp(+el.dataset.v)||0}); save(); openSettings(); render(); break;
-    case 'set-rest': state.settings.rest=+el.dataset.v; save(); openSettings(); break;
     case 'set-tm': state.settings.tmPct=+el.dataset.v; save(); openSettings(); break;
     case 'set-warm': state.settings.warmups=el.dataset.v==='1'; Prefs.set({warmups:state.settings.warmups}); save(); openSettings(); break;
     case 'set-sound': state.settings.sound=el.dataset.v==='1'; Prefs.set({sound:state.settings.sound}); if(state.settings.sound){ primeAudio(); chime(); } save(); openSettings(); break;
@@ -12439,12 +12463,10 @@ if(window.__hub) window.__hub.reg('str', {
   evidence(){ openEvidenceLib(); },
   opts(){ const s=state.settings; return [
     {k:'warmups', g:'warm', l:'Warm-up sets', d:'A ramp of lighter sets up to the first heavy one.', c:[[1,'On'],[0,'Off']], v:s.warmups?1:0},
-    {k:'rest', l:'Rest after work sets', c:[[120,'2 min'],[180,'3 min'],[240,'4 min'],[300,'5 min']], v:s.rest},
     {k:'tmPct', l:'Training max', d:'The share of your estimated max the plans work from.', c:[[85,'85%'],[90,'90%'],[95,'95%']], v:s.tmPct},
     {k:'setup', l:'Strength’s own plan: areas and kit', act:true}]; },
   opt(k, v){ const s=state.settings;
     if(k==='warmups'){ s.warmups=String(v)==='1'; Prefs.set({warmups:s.warmups}); save(); render(); }
-    else if(k==='rest'){ s.rest=+v; save(); }
     else if(k==='tmPct'){ s.tmPct=+v; save(); render(); }
     else if(k==='setup'){ state.route='today'; render(); openSetup(); } },
   openRec(id){ openEditSession(id, true); },
