@@ -28,6 +28,15 @@
     let {win,doc}=await load();
     let root=doc.getElementById('m-mix').shadowRoot;
     check(place(doc)==='today' && !!root.querySelector('[data-a="f-go"]') && !root.querySelector('[data-a="d-mins"]'), 'a new person opens on Today, at a first run that asks only what, how often and units');
+    // the order you pick sets each section's dose, and the picks say so
+    root.querySelector('[data-a="f-sec"][data-m="lift"]').click();
+    root.querySelector('[data-a="f-sec"][data-m="str"]').click();
+    const ranks=()=>[...root.querySelectorAll('[data-a="f-sec"] .rank')].map(b=>b.closest('[data-m]').dataset.m+b.textContent).join(',');
+    check(ranks()==='lift1,str2' && root.querySelector('#f-order').textContent.includes('Muscle · Build and Strength · Moderate'), 'picks are numbered in the order you tap them, with the dose each gets');
+    root.querySelector('[data-a="f-sec"][data-m="lift"]').click();
+    check(ranks()==='' && !root.querySelector('#f-order') && root.querySelector('[data-a="f-sec"][data-m="str"]').getAttribute('aria-pressed')==='true', 'one pick needs no order');
+    root.querySelector('[data-a="f-sec"][data-m="str"]').click();
+    check(!root.querySelector('[data-a="f-sec"][aria-pressed="true"]') && !root.querySelector('[data-a="f-sec"][data-m="cal"][aria-pressed="true"]'), 'nothing is picked for someone new, Ladder included');
     root.querySelector('[data-a="f-sec"][data-m="str"]').click();
     check(!root.querySelector('[data-a="f-go"]').disabled, 'one kind of training is enough to build a program');
     root.querySelector('[data-a="f-go"]').click(); await pause(300);
@@ -71,7 +80,7 @@
     // one muscle of a group left out: traps in Back
     root.querySelector('[data-a="t-mu"][data-k="trap"]').click(); await pause(150);
     check(root.querySelector('[data-a="t-mu"][data-k="trap"]').getAttribute('aria-pressed')==='false' && root.textContent.includes('Traps is left out'), 'a muscle in a group can be tapped off on its own');
-    check(root.textContent.includes('sets a week for each muscle, instead of') && root.querySelector('.tnums'), 'More, Normal, Less and Skip say what they mean in sets, and each group shows its weekly sets');
+    check(root.textContent.includes('sets a week for a big muscle, instead of') && root.querySelector('.tnums'), 'More, Normal, Less and Skip say what they mean in sets, and each group shows its weekly sets');
     // the exercise library for a muscle: every exercise that works it, and nothing that reopens after you choose
     const rows=()=>[...root.querySelectorAll('[data-a="t-pick"][data-t="ex"]')].map(b=>b.dataset.k);
     const k0=rows()[0]; let pickEx=null;

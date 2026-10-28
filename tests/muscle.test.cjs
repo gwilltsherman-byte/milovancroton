@@ -412,3 +412,21 @@ test('warm-up sets go before the first loaded compound of each part of the body,
   assert.ok(warm[3].length >= 1, 'the first pull gets ramp sets');
   assert.equal(warm[4].length, 0, 'single-joint work has none');
 });
+
+test('ready-made blocks and one-session templates follow WHAT GROWS MORE', () => {
+  const api = muscle();
+  const blocks = plain(api.evaluate('MESO_TEMPLATES')), sessions = plain(api.evaluate('TEMPLATES'));
+  const G = plain(api.evaluate('GROWTH'));
+  const ids = [...blocks.flatMap(t => t.days.flatMap(d => d.ex.map(x => x[0]))), ...sessions.flatMap(t => t.items.map(x => x[0]))];
+  assert.ok(ids.every(id => api.evaluate(`!!exById(${JSON.stringify(id)})`)), 'every template exercise exists');
+  // the options that grew less in trials never stand in for the ones that grew more
+  assert.ok(!ids.includes('lying-leg-curl'), 'a seated leg curl, not a lying one (Maeo et al. 2021)');
+  assert.ok(!ids.includes('seated-calf'), 'standing or straight-knee calf raises (Kinoshita et al. 2023)');
+  // a block that trains the triceps or quads on their own covers the part a press or a squat misses
+  for (const t of blocks) {
+    const ex = t.days.flatMap(d => d.ex.map(x => x[0]));
+    const tri = ex.filter(id => api.evaluate(`exById(${JSON.stringify(id)}).primary.includes('tri')`));
+    if (tri.length) assert.ok(tri.some(id => G.R.tri.long.includes(id)), t.name + ': overhead triceps work');
+    assert.ok(ex.some(id => G.R.quad.rf.includes(id)), t.name + ': a knee extension for the rectus femoris');
+  }
+});
