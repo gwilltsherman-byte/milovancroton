@@ -199,7 +199,7 @@ test('assisted steps ask one help level: sets without it are practice, and assis
   assert.equal(api.evaluate('currentProof("pull",3).ready'), false, 'one day at a level is not yet repeatable');
 });
 
-test('logging a blank set records its target as clean form, and practice attempts stay separate', () => {
+test('logging a blank set records its target, and every logged set is assumed clean', () => {
   const api = ladder(), state = api.getState();
   placed(api, 'pull', 3);
   const entry = api.evaluate('planEntry({id:"pull",i:3,sets:3,role:"goal",target:8})');
@@ -212,10 +212,9 @@ test('logging a blank set records its target as clean form, and practice attempt
   assert.equal(entry.sets[0].clean, true);
   entry.clean = false; entry.sets[1].v = 6;
   api.evaluate('toggleDone(0,1)');
-  assert.equal(entry.sets[1].done, true, 'practice attempts remain loggable');
+  assert.equal(entry.sets[1].done, true);
   assert.equal(entry.sets[1].v, 6, 'an entered value is kept');
-  assert.equal(entry.sets[1].clean, false);
-  assert.equal(entry.sets[0].clean, true, 'clearing the box leaves earlier sets clean');
+  assert.equal(entry.sets[1].clean, true, 'an older session marked unclean still logs clean form: there is no form check');
 });
 
 test('handstand prescriptions grow toward the declared 30-second goal and 60-second support standard', () => {

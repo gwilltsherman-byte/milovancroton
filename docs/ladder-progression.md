@@ -4,7 +4,7 @@ Ladder separates goals, supporting movements and movement alternatives. A place 
 
 ## Log the actual movement
 
-Record reps or seconds and whether form stayed clean. An untouched set can accept the displayed target; change it when performance differs. Unilateral movements record each side, and the weaker side governs completion.
+Record reps or seconds; every logged set is assumed to use clean form. An untouched set can accept the displayed target; change it when performance differs. Unilateral movements record each side, and the weaker side governs completion.
 
 Setup matters. Record load, assistance and strict, assisted or lowering-only execution where available. A harder-looking movement with assistance does not automatically prove an unassisted standard.
 
