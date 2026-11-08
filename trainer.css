@@ -668,8 +668,6 @@ button.dchip {min-height:36px}
 .session-step input.sinput {width:100%;height:56px;min-width:0;font-size:var(--field-number);text-align:center;max-width:none;background:var(--surface);border-color:var(--border-2)}
 .session-step button {height:48px;width:48px;padding:12px;border:1px solid var(--border-2);border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
 .session-step svg {width:22px;height:22px}
-.session-card .session-clean {display:flex;gap:12px;align-items:center;font-size:14px;margin:16px 0}
-.session-clean input {width:44px;height:44px;flex:none;accent-color:var(--accent)}
 .session-method {font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
 .session-effort {display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:8px;margin-top:20px}
 .session-effort button {min-width:44px;min-height:44px;padding:8px;border:1px solid var(--border-2);border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
@@ -680,7 +678,6 @@ button.dchip {min-height:36px}
   /* The field editor replaces each trainer's more specific six-column log. */
   .session-card .setrow {display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:20px!important;max-width:none}
   .session-field:first-child {grid-column:1/-1}
-  .session-card .setrow>.session-clean {grid-column:1/-1}
   .session-step {grid-template-columns:44px minmax(44px,1fr) 44px;gap:6px}
   .session-step button {width:44px}
 }

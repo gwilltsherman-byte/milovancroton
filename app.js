@@ -8445,7 +8445,6 @@ function openTestStep(note){
       <p class="muted" style="font-size:13.5px;line-height:1.55;margin:0 0 12px">Warm up and check this movement while fresh. Stop when control or form changes. ${testCtx.advance?`The entry check is ${entryMinimum(id,i)}${unitS(st)}; repeating the previous rung alone does not prove this one.`:`Record what you can do cleanly. The training target starts at ${goalText(st)}.`}</p>
       ${how?`<details class="howbox"><summary>${I.info} How to do it</summary>${how}</details>`:''}
       ${setupInputs(st,lastSetupFor(id,i),'data-test-setup="1"',false)}
-      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:12px 0"><input id="testclean" type="checkbox" checked>The recorded reps or seconds use clean form${/each side|per side/i.test(st.cue||'')?' on both sides':''}.</label>
       <div class="field"><label>${st.k==='hold'?'Seconds held':'Clean reps'}</label><input id="testv" class="bignum" inputmode="numeric" placeholder="0" autocomplete="off"></div>
       <button class="btn primary block" data-act="test-record">${I.check} Record</button>
       <button class="btn ghost block" data-act="test-zero" style="margin-top:8px">Couldn&rsquo;t do one</button>
@@ -8453,14 +8452,13 @@ function openTestStep(note){
 }
 /* Outgrew it: move up. Nowhere near: move down. In between: this is the rung. */
 function recordTest(v){
-  const id=testCtx.id,i=testCtx.i,st=stepsOf(id)[i],setup={},clean=!!($('#testclean')||{}).checked;
+  const id=testCtx.id,i=testCtx.i,st=stepsOf(id)[i],setup={};
   __root.querySelectorAll('[data-test-setup][data-key]').forEach(el=>{const f=setupField(st);if(f&&f.key===el.dataset.key)setup[f.key]=fieldStore(f,el.value);});
   if(v>0&&!setupValid(st,setup)){toast(setupField(st).key==='load'?'Enter the weight you added':'Enter how much help you used');return;}
-  if(v>0&&!clean){toast('Confirm clean form, or record zero and try an easier setup');return;}
-  state.tests.push({date:Date.now(),ladderId:id,stepIdx:i,v,setup,clean:v>0&&clean});
+  state.tests.push({date:Date.now(),ladderId:id,stepIdx:i,v,setup,clean:v>0});   // form is assumed clean
   let at=curIdx(id);
   if(testCtx.advance){
-    if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&clean&&setupValid(st,setup)&&gateMet(id,i)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
+    if(currentProof(id,testCtx.advance.from).ready&&v>=entryMinimum(id,i)&&setupValid(st,setup)&&gateMet(id,i)){moveTo(id,i);at=i;if(testCtx.advance.rec)testCtx.advance.rec.cleared.push(id);}
     else toast('Keep building the current movement or use a more manageable assisted setup');
   }else if(testCtx.verify||!state.placed[id]){at=v>=entryMinimum(id,i)&&gateOk(id,i)?i:(previousRung(id,i)??pathFor(id)[0]);moveTo(id,at);}
   save();testCtx.results.push({id,at,v,i});
@@ -8797,7 +8795,7 @@ function toggleDone(ei,si){
     let v=s.v==null? tgt : s.v;
     if(perSide(st)){ const lr=[0,1].map(k=>s.lr&&s.lr[k]!=null? s.lr[k] : s.v!=null? s.v : tgt); s.lr=lr; v=Math.min(lr[0],lr[1]); }
     if(!Number.isFinite(v)||v<0){toast('Enter the reps or seconds you actually completed');return;}
-    s.v=v; s.setup=Object.assign({},e.setup||{});s.clean=e.clean===true;
+    s.v=v; s.setup=Object.assign({},e.setup||{});s.clean=true;   // form is assumed clean
     if(!setupValid(st,s.setup)) toast(setupField(st).key==='load'? 'Logged. Add the weight so sets like it count' : 'Logged. Add the help level so sets like it count');
     if(e.block&&!e.block.start) e.block.start=Date.now();
   }
@@ -9292,8 +9290,7 @@ function exCard(e,ei){
     const isNext=!s.done&&si===nextIdx, run=holdOn(ei,si);
     const third= showRir? `<input class="sinput rir" inputmode="numeric" data-field="rir" data-ex="${ei}" data-set="${si}" value="${s.rir!=null?s.rir:''}" placeholder="RIR" maxlength="2" aria-label="Set ${si+1} reps in reserve, optional">`
       : hold&&!s.done? `<button class="donebtn holdbtn${run?' on':''}" data-act="hold-go" data-ex="${ei}" data-set="${si}" aria-label="${run?'Stop the timer and log it':'Time set '+(si+1)+(side? s.lr&&s.lr[0]!=null? ', right side' : ', left side' : '')}">${run?I.stop:I.timer}</button>` : '<span aria-hidden="true"></span>';
-    const note=s.done? [s.clean===true?'Clean form confirmed':s.clean===false?'Practice attempt; form standard not met':'Form was not recorded',
-      side&&s.lr? 'left '+s.lr[0]+unitS(st)+', right '+s.lr[1]+unitS(st) : '', setupSummary(st,s.setup)? esc(setupSummary(st,s.setup)) : f? 'counts as practice: no '+(f.key==='assist'?'help level':'weight') : ''].filter(Boolean).join(' · ') : '';
+    const note=s.done? [side&&s.lr? 'left '+s.lr[0]+unitS(st)+', right '+s.lr[1]+unitS(st) : '', setupSummary(st,s.setup)? esc(setupSummary(st,s.setup)) : f? 'counts as practice: no '+(f.key==='assist'?'help level':'weight') : ''].filter(Boolean).join(' · ') : '';
     return `<div class="setrow ${s.done?'done':''} ${isNext?'next':''}">
       <div class="sidx">${si+1}</div>
       ${side? `<div class="lr">${box(s,si,0)}${box(s,si,1)}</div>` : box(s,si,null)}
@@ -9317,7 +9314,6 @@ function exCard(e,ei){
       <button class="setmenu" data-act="ex-menu" data-ex="${ei}" aria-label="Exercise options">${I.dots}</button>
     </div>
     ${f?doseInput(e,ei,st,f):''}
-    <label style="display:flex;gap:8px;align-items:flex-start;padding:0 14px 12px;font-size:12px;line-height:1.45;color:var(--muted)"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''} style="margin-top:3px"><span>Clean form on upcoming sets<br><span style="font-size:11px">Controlled movement, prescribed range or position, no pain. Clear this if form breaks; practice attempts still count in your log.</span></span></label>
     <div class="setgrid">
       <div class="setrow-head"><span>Set</span><span>${unitTxt}</span><span>${showRir?'RIR':hold?'Timer':''}</span><span></span><span></span></div>
       ${rows}
@@ -9590,7 +9586,7 @@ function render(){
     return {name:st.n, target:target+(e.kind==='hold'?' s hold':' reps')+(side?' each side':''), side,
       effort:e.kind==='hold'||practiceOf(e.ladderId,e.stepIdx)==='balance'||practiceOf(e.ladderId,e.stepIdx)==='power'?null:'rir', effortValue:set.rir,
       // the rung's cue where the set is done: the tempo of a negative, the line of a lever, how far to lower
-      setup:(st.cue?`<p class="session-cue">${esc(st.cue)}</p>`:'')+(f?doseInput(e,ei,st,f):'')+`<label class="session-clean"><input type="checkbox" data-field="clean" data-ex="${ei}"${e.clean===true?' checked':''}> Clean form, full range, no pain</label><div class="session-method">${esc(/negative|lowering|eccentric/i.test(st.id+' '+st.n)?'Lowering practice':f&&f.key!=='load'?'Assisted movement':'Strict movement')} · <button class="tinybtn" data-act="ex-menu" data-ex="${ei}">Change movement</button></div>`};
+      setup:(st.cue?`<p class="session-cue">${esc(st.cue)}</p>`:'')+(f?doseInput(e,ei,st,f):'')+`<div class="session-method">${esc(/negative|lowering|eccentric/i.test(st.id+' '+st.n)?'Lowering practice':f&&f.key!=='load'?'Assisted movement':'Strict movement')} · <button class="tinybtn" data-act="ex-menu" data-ex="${ei}">Change movement</button></div>`};
   },(ei,si,side)=>{
     const e=state.active.entries[ei], set=e.sets[si], st=stepsOf(e.ladderId)[e.stepIdx];
     if(holdOn(ei,si)){ holdGo(ei,si); return; }
@@ -9802,7 +9798,6 @@ __root.addEventListener('input', e=>{
   const el=e.target.closest('[data-field]'); if(!el||!state.active) return;
   const f=el.dataset.field, ei=+el.dataset.ex, si=+el.dataset.set;
   const en=state.active.entries[ei]; if(!en) return;
-  if(f==='clean'){ en.clean=el.checked; save(); return; }
   if(f==='setup'){
     const st=stepsOf(en.ladderId)[en.stepIdx], field=setupField(st); if(!field||field.key!==el.dataset.key) return;
     en.setup=Object.assign({},en.setup||{}); en.setup[field.key]=fieldStore(field,el.value);
@@ -9841,7 +9836,6 @@ function renderEdit(){
         ${showRir?`<input class="edin"${edit.view?' disabled':''} inputmode="numeric" data-ed="rir" data-e="${ei}" data-s="${si}" value="${x.rir!=null?x.rir:''}" placeholder="RIR" aria-label="Reps in reserve, optional">`:'<span></span>'}
         <button class="edx" data-act="ed-rm-set" data-e="${ei}" data-s="${si}" aria-label="Remove set">${I.x}</button></div>
       <div style="margin:0 0 12px 28px">
-        ${edit.view?`<p class="muted" style="font-size:11.5px;margin:0 0 6px">${x.clean===true?'Clean form confirmed':x.clean===false?'Practice attempt; form standard not met':'Form was not recorded'}</p>`:`<label style="display:flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px"><input type="checkbox" data-ed="clean" data-e="${ei}" data-s="${si}"${x.clean===true?' checked':''}>Clean form on set ${si+1}</label>`}
         ${fields.length?(edit.view?`<p class="muted" style="font-size:11.5px;line-height:1.45;margin:0">${esc(setupSummary(st,x.setup||e.setup)||(legacySet(r.date)?'':missText(st)))}</p>`:`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">${setupInputs(st,x.setup||e.setup,`data-ed="setup" data-e="${ei}" data-s="${si}"`,false)}</div>`):''}
       </div>`).join('');
     return `<div class="edex"><div class="edh"><div><b>${esc(st.n)}</b><small>${esc(LADDERS[e.ladderId].n)} &middot; target ${goalText(Object.assign({},st,{v:e.target==null?st.v:e.target}))}</small></div><button class="tinybtn" data-act="ed-rm-ex" data-e="${ei}">Remove</button></div>
@@ -9884,7 +9878,6 @@ function edInput(el){
   const f=el.dataset.ed, r=edit.rec, v=el.value;
   if(f==='name'){ r.name=v; return; }
   const en=r.entries[+el.dataset.e], x=en&&en.sets[+el.dataset.s]; if(!x) return;
-  if(f==='clean'){ x.clean=el.checked; return; }
   if(f==='setup'){
     const st=LADDERS[en.ladderId]&&stepsOf(en.ladderId)[en.stepIdx], field=setupField(st); if(!field||field.key!==el.dataset.key) return;
     x.setup=Object.assign({},x.setup||en.setup||{});
