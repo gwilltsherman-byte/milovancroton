@@ -1220,10 +1220,15 @@ window.SheetNav=(function(){
   let onBack=null, pushed=false, skip=0, leaving=null, page=null;
   /* Milo's own place in the browser's history: its entry ('base') with a guard entry on top, so a back gesture with no
      sheet open steps back inside Milo (page) instead of leaving it, and the guard goes back up for the next one. With
-     nowhere to step back to, back leaves as it does on any page. Sheets push their entry above the guard. */
-  function guard(){ try{ const s=history.state; if(!(s&&(s.milo==='guard'||s.sheet))) history.pushState({milo:'guard'},''); }catch(e){} }
+     nowhere to step back to, back leaves as it does on any page. Sheets push their entry above the guard.
+     The installed app on an iPhone or iPad keeps no entries of its own: there a back swipe drags the whole app aside over
+     a blank panel, so with nothing behind it the swipe does nothing, and Milo's own back and close buttons do the job. */
+  const keep=(()=>{ try{ const ios=/iP(ad|hone|od)/.test(navigator.userAgent)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+    return !(ios&&(navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)); }catch(e){ return true; } })();
+  function guard(){ if(!keep) return; try{ const s=history.state; if(!(s&&(s.milo==='guard'||s.sheet))) history.pushState({milo:'guard'},''); }catch(e){} }
   addEventListener('popstate', ()=>{
     if(skip){ skip--; if(page) guard(); return; }
+    if(!keep) return;
     if(pushed){ pushed=false; const f=onBack; onBack=null; if(f) f(); return; }
     if(!page || !(history.state&&history.state.milo==='base')) return;
     let went=false; try{ went=!!page(); }catch(e){}
@@ -1233,10 +1238,10 @@ window.SheetNav=(function(){
   try{ if(history.state&&history.state.sheet){ skip++; history.back(); } }catch(e){}
   function hold(fn){
     onBack=fn; clearTimeout(leaving); leaving=null;
-    if(!pushed){ try{ history.pushState({sheet:1},''); pushed=true; }catch(e){} }
+    if(keep&&!pushed){ try{ history.pushState({sheet:1},''); pushed=true; }catch(e){} }
   }
   function setPage(fn){
-    page=fn;
+    page=fn; if(!keep) return;
     try{ const s=history.state; if(s&&(s.sheet||s.milo==='guard')) return;
       history.replaceState(Object.assign({}, s||{}, {milo:'base'}),''); guard(); }catch(e){}
   }
