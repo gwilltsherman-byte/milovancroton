@@ -2,6 +2,14 @@
 
 Ladder separates goals, supporting movements and movement alternatives. A place in a progression is not proof that every earlier standard has been met.
 
+## Start where you can
+
+Every skill path begins with a version most beginners can practise from the first session. The handstand and one-arm handstand start with a pike hold and a box pike hold before the wall plank. The front lever starts with a straight-arm band pulldown and scapular pull-ups before the band-assisted tuck. The planche starts with a high plank before the lean, and the planche push-up with incline and floor push-ups before pseudo planche push-ups. The muscle-up starts with negative and band-assisted pull-ups before chest-to-bar pull-ups, and its dip with a feet-assisted straight-bar dip. Arm balances start with toes-down leans, the press with a seated single-leg lift, and rings with a feet-assisted support and an incline ring push-up.
+
+A ladder you have not placed starts at the bottom of its path, and so does "None of these yet" when it asks where you are. Someone stronger can pick a higher rung or check it directly.
+
+These rungs make the same movement easier through leverage, assistance or a shorter range, the principle behind the Library's leverage and overload cards. They are coaching choices, not validated prerequisites: no study shows that passing one guarantees the next.
+
 ## Log the actual movement
 
 Record reps or seconds; every logged set is assumed to use clean form. An untouched set can accept the displayed target; change it when performance differs. Unilateral movements record each side, and the weaker side governs completion.
@@ -34,6 +42,6 @@ Exercise-specific evidence and limitations are available from Library. Evidence 
 
 ## Compatibility and checks
 
-Stable exercise IDs and legacy rung indices remain supported. New setup fields are additive. Unknown old setup does not silently become proof of a demanding current standard.
+Stable exercise IDs and legacy rung indices remain supported. Rungs are stored by position, so new rungs, including the starting rungs above, go on the end of a ladder and are placed on its routes by exercise ID; saved positions keep their exercise. New setup fields are additive. Unknown old setup does not silently become proof of a demanding current standard.
 
 Run `node --test tests/ladder.test.cjs tests/engine.test.cjs`, then the full browser suite. Ladder tests cover setup-qualified proof, legacy saves, goal standards, hold timing and unilateral work.

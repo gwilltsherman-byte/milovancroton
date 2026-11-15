@@ -62,7 +62,7 @@ Back-offs are planned from your estimated max and keep their weight through the 
 
 ## Ladder
 
-Ladder trains named calisthenics goals and their supporting qualities. Rep ranges include effort targets. Holds, left/right work and timed balance practice have dedicated controls.
+Ladder trains named calisthenics goals and their supporting qualities. Rep ranges include effort targets. Holds, left/right work and timed balance practice have dedicated controls. Every skill path starts with a supported, floor or banded version, so a beginner has a rung they can do from the first session.
 
 The next-set card shows each movement's cue, such as the tempo of a negative. Progression depends on the exact movement, standard, form and setup. Load, assistance and execution mode affect whether a set proves readiness. Muscle entries contribute training volume, not automatic rung completion.
 

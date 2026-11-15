@@ -1049,3 +1049,64 @@ test('rest is set for you, not chosen: by the kind of practice and the reps', ()
   assert.equal(rest('strength', false, 8), 120, 'other reps');
   assert.ok(!/settings\.rest/.test(require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'app.js'), 'utf8')), 'no rest setting is read anywhere');
 });
+
+test('the skill ladders start on a supported, floor or banded version a beginner can practise', () => {
+  const api = ladder(), routes = plain(api.evaluate('LADDER_PATHS'));
+  const first = {
+    handstand: {balance: 'pike-hold'},
+    frontlever: {straddle: 'straight-arm-band-pulldown', 'half-lay': 'straight-arm-band-pulldown'},
+    planche: {assisted: 'high-plank'},
+    muscleup: {whole: 'negative-pullup', transition: 'low-bar-transition', dip: 'feet-assisted-straight-bar-dip', first: 'negative-pullup'},
+    backlever: {assisted: 'german-hang-feet'},
+    flag: {flag: 'side-plank'},
+    armbalance: {crow: 'frog-lean', elbow: 'elbow-lever-lean'},
+    press: {press: 'seated-leg-lift', negative: 'seated-leg-lift'},
+    onearmhs: {balance: 'pike-hold'},
+    planchepush: {assisted: 'incline-pushup'},
+    rings: {dip: 'feet-assisted-ring-support', 'muscle-up': 'feet-assisted-false-grip-hang', turnout: 'feet-assisted-ring-support', 'push-up': 'incline-ring-pushup'},
+    ringdip: {dip: 'feet-assisted-ring-support'},
+  };
+  for (const [id, keys] of Object.entries(first))
+    assert.deepEqual(Object.fromEntries(routes[id].map(r => [r.key, r.steps[0]])), keys, `${id} routes start low`);
+  // the next rung up is the old start, so nothing above it moved
+  assert.deepEqual(routes.frontlever[0].steps.slice(0, 4), ['straight-arm-band-pulldown', 'scap-pullup', 'assisted-tuck-fl', 'tuck-fl']);
+  assert.deepEqual(routes.muscleup[0].steps.slice(0, 4), ['negative-pullup', 'band-pullup', 'pullup', 'chest-to-bar']);
+  assert.deepEqual(routes.onearmhs[0].steps.slice(0, 5), ['pike-hold', 'box-pike-hold', 'wall-plank', 'chest-to-wall-handstand', 'hs-shoulder-tap']);
+  // added on the end, so every goal still names the same exercise
+  const goalRungs = {handstand: 'freestanding-handstand', frontlever: 'full-fl', tuckplanche: 'tuck-planche', muscleup: 'strict-muscleup', muscleup1: 'kipping-muscleup',
+    crow: 'crow-pose', elbowlever: 'elbow-lever', press: 'straddle-press', oahs: 'oahs', planchepu: 'full-planche-pushup', ringdip10: 'ring-dip', ringmu: 'ring-muscleup'};
+  for (const [k, sid] of Object.entries(goalRungs)) assert.equal(api.evaluate(`rungId(GOALS.${k}.l, GOALS.${k}.r)`), sid, `${k} goal keeps its exercise`);
+  // the starting rungs are light: they don't take the session's one hard straight-arm slot or need 48 hours after it
+  for (const sid of ['straight-arm-band-pulldown', 'scap-pullup', 'high-plank', 'seated-leg-lift', 'incline-pushup', 'pushup']) {
+    const lad = Object.keys(first).find(id => routes[id].some(r => r.steps.includes(sid)));
+    const i = api.evaluate(`stepsOf(${JSON.stringify(lad)}).findIndex(s=>s.id===${JSON.stringify(sid)})`);
+    assert.equal(api.evaluate(`hardFam(${JSON.stringify(lad)},${i})`), null, `${sid} on ${lad} is not hard straight-arm work`);
+  }
+  assert.equal(api.evaluate('hardFam("frontlever",stepsOf("frontlever").findIndex(s=>s.id==="assisted-tuck-fl"))'), 'straight');
+  // a band pulldown resists: it asks for no help level, unlike the supported rungs
+  assert.equal(api.evaluate('setupField(stepsOf("frontlever").find(s=>s.id==="straight-arm-band-pulldown"))'), null);
+  assert.equal(api.evaluate('setupField(stepsOf("rings").find(s=>s.id==="feet-assisted-ring-support")).key'), 'assist');
+});
+
+test('a ladder you have not placed starts at the bottom of its path, and "None of these yet" keeps you there', () => {
+  const api = ladder(), state = api.getState();
+  const at = id => api.evaluate(`rungId(${JSON.stringify(id)},curIdx(${JSON.stringify(id)}))`);
+  for (const [id, sid] of [['frontlever', 'straight-arm-band-pulldown'], ['muscleup', 'negative-pullup'], ['handstand', 'pike-hold'], ['pushv', 'incline-pike-pushup'], ['pull', 'dead-hang']])
+    assert.equal(at(id), sid, `${id} starts at the bottom of its path, not at the first exercise stored`);
+  // what the survey's "None of these yet" does: the bottom of the path, saved
+  api.evaluate('moveTo("frontlever", pathFor("frontlever")[0])');
+  assert.equal(state.placed.frontlever, true);
+  assert.equal(api.evaluate('rungId("frontlever", state.rung.frontlever)'), 'straight-arm-band-pulldown', 'the position is saved, not left at the first stored exercise');
+  assert.equal(at('frontlever'), 'straight-arm-band-pulldown');
+  // someone already on the old first rung stays there and can step back onto the new ones
+  placed(api, 'muscleup', 0);
+  assert.equal(at('muscleup'), 'chest-to-bar');
+  assert.equal(api.evaluate('rungId("muscleup", previousRung("muscleup", 0))'), 'pullup');
+  // a beginner's first session for a one-arm handstand: the shared pike hold once, not on both ladders
+  const fresh = ladder();
+  goals(fresh, 'oahs');
+  fresh.evaluate('moveTo("onearmhs", pathFor("onearmhs")[0])');
+  const plan = plain(fresh.evaluate('todayPlan()')), ids = plan.map(x => fresh.evaluate(`rungId(${JSON.stringify(x.id)},${x.i})`));
+  assert.equal(plan.find(x => x.id === 'onearmhs').i, fresh.evaluate('stepsOf("onearmhs").findIndex(s=>s.id==="pike-hold")'));
+  assert.equal(ids.filter(x => x === 'pike-hold').length, 1, 'the support ladder on the same exercise shares it');
+});
