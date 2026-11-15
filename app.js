@@ -578,9 +578,15 @@ window.HOWTO = {
     avoid:['Trying it before a steady forearm stand and wall handstand push-ups.','Collapsing onto the head.'] },
 
   /* ---- calisthenics: rings ---- */
+  'feet-assisted-ring-support':{ set:'Rings at about hip height, feet on the floor just in front of you. Grip with palms facing in.',
+    steps:['Press up to straight arms with the rings against the sides of the hips, the feet still taking some of your weight.','Push the rings down so the shoulders drop away from the ears, and hold the rings still.','Take a little more weight off the feet each session, keeping the ring height and foot position the same.'],
+    avoid:['Rings drifting away from the body.','Bent elbows.','A big push from the legs logged as little help.'] },
   'ring-support':{ set:'Rings at about hip height. Grip with palms facing in and jump or press up to straight arms.',
     steps:['Lock the elbows with the rings pressed against the sides of the hips.','Push the rings down so the shoulders drop away from the ears.','Hold still, legs together, glutes tight.'],
     avoid:['Rings drifting away from the body.','Shrugging.','Bent elbows.'] },
+  'incline-ring-pushup':{ set:'Rings at about hip height, shoulder width apart. Hold one in each hand and walk the feet back until the body is straight and leaning in.',
+    steps:['Lower the chest toward ring height, rings close to the body, elbows about 45 degrees from the sides.','Push back to straight arms, turning the palms slightly forward at the top.','Keep the body straight throughout. Lower the rings a few centimetres once every set reaches the top.'],
+    avoid:['Rings flaring apart.','Hips sagging.'] },
   'ring-pushup':{ set:'Rings a few centimetres off the floor, shoulder width apart. Push-up position with a hand in each ring.',
     steps:['Lower with the rings staying close to the body, elbows at about 45 degrees, until the chest is level with the rings.','Push up, and at the top turn the rings so the palms face slightly forward.','Keep the body straight throughout.'],
     avoid:['Rings flaring apart.','Hips sagging.'] },
@@ -810,6 +816,13 @@ window.HOWTO = {
   /* ---- calisthenics: handstand ----
      Balance in a handstand comes mostly from the hands: pressing the fingertips stops a fall toward your back,
      pushing through the heels of the hands stops a fall back the way you kicked up. */
+  'pike-hold':{ set:'Hands on the floor shoulder width, fingers spread, feet on the floor about hip width. Walk the feet in until the hips are high in an upside-down V.',
+    steps:['Lock the elbows and push the floor away until the head sits between the arms and the shoulders open up toward the ears.','Keep the back long; bend the knees or lift the heels if tight hamstrings pull the back round.','Hold with a little weight forward over the hands, breathing normally, then walk the hands back to the feet.'],
+    avoid:['Sinking between the shoulders so the head drops below the arms.','Bent elbows.','Sitting back so the feet take all the weight.'] },
+  'box-pike-hold':{ set:'A sturdy box, bench or step that can’t slide, against a wall if you can. Start with one about knee height. Hands on the floor shoulder width, fingers spread, roughly a leg’s length from it.',
+    steps:['Put the feet on the box one at a time and walk the hands in until the hips are over the shoulders and the arms line up with the back.','Push tall through the shoulders with the elbows locked, back flat, legs straight or slightly bent.','Hold, then step the feet down one at a time.'],
+    avoid:['Hands so far from the box that the body flattens into a plank.','A rounded back with the hips behind the hands.','Bent elbows.'],
+    note:'The higher the box, the more of your weight the hands carry. Raise it before moving on to the wall plank.' },
   'wall-plank':{ set:'Start in a push-up position with the soles of the feet against a wall behind you, hands shoulder width, fingers spread.',
     steps:['Walk the feet up the wall to hip height or higher while walking the hands back toward the wall.','Stop at a height you can hold with straight elbows and the shoulders pushing the floor away; the closer the hands come to the wall, the steeper and harder it is.','Hold, then walk the hands out and the feet down.'],
     avoid:['Bent elbows.','Sagging hips; squeeze the glutes.'] },
@@ -835,6 +848,9 @@ window.HOWTO = {
     avoid:['Bending the arms or dropping the head as you kick.','Kicking so hard you overshoot; aim to arrive just short of vertical and drift in.','Many attempts while tired; stop when the kicks get sloppy.'] },
 
   /* ---- calisthenics: front lever ---- */
+  'straight-arm-band-pulldown':{ set:'A resistance band anchored above head height: looped over a pull-up bar, or shut in the top of a door with a door anchor. Stand a step back holding the band with straight arms in front of you at about head height, hips slightly hinged.',
+    steps:['Draw the shoulder blades down, then sweep the band down to the thighs with the arms straight.','Pause for a second with the hands by the thighs and the ribs down.','Let the arms rise back to head height over two seconds.'],
+    avoid:['Bending the elbows so it turns into a pushdown.','Leaning back to drag the band down.','A band so strong the arms bend. Keep the same band and step further back to make it harder.'] },
   'tuck-fl':{ set:'Overhand grip on a bar or rings, hands shoulder width. Hang with straight arms.',
     steps:['Pull the shoulder blades down and press the bar toward your hips with straight arms, as in a straight-arm pulldown.','Tuck the knees tight to the chest and lean back until the back is parallel to the floor, hips level with the shoulders.','Hold with the elbows locked, then lower with control to the hang.'],
     avoid:['Bent elbows.','Hips hanging below the shoulders.','Shrugging into the ears.'] },
@@ -852,6 +868,9 @@ window.HOWTO = {
     avoid:['Hips sagging or piking.','Bent arms.'] },
 
   /* ---- calisthenics: planche ---- */
+  'high-plank':{ set:'Push-up position: hands shoulder width directly under the shoulders, fingers spread, legs straight and together, on the toes.',
+    steps:['Lock the elbows and push the floor away so the shoulder blades spread and the upper back rounds slightly.','Tuck the pelvis, ribs down, glutes squeezed: one straight line from heels to head.','Hold, eyes on the floor a little in front of the hands.'],
+    avoid:['Hips sagging or piking up.','The chest sinking between the shoulder blades.','Bent elbows.'] },
   'planche-lean':{ set:'Push-up position on parallettes or the floor, hands shoulder width. On the floor, turn the fingers out 45 to 90 degrees to ease the wrists.',
     steps:['Lock the elbows and push the shoulder blades apart so the upper back rounds slightly. Tuck the pelvis and squeeze the glutes.','Lean forward on the toes until the shoulders are in front of the hands: start a few centimetres past and work toward 15 to 20 cm.','Hold, keeping the elbows locked and the shoulder blades apart.'],
     avoid:['Bent arms.','The chest sinking between the shoulder blades.','Leaning further than your wrists tolerate.'],
@@ -919,6 +938,9 @@ window.HOWTO = {
     avoid:['Bending the bottom arm.','Forcing it when the shoulder hurts.'] },
 
   /* ---- calisthenics: arm balances ---- */
+  'frog-lean':{ set:'As the frog stand: squat with the knees wide, hands flat on the floor shoulder width about a foot’s length in front of the feet, the insides of the knees resting on the backs of the upper arms.',
+    steps:['Lean forward until most of your weight is over the hands, toes still on the floor.','Keep the elbows a little bent and press the fingertips down, looking at the floor a little in front of the fingers.','Hold. As it gets easy, lift one foot, then the other, for a second or two at a time.'],
+    avoid:['Falling forward; put a cushion in front of your face.','All the weight on the heels of the hands; spread it to the fingers.'] },
   'frog-stand':{ set:'Squat with the feet together and the knees wide. Hands flat on the floor shoulder width, fingers spread, about a foot’s length in front of the feet. Bend the elbows a little so the inside of each knee rests on the back of the upper arm, just above the elbow.',
     steps:['Lean forward, shifting weight from the feet onto the hands, looking at the floor a little in front of the fingers.','Lift the feet off the floor when the weight is over the hands.','Hold, pressing the fingertips down to stop tipping forward.'],
     avoid:['Falling forward; put a cushion in front of your face.','All the weight on the heels of the hands; spread it to the fingers.'] },
@@ -928,6 +950,9 @@ window.HOWTO = {
   'crane-pose':{ set:'As crow.',
     steps:['Press the floor away until the arms are straight.','Keep the knees high on the arms and the back rounded.','Hold.'],
     avoid:['Bent elbows.','Dropping the hips.'] },
+  'elbow-lever-lean':{ set:'Kneel and put the hands flat on the floor, fingers pointing back toward the knees or out to the sides, hands shoulder width or a little narrower.',
+    steps:['Bend the elbows and press them into the front of the hip bones, either side of the belly button.','Step the legs back straight, toes on the floor, and lean forward over the hands until the feet carry very little weight.','Hold with the body straight. As it gets easy, lift one foot for a moment.'],
+    avoid:['Elbows sliding apart.','Wrists without a warm-up.','Hips sagging; squeeze the glutes.'] },
   'elbow-lever':{ set:'Kneel and put the hands flat on the floor, fingers pointing back toward the knees or out to the sides, hands shoulder width or a little narrower.',
     steps:['Bend the elbows and press them together into the front of the hip bones, either side of the belly button.','Lean forward over the hands and straighten the legs out behind you.','Balance with the body level, from head to heels.'],
     avoid:['Elbows sliding apart.','Wrists without a warm-up.'] },
@@ -6748,6 +6773,8 @@ const LADDERS={
     {id:'chest-to-wall-handstand', n:'Chest-to-wall handstand', k:'hold', sets:3, v:45, cue:'Hands a hand’s length from the wall, shoulders pushed up to the ears, only the toes touching. This teaches the true straight line.'},
     {id:'heel-pulls', n:'Chest-to-wall toe pulls', k:'reps', sets:3, v:8, cue:'Chest-to-wall, hands a hand’s length from it. Shift weight into the heels of the hands until the toes float off the wall, then catch it with the fingertips.'},
     {id:'freestanding-handstand', n:'Freestanding handstand', k:'hold', sets:3, v:15, cue:'Wrists, shoulders, hips and ankles stacked. Practise brief controlled attempts while fresh; build repeatable duration toward your goal without exhausting the shoulders.'},
+    {id:'pike-hold', n:'Pike hold', k:'hold', sets:3, v:30, cue:'Hands shoulder width, feet on the floor, hips high in an upside-down V. Push the floor away until the head sits between the arms; bend the knees if the hamstrings stop you.'},
+    {id:'box-pike-hold', n:'Box pike hold', k:'hold', sets:3, v:30, cue:'Feet on a box or bench, hands on the floor, hips stacked over the shoulders and arms straight by the ears. Start with a knee-height box and go higher as it gets easy.'},
   ]},
   frontlever:{n:'Front lever', p:'Skill', ic:'bar', skill:true, practice:'strength', m:'Lats, core', steps:[
     {id:'tuck-fl', n:'Tuck front lever', k:'hold', sets:3, v:15, cue:'Arms locked, pressing the bar toward the hips. Knees tight to the chest, back parallel to the floor, hips level with the shoulders.'},
@@ -6758,6 +6785,8 @@ const LADDERS={
     {id:'assisted-tuck-fl', n:'Assisted tuck front lever', k:'hold', sets:3, v:10, cue:'Band supporting the hips, knees tucked, arms straight and back level. Log the help, 0 none to 5 most, and reduce it gradually.'},
     {id:'assisted-straddle-fl', n:'Assisted straddle front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, body level. Keep the same straddle width and reduce assistance in small steps.'},
     {id:'assisted-full-fl', n:'Assisted full front lever', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs together and body level. Use enough help for a controlled hold, then reduce it without losing the shape.'},
+    {id:'straight-arm-band-pulldown', n:'Straight-arm band pulldown', k:'reps', sets:3, v:12, cue:'Band anchored above head height. Arms straight, draw the shoulder blades down and sweep the band to the thighs, pause, return slowly. The same press toward the hips a front lever holds.'},
+    {id:'scap-pullup', n:'Scapular pull-up', k:'reps', sets:3, v:10, cue:'Elbows stay locked. Pull the shoulder blades down toward your back pockets until the body rises 3 to 5 cm, pause, lower slowly.'},
   ]},
   planche:{n:'Planche', p:'Skill', ic:'push', skill:true, practice:'strength', m:'Shoulders, chest, core', steps:[
     {id:'planche-lean', n:'Planche lean', k:'hold', sets:3, v:20, cue:'Elbows straight, shoulder blades pushed apart. Keep the same hand and foot setup each time, and add a little lean only while the body stays rigid.'},
@@ -6768,6 +6797,7 @@ const LADDERS={
     {id:'assisted-tuck-planche', n:'Assisted tuck planche', k:'hold', sets:3, v:10, cue:'Band supporting the hips or toes lightly on a fixed support. Knees tucked, elbows straight and shoulders forward. Reduce the help while keeping the hips level.'},
     {id:'assisted-straddle-planche', n:'Assisted straddle planche', k:'hold', sets:3, v:8, cue:'Band supporting the hips, legs straight and wide, elbows straight. Keep the same straddle width; log the help and reduce it gradually.'},
     {id:'assisted-full-planche', n:'Assisted full planche', k:'hold', sets:3, v:5, cue:'Band supporting the hips, legs together, body level. Use enough assistance to keep straight elbows and a consistent shoulder lean.'},
+    {id:'high-plank', n:'High plank', k:'hold', sets:3, v:30, cue:'Push-up position, hands under the shoulders, elbows locked. Push the floor away so the upper back rounds slightly; ribs down, glutes squeezed. The planche lean starts from here.'},
   ]},
   muscleup:{n:'Muscle-up', p:'Skill', ic:'bar', skill:true, m:'Lats, chest, triceps', steps:[
     {id:'chest-to-bar', n:'Chest-to-bar pull-up', k:'reps', sets:3, v:5, cue:'Grip a little wider than the shoulders and pull until the chest, at or below the nipple line, touches the bar.'},
@@ -6779,6 +6809,10 @@ const LADDERS={
     {id:'low-bar-transition', n:'Low-bar transition drill', k:'reps', sets:3, v:5, cue:'Low bar, feet on the floor. Pull the lower chest toward it, lean over and press out. Log how much the legs help, 0 none to 5 most, and reduce it gradually.'},
     {id:'hip-to-bar-pull', n:'Hip-to-bar pull', k:'reps', sets:3, v:5, cue:'Swing from an arch to a hollow; on the hollow, press the bar down with straight arms and drive the hips up to it.'},
     {id:'kipping-muscleup', n:'Muscle-up, small kip', k:'reps', sets:3, v:3, cue:'A small hip drive starts the pull. Bar to the lower chest, chest over it as the wrists turn, press out. Keep the kip small.'},
+    {id:'negative-pullup', n:'Negative pull-up', k:'reps', sets:3, v:5, cue:'Start with the chin over the bar and the elbows tucked by the ribs, then take 4 to 5 seconds to reach fully straight arms.'},
+    {id:'band-pullup', n:'Band-assisted pull-up', k:'reps', sets:3, v:8, cue:'Knee in the band, start from straight arms, chin clears the bar. Log the help, 0 none to 5 most, and use less as sets reach the top.'},
+    {id:'pullup', n:'Pull-up', k:'reps', sets:3, v:8, cue:'Hands a little wider than the shoulders. Shoulder blades down first, elbows to the hips, chin over the bar, then all the way to straight arms.'},
+    {id:'feet-assisted-straight-bar-dip', n:'Feet-assisted straight-bar dip', k:'reps', sets:3, v:6, cue:'Low fixed bar, feet supported. Lean the chest over the bar and lower through a comfortable range; use leg help only as needed.'},
   ]},
   /* Added later. New ladders only ever go on the end: rungs are stored by position. */
   pullvar:{n:'Pull-up variations', p:'Pull', ic:'pull', m:'Lats, upper back, biceps, core', steps:[
@@ -6900,6 +6934,8 @@ const LADDERS={
     {id:'crane-pose', n:'Crane pose', k:'hold', sets:3, v:20, cue:'Crow with the arms pressed to straight, knees still high on the arms. Much more pushing strength.'},
     {id:'elbow-lever', n:'Elbow lever', k:'hold', sets:3, v:20, cue:'Fingers pointing back or out, elbows pressed into the front of the hip bones beside the belly button. Lean until the body floats level.'},
     {id:'one-arm-elbow-lever', n:'One-arm elbow lever', k:'hold', sets:3, v:10, cue:'One hand under the middle of the body, that elbow in the hip by the belly button, free arm out to the side. Each side counts.'},
+    {id:'frog-lean', n:'Frog stand lean', k:'hold', sets:3, v:20, cue:'Frog stand set-up, knees on the backs of the upper arms. Lean forward until most of your weight is on the hands, toes still touching the floor. Lift one foot at a time as it gets easy.'},
+    {id:'elbow-lever-lean', n:'Elbow lever lean', k:'hold', sets:3, v:20, cue:'Elbows pressed into the front of the hips beside the belly button, legs straight behind you, toes on the floor. Lean over the hands until the feet are nearly weightless.'},
   ]},
   press:{n:'Press to handstand', p:'Skill', ic:'hand', skill:true, m:'Shoulders, hip flexors, compression', steps:[
     {id:'pike-compression', n:'Pike compression lift', k:'reps', sets:3, v:10, cue:'Legs straight and together, palms flat beside the knees. Lift both heels without leaning back.'},
@@ -6908,6 +6944,7 @@ const LADDERS={
     {id:'straddle-press', n:'Straddle press to handstand', k:'reps', sets:3, v:3, cue:'Feet twice shoulder width, hands between them in line with the toes. Shoulders past the fingertips, hips over the hands, no jump.'},
     {id:'pike-press', n:'Pike press to handstand', k:'reps', sets:3, v:3, cue:'Hands 20 to 30 cm in front of the feet, legs together and straight the whole way up. The hardest press.'},
     {id:'assisted-straddle-press', n:'Assisted floor straddle press', k:'reps', sets:3, v:3, cue:'A securely anchored overhead band supports the hips as you press from a floor straddle without jumping. Log the help; reduce it gradually.'},
+    {id:'seated-leg-lift', n:'Seated single-leg lift', k:'reps', sets:3, v:10, cue:'Sit tall, legs straight, palms flat beside the knees. Lift one straight leg 5 cm, toes pointed, hold a second, lower. Per side.'},
   ]},
   onearmhs:{n:'One-arm handstand', p:'Skill', ic:'hand', skill:true, practice:'balance', m:'Shoulders, wrists, balance', steps:[
     {id:'hs-shoulder-tap', n:'Wall handstand shoulder tap', k:'reps', sets:3, v:10, cue:'Chest to the wall, hands a hand’s length from it. Shift over one hand, arm vertical, and tap that shoulder with the other hand.'},
@@ -6915,6 +6952,10 @@ const LADDERS={
     {id:'weight-shift-hs', n:'Handstand weight shift', k:'hold', sets:3, v:10, cue:'In a straddle, shift the hips a few centimetres sideways over one hand until the other is on its fingertips.'},
     {id:'fingertip-oahs', n:'Fingertip-assisted one-arm handstand', k:'hold', sets:3, v:10, cue:'Index and middle fingertips of the free hand down a hand’s width out to the side, pressing only to correct.'},
     {id:'oahs', n:'One-arm handstand', k:'hold', sets:3, v:5, cue:'Straddle, planted hand under its shoulder, fingers spread, free arm out to the side. Each side counts separately.'},
+    {id:'pike-hold', n:'Pike hold', k:'hold', sets:3, v:30, cue:'Hands shoulder width, feet on the floor, hips high in an upside-down V. Push the floor away until the head sits between the arms; bend the knees if the hamstrings stop you.'},
+    {id:'box-pike-hold', n:'Box pike hold', k:'hold', sets:3, v:30, cue:'Feet on a box or bench, hands on the floor, hips stacked over the shoulders and arms straight by the ears. Start with a knee-height box and go higher as it gets easy.'},
+    {id:'wall-plank', n:'Wall plank', k:'hold', sets:3, v:45, cue:'Feet on the wall at hip height or higher, elbows locked, shoulders pushing the floor away. Gets you used to being upside down.'},
+    {id:'chest-to-wall-handstand', n:'Chest-to-wall handstand', k:'hold', sets:3, v:45, cue:'Hands a hand’s length from the wall, shoulders pushed up to the ears, only the toes touching. This teaches the true straight line.'},
   ]},
   planchepush:{n:'Planche push-up', p:'Skill', ic:'push', skill:true, practice:'strength', m:'Shoulders, chest, triceps', steps:[
     {id:'pseudo-planche-pushup', n:'Pseudo planche push-up', k:'reps', sets:3, v:8, cue:'Hands beside the lower ribs, fingers turned out, shoulders well in front of the hands the whole set.'},
@@ -6925,6 +6966,8 @@ const LADDERS={
     {id:'assisted-tuck-planche-pushup', n:'Assisted tuck planche push-up', k:'reps', sets:3, v:5, cue:'Band supporting the hips in a tuck. Bend and straighten the arms through a controlled range with hips level; reduce support gradually.'},
     {id:'assisted-straddle-planche-pushup', n:'Assisted straddle planche push-up', k:'reps', sets:3, v:3, cue:'Band supporting the hips, legs straight and wide. Keep the body level and the depth the same; log the help and reduce it gradually.'},
     {id:'assisted-full-planche-pushup', n:'Assisted full planche push-up', k:'reps', sets:3, v:2, cue:'Band supporting the hips, legs together. Use sufficient help for controlled lowering and pressing with a straight body.'},
+    {id:'incline-pushup', n:'Incline push-up', k:'reps', sets:3, v:12, cue:'Hands on the bench edge, under the shoulders. Lower chest touches the edge; lower the surface as you get stronger.'},
+    {id:'pushup', n:'Push-up', k:'reps', sets:3, v:12, cue:'Wrists under the shoulders, elbows 45 degrees from the body, chest to the floor, full lockout at the top, body rigid throughout.'},
   ]},
   rings:{n:'Rings', p:'Skill', ic:'dip', skill:true, m:'Chest, shoulders, arms, stability', steps:[
     {id:'ring-support', n:'Ring support hold', k:'hold', sets:3, v:30, cue:'Elbows locked, rings pressed against the sides of the hips, shoulders pushed down from the ears.'},
@@ -6938,6 +6981,8 @@ const LADDERS={
     {id:'feet-assisted-ring-dip', n:'Feet-assisted ring dip', k:'reps', sets:3, v:6, cue:'Low rings, feet on the floor or a box. Keep rings close and use the legs only as much as needed to lower and press through a comfortable range.'},
     {id:'low-ring-transition', n:'Low-ring transition', k:'reps', sets:3, v:5, cue:'Low rings in false grip, feet on the floor. Pull rings to the lower chest, turn over them and press out with measured leg help.'},
     {id:'assisted-ring-muscleup', n:'Assisted ring muscle-up', k:'reps', sets:3, v:3, cue:'A securely set band or lightly supported feet assist the whole pull, transition and dip. Keep rings close; reduce help without adding a kip.'},
+    {id:'feet-assisted-ring-support', n:'Feet-assisted ring support', k:'hold', sets:3, v:30, cue:'Low rings beside the hips, feet on the floor. Press to straight arms with the rings against the hips. Log how much the feet help, 0 none to 5 most, and use less as the rings steady.'},
+    {id:'incline-ring-pushup', n:'Incline ring push-up', k:'reps', sets:3, v:10, cue:'Rings at about hip height, feet on the floor, body straight and leaning in. Lower the chest to ring height with the rings close to the body; lower the rings as it gets easy.'},
   ]},
   /* What goals need besides strength: range of motion, balance, joints ready for the load, control and technique.
      prep: not hard sets, so they count toward no muscle. q what it builds, when it goes in a session (warm-up first,
@@ -7031,6 +7076,7 @@ const LADDERS={
     {id:'ring-support', n:'Ring support hold', k:'hold', sets:3, v:30, cue:'Elbows straight, rings by the hips, shoulders away from the ears.'},
     {id:'feet-assisted-ring-dip', n:'Feet-assisted ring dip', k:'reps', sets:3, v:6, cue:'Low rings, supported feet. Keep rings close and reduce leg help through a consistent controlled range.'},
     {id:'ring-dip', n:'Ring dip', k:'reps', sets:3, v:8, cue:'Rings close to the ribs, controlled depth and full lockout. Build this component alongside false-grip and transition practice.'},
+    {id:'feet-assisted-ring-support', n:'Feet-assisted ring support', k:'hold', sets:3, v:30, cue:'Low rings beside the hips, feet on the floor. Press to straight arms with the rings against the hips. Log how much the feet help, 0 none to 5 most, and use less as the rings steady.'},
   ]},
   bardip:{n:'Straight-bar dip strength', p:'Push', ic:'dip', like:'dip', m:'Chest, triceps, front delts', steps:[
     {id:'feet-assisted-straight-bar-dip', n:'Feet-assisted straight-bar dip', k:'reps', sets:3, v:6, cue:'Low fixed bar, feet supported. Lean the chest over the bar and lower through a comfortable range; use leg help only as needed.'},
@@ -7069,17 +7115,17 @@ const LADDER_PATHS={
     {key:'back-extension', name:'Back extension', steps:['back-extension-hold']},
   ],
   core:[{key:'support', name:'Core and supported leg holds', steps:['dead-bug','hollow-hold','tuck-lsit','one-leg-lsit','lsit','vsit']}],
-  handstand:[{key:'balance', name:'Handstand balance', steps:['wall-plank','chest-to-wall-handstand','heel-pulls','freestanding-handstand']}],
+  handstand:[{key:'balance', name:'Handstand balance', steps:['pike-hold','box-pike-hold','wall-plank','chest-to-wall-handstand','heel-pulls','freestanding-handstand']}],
   frontlever:[
-    {key:'straddle', name:'Front lever via straddle', steps:['assisted-tuck-fl','tuck-fl','adv-tuck-fl','assisted-straddle-fl','straddle-fl','assisted-full-fl','full-fl']},
-    {key:'half-lay', name:'Front lever via half-lay', steps:['assisted-tuck-fl','tuck-fl','adv-tuck-fl','half-lay-fl','assisted-full-fl','full-fl']},
+    {key:'straddle', name:'Front lever via straddle', steps:['straight-arm-band-pulldown','scap-pullup','assisted-tuck-fl','tuck-fl','adv-tuck-fl','assisted-straddle-fl','straddle-fl','assisted-full-fl','full-fl']},
+    {key:'half-lay', name:'Front lever via half-lay', steps:['straight-arm-band-pulldown','scap-pullup','assisted-tuck-fl','tuck-fl','adv-tuck-fl','half-lay-fl','assisted-full-fl','full-fl']},
   ],
-  planche:[{key:'assisted', name:'Planche with assisted bridges', steps:['planche-lean','assisted-tuck-planche','tuck-planche','adv-tuck-planche','assisted-straddle-planche','straddle-planche','assisted-full-planche','full-planche']}],
+  planche:[{key:'assisted', name:'Planche with assisted bridges', steps:['high-plank','planche-lean','assisted-tuck-planche','tuck-planche','adv-tuck-planche','assisted-straddle-planche','straddle-planche','assisted-full-planche','full-planche']}],
   muscleup:[
-    {key:'whole', name:'Strict muscle-up with decreasing assistance', steps:['chest-to-bar','explosive-pullup','band-muscleup','strict-muscleup']},
+    {key:'whole', name:'Strict muscle-up with decreasing assistance', steps:['negative-pullup','band-pullup','pullup','chest-to-bar','explosive-pullup','band-muscleup','strict-muscleup']},
     {key:'transition', name:'Transition and whole movement', steps:['low-bar-transition','jumping-muscleup','band-muscleup','strict-muscleup']},
-    {key:'dip', name:'Straight-bar dip component', steps:['straight-bar-dip']},
-    {key:'first', name:'First muscle-up with a small kip', steps:['chest-to-bar','explosive-pullup','hip-to-bar-pull','kipping-muscleup']},
+    {key:'dip', name:'Straight-bar dip component', steps:['feet-assisted-straight-bar-dip','straight-bar-dip']},
+    {key:'first', name:'First muscle-up with a small kip', steps:['negative-pullup','band-pullup','pullup','chest-to-bar','explosive-pullup','hip-to-bar-pull','kipping-muscleup']},
   ],
   pullvar:[
     {key:'wide', name:'Wide grip', steps:['wide-pullup']},
@@ -7148,20 +7194,20 @@ const LADDER_PATHS={
   backlever:[{key:'assisted', name:'Back lever with supported entry', steps:['german-hang-feet','german-hang','skin-the-cat','assisted-tuck-bl','tuck-bl','adv-tuck-bl','assisted-straddle-bl','straddle-bl','assisted-full-bl','full-bl']}],
   flag:[{key:'flag', name:'Human flag', steps:['side-plank','vertical-flag','support-flag','tuck-flag','straddle-flag','human-flag']}],
   armbalance:[
-    {key:'crow', name:'Crow and crane', steps:['frog-stand','crow-pose','crane-pose']},
-    {key:'elbow', name:'Elbow lever', steps:['elbow-lever','one-arm-elbow-lever']},
+    {key:'crow', name:'Crow and crane', steps:['frog-lean','frog-stand','crow-pose','crane-pose']},
+    {key:'elbow', name:'Elbow lever', steps:['elbow-lever-lean','elbow-lever','one-arm-elbow-lever']},
   ],
   press:[
-    {key:'press', name:'Press with decreasing height and assistance', steps:['pike-compression','elevated-straddle-press','assisted-straddle-press','straddle-press','pike-press']},
-    {key:'negative', name:'Press lowering practice', steps:['pike-compression','press-negative']},
+    {key:'press', name:'Press with decreasing height and assistance', steps:['seated-leg-lift','pike-compression','elevated-straddle-press','assisted-straddle-press','straddle-press','pike-press']},
+    {key:'negative', name:'Press lowering practice', steps:['seated-leg-lift','pike-compression','press-negative']},
   ],
-  onearmhs:[{key:'balance', name:'One-arm balancing', steps:['hs-shoulder-tap','straddle-handstand','weight-shift-hs','fingertip-oahs','oahs']}],
-  planchepush:[{key:'assisted', name:'Planche pressing with assisted bridges', steps:['pseudo-planche-pushup','assisted-tuck-planche-pushup','tuck-planche-pushup','adv-tuck-planche-pushup','assisted-straddle-planche-pushup','straddle-planche-pushup','assisted-full-planche-pushup','full-planche-pushup']}],
+  onearmhs:[{key:'balance', name:'One-arm balancing', steps:['pike-hold','box-pike-hold','wall-plank','chest-to-wall-handstand','hs-shoulder-tap','straddle-handstand','weight-shift-hs','fingertip-oahs','oahs']}],
+  planchepush:[{key:'assisted', name:'Planche pressing with assisted bridges', steps:['incline-pushup','pushup','pseudo-planche-pushup','assisted-tuck-planche-pushup','tuck-planche-pushup','adv-tuck-planche-pushup','assisted-straddle-planche-pushup','straddle-planche-pushup','assisted-full-planche-pushup','full-planche-pushup']}],
   rings:[
-    {key:'dip', name:'Ring support and dip', steps:['ring-support','feet-assisted-ring-dip','ring-dip']},
+    {key:'dip', name:'Ring support and dip', steps:['feet-assisted-ring-support','ring-support','feet-assisted-ring-dip','ring-dip']},
     {key:'muscle-up', name:'False grip, transition and whole movement', steps:['feet-assisted-false-grip-hang','false-grip-hang','false-grip-pullup','low-ring-transition','assisted-ring-muscleup','ring-muscleup']},
-    {key:'turnout', name:'Turned-out support', steps:['ring-support','rto-support']},
-    {key:'push-up', name:'Ring push-up', steps:['ring-pushup']},
+    {key:'turnout', name:'Turned-out support', steps:['feet-assisted-ring-support','ring-support','rto-support']},
+    {key:'push-up', name:'Ring push-up', steps:['incline-ring-pushup','ring-pushup']},
   ],
   pistoldrill:[
     {key:'box', name:'Pistol depth', steps:['box-pistol','counterbalance-pistol']},
@@ -7177,7 +7223,7 @@ const LADDER_PATHS={
   ],
   weightedpull:[{key:'weighted', name:'Pull-up with increasing load', steps:['pullup','weighted-pullup']}],
   leverrow:[{key:'lever-row', name:'Rows toward tuck front lever', steps:['incline-row','inverted-row','feet-elevated-row','assisted-tuck-fl-row','tuck-fl-row']}],
-  ringdip:[{key:'dip', name:'Ring dip strength', steps:['ring-support','feet-assisted-ring-dip','ring-dip']}],
+  ringdip:[{key:'dip', name:'Ring dip strength', steps:['feet-assisted-ring-support','ring-support','feet-assisted-ring-dip','ring-dip']}],
   bardip:[{key:'dip', name:'Straight-bar dip strength', steps:['feet-assisted-straight-bar-dip','straight-bar-dip']}],
 };
 /* Reproducible difficulty matters as much as the rep count. No band colour or
@@ -7263,7 +7309,10 @@ const LADDER_STEP_OPTIONS={
   'assisted-straddle-planche-pushup':{setup:LADDER_SETUP_FIELDS.band},
   'assisted-full-planche-pushup':{setup:LADDER_SETUP_FIELDS.band},
   'ring-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'incline-ring-pushup':{setup:LADDER_SETUP_FIELDS.incline},
+  'box-pike-hold':{setup:LADDER_SETUP_FIELDS.box},
   'feet-assisted-false-grip-hang':{setup:LADDER_SETUP_FIELDS.support},
+  'feet-assisted-ring-support':{setup:LADDER_SETUP_FIELDS.support},
   'feet-assisted-ring-dip':{setup:LADDER_SETUP_FIELDS.support},
   'feet-assisted-straight-bar-dip':{setup:LADDER_SETUP_FIELDS.support},
   'low-ring-transition':{setup:LADDER_SETUP_FIELDS.support},
@@ -7796,6 +7845,8 @@ function pathFor(id,goal,skipNeeds){
 }
 function curIdx(id){
   const raw=Math.max(0,Math.min(state.rung[id]||0,stepsOf(id).length-1)), path=pathFor(id);
+  // Not placed yet: the bottom of its path, where placement and the plan start it too, not whichever exercise is stored first.
+  if(!state.placed[id]&&!(state.rung[id]>0)) return path[0];
   if(path.includes(raw)) return raw;
   // A saved position on another branch proves no capacity on this one.
   const proof=path.slice().reverse().find(i=>entryReady(id,i));if(proof!=null)return proof;
@@ -7951,9 +8002,9 @@ function clearsRung(entry){
 }
 function moveTo(id, to){
   const steps=stepsOf(id), from=curIdx(id); to=Math.max(0,Math.min(steps.length-1,to));
-  state.placed[id]=true;
+  // stored even when it is where you already are: an unplaced ladder's place is worked out, not saved (curIdx)
+  state.placed[id]=true; state.rung[id]=to;
   if(to===from){ save(); return false; }
-  state.rung[id]=to;
   if(rungRank(id,to)>rungRank(id,from)) state.advances.push({date:Date.now(), id, from, to, name:steps[to].n});
   save(); return true;
 }
@@ -8132,7 +8183,8 @@ const WRIST_LOAD=['handstand','planche','planchepush','armbalance','press','onea
    The wait counts from when the hard session started, and it is 44 hours (68 for new Nordics): the same time two days
    later, or a little earlier, is a hard day again, as "about 48 hours" means. With two or more straight-arm goals, the
    one whose last hard session is oldest gets the hard slot, so each takes its turn. */
-const NOT_STRAIGHT=['side-plank','pike-compression','pseudo-planche-pushup'];
+// rungs on those ladders that load the elbows far less (floor, core and band work, and the starting rungs) aren't hard straight-arm work
+const NOT_STRAIGHT=['side-plank','pike-compression','pseudo-planche-pushup','straight-arm-band-pulldown','scap-pullup','high-plank','seated-leg-lift','incline-pushup','pushup'];
 const NORDIC_IDS=['nordic-negative','nordic-curl','assisted-nordic-curl','partial-nordic-curl'];
 const SPACE_H=44, NORDIC_NEW_H=68, NORDIC_NEW_DAYS=28;
 function hardFam(id,i){ const L=LADDERS[id], st=L&&L.steps[i]; if(!st) return null;
