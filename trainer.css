@@ -91,7 +91,7 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .brand {gap:0}
 .brand h1,.appbar h1 {font-size:var(--page-title); font-weight:700; line-height:1.15; letter-spacing:-.03em; text-transform:none}
 .brand p,.appbar p {margin-top:5px; font-size:12px; letter-spacing:0; line-height:1.4; white-space:normal; overflow:visible}
-.iconbtn {width:44px; height:44px; border-radius:10px; flex:none; border-color:var(--border); background:var(--surface)}
+.iconbtn {width:44px; height:44px; border-radius:8px; flex:none; border-color:var(--border); background:var(--surface)}
 #view {padding:0 20px calc(112px + var(--tg-strip,0px)); min-height:55vh; animation:none}
 #view.resting {padding-bottom:calc(220px + var(--tg-strip,0px))}
 .tabbar {position:fixed; top:auto; left:0; right:0; bottom:0; max-width:none; width:auto;
@@ -118,13 +118,16 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .chip,.mtag {border-radius:6px; font-size:11px; padding:4px 7px; white-space:normal; line-height:1.25}
 .chip {max-width:100%}
 .chip :is(svg),.mtag svg {flex:none}
-.btn {min-height:46px; border-radius:9px; padding:12px 16px; font-size:14px; font-weight:650; white-space:normal; text-align:center; line-height:1.3}
+/* One secondary button in every section: an outline on the surface. Controls share one corner radius, 8px. */
+.btn {min-height:46px; border-radius:8px; padding:12px 16px; font-size:14px; font-weight:650; white-space:normal; text-align:center; line-height:1.3;
+  background:var(--surface); border:1px solid var(--border-2); color:var(--ink)}
 .btn.primary,.btn.pri {background:var(--accent); color:var(--on-accent); border-color:var(--accent)}
 .btn.ghost {background:var(--surface); border-color:var(--border-2)}
 .btn.sm {min-height:40px; padding:9px 12px; border-radius:8px; font-size:12px}
 .btn.danger {background:var(--crit-soft); color:var(--crit); border-color:transparent}
-.tinybtn {min-height:36px; padding:7px 10px; border-radius:7px; font-size:12px; white-space:normal; text-align:center}
-.ev-chip {min-height:36px; border-radius:7px; padding:7px 10px; font-size:12px}
+.tinybtn {min-height:36px; padding:7px 10px; border-radius:8px; font-size:12px; white-space:normal; text-align:center;
+  background:var(--surface); border:1px solid var(--border-2); color:var(--ink)}
+.ev-chip {min-height:36px; border-radius:8px; padding:7px 10px; font-size:12px}
 .grid2,.grid3 {gap:12px; min-width:0}
 .grid2>* {min-width:0}
 .grid3 {grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -137,6 +140,8 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .row,.spread {min-width:0}
 .banner {padding:14px; line-height:1.5; border-radius:10px; font-size:13px}
 .banner.warn {background:var(--warn-soft); color:var(--warn)}
+/* Information is blue-grey in every section; the accent tint is kept for things you can tap. */
+.banner.info {background:var(--steel-soft); color:color-mix(in srgb, var(--steel) 68%, var(--ink)); border-color:transparent}
 .tip {padding:20px; border-radius:14px; background:var(--surface); border:1px solid var(--border)}
 .tip .lbl {font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--ink); flex-wrap:wrap; gap:7px; margin-bottom:9px}
 .tip .lbl>svg {display:none}
@@ -238,13 +243,13 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .setrow {padding-top:8px; padding-bottom:8px; border-radius:0; border-bottom:1px solid var(--border)}
 .setrow.next,.setrow.done {border-radius:6px; border-bottom-color:transparent}
 .setrow.next {background:var(--accent-soft)}
-.sinput {height:44px; font-size:16px; font-weight:650; border:1px solid var(--border-2); border-radius:7px; background:var(--surface-2)}
+.sinput {height:44px; font-size:16px; font-weight:650; border:1px solid var(--border-2); border-radius:8px; background:var(--surface-2)}
 .sinput[data-field="weight"] {font-size:16px}
 .sinput::placeholder {color:var(--muted)}
 .sidx {font-size:11px; letter-spacing:0; border-radius:5px}
 .setrow.next .sidx {color:var(--on-accent); background:var(--accent)}
 .setrow.done .sidx,.setrow.done .donebtn {color:var(--on-good); background:var(--good)}
-.donebtn,.setopt {height:44px; border-radius:7px; border-width:1px}
+.donebtn,.setopt {height:44px; border-radius:8px; border-width:1px}
 .donebtn {background:var(--surface); color:var(--muted); border-color:var(--border-2)}
 .setopt {color:var(--muted)}
 .excard-actions {padding:0 16px 16px; gap:8px; mask-image:none; -webkit-mask-image:none; scrollbar-width:thin}
@@ -275,7 +280,7 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .resttimer .inner {border-radius:12px; padding:13px; border-color:var(--border-2)}
 .resttimer .rl,.rt-info .rl {font-size:11px; letter-spacing:0; text-transform:none}
 .resttimer .rv,.rt-info .rv {font-size:24px; font-weight:650; margin-top:3px}
-.rt-btn {min-height:40px; border-radius:7px; padding:9px 12px}
+.rt-btn {min-height:40px; border-radius:8px; padding:9px 12px}
 .rt-btn.skip {background:var(--accent); color:var(--on-accent)}
 .resttimer.flash {box-shadow:none}
 .rbar i {background:var(--accent)}
@@ -287,9 +292,11 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .seg-tabs.scroll .seg-tab {padding-left:6px; padding-right:6px}
 .seg-tab.on {background:var(--surface); color:var(--accent-ink)}
 .liftpick {margin-bottom:18px}
-.liftpick button,.fchip {min-height:36px; border-radius:7px; padding:8px 12px; font-size:12px}
-.liftpick button.on,.fchip.on {background:var(--accent); color:var(--on-accent)}
-.searchbar {min-height:48px; padding:10px 13px; border-radius:9px; border-color:var(--border-2)}
+.liftpick button,.fchip {min-height:36px; border-radius:8px; padding:8px 12px; font-size:12px}
+/* A picked choice looks the same everywhere: the selected tint with ink text. The accent is kept for actions and for
+   what comes next, so a choice never looks like a button to press. */
+.liftpick button.on,.fchip.on,.seg2 button.on {background:var(--selected); color:var(--ink); border-color:var(--selected)}
+.searchbar {min-height:48px; padding:10px 13px; border-radius:8px; border-color:var(--border-2)}
 .searchbar input {font-size:16px}
 .searchbar:focus-within {outline:2px solid var(--accent); outline-offset:2px}
 .searchbar input:focus {outline:none!important}
@@ -323,6 +330,8 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .field input::placeholder,.field textarea::placeholder,.edtext::placeholder {color:var(--muted); opacity:1}
 .pillpick {gap:8px}
 .pillpick button,.pills button,.readi-opt button,.optrow button {min-height:40px; border-radius:8px; font-size:12px; padding:9px 11px; line-height:1.35}
+/* A choice not yet picked is an outline, like any other button that isn't the main action. */
+.pillpick button,.pills button,.readi-opt button,.optrow button,.fchip,.liftpick button,.scale button,.tog {background:var(--surface); border:1px solid var(--border-2); color:var(--ink)}
 .pillpick button.on,.readi-opt button.on,.tog.on {background:var(--selected); color:var(--ink); border-color:transparent}
 .pillpick button {white-space:normal}
 .settings-row {padding:16px 0; gap:16px}
@@ -333,7 +342,7 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .toggle-group button.on {background:var(--surface); color:var(--accent-ink)}
 .review-hero h2 {font-size:30px; font-weight:750; letter-spacing:-.035em}
 .pr-badge {background:var(--accent); color:var(--on-accent); border-radius:5px}
-.optrow button.on.n {background:var(--accent); color:var(--on-accent)}
+.optrow button.on.n {background:var(--selected); color:var(--ink)}
 .optrow button.on.g {background:var(--good); color:var(--on-good)}
 .optrow button.on.w {background:var(--warn); color:var(--on-warn)}
 .optrow button.on.c {background:var(--crit-soft); color:var(--crit); border:1px solid var(--crit)}
@@ -380,12 +389,12 @@ h1,h2,h3,h4 {line-height:1.2; font-weight:700}
 .day {grid-template-columns:60px minmax(0,1fr) auto; padding:14px 0; gap:12px}
 .dchip {border-radius:6px; min-height:32px; padding:6px 9px; font-size:11px}
 button.dchip {min-height:36px}
-.dchip.on {background:var(--accent-soft); color:var(--accent-ink)}
+.dchip.on {background:var(--selected); color:var(--ink)}
 .dchip i {background:var(--accent)!important}
 .dchip.done {background:var(--good-soft); color:var(--good-ink)}
 .scale {gap:6px}
 .scale button {min-height:44px; border-radius:8px}
-.scale button.on,.pills button.on {background:var(--accent); color:var(--on-accent)}
+.scale button.on,.pills button.on {background:var(--selected); color:var(--ink); border-color:var(--selected)}
 .srow {padding:9px 0}
 .srow input[type=range] {height:36px}
 .rules summary {min-height:44px}
@@ -654,7 +663,7 @@ button.dchip {min-height:36px}
 .session-finish {padding:0 22px}
 .session-views {grid-column:1/-1;display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--well);min-width:0}
 .session-views button {flex:1 1 0;min-height:44px;border:0;border-radius:9px;background:none;color:var(--ink-2);font-size:14px;font-weight:650;cursor:pointer}
-.session-views button[aria-pressed=true] {background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.16)!important;cursor:default}
+.session-views button[aria-pressed=true] {background:var(--surface);color:var(--accent-ink);cursor:default}
 .session-stage {max-width:640px;margin:0 auto}
 .session-card {padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg)}
 .session-card h2 {font-size:32px;line-height:1.15;margin:10px 0;overflow-wrap:anywhere}
@@ -671,7 +680,7 @@ button.dchip {min-height:36px}
 .session-method {font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
 .session-effort {display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:8px;margin-top:20px}
 .session-effort button {min-width:44px;min-height:44px;padding:8px;border:1px solid var(--border-2);border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
-.session-effort button[aria-pressed=true] {background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.session-effort button[aria-pressed=true] {background:var(--selected);color:var(--ink);border-color:var(--selected)}
 .session-done {min-height:60px;width:100%;font-size:18px;margin:24px 0 12px}
 .session-card .session-done {margin-bottom:0}
 @media(min-width:600px) {
@@ -831,3 +840,5 @@ progress {display:block;width:100%;height:10px;accent-color:var(--accent);margin
 .trec-more[open]>summary::after {transform:rotate(225deg); margin-top:4px}
 .workout-preview {margin:14px 0 0; font-size:14.5px; line-height:1.55; color:var(--ink-2)}
 .workout-preview .sr {position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%)}
+/* Muscle and Strength open Progress with Set a goal: the same gap below it as between any two blocks. */
+#view>[data-outcome-owner] {margin:0 0 20px}

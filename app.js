@@ -9180,10 +9180,10 @@ function viewLibrary(){
   const ids=LADDER_ORDER.filter(id=>LADDERS[id].p===tab);
   const intro= tab==='Skill'
     ? `<div class="banner info">${I.info}<span>Practise balance briefly while fresh. Planche and lever work build demanding strength: use controlled sets and recover between hard sessions.</span></div>`
-    : tab==='Arms'? `<div class="banner brass">${I.book}<span>Direct arm and grip work. Pulling and pushing ladders train the arms too; these top them up.</span></div>`
-    : tab==='Prep'? `<div class="banner brass">${I.book}<span>What goals take besides strength: range of motion, balance, joints ready for the load, control and landing. Each rung is a measurable standard, so the app knows when one is in place. They aren’t hard sets.</span></div>
+    : tab==='Arms'? `<div class="banner info">${I.book}<span>Direct arm and grip work. Pulling and pushing ladders train the arms too; these top them up.</span></div>`
+    : tab==='Prep'? `<div class="banner info">${I.book}<span>What goals take besides strength: range of motion, balance, joints ready for the load, control and landing. Each rung is a measurable standard, so the app knows when one is in place. They aren’t hard sets.</span></div>
       <div class="row" style="gap:6px;flex-wrap:wrap;margin:-4px 0 12px">${evChip('qualities','Why goals need these')}${evChip('stretchtime','Why stretches go last')}</div>`
-    : `<div class="banner brass">${I.book}<span>Every exercise has written instructions. Tap a ladder, then any rung.</span></div>`;
+    : `<div class="banner info">${I.book}<span>Every exercise has written instructions. Tap a ladder, then any rung.</span></div>`;
   // prep is grouped by where it goes in a session
   const groups= tab==='Prep'? Object.keys(WHEN_N).map(w=>({h:WHEN_N[w], ids:ids.filter(id=>LADDERS[id].when===w)})).filter(x=>x.ids.length) : [{h:'', ids}];
   return `<div class="seg-tabs">${segs}</div>${intro}
@@ -15572,7 +15572,7 @@ render();
     return `<button type="button" class="b" data-s="${s}" data-v="${escS(v)}"${more||''} aria-pressed="${on}">${l}</button>`; }).join('')}</div>`; }
   let optN=0;
   const opt=(l, d, body)=>{ const id='so'+(++optN); return `<div class="opt" role="group" aria-labelledby="${id}"><div class="ol" id="${id}">${l}</div>${d? `<div class="od">${d}</div>` : ''}${body}</div>`; };
-  const grp=(k, title, note, body)=>`<details class="grp" data-g="${k}"${setOpen[k]? ' open' : ''}><summary>${title}${note? `<span>${note}</span>` : ''}</summary>${body}</details>`;
+  const grp=(k, title, note, body)=>`<details class="grp" data-g="${k}"${setOpen[k]? ' open' : ''}><summary><span class="gt">${title}${note? `<small>${note}</small>` : ''}</span></summary>${body}</details>`;
   /* The sections in use: in the program, or with training saved. */
   function inUse(m){ const t=tgSaved(); return progType()===m || !!(t&&t.on&&Array.isArray(t.secs)&&t.secs.includes(m)) || hasData(m); }
   function sectionOpts(m){ try{ const A=inUse(m)? hubApi(m) : null; return A&&A.opts? A.opts()||[] : []; }catch(e){ console.warn('options not read', m, e); return []; } }
@@ -15588,7 +15588,7 @@ render();
       +opt('Vibration','A buzz when rest ends, on phones that can.',pills('vibrate',[[1,'On'],[0,'Off']],on('vibrate',true)))
       +opt('Keep the screen on during a session','So you don’t unlock the phone for every set. Phones may still hold back alerts while the screen is locked.',pills('wake',[[1,'On'],[0,'Off']],on('wake',true)))
       +(window.MiloSession&&MiloSession.alertsAvailable()? opt('Rest alerts','An alert when rest ends while Milo is in the background. Locked phones may delay it.',
-        Notification.permission==='granted'? '<span>Alerts enabled</span>' : Notification.permission==='denied'? '<span>Allow notifications for Milo in your browser settings.</span>'
+        Notification.permission==='granted'? '<p class="ost">Alerts enabled</p>' : Notification.permission==='denied'? '<p class="ost">Allow notifications for Milo in your browser settings.</p>'
           : '<button type="button" class="b" data-s="alerts">Enable rest alerts</button>') : '');
     const types=[['mix','Together'],['lift','Muscle only'],['str','Strength only'],['cal','Ladder only']];
     const fields=[['secs','What you train and its order'],['days','Days and weekdays'],['mins','Time for a session'],['kit','What you train with'],['exp','Experience'],['stage','Life stage'],['screen','Health check']];
@@ -15676,6 +15676,8 @@ render();
   document.addEventListener('click',e=>{ if(!tools.contains(e.target)) closeTools(); });
   tools.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeTools(); more.focus(); } });
   document.getElementById('bk-done').addEventListener('click',closeSet);
+  // a sheet's close button at the top does what its own Done or Cancel does
+  document.querySelectorAll('dialog.bk [data-close]').forEach(x=>x.addEventListener('click',()=>{ const d=document.getElementById(x.dataset.close); if(d) d.click(); }));
   document.getElementById('bk-copy').addEventListener('click',async()=>{
     const locked=!!passOf('bk-pass'); let ok=false, txt='';
     if(!locked){ txt=backupText(); try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} }
