@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-hkud9NcP9lW+EKTSvTY7y16zsebYknJUi3L6kQNciHI=' 'sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=' 'sha256-5lwIYJgjfdYL9csUClvCMeqhRbjgXWrZP4ZK6VwpKJQ='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-hkud9NcP9lW+EKTSvTY7y16zsebYknJUi3L6kQNciHI=' 'sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=' 'sha256-lBs859ABjqRCBsFo3ixi1M/u3Ivt6B7LY3b7D0Wefo0='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Milo van Croton</title>
 <meta name="description" content="Free workout tracking for muscle growth, strength and calisthenics. Works offline, needs no account, and keeps your workout data in your browser.">
@@ -123,7 +123,7 @@ body{background:#0A0D12; overflow-x:hidden;
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important; transition-duration:.001s!important}}
 </style>
-<link rel="stylesheet" href="shell.css?v=efea9f3a6b431d494020">
+<link rel="stylesheet" href="shell.css?v=8cbffe59abb4b583be74">
 </head>
 <body>
 
@@ -155,7 +155,7 @@ body{background:#0A0D12; overflow-x:hidden;
 </nav>
 <div class="tgstrip" id="tgstrip" hidden></div>
 <dialog class="bk" id="guide" aria-labelledby="guide-title">
-  <h2 id="guide-title">Make the next session count.</h2>
+  <div class="bk-head"><h2 id="guide-title" tabindex="-1" autofocus>Make the next session count.</h2><button class="bk-x" type="button" data-close="guide-done" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <p>Milo brings your plans, workouts and progress together in one place.</p>
   <div class="guide-step"><b>1</b><div><h3>Choose what you train</h3><p>Pick muscle, strength, calisthenics skills or any mix. Milo builds your week from that, and Today shows what’s next.</p></div></div>
   <div class="guide-step"><b>2</b><div><h3>Train. Log. Repeat.</h3><p>Record the sets you actually complete. Your session saves as you go, so you can come back to it.</p></div></div>
@@ -166,7 +166,7 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <dialog class="bk set" id="bk" aria-labelledby="set-title">
-  <h2 id="set-title" tabindex="-1" autofocus>Settings</h2>
+  <div class="bk-head"><h2 id="set-title" tabindex="-1" autofocus>Settings</h2><button class="bk-x" type="button" data-close="bk-done" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <div id="set-body"></div>
   <section class="set-data" id="set-data" aria-labelledby="bk-title">
   <h3 class="set-h" id="bk-title" tabindex="-1">Your data</h3>
@@ -228,7 +228,7 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <dialog class="bk" id="imp" aria-labelledby="imp-title">
-  <h2 id="imp-title" tabindex="-1" autofocus>Import workouts</h2>
+  <div class="bk-head"><h2 id="imp-title" tabindex="-1" autofocus>Import workouts</h2><button class="bk-x" type="button" data-close="imp-cancel" aria-label="Cancel the import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <div id="imp-body"></div>
   <div class="msg" id="imp-msg" role="status"></div>
   <div class="row imp-foot">
@@ -238,7 +238,7 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <dialog class="bk sum" id="sum" aria-labelledby="sum-title">
-  <h2 id="sum-title" tabindex="-1" autofocus>Training summary</h2>
+  <div class="bk-head"><h2 id="sum-title" tabindex="-1" autofocus>Training summary</h2><button class="bk-x noprint" type="button" data-close="sum-done" aria-label="Close the summary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <p class="last" id="sum-range"></p>
   <div id="sum-body"></div>
   <div class="row noprint">
@@ -250,7 +250,7 @@ body{background:#0A0D12; overflow-x:hidden;
 </dialog>
 
 <dialog class="bk" id="privacy" aria-labelledby="privacy-title">
-  <h2 id="privacy-title" tabindex="-1" autofocus>Privacy</h2>
+  <div class="bk-head"><h2 id="privacy-title" tabindex="-1" autofocus>Privacy</h2><button class="bk-x" type="button" data-close="privacy-done" aria-label="Close privacy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <h3>What Milo keeps</h3>
   <p>Your workouts (sets, weights, reps and notes), plans, settings and bodyweight, and Together’s check-in answers: sleep, energy, stress, mood, soreness, joint pain and whether you feel unwell, with any health questions you answer.</p>
   <h3>Where it stays</h3>
@@ -896,7 +896,7 @@ details.why p{margin:0 0 4px}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} .tinput input{width:31px} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=169cd2a8255bdcf9b491">
+<link rel="stylesheet" href="trainer.css?v=09fa7e4fa2fbde65e9b6">
 <div id="app">
   <div class="appbar">
     <div class="brand">
@@ -1421,7 +1421,7 @@ button.banner{font:inherit}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=169cd2a8255bdcf9b491">
+<link rel="stylesheet" href="trainer.css?v=09fa7e4fa2fbde65e9b6">
 <div id="app">
   <header class="appbar">
     <div class="brand">
@@ -1946,7 +1946,7 @@ button.pl.chk{display:flex; align-items:center; gap:5px; background:none; border
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=169cd2a8255bdcf9b491">
+<link rel="stylesheet" href="trainer.css?v=09fa7e4fa2fbde65e9b6">
 <div id="app">
   <header class="appbar">
     <div class="brand">
@@ -2304,7 +2304,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 *{touch-action:manipulation}
 @supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important} }
 </style>
-<link rel="stylesheet" href="trainer.css?v=169cd2a8255bdcf9b491">
+<link rel="stylesheet" href="trainer.css?v=09fa7e4fa2fbde65e9b6">
 <div id="app">
   <header class="appbar">
     <div class="logo" aria-hidden="true"><i style="background:#FF5C3C"></i><i style="background:#5B8CFF"></i><i style="background:#F2C14E"></i></div>
@@ -2329,7 +2329,7 @@ details.rules[open] summary svg{transform:rotate(90deg)}
 
 
 <script defer src="security.js?v=be2418cb2a65944fd0de" integrity="sha256-viQYyypllE/Q3j2ra7qwmsOktqiPCKp0cgrv6bfgVsQ=" crossorigin="anonymous"></script>
-<script defer src="app.js?v=e65c086098237dd60bf5" integrity="sha256-5lwIYJgjfdYL9csUClvCMeqhRbjgXWrZP4ZK6VwpKJQ=" crossorigin="anonymous"></script>
+<script defer src="app.js?v=941b3ce7d0018ea44206" integrity="sha256-lBs859ABjqRCBsFo3ixi1M/u3Ivt6B7LY3b7D0Wefo0=" crossorigin="anonymous"></script>
 </body>
 </html>
 
