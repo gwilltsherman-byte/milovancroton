@@ -219,6 +219,22 @@ test('rep hints aim for this week’s planned effort: one more rep when it goes 
   assert.equal(api.evaluate(`repHint(${JSON.stringify(en)}, {weight:50})`), 11);
 });
 
+test('when this week asks for more in reserve, the note says so and agrees with the reps box instead of asking for a rep more', () => {
+  const api = muscle(), S = api.state();
+  S.history.push({id: 'c1', name: 'x', date: Date.now() - 3 * day, entries: [{exId: 'chest-supported-row', name: 'Chest-Supported Row', equipment: 'Machine',
+    sets: [12, 11, 10].map(reps => ({type: 'work', done: true, weight: 7, reps, rir: 1}))}]});
+  const at = rir => {
+    const en = {exId: 'chest-supported-row', equipment: 'Machine', target: {repLow: 8, repHigh: 12, rir}, sets: [{type: 'work', weight: 7}]};
+    return {note: plain(api.evaluate(`suggestLoad('chest-supported-row', ${JSON.stringify(en)}, true, false)`)).note, reps: api.evaluate(`repHint(${JSON.stringify(en)}, {weight:7})`)};
+  };
+  const same = at(1), easier = at(3);
+  assert.match(same.note, /hold load &middot; aim for \+1 rep toward 12/, 'the same effort as last time: a rep more');
+  assert.equal(same.reps, 12);
+  assert.equal(easier.reps, 10, '12 at 1 in reserve is about 10 at 3 in reserve');
+  assert.equal(easier.note, 'hold load &middot; 2 more in reserve than last time &middot; about 10 reps');
+  assert.doesNotMatch(easier.note, /\+1 rep/, 'no rep more when the box asks for fewer');
+});
+
 /* ---- the after-session survey ---- */
 function block(api) {
   return api.evaluate(`(()=>{ const m=makeMesoFromDraft({name:'T', totalWeeks:4, hasDeload:false, startRir:2, endRir:0, days:[

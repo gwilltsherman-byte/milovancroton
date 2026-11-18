@@ -4290,18 +4290,27 @@ function roundLoad(kg, eq){ return Kit.round(kg, kitEq(eq, kg), 'near', unit());
 /* A lighter weight than kg for a deload or an easier start: kg*f to the nearest you can load, or the next one down when that
    rounds back to kg (11.25 kg on a rack of 10 and 12.5). kg when nothing you have is lighter. */
 function lighter(kg, f, eq){ const w=roundLoad(kg*f, eq); return w!=null && w<kg-1e-6? w : Kit.next(kg, -1e-3, kitEq(eq, kg-1e-3), unit()).kg; }
+/* "Aim for +1 rep" assumes the same effort as last time. When this week asks for more reps in reserve than you left then,
+   the same load means fewer reps, not more: say that, with the reps the sets themselves suggest (repHint), so the note and
+   the reps box agree (12 reps at 1 in reserve then, 3 in reserve now: about 10). null when the effort is the same or harder. */
+function moreInReserve(exId, entry, prev){
+  const want=Number(entry.target&&entry.target.rir), had= prev&&prev.rir!=null&&prev.rir!==''? Number(prev.rir) : NaN;
+  if(isHold(exId) || !Number.isFinite(want) || !Number.isFinite(had) || !(want>had)) return null;
+  const d=want-had, r=repHint(entry, {weight:prev.weight}, null);
+  return d+' more in reserve than last time'+(r!=null? ' &middot; about '+r+' rep'+(r===1?'':'s') : '');
+}
 function suggestLoad(exId, entry, comp, deload){
   const prev=lastPerf(exId);
   // bodyweight alone last time: the reps climb first; at the top of the range, add a little weight or take a harder version
   // the weight goes up once every working set at it reached the top of the range, not just the best one
   const ls=prev&&!prev.from? lastSetsFor(exId) : null, at=ls? ls.sets.filter(s=>(s.weight||0)===(prev.weight||0)) : [];
   const allTop=!!prev && (at.length? at : [prev]).every(s=>s.reps!=null && s.reps>=entry.target.repHigh);
-  const hold=isHold(exId), more=hold? '+5 s toward '+entry.target.repHigh+' s' : '+1 rep toward '+entry.target.repHigh;
+  const hold=isHold(exId), easier=moreInReserve(exId, entry, prev), more=easier || (hold? '+5 s toward '+entry.target.repHigh+' s' : '+1 rep toward '+entry.target.repHigh);
   if(isAssisted(exId)) return prev? suggestHelp(exId, entry, prev, allTop, deload) : {weight:null, note:null};
   if(prev && !prev.weight && entry.equipment==='Bodyweight'){
     if(deload) return {weight:null, note:'deload &middot; bodyweight, with a few more reps in reserve'};
     if(allTop) return {weight:null, note:'top of the range at bodyweight on every set &middot; add a little weight, or pick a harder version'};
-    return {weight:null, note:'bodyweight &middot; aim for '+more};
+    return {weight:null, note:'bodyweight &middot; '+(easier? '' : 'aim for ')+more};
   }
   if(!prev || prev.weight==null) return {weight:null, note:null};
   const eq=entry.equipment, step=fromDisp(loadStep(eq));
@@ -4327,7 +4336,7 @@ function suggestLoad(exId, entry, comp, deload){
     if(!(w<prev.weight-1e-6)) return {weight:prev.weight, note:'the lightest you can load &middot; aim for '+entry.target.repLow+' reps'};
     return {weight:w, note:'&minus;'+fmtW(prev.weight-w)+unit()+' &middot; last set landed under '+entry.target.repLow+' reps, so ease the load to get back in range'};
   }
-  return {weight:prev.weight, note:'hold load &middot; aim for '+more};
+  return {weight:prev.weight, note:'hold load &middot; '+(easier? '' : 'aim for ')+more};
 }
 /* An assisted exercise moves on by taking help away: its weight is the help (ASSISTED). A lighter week or an easier start
    adds help instead, enough to take the share off what you lift (from your bodyweight; without one, a step). */
@@ -4345,7 +4354,8 @@ function suggestHelp(exId, entry, prev, allTop, deload){
   const r=Lift.trueRir(prev.rir, prev.reps, clsOf(exId));
   if(prev.reps!=null && prev.reps<entry.target.repLow && (r==null || r<=entry.target.rir+1)){ const w=Kit.next(a, step, 'stack', unit()).kg;
     return {weight:w, note:fmtW(w-a)+unit()+' more help &middot; last set landed under '+entry.target.repLow+' reps'}; }
-  return {weight:a, note:'same help &middot; aim for +1 rep toward '+entry.target.repHigh};
+  const reserve=moreInReserve(exId, entry, prev);
+  return {weight:a, note:'same help &middot; '+(reserve || 'aim for +1 rep toward '+entry.target.repHigh)};
 }
 /* An exercise of a block or Together day as a session entry: rir is the week's, and the exercise's own comes from its kind
    (exRir), never under your floor; reps and rest are the exercise's for you (defOf); the muscles are the library's as it
